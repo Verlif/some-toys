@@ -10,13 +10,12 @@
 <body>
   <div class="page-wrapper">
 
-    <!-- GitHub 个人信息区 -->
     <header class="profile-section">
       <a href="https://github.com/Verlif" target="_blank" class="avatar-link">
         <img src="https://avatars.githubusercontent.com/Verlif" alt="Verlif" class="avatar">
       </a>
       <h1 class="username">Verlif</h1>
-      <p class="bio">你知道吗？蜡烛可以让影子动起来</p>
+      <p class="bio">AI 单页面作品集</p>
 
       <div class="github-stats">
         <a href="https://github.com/Verlif?tab=repositories" target="_blank" class="stat-item">
@@ -34,25 +33,16 @@
       </div>
     </header>
 
-    <!-- 搜索框 -->
     <div class="search-wrapper">
       <i class="fas fa-search search-icon"></i>
-      <input
-        type="text"
-        id="searchInput"
-        class="search-input"
-        placeholder="搜索页面..."
-        autocomplete="off"
-      >
+      <input type="text" id="searchInput" class="search-input" placeholder="搜索页面..." autocomplete="off">
       <span class="search-count" id="searchCount"></span>
     </div>
 
-    <!-- 卡片网格 -->
-    <main class="cards-grid" id="cardsGrid">
-      {{links}}
+    <main class="cards-container" id="cardsContainer">
+      {{content}}
     </main>
 
-    <!-- 无结果提示 -->
     <div class="no-result" id="noResult" style="display:none;">
       <i class="fas fa-inbox"></i>
       <p>没有找到匹配的页面</p>
@@ -61,34 +51,32 @@
   </div>
 
   <script>
-    // 搜索过滤逻辑
     const searchInput = document.getElementById('searchInput');
-    const cardsGrid = document.getElementById('cardsGrid');
+    const cardsContainer = document.getElementById('cardsContainer');
     const noResult = document.getElementById('noResult');
     const searchCount = document.getElementById('searchCount');
 
     searchInput.addEventListener('input', function () {
       const keyword = this.value.trim().toLowerCase();
-      const cards = cardsGrid.querySelectorAll('.card');
+      const cards = cardsContainer.querySelectorAll('.card');
       let visibleCount = 0;
 
       cards.forEach(card => {
-        const title = card.querySelector('.card-title').textContent.toLowerCase();
+        const title = card.querySelector('.card-title')?.textContent.toLowerCase() || '';
         const desc = card.querySelector('.card-desc')?.textContent.toLowerCase() || '';
-        const match = title.includes(keyword) || desc.includes(keyword);
+        const match = !keyword || title.includes(keyword) || desc.includes(keyword);
+        card.classList.toggle('card-hidden', !match);
+        if (match) visibleCount++;
+      });
 
-        if (match) {
-          card.style.display = '';
-          card.classList.remove('card-hidden');
-          visibleCount++;
-        } else {
-          card.style.display = 'none';
-          card.classList.add('card-hidden');
-        }
+      // 隐藏没有可见卡片的分组
+      cardsContainer.querySelectorAll('.group').forEach(group => {
+        const hasVisible = group.querySelector('.card:not(.card-hidden)');
+        group.classList.toggle('group-hidden', !hasVisible);
       });
 
       noResult.style.display = visibleCount === 0 ? 'flex' : 'none';
-      searchCount.textContent = keyword ? `找到 ${visibleCount} 个页面` : '';
+      searchCount.textContent = keyword ? `找到 ${visibleCount} 个` : '';
     });
   </script>
 </body>

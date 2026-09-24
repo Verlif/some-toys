@@ -1,4 +1,4 @@
-# some-toys - AI 单页面作品导航站
+# someToys - AI 单页面作品导航站
 
 一个专门为 **AI 生成的单页面 HTML 作品** 设计的导航站。
 
@@ -11,7 +11,8 @@
 - **专为 AI 单页面设计**：AI 生成的 HTML 通常是一个文件包含全部 CSS/JS，正好适合这种“丢进去就能用”的模式。
 - **集中托管**：所有单页面作品放在同一个仓库，无需为每个页面单独建仓库。
 - **自动导航**：每次向 `pages/` 添加新 HTML，Action 自动扫描并更新导航页。
-- **搜索过滤**：导航页顶部有搜索框，可按标题和描述实时过滤卡片。
+- **支持分组**：`pages/` 下的一级子文件夹会自动变成分组，文件夹名即分组标题。
+- **搜索过滤**：导航页顶部有搜索框，可按标题和描述实时过滤卡片，无匹配结果的分组会自动隐藏。
 - **现代化 UI**：深色玻璃态风格、卡片布局、悬停高亮、响应式设计。
 - **GitHub 信息展示**：导航页展示 GitHub 头像、用户名和快捷入口。
 - **零成本发布**：基于 GitHub Pages，完全免费。
@@ -24,8 +25,12 @@ someToys/
 │  └─ workflows/
 │     └─ generate-nav.yml      # GitHub Actions 工作流
 ├─ pages/                      # 所有 AI 生成的 HTML 页面放这里
-│  ├─ page1.html
-│  └─ page2.html
+│  ├─ demo.html                # 根目录页面，直接展示在最上方
+│  ├─ 小游戏/                   # 一级子文件夹 → 分组
+│  │  ├─ snake.html
+│  │  └─ tetris.html
+│  └─ 工具/                     # 一级子文件夹 → 分组
+│     └─ converter.html
 ├─ templates/
 │  └─ nav-template.html        # 导航页 HTML 模板
 ├─ assets/
@@ -73,9 +78,31 @@ permissions:
 
 ## 添加新页面（核心用法）
 
+### 直接放在根目录
+
 把 AI 生成的 HTML 文件直接放进 `pages/` 文件夹，例如 `pages/my-tool.html`。
 
-建议在每个 HTML 的 `<head>` 中加上标题和描述，导航页会自动读取：
+它会被当作第一层散页，直接显示在导航页最上方。
+
+### 放进子文件夹作为分组
+
+在 `pages/` 下建一个一级子文件夹，例如 `pages/小游戏/`，把 HTML 文件放进去。文件夹名会自动成为分组标题。
+
+```text
+pages/
+├─ demo.html              → 第一层直接显示
+├─ 小游戏/                 → 分组：小游戏
+│  ├─ snake.html
+│  └─ tetris.html
+└─ 工具/                   → 分组：工具
+   └─ converter.html
+```
+
+> **注意**：只支持一层文件夹作为分组。子文件夹里再建文件夹会被忽略，里面嵌套的 HTML 不会被收录。
+
+### 建议给每个 HTML 加上标题和描述
+
+在 `<head>` 中加上：
 
 ```html
 <head>
@@ -85,11 +112,13 @@ permissions:
 </head>
 ```
 
-提交并推送到 `main` 分支：
+导航页会自动读取 `<title>` 作为卡片标题，读取 `<meta name="description">` 作为卡片描述。搜索时会同时匹配标题和描述。
+
+### 推送
 
 ```bash
-git add pages/my-tool.html
-git commit -m "add my-tool"
+git add pages/
+git commit -m "add new page"
 git push
 ```
 
@@ -101,8 +130,23 @@ GitHub Actions 会自动运行，重新生成 `index.html` 并提交回仓库。
 
 - **改样式**：编辑 `assets/nav.css`，推送后立即生效，无需重新生成 `index.html`。
 - **改结构**：编辑 `templates/nav-template.html`，推送后 Action 会重新生成 `index.html`。
-- **改生成逻辑**：编辑 `generate-index.js`，例如调整排序、图标映射、标题覆盖等。
+- **改生成逻辑**：编辑 `generate-index.js`，例如调整排序、图标映射、分组处理等。
 - **改 GitHub 信息**：在 `templates/nav-template.html` 中把 `Verlif` 替换成你的 GitHub 用户名。
+
+### 图标映射
+
+`generate-index.js` 里的 `iconMap` 会根据文件名或分组名自动匹配图标。默认映射：
+
+| 关键词 | 图标 |
+| :--- | :--- |
+| `game` / `小游戏` | 🎮 fa-gamepad |
+| `tool` / `工具` | 🔧 fa-wrench |
+| `demo` | 🧪 fa-flask |
+| `blog` | ✍️ fa-pen-fancy |
+| `ai` | 🤖 fa-robot |
+| 其他 | 📄 fa-file-code |
+
+想加新图标，在 `iconMap` 里加一条即可，值是 Font Awesome 的类名（不带 `fa-` 前缀的话记得补上 `fas` 里的 `fa-` 部分）。
 
 ## 手动触发 Action
 
@@ -111,7 +155,7 @@ GitHub Actions 会自动运行，重新生成 `index.html` 并提交回仓库。
 ## 工作流程
 
 ```text
-把 AI 生成的 HTML 放入 pages/
+把 AI 生成的 HTML 放入 pages/（可放入一级子文件夹分组）
         ↓
 push 到 main 分支
         ↓
@@ -123,7 +167,7 @@ GitHub Actions 触发
         ↓
 GitHub Pages 自动部署
         ↓
-导航页更新，新卡片出现
+导航页更新，新卡片/新分组出现
 ```
 
 ## 常见问题
@@ -148,9 +192,21 @@ A：确认 Pages 的 Source 设置为 `Deploy from a branch`，分支为 `main`�
 
 A：检查 Action 是否成功运行，以及 `index.html` 是否被提交。可以手动触发一次 `Generate Navigation Page`。
 
+**Q：我建了子文件夹，但分组没显示出来**
+
+A：确认子文件夹里至少有一个 `.html` 文件。空文件夹会被跳过，也不会在导航页里出现。
+
+**Q：我建了两层嵌套文件夹，为什么只显示了一层？**
+
+A：项目设计上只支持一层文件夹作为分组。子文件夹里再嵌套的文件夹会被忽略，里面的 HTML 不会被收录。如果需要更深的层级，需要修改 `generate-index.js` 的扫描逻辑。
+
 **Q：AI 生成的 HTML 里有外部依赖怎么办？**
 
-A：只要 HTML 文件本身能独立运行即可。如果依赖 CDN 上的 CSS/JS，保持原样即可；如果有本地图片等资源，建议一并放进 `pages/` 或单独的 `assets/` 文件夹，并在 HTML 中使用相对路径引用。
+A：只要 HTML 文件本身能独立运行即可。如果依赖 CDN 上的 CSS/JS，保持原样即可；如果有本地图片等资源，建议一并放进 `pages/` 或单独的 `assets/` 文件夹，并在 HTML 中使用相对路径引用。放进子文件夹的页面，引用资源时注意相对路径要对应调整。
+
+**Q：卡片点击后是新标签页打开还是当前页跳转？**
+
+A：新标签页打开（`target="_blank"`），方便你同时打开多个作品对比，也不会离开导航页。
 
 ## 技术栈
 

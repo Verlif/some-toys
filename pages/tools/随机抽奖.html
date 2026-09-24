@@ -1,0 +1,2055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机抽奖</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            box-sizing: border-box;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 主容器样式 */
+        .main-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            box-sizing: border-box;
+            flex: 1;
+            padding: 10px;
+        }
+
+        /* 输入区域样式 */
+        .input-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        /* 输入项样式 */
+        .input-item {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .input-item input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #content {
+            flex: 3;
+            min-width: 10px;
+        }
+
+        #weight {
+            flex: 1;
+            min-width: 4px;
+        }
+
+        .input-item button {
+            flex: 0 0 auto;
+            min-width: 80px;
+        }
+
+        /* 结果显示样式 */
+        .result-display {
+            padding: 12px;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            min-height: 60px;
+            line-height: 30px;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+            background-color: #f0fff4;
+        }
+
+        .result-label,
+        .frequent-label {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .result-value {
+            font-size: 18px;
+            color: #FF9800;
+            font-weight: bold;
+        }
+
+        .frequent-item {
+            font-size: 18px;
+            color: #FF6B6B;
+            font-weight: bold;
+        }
+
+        /* 项目列表样式 */
+        #items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+        #items-list div {
+            display: flex;
+            align-items: center;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            gap: 10px;
+            flex-wrap: nowrap;
+        }
+
+        .item-name {
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 5px;
+            font-weight: 500;
+            cursor: help;
+            position: relative;
+        }
+
+        .item-name:hover::after {
+            content: attr(data-name);
+            position: absolute;
+            left: 0;
+            bottom: 100%;
+            margin-bottom: 5px;
+            background-color: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 9999;
+            font-size: 12px;
+            font-weight: normal;
+            pointer-events: none;
+        }
+
+        .weight-container {
+            flex: 2.5;
+            position: relative;
+            height: 24px;
+            padding: 0 4px;
+        }
+
+        .weight-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #414141;
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            background: transparent;
+        }
+
+        .weight-progress-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .weight-progress {
+            height: 100%;
+            background: linear-gradient(to right, #4CAF50, #81C784);
+            border-radius: 12px;
+            transition: width 0.5s ease;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        #items-list button {
+            flex: 0 0 auto;
+            background-color: #f44336;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        #items-list button:hover {
+            background-color: #d32f2f;
+        }
+
+        /* 滚动区域样式 */
+        .scroll-section {
+            flex: 2;
+            position: relative;
+            border: 1px solid #ccc;
+            min-height: 300px;
+            max-height: calc(100vh - 40px);
+            overflow: hidden;
+            min-width: 200px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .scroll-section::after {
+            content: '';
+            position: absolute;
+            top: var(--line-top, 50%);
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right,
+                    rgba(255, 68, 0, 0.8),
+                    rgba(255, 68, 0, 0.1),
+                    rgba(255, 68, 0, 0),
+                    rgba(255, 68, 0, 0),
+                    rgba(255, 68, 0, 0),
+                    rgba(255, 68, 0, 0.1),
+                    rgba(255, 68, 0, 0.8));
+            z-index: 10;
+            transition: top 0.2s ease-out;
+        }
+
+        .scroll-section::before {
+            content: '';
+            position: absolute;
+            top: var(--line-top, 50%);
+            left: 0;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 8px solid rgba(255, 68, 0, 0.8);
+            transform: translateY(calc(-50% + 1px));
+            z-index: 10;
+            transition: top 0.2s ease-out;
+        }
+
+        #scroll-list {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            transition: top 8s ease-out;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .scroll-item {
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            background-color: #fff;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+
+        .scroll-item:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .scroll-item.highlight {
+            background-color: #ffeb3b;
+            color: #333;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: scale(1.02);
+        }
+
+        /* 按钮样式 */
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:active {
+            background-color: #3d8b40;
+        }
+
+        #start-btn,
+        .toggle-btn {
+            width: 100%;
+            background-color: #2196F3;
+            font-weight: bold;
+        }
+
+        #start-btn:hover,
+        .toggle-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        #stop-btn {
+            background-color: #ff9800;
+        }
+
+        #stop-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #stop-btn:hover:not(:disabled) {
+            background-color: #e68900;
+        }
+
+        .speed-control {
+            padding: 8px;
+            border: 2px solid rgb(212, 212, 212);
+            border-radius: 4px;
+        }
+
+        .speed-control label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .button-group>div,
+        .button-group>button {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 历史记录样式 */
+        .history-section {
+            margin-top: 8px;
+        }
+
+        .history-list {
+            background-color: white;
+            border-radius: 4px;
+            max-height: 0;
+            overflow-y: auto;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out, border 0.3s ease-out;
+        }
+
+        .history-list.expanded {
+            max-height: 200px;
+            padding: 10px;
+            border: 1px solid #eee;
+        }
+
+        .history-item {
+            display: grid;
+            grid-template-columns: 40px 1fr 60px;
+            align-items: start;
+            padding: 8px 15px;
+            border-bottom: 1px solid #eee;
+            margin: 0 -10px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .history-item .serial-number {
+            text-align: center;
+            color: #666;
+            padding: 0 5px;
+            align-self: center;
+        }
+
+        .history-content {
+            display: flex;
+            flex-direction: column;
+            padding: 0 10px;
+        }
+
+        .history-date {
+            color: #888;
+            font-size: 12px;
+            margin-top: 2px;
+            line-height: 1.2;
+        }
+
+        .history-item .timestamp {
+            color: #888;
+            font-size: 13px;
+            padding: 0 5px;
+        }
+
+        .history-item .result-text {
+            padding: 0 10px;
+        }
+
+        .history-item button {
+            background-color: #f44336;
+            padding: 4px 8px;
+            font-size: 12px;
+            justify-self: center;
+            margin: 0 5px;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 下拉菜单样式 */
+        .history-sort-container,
+        .multi-draw-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .sort-options,
+        .draw-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            display: none;
+            z-index: 1000;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .sort-option,
+        .draw-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sort-option:hover,
+        .draw-option:hover {
+            background-color: #f0f7ff;
+            color: #2196F3;
+            padding-left: 20px;
+        }
+
+        .history-sort-container:hover .sort-options,
+        .multi-draw-container:hover .draw-options {
+            display: block;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: black;
+        }
+
+        .modal h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .confirm-btn {
+            background-color: #f44336;
+        }
+
+        .confirm-btn:focus {
+            outline: 2px solid #ff9800;
+            outline-offset: 2px;
+        }
+
+        .config-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 15px 0;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .config-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .config-item:last-child {
+            border-bottom: none;
+        }
+
+        .config-item button {
+            margin-left: 5px;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .load-btn {
+            background-color: #2196F3;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+        }
+
+        #generalModal .modal-content {
+            max-width: 350px;
+        }
+
+        #generalModal p {
+            color: #555;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            border: none;
+        }
+
+        .primary-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background-color: #45a049;
+        }
+
+        .secondary-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        /* 标题栏样式 */
+        .header {
+            width: 100%;
+            flex: 0 0 100%;
+            background-color: #f5f5f5;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .dark-mode-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .dark-mode-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            margin-top: 15px;
+            padding-left: 5px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .input-section .section-title:first-child {
+            margin-top: 0;
+        }
+
+        /* 黑暗模式样式 */
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        /* 添加移动端响应式布局 */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .input-section,
+            .scroll-section {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+
+            .scroll-section {
+                min-height: 300px;
+                max-height: calc(100vh - 400px);
+            }
+
+            /* 优化移动端按钮组布局 */
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+
+            /* 优化移动端历史记录区域 */
+            .history-section>div {
+                flex-direction: column;
+            }
+
+            #clear-history {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+
+        body.dark-mode .header {
+            background-color: #1e1e1e;
+        }
+
+        body.dark-mode .header h1 {
+            color: #ffffff;
+        }
+
+        body.dark-mode .input-section {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .result-display {
+            background-color: #1e2a22;
+            color: #e0e0e0;
+            border-color: #3d8b40;
+        }
+
+        body.dark-mode #items-list {
+            background-color: #2d2d2d;
+            border-color: #3d3d3d;
+        }
+
+        body.dark-mode #items-list div {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .scroll-section {
+            background-color: #2d2d2d;
+            border-color: #3d3d3d;
+        }
+
+        body.dark-mode .scroll-item {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border-bottom-color: #3d3d3d;
+        }
+
+        body.dark-mode .scroll-item:nth-child(even) {
+            background-color: #353535;
+        }
+
+        body.dark-mode .history-list {
+            background-color: #2d2d2d;
+            border-color: #3d3d3d;
+        }
+
+        body.dark-mode .history-item {
+            border-bottom-color: #3d3d3d;
+        }
+
+        body.dark-mode .modal-content {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border-color: #3d3d3d;
+        }
+
+        body.dark-mode input {
+            background-color: #3d3d3d;
+            color: #e0e0e0;
+            border-color: #4d4d4d;
+        }
+
+        body.dark-mode .sort-option,
+        body.dark-mode .draw-options {
+            background-color: #3d3d3d;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .result-label,
+        body.dark-mode .frequent-label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .weight-progress-container {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-mode .scroll-item.highlight {
+            background-color: #cebe2e;
+            color: #333;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 标题栏 -->
+    <div class="header">
+        <h1>随机抽奖系统</h1>
+        <button id="dark-mode-toggle" class="dark-mode-btn">🌙 黑暗模式</button>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <div class="input-section">
+            <div class="section-title">添加抽奖项目</div>
+            <div class="input-item">
+                <input type="text" id="content" placeholder="输入内容" onkeydown="if(event.key === 'Enter') addItem()">
+                <input type="number" id="weight" placeholder="输入权重" min="1" value="1"
+                    onkeydown="if(event.key === 'Enter') addItem()">
+                <button onclick="addItem()">添加</button>
+            </div>
+            <div id="items-list"></div>
+
+            <div class="section-title">抽奖结果</div>
+            <div id="result-display" class="result-display"></div>
+
+            <div class="section-title">操作按钮</div>
+            <div class="speed-control">
+                <label for="speed-slider" style="display: block; margin-bottom: 5px; font-size: 14px;">滚动速度:</label>
+                <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                    <span style="padding: 0 4px;">慢</span>
+                    <input type="range" id="speed-slider" min="1" max="8" value="5" style="width: 100%;">
+                    <span style="padding: 0 4px;">快</span>
+                </div>
+            </div>
+            <div class="button-group">
+                <div class="multi-draw-container">
+                    <button id="start-btn">开始</button>
+                    <div class="draw-options">
+                        <div class="draw-option" data-times="3">3次</div>
+                        <div class="draw-option" data-times="5">5次</div>
+                        <div class="draw-option" data-times="10">10次</div>
+                        <div class="draw-option" data-times="20">20次</div>
+                        <div class="draw-option" data-times="50">50次</div>
+                        <div class="draw-option" data-times="100">100次</div>
+                    </div>
+                </div>
+                <button id="stop-btn" onclick="stopDraw()" disabled>停止</button>
+                <button onclick="showSaveConfigModal()">保存配置</button>
+                <button onclick="showLoadConfigModal()">读取配置</button>
+            </div>
+
+            <div class="section-title">历史记录</div>
+            <div class="history-section">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="history-sort-container" style="flex: 1;">
+                        <button id="toggle-history" class="toggle-btn">显示历史记录</button>
+                        <div class="sort-options">
+                            <div class="sort-option" data-sort="time">按时间排序</div>
+                            <div class="sort-option" data-sort="frequency">按抽中次数排序</div>
+                        </div>
+                    </div>
+                    <button id="clear-history" class="toggle-btn"
+                        style="background-color: #f44336; min-width: 100px; flex: 1;">清空历史</button>
+                </div>
+                <div id="history-list" class="history-list"></div>
+            </div>
+        </div>
+
+        <div class="scroll-section">
+            <div id="scroll-list"></div>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="saveConfigModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>保存配置</h3>
+            <input type="text" id="configName" placeholder="输入配置名称">
+            <div class="modal-buttons">
+                <button onclick="saveConfig()">保存</button>
+                <button onclick="closeSaveConfigModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadConfigModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>读取配置</h3>
+            <div id="configList" class="config-list"></div>
+            <div class="modal-buttons">
+                <button onclick="closeLoadConfigModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmClearModal" class="modal">
+        <div class="modal-content">
+            <h3>确认清空历史记录</h3>
+            <p>确定要清空所有历史记录吗？此操作不可恢复。</p>
+            <div class="modal-buttons">
+                <button id="confirm-clear-btn" class="confirm-btn" onclick="confirmClearHistory()">确定</button>
+                <button onclick="closeConfirmClearModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="generalModal" class="modal">
+        <div class="modal-content">
+            <h3 id="generalModalTitle"></h3>
+            <p id="generalModalMessage"></p>
+            <div class="modal-buttons" id="generalModalButtons"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        const items = []; // 初始化为空数组，不再默认加载测试数据
+        let isScrolling = false;
+        let currentTop = 0;
+        let historyResults = [];
+        let stopRequested = false;
+        let currentSortMode = 'time';
+        let scrollSpeed = 3; // 添加滚动速度变量，默认值为3
+
+        // 新增：防抖函数 - 确保频繁操作只在最后一次后执行
+        function debounce(func, delay = 300) {
+            let timeoutId;
+            return function(...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        // 新增：防抖处理滚动列表更新（300毫秒延迟）
+        const debouncedUpdateScrollList = debounce(updateScrollListContent, 300);
+
+        // DOM 元素引用
+        const elements = {
+            itemsList: document.getElementById('items-list'),
+            scrollList: document.getElementById('scroll-list'),
+            resultDisplay: document.getElementById('result-display'),
+            historyList: document.getElementById('history-list'),
+            toggleHistoryBtn: document.getElementById('toggle-history'),
+            clearHistoryBtn: document.getElementById('clear-history'),
+            configNameInput: document.getElementById('configName'),
+            configList: document.getElementById('configList'),
+            scrollSection: document.querySelector('.scroll-section'),
+            stopBtn: document.getElementById('stop-btn'),
+            speedSlider: document.getElementById('speed-slider') // 添加进度条引用
+        };
+
+        // 初始化应用
+        function initApp() {
+            // 首先加载保存的状态
+            loadCurrentState();
+            
+            // 调整顺序：先初始化数据，再渲染UI
+            initItems();
+            updateWeightedList(); // 先更新加权列表数据
+            drawScrollList(); // 再渲染滚动列表
+            initEventListeners();
+
+            // 检查用户黑暗模式偏好设置
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('dark-mode-toggle').textContent = '☀️ 亮色模式';
+            }
+        }
+
+        // 新增：保存当前应用状态到localStorage
+        function saveCurrentState() {
+            const state = {
+                items: [...items],
+                historyResults: [...historyResults],
+                scrollSpeed: scrollSpeed
+            };
+            localStorage.setItem('drawAppState', JSON.stringify(state));
+        }
+
+        // 新增：从localStorage加载应用状态
+        function loadCurrentState() {
+            const savedState = localStorage.getItem('drawAppState');
+            if (savedState) {
+                try {
+                    const state = JSON.parse(savedState);
+                    if (state.items) items.push(...state.items);
+                    if (state.historyResults) historyResults.push(...state.historyResults);
+                    if (state.scrollSpeed) scrollSpeed = state.scrollSpeed;
+                    
+                    // 更新速度滑块显示
+                    const speedSlider = document.getElementById('speed-slider');
+                    if (speedSlider && state.scrollSpeed) {
+                        speedSlider.value = state.scrollSpeed;
+                    }
+                } catch (e) {
+                    console.error('加载保存状态失败:', e);
+                    // 清除损坏的状态数据
+                    localStorage.removeItem('drawAppState');
+                }
+            } else {
+                // 没有保存的状态时，加载默认测试数据
+                items.push(
+                    { content: "测试项目1", weight: 3 },
+                    { content: "测试项目2", weight: 2 },
+                    { content: "测试项目3", weight: 5 }
+                );
+            }
+        }
+
+        // 初始化项目列表
+        function initItems() {
+            const totalWeight = getTotalWeight();
+            elements.itemsList.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+
+            items.forEach((item, index) => {
+                const listItem = document.createElement('div');
+                const percentage = totalWeight > 0 ? (item.weight / totalWeight) * 100 : 0;
+
+                listItem.innerHTML = `
+            <span class="item-name" data-name="${item.content}">${item.content}</span>
+            <div class="weight-container">
+                <div class="weight-text" onclick="editWeight(${index}, this)">权重: ${item.weight} ( ${percentage.toFixed(1)}% )</div>
+                <div class="weight-progress-container">
+                    <div class="weight-progress" style="width: ${percentage}%"></div>
+                </div>
+            </div>
+        `;
+
+                // 添加权重调整按钮
+                const weightControls = document.createElement('div');
+                weightControls.style.display = 'flex';
+                weightControls.style.gap = '4px';
+
+                // 增加权重按钮
+                const increaseBtn = document.createElement('button');
+                increaseBtn.textContent = '↑';
+                increaseBtn.style.padding = '4px 8px';
+                increaseBtn.style.fontSize = '12px';
+                increaseBtn.style.backgroundColor = '#4CAF50';
+                
+                // 新增：长按变量和事件
+                let increaseInterval;
+                increaseBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    // 立即执行一次
+                    items[index].weight++;
+                    requestAnimationFrame(() => {
+                        updateAllItemWeights(); // 改为更新所有项目
+                        updateWeightedList();
+                        debouncedUpdateScrollList();
+                    });
+                    
+                    // 设置定时器持续增加
+                    increaseInterval = setInterval(() => {
+                        items[index].weight++;
+                        requestAnimationFrame(() => {
+                            updateAllItemWeights(); // 改为更新所有项目
+                            updateWeightedList();
+                            debouncedUpdateScrollList();
+                        });
+                    }, 150); // 每150ms增加一次
+                });
+                
+                // 鼠标释放或离开时停止
+                function stopIncrease() {
+                    clearInterval(increaseInterval);
+                }
+                increaseBtn.addEventListener('mouseup', stopIncrease);
+                increaseBtn.addEventListener('mouseleave', stopIncrease);
+                increaseBtn.addEventListener('mouseout', stopIncrease);
+                
+                weightControls.appendChild(increaseBtn);
+
+                // 减少权重按钮
+                const decreaseBtn = document.createElement('button');
+                decreaseBtn.textContent = '↓';
+                decreaseBtn.style.padding = '4px 8px';
+                decreaseBtn.style.fontSize = '12px';
+                decreaseBtn.style.backgroundColor = '#ff9800';
+                
+                // 新增：长按变量和事件
+                let decreaseInterval;
+                decreaseBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    if (items[index].weight > 1) {
+                        // 立即执行一次
+                        items[index].weight--;
+                        requestAnimationFrame(() => {
+                            updateItemWeight(index);
+                            updateWeightedList();
+                            debouncedUpdateScrollList();
+                        });
+                        
+                        // 设置定时器持续减少
+                        decreaseInterval = setInterval(() => {
+                            if (items[index].weight > 1) {
+                                items[index].weight--;
+                                requestAnimationFrame(() => {
+                                    updateAllItemWeights(); // 改为更新所有项目
+                                    updateWeightedList();
+                                    debouncedUpdateScrollList();
+                                });
+                            } else {
+                                clearInterval(decreaseInterval);
+                            }
+                        }, 150); // 每150ms减少一次
+                    }
+                });
+                
+                // 鼠标释放或离开时停止
+                function stopDecrease() {
+                    clearInterval(decreaseInterval);
+                }
+                decreaseBtn.addEventListener('mouseup', stopDecrease);
+                decreaseBtn.addEventListener('mouseleave', stopDecrease);
+                decreaseBtn.addEventListener('mouseout', stopDecrease);
+                
+                weightControls.appendChild(decreaseBtn);
+                listItem.appendChild(weightControls);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '删除';
+                deleteButton.onclick = () => deleteItem(index);
+                listItem.appendChild(deleteButton);
+                fragment.appendChild(listItem);
+            });
+
+            elements.itemsList.appendChild(fragment);
+        }
+
+        // 新增：只更新单个项目的权重显示
+        function updateItemWeight(index) {
+            const totalWeight = getTotalWeight();
+            const item = items[index];
+            const listItems = elements.itemsList.children;
+
+            if (listItems[index]) {
+                const listItem = listItems[index];
+                const percentage = totalWeight > 0 ? (item.weight / totalWeight) * 100 : 0;
+
+                // 更新权重文本
+                const weightText = listItem.querySelector('.weight-text');
+                if (weightText) {
+                    weightText.textContent = `权重: ${item.weight} ( ${percentage.toFixed(1)}% )`;
+                }
+
+                // 更新权重进度条
+                const weightProgress = listItem.querySelector('.weight-progress');
+                if (weightProgress) {
+                    weightProgress.style.width = `${percentage}%`;
+                }
+            }
+        }
+
+        // 新增：更新所有项目的权重显示
+        function updateAllItemWeights() {
+            const totalWeight = getTotalWeight();
+            const listItems = elements.itemsList.children;
+
+            items.forEach((item, index) => {
+                if (listItems[index]) {
+                    const listItem = listItems[index];
+                    const percentage = totalWeight > 0 ? (item.weight / totalWeight) * 100 : 0;
+
+                    // 更新权重文本
+                    const weightText = listItem.querySelector('.weight-text');
+                    if (weightText) {
+                        weightText.textContent = `权重: ${item.weight} ( ${percentage.toFixed(1)}% )`;
+                    }
+
+                    // 更新权重进度条
+                    const weightProgress = listItem.querySelector('.weight-progress');
+                    if (weightProgress) {
+                        weightProgress.style.width = `${percentage}%`;
+                    }
+                }
+            });
+        }
+
+        // 新增：只更新加权列表数据，不重建整个滚动区域
+        let weightedItems = []; // 存储加权列表数据
+        function updateWeightedList() {
+            weightedItems = [];
+            if (items.length === 0) return;
+
+            // 获取所有权重值
+            const weights = items.map(item => item.weight);
+            // 计算所有权重的最大公约数
+            const commonDivisor = getArrayGCD(weights);
+            
+            items.forEach(item => {
+                // 按最大公约数等比例缩小权重，保持比例关系
+                const scaledWeight = item.weight / commonDivisor;
+                // 确保至少有1次重复
+                const repeatCount = Math.max(1, Math.round(scaledWeight));
+                
+                for (let i = 0; i < repeatCount; i++) {
+                    weightedItems.push(item.content);
+                }
+            });
+        }
+        // 新增：编辑权重函数
+        function editWeight(index, element) {
+            const item = items[index];
+            const currentWeight = item.weight;
+            const totalWeight = getTotalWeight();
+            const percentage = totalWeight > 0 ? (currentWeight / totalWeight) * 100 : 0;
+            
+            // 创建输入框
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = currentWeight;
+            input.min = '1';
+            input.style.width = '60px';
+            input.style.marginRight = '5px';
+            
+            // 保存原始文本内容
+            const originalText = element.textContent;
+            // 替换文本为输入框
+            element.textContent = '';
+            element.appendChild(input);
+            
+            // 自动聚焦并选中内容
+            input.focus();
+            input.select();
+            
+            // 添加完成标志，防止重复执行
+            let isCompleted = false;
+            
+            // 处理输入完成
+            function handleComplete() {
+                if (isCompleted) return;
+                isCompleted = true;
+                
+                const newWeight = parseInt(input.value);
+                if (newWeight && newWeight > 0) {
+                    if (newWeight !== currentWeight) {
+                        // 权重有效且已变更 - 更新所有项目权重显示
+                        items[index].weight = newWeight;
+                        updateAllItemWeights(); // 改为更新所有项目
+                        updateWeightedList();
+                        debouncedUpdateScrollList();
+                        
+                        // 保存当前状态
+                        saveCurrentState();
+                    } else {
+                        // 权重未变更 - 直接恢复原始文本
+                        element.textContent = originalText;
+                    }
+                } else {
+                    // 权重无效 - 直接恢复原始文本
+                    element.textContent = originalText;
+                }
+                
+                // 确保输入框被移除（设置textContent时已自动移除）
+                if (element.contains(input)) {
+                    element.removeChild(input);
+                }
+            }
+            
+            // 回车或失焦时完成编辑
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // 防止事件冒泡或默认行为
+                    handleComplete();
+                }
+            });
+            
+            // 确保失焦事件被正确捕获
+            input.addEventListener('blur', handleComplete);
+            
+            // 新增：监听值变化事件，确保使用上下箭头调整也能触发
+            input.addEventListener('change', function() {
+                if (!isCompleted) {
+                    handleComplete();
+                }
+            });
+        }
+
+        // 添加项目
+        function addItem() {
+            const content = document.getElementById('content').value;
+            const weight = parseInt(document.getElementById('weight').value);
+
+            if (content && weight && weight > 0) {
+                items.push({ content, weight });
+                initItems();
+                updateWeightedList(); // 添加这行来更新加权列表数据
+                drawScrollList();
+                document.getElementById('content').value = '';
+                document.getElementById('weight').value = '1';
+                
+                // 保存当前状态
+                saveCurrentState();
+            }
+        }
+
+        // 删除项目
+        function deleteItem(index) {
+            items.splice(index, 1);
+            initItems();
+            updateWeightedList(); // 添加这行来更新加权列表数据
+            drawScrollList();
+            
+            // 保存当前状态
+            saveCurrentState();
+        }
+
+        // 获取总权重
+        function getTotalWeight() {
+            return items.reduce((total, item) => total + item.weight, 0);
+        }
+
+        // 生成滚动列表
+        function drawScrollList() {
+            elements.scrollList.innerHTML = '';
+            currentTop = 0;
+            isScrolling = false;
+            elements.scrollList.style.top = '0px';
+            elements.scrollList.style.transition = 'top 8s ease-out';
+            elements.scrollList.removeEventListener('click', startScroll);
+
+            if (items.length === 0) return;
+
+            // 使用已更新的weightedItems，不再重新计算
+            const shuffledItems = shuffleArray([...weightedItems]);
+            const repeatCount = 20; // 减少重复次数（从50次减少到20次）
+            const fragment = document.createDocumentFragment();
+
+            for (let i = 0; i < repeatCount; i++) {
+                shuffledItems.forEach(item => {
+                    const scrollItem = document.createElement('div');
+                    scrollItem.className = 'scroll-item';
+                    scrollItem.textContent = item;
+                    fragment.appendChild(scrollItem);
+                });
+            }
+
+            elements.scrollList.appendChild(fragment);
+            elements.scrollList.addEventListener('click', startScroll);
+        }
+
+        // 新增：更新滚动列表内容但保持当前滚动状态
+        function updateScrollListContent() {
+            // 移除阻止滚动列表为空时更新的条件判断
+            if (items.length === 0) return;
+
+            // 保存当前滚动状态
+            const currentScrollTop = parseInt(elements.scrollList.style.top) || 0;
+            const isCurrentlyScrolling = isScrolling;
+
+            // 使用最新的加权数据生成新内容
+            const shuffledItems = shuffleArray([...weightedItems]);
+            const fragment = document.createDocumentFragment();
+
+            // 保持与之前相同的重复次数
+            const repeatCount = 20;
+            for (let i = 0; i < repeatCount; i++) {
+                shuffledItems.forEach(item => {
+                    const scrollItem = document.createElement('div');
+                    scrollItem.className = 'scroll-item';
+                    scrollItem.textContent = item;
+                    fragment.appendChild(scrollItem);
+                });
+            }
+
+            // 替换内容但保持滚动位置
+            elements.scrollList.innerHTML = '';
+            elements.scrollList.appendChild(fragment);
+
+            // 恢复滚动位置和状态
+            if (!isCurrentlyScrolling) {
+                elements.scrollList.style.top = `${currentScrollTop}px`;
+            }
+        }
+
+        // 数组洗牌
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // 新增：计算最大公约数(GCD)
+        function gcd(a, b) {
+            while (b !== 0) {
+                const temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        // 新增：计算数组的最大公约数
+        function getArrayGCD(arr) {
+            return arr.reduce((acc, val) => gcd(acc, val), arr[0]);
+        }
+
+        // 开始抽奖
+        function startDraw() {
+            stopRequested = false;
+            if (elements.scrollList.children.length === 0) {
+                drawScrollList();
+                setTimeout(() => startScroll(), 500);
+            } else {
+                startScroll();
+            }
+        }
+
+        // 多次抽奖
+        function multiDraw(times) {
+            if (isScrolling) return;
+
+            stopRequested = false;
+            let remainingDraws = times;
+
+            function drawNext() {
+                if (remainingDraws <= 0 || stopRequested) return;
+
+                if (!isScrolling) {
+                    startScroll(() => {
+                        if (stopRequested) return;
+                        remainingDraws--;
+                        setTimeout(drawNext, 500);
+                    });
+                } else if (stopRequested) {
+                    isScrolling = false;
+                    elements.stopBtn.disabled = true;
+                }
+            }
+
+            drawNext();
+        }
+
+        // 开始滚动抽奖
+        function startScroll(callback) {
+            if (isScrolling) return;
+            isScrolling = true;
+            stopRequested = false;
+            elements.stopBtn.disabled = false;
+
+            // 清除之前的高亮状态
+            const highlightedItem = elements.scrollList.querySelector('.highlight');
+            if (highlightedItem) {
+                highlightedItem.classList.remove('highlight');
+            }
+
+            // 获取元素尺寸
+            const firstItem = elements.scrollList.querySelector('.scroll-item');
+            const itemHeight = firstItem ? firstItem.offsetHeight : 51;
+            const containerHeight = elements.scrollSection.clientHeight;
+            const totalItems = elements.scrollList.children.length;
+
+            // 新增：检查是否有滚动项
+            if (totalItems === 0) {
+                showSuccessModal('没有可抽奖项目，请先添加项目');
+                isScrolling = false;
+                elements.stopBtn.disabled = true;
+                return;
+            }
+
+            // 随机参数
+            const randomItems = Math.floor(Math.random() * 50) + 50;
+            const timeKey = 9 - scrollSpeed
+            const randomDuration = Math.floor(Math.random() * 1000 * timeKey) + 500 + timeKey * 200;
+
+            // 计算滚动位置
+            const maxScroll = totalItems * itemHeight - containerHeight;
+            let newTop = currentTop - (randomItems * itemHeight);
+
+            if (Math.abs(newTop) > maxScroll) {
+                newTop = -(Math.abs(newTop) % maxScroll);
+            }
+
+            // 应用滚动动画
+            elements.scrollList.style.transition = `top ${randomDuration}ms cubic-bezier(0.25, 0.1, 0.25, 1.0)`;
+            elements.scrollList.style.top = `${newTop}px`;
+
+            // 滚动结束处理
+            setTimeout(() => {
+                const middleY = containerHeight / 2;
+                const finalIndex = Math.floor((Math.abs(newTop) + middleY) / itemHeight) % totalItems;
+                
+                // 新增：检查元素是否存在
+                const scrollItems = elements.scrollList.children;
+                if (!scrollItems[finalIndex]) {
+                    showSuccessModal('抽奖过程中出现错误');
+                    isScrolling = false;
+                    elements.stopBtn.disabled = true;
+                    return;
+                }
+                
+                const result = scrollItems[finalIndex].textContent;
+
+                // 高亮选中项
+                Array.from(scrollItems).forEach(item => {
+                    item.classList.remove('highlight');
+                });
+                const selectedItem = scrollItems[finalIndex];
+                selectedItem.classList.add('highlight');
+
+                // 调整中间线位置
+                const itemRect = selectedItem.getBoundingClientRect();
+                const sectionRect = elements.scrollSection.getBoundingClientRect();
+                const relativeTop = itemRect.top - sectionRect.top;
+                const lineTop = relativeTop + (itemRect.height / 2);
+                elements.scrollSection.style.setProperty('--line-top', `${lineTop}px`);
+
+                // 更新结果显示
+                addToHistory(result);
+                updateResultDisplay();
+
+                // 重置状态
+                isScrolling = false;
+                elements.stopBtn.disabled = true;
+                currentTop = newTop;
+
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            }, randomDuration);
+        }
+
+        // 停止抽奖
+        function stopDraw() {
+            if (!isScrolling) return;
+
+            stopRequested = true;
+            elements.scrollList.style.transition = 'none';
+
+            // 清除所有计时器
+            const highestTimeoutId = window.setTimeout(() => { }, 0);
+            for (let i = 0; i < highestTimeoutId; i++) {
+                window.clearTimeout(i);
+            }
+
+            isScrolling = false;
+            elements.stopBtn.disabled = true;
+        }
+
+        // 更新结果显示
+        function updateResultDisplay() {
+            const mostFrequentItems = getMostFrequentItem();
+            let resultText = `<span class="result-label">抽奖结果:</span> <span class="result-value">${historyResults.length > 0 ? historyResults[historyResults.length - 1].result : ''
+                }</span>`;
+
+            if (mostFrequentItems.length > 0 && historyResults.length > 0) {
+                const frequentText = mostFrequentItems.map(item =>
+                    `<span class="frequent-item">${item.item} (${item.count}次)</span>`
+                ).join(', ');
+
+                resultText += `<br><span class="frequent-label">最常抽中:</span> ${frequentText}`;
+            }
+            elements.resultDisplay.innerHTML = resultText;
+        }
+
+        // 切换历史记录显示
+        function toggleHistory() {
+            if (elements.historyList.classList.contains('expanded')) {
+                elements.historyList.classList.remove('expanded');
+                elements.toggleHistoryBtn.textContent = '显示历史记录';
+            } else {
+                elements.historyList.classList.add('expanded');
+                elements.toggleHistoryBtn.textContent = '隐藏历史记录';
+            }
+        }
+
+        // 添加到历史记录
+        function addToHistory(result) {
+            const timestamp = new Date().toLocaleString();
+            historyResults.push({ result, timestamp });
+            updateHistoryDisplay();
+            
+            // 保存当前状态
+            saveCurrentState();
+        }
+
+        function confirmClearHistory() {
+            historyResults = [];
+            updateHistoryDisplay();
+            updateResultDisplay();
+            closeConfirmClearModal();
+            
+            // 保存当前状态
+            saveCurrentState();
+        }
+
+        // 更新历史记录显示
+        function updateHistoryDisplay() {
+            elements.historyList.innerHTML = '';
+
+            if (currentSortMode === 'time') {
+                // 按时间排序
+                const reversedHistory = [...historyResults].reverse();
+                renderTimeSortedHistory(reversedHistory);
+            } else {
+                // 按抽中次数排序
+                renderFrequencySortedHistory();
+            }
+        }
+
+        // 按时间排序渲染历史记录
+        function renderTimeSortedHistory(sortedHistory) {
+            const fragment = document.createDocumentFragment();
+
+            sortedHistory.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                const serialNumber = historyResults.length - index;
+
+                historyItem.innerHTML = `
+                    <div class="serial-number">${serialNumber}</div>
+                    <div class="history-content">
+                        <div class="result-text">${item.result}</div>
+                        <div class="history-date">${item.timestamp}</div>
+                    </div>
+                `;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '删除';
+                deleteBtn.onclick = () => {
+                    const originalIndex = historyResults.length - 1 - index;
+                    historyResults.splice(originalIndex, 1);
+                    updateHistoryDisplay();
+                    updateResultDisplay();
+                };
+                historyItem.appendChild(deleteBtn);
+                fragment.appendChild(historyItem);
+            });
+
+            elements.historyList.appendChild(fragment);
+        }
+
+        // 按抽中次数排序渲染历史记录
+        function renderFrequencySortedHistory() {
+            const frequencyMap = {};
+            historyResults.forEach(item => {
+                if (!frequencyMap[item.result]) {
+                    frequencyMap[item.result] = {
+                        result: item.result,
+                        count: 0,
+                        lastDrawTime: item.timestamp
+                    };
+                }
+                frequencyMap[item.result].count++;
+                if (new Date(item.timestamp) > new Date(frequencyMap[item.result].lastDrawTime)) {
+                    frequencyMap[item.result].lastDrawTime = item.timestamp;
+                }
+            });
+
+            const sortedItems = Object.values(frequencyMap)
+                .sort((a, b) => b.count - a.count || new Date(b.lastDrawTime) - new Date(a.lastDrawTime));
+
+            const fragment = document.createDocumentFragment();
+
+            sortedItems.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+
+                historyItem.innerHTML = `
+                    <div class="serial-number">${index + 1}</div>
+                    <div class="history-content">
+                        <div class="result-text">${item.result}</div>
+                        <div class="history-date">抽中次数: ${item.count}次</div>
+                    </div>
+                `;
+
+                fragment.appendChild(historyItem);
+            });
+
+            elements.historyList.appendChild(fragment);
+        }
+
+        // 获取最常抽中的项目
+        function getMostFrequentItem() {
+            if (historyResults.length === 0) return [];
+
+            const counts = {};
+            historyResults.forEach(item => {
+                counts[item.result] = (counts[item.result] || 0) + 1;
+            });
+
+            let maxCount = 0;
+            for (const count of Object.values(counts)) {
+                if (count > maxCount) maxCount = count;
+            }
+
+            const mostFrequentItems = [];
+            for (const [item, count] of Object.entries(counts)) {
+                if (count === maxCount) {
+                    mostFrequentItems.push({ item, count });
+                }
+            }
+
+            return mostFrequentItems;
+        }
+
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 历史记录显示切换
+            elements.toggleHistoryBtn.addEventListener('click', toggleHistory);
+
+            // 添加进度条事件监听
+            const speedSlider = document.getElementById('speed-slider');
+            if (speedSlider) {
+                speedSlider.addEventListener('input', function () {
+                    scrollSpeed = parseInt(this.value);
+                    // 保存当前状态
+                    saveCurrentState();
+                });
+            }
+            // 清空历史记录
+            elements.clearHistoryBtn.addEventListener('click', showConfirmClearModal);
+
+            // 黑暗模式切换
+            document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
+
+            // 排序方式切换
+            document.querySelectorAll('.sort-option').forEach(option => {
+                option.addEventListener('click', function () {
+                    currentSortMode = this.getAttribute('data-sort');
+                    updateHistoryDisplay();
+
+                    if (!elements.historyList.classList.contains('expanded')) {
+                        elements.historyList.classList.add('expanded');
+                        elements.toggleHistoryBtn.textContent = '隐藏历史记录';
+                    }
+
+                    const sortOptions = this.closest('.sort-options');
+                    if (sortOptions) {
+                        setTimeout(() => sortOptions.style.display = '', 100);
+                    }
+                });
+            });
+
+            // 开始按钮点击事件 - 直接进行单次抽奖
+            document.getElementById('start-btn').addEventListener('click', startDraw);
+
+            // 多次抽奖菜单悬停显示/隐藏
+            const multiDrawContainer = document.querySelector('.multi-draw-container');
+            const drawOptions = document.querySelector('.draw-options');
+            
+            multiDrawContainer.addEventListener('mouseenter', function() {
+                drawOptions.style.display = 'block';
+            });
+            
+            multiDrawContainer.addEventListener('mouseleave', function() {
+                drawOptions.style.display = 'none';
+            });
+
+            // 删除配置输入框回车事件
+            elements.configNameInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') saveConfig();
+            });
+
+            // 历史排序容器鼠标离开事件
+            document.querySelector('.history-sort-container').addEventListener('mouseleave', function () {
+                const sortOptions = this.querySelector('.sort-options');
+                if (sortOptions) sortOptions.style.display = '';
+            });
+
+            // 多次抽奖选项点击事件
+            document.querySelectorAll('.draw-option').forEach(option => {
+                option.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const times = parseInt(this.getAttribute('data-times'));
+                    if (elements.scrollList.children.length === 0) {
+                        drawScrollList();
+                        setTimeout(() => multiDraw(times), 500);
+                    } else {
+                        multiDraw(times);
+                    }
+
+                    const drawOptions = this.closest('.draw-options');
+                    if (drawOptions) drawOptions.style.display = 'none';
+                });
+            });
+
+            // 模态框关闭按钮事件
+            document.querySelectorAll('.close-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.getElementById('saveConfigModal').style.display = 'none';
+                    document.getElementById('loadConfigModal').style.display = 'none';
+                });
+            });
+        }
+
+        // 切换黑暗模式
+        function toggleDarkMode() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+
+            if (isDarkMode) {
+                darkModeToggle.textContent = '☀️ 亮色模式';
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                darkModeToggle.textContent = '🌙 黑暗模式';
+                localStorage.setItem('darkMode', 'false');
+            }
+        }
+
+        // 配置管理相关函数
+        function showSaveConfigModal() {
+            document.getElementById('saveConfigModal').style.display = 'block';
+            setTimeout(() => elements.configNameInput.focus(), 100);
+        }
+
+        function closeSaveConfigModal() {
+            document.getElementById('saveConfigModal').style.display = 'none';
+        }
+
+        function showLoadConfigModal() {
+            loadConfigList();
+            document.getElementById('loadConfigModal').style.display = 'block';
+        }
+
+        function closeLoadConfigModal() {
+            document.getElementById('loadConfigModal').style.display = 'none';
+        }
+
+        function saveConfig() {
+            const configName = elements.configNameInput.value.trim();
+            if (!configName) return;
+
+            const config = {
+                items: [...items],
+                history: [...historyResults]
+            };
+
+            localStorage.setItem(`drawConfig_${configName}`, JSON.stringify(config));
+            showSuccessModal('配置保存成功！', () => closeSaveConfigModal());
+        }
+
+        function loadConfigList() {
+            elements.configList.innerHTML = '';
+            let hasConfigs = false;
+            const fragment = document.createDocumentFragment();
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('drawConfig_')) {
+                    hasConfigs = true;
+                    const configName = key.replace('drawConfig_', '');
+                    const configItem = document.createElement('div');
+                    configItem.className = 'config-item';
+                    configItem.innerHTML = `
+                        <span>${configName}</span>
+                        <div>
+                            <button class="load-btn" onclick="loadConfig('${configName}')">加载</button>
+                            <button class="delete-btn" onclick="deleteConfig('${configName}')">删除</button>
+                        </div>
+                    `;
+                    fragment.appendChild(configItem);
+                }
+            }
+
+            if (!hasConfigs) {
+                elements.configList.innerHTML = '<div style="text-align:center; padding:10px;">暂无保存的配置</div>';
+            } else {
+                elements.configList.appendChild(fragment);
+            }
+        }
+
+        function loadConfig(configName) {
+            const configStr = localStorage.getItem(`drawConfig_${configName}`);
+            if (!configStr) return;
+
+            try {
+                const config = JSON.parse(configStr);
+                items.length = 0;
+                items.push(...config.items);
+                historyResults.length = 0;
+                historyResults.push(...config.history);
+
+                initItems();
+                updateWeightedList(); // 显式更新加权列表数据
+                drawScrollList(); // 重新生成滚动列表
+                updateHistoryDisplay();
+                updateResultDisplay();
+                closeLoadConfigModal();
+            } catch (e) {
+                showSuccessModal('配置加载失败，格式错误');
+            }
+        }
+
+        function deleteConfig(configName) {
+            showConfirmModal('删除配置', `确定要删除配置 "${configName}" 吗？`).then(confirmed => {
+                if (confirmed) {
+                    localStorage.removeItem(`drawConfig_${configName}`);
+                    loadConfigList();
+                }
+            });
+        }
+
+        // 历史记录确认清除相关函数
+        function showConfirmClearModal() {
+            const modal = document.getElementById('confirmClearModal');
+            modal.style.display = 'block';
+            setTimeout(() => document.getElementById('confirm-clear-btn').focus(), 100);
+
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') confirmClearHistory();
+                else if (e.key === 'Escape') closeConfirmClearModal();
+            };
+
+            document.addEventListener('keydown', handleKeydown);
+            modal.dataset.keydownHandler = handleKeydown.toString();
+        }
+
+        function closeConfirmClearModal() {
+            const modal = document.getElementById('confirmClearModal');
+            modal.style.display = 'none';
+
+            if (modal.dataset.keydownHandler) {
+                const handler = new Function(`return ${modal.dataset.keydownHandler}`)();
+                document.removeEventListener('keydown', handler);
+                modal.dataset.keydownHandler = null;
+            }
+        }
+
+        function confirmClearHistory() {
+            historyResults = [];
+            updateHistoryDisplay();
+            updateResultDisplay();
+            closeConfirmClearModal();
+            
+            // 保存当前状态
+            saveCurrentState();
+        }
+
+        // 模态框相关函数
+        function showSuccessModal(message, onConfirm) {
+            const modal = document.getElementById('generalModal');
+            const titleElement = document.getElementById('generalModalTitle');
+            const messageElement = document.getElementById('generalModalMessage');
+            const buttonsContainer = document.getElementById('generalModalButtons');
+
+            titleElement.textContent = '操作成功';
+            messageElement.textContent = message;
+
+            buttonsContainer.innerHTML = '';
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'modal-btn primary-btn';
+            confirmBtn.textContent = '确定';
+            confirmBtn.onclick = function () {
+                modal.style.display = 'none';
+                if (typeof onConfirm === 'function') onConfirm();
+            };
+            buttonsContainer.appendChild(confirmBtn);
+
+            modal.style.display = 'block';
+            setTimeout(() => confirmBtn.focus(), 100);
+
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') confirmBtn.click();
+                else if (e.key === 'Escape') modal.style.display = 'none';
+            };
+
+            document.addEventListener('keydown', handleKeydown);
+            modal.dataset.keydownHandler = handleKeydown.toString();
+        }
+
+        function showConfirmModal(title, message, confirmText = '确定', cancelText = '取消') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('generalModal');
+                const titleElement = document.getElementById('generalModalTitle');
+                const messageElement = document.getElementById('generalModalMessage');
+                const buttonsContainer = document.getElementById('generalModalButtons');
+
+                titleElement.textContent = title;
+                messageElement.textContent = message;
+                buttonsContainer.innerHTML = '';
+
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'modal-btn primary-btn';
+                confirmBtn.textContent = confirmText;
+                confirmBtn.onclick = function () {
+                    modal.style.display = 'none';
+                    resolve(true);
+                    removeEventListeners();
+                };
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'modal-btn secondary-btn';
+                cancelBtn.textContent = cancelText;
+                cancelBtn.onclick = function () {
+                    modal.style.display = 'none';
+                    resolve(false);
+                    removeEventListeners();
+                };
+
+                buttonsContainer.appendChild(confirmBtn);
+                buttonsContainer.appendChild(cancelBtn);
+
+                modal.style.display = 'block';
+                setTimeout(() => confirmBtn.focus(), 100);
+
+                const handleKeydown = (e) => {
+                    if (e.key === 'Enter') confirmBtn.click();
+                    else if (e.key === 'Escape') cancelBtn.click();
+                };
+
+                document.addEventListener('keydown', handleKeydown);
+                modal.dataset.keydownHandler = handleKeydown.toString();
+
+                function removeEventListeners() {
+                    const savedHandler = new Function(`return ${modal.dataset.keydownHandler}`)();
+                    document.removeEventListener('keydown', savedHandler);
+                }
+            });
+        }
+
+        // 窗口点击事件处理
+        window.onclick = function (event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+
+                    if (modal.dataset.keydownHandler) {
+                        const handler = new Function(`return ${modal.dataset.keydownHandler}`)();
+                        document.removeEventListener('keydown', handler);
+                    }
+                }
+            });
+        };
+
+        // 键盘事件处理
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    if (modal.style.display === 'block') {
+                        modal.style.display = 'none';
+
+                        if (modal.dataset.keydownHandler) {
+                            const handler = new Function(`return ${modal.dataset.keydownHandler}`)();
+                            document.removeEventListener('keydown', handler);
+                        }
+                    }
+                });
+            }
+
+            const activeModal = document.querySelector('.modal[style*="display: block"]');
+            if (!activeModal) return;
+
+            const confirmBtn = activeModal.querySelector('.primary-btn');
+            if (confirmBtn && document.activeElement === confirmBtn && event.key === 'Enter') {
+                confirmBtn.click();
+            }
+
+            const cancelBtn = activeModal.querySelector('.secondary-btn');
+            if (cancelBtn && document.activeElement === cancelBtn && event.key === 'Enter') {
+                cancelBtn.click();
+            }
+        });
+
+        // 初始化应用
+        window.onload = initApp;
+    </script>
+</body>
+
+</html>
