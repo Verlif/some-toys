@@ -6,43 +6,66 @@
   <title>Verlif 的导航站</title>
   <link rel="stylesheet" href="assets/nav.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- 尽早应用主题，避免首屏闪烁 -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        var theme = saved || (prefersLight ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
+
+  <!-- 主题切换按钮 -->
+  <button id="themeToggle" class="theme-toggle" aria-label="切换主题" title="切换主题">
+    <i class="fas fa-sun"></i>
+    <i class="fas fa-moon"></i>
+  </button>
+
   <div class="page-wrapper">
 
+    <!-- GitHub 个人信息区 -->
     <header class="profile-section">
-      <a href="https://github.com/Verlif" target="_blank" class="avatar-link">
+      <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="avatar-link">
         <img src="https://avatars.githubusercontent.com/Verlif" alt="Verlif" class="avatar">
       </a>
       <h1 class="username">Verlif</h1>
       <p class="bio">AI 单页面作品集</p>
 
       <div class="github-stats">
-        <a href="https://github.com/Verlif?tab=repositories" target="_blank" class="stat-item">
+        <a href="https://github.com/Verlif?tab=repositories" target="_blank" rel="noopener" class="stat-item">
           <i class="fas fa-book"></i>
           <span>Repositories</span>
         </a>
-        <a href="https://github.com/Verlif?tab=stars" target="_blank" class="stat-item">
+        <a href="https://github.com/Verlif?tab=stars" target="_blank" rel="noopener" class="stat-item">
           <i class="fas fa-star"></i>
           <span>Stars</span>
         </a>
-        <a href="https://github.com/Verlif?tab=followers" target="_blank" class="stat-item">
+        <a href="https://github.com/Verlif?tab=followers" target="_blank" rel="noopener" class="stat-item">
           <i class="fas fa-users"></i>
           <span>Followers</span>
         </a>
       </div>
     </header>
 
+    <!-- 搜索框 -->
     <div class="search-wrapper">
       <i class="fas fa-search search-icon"></i>
       <input type="text" id="searchInput" class="search-input" placeholder="搜索页面..." autocomplete="off">
       <span class="search-count" id="searchCount"></span>
     </div>
 
+    <!-- 内容区 -->
     <main class="cards-container" id="cardsContainer">
       {{content}}
     </main>
 
+    <!-- 无结果提示 -->
     <div class="no-result" id="noResult" style="display:none;">
       <i class="fas fa-inbox"></i>
       <p>没有找到匹配的页面</p>
@@ -51,33 +74,48 @@
   </div>
 
   <script>
-    const searchInput = document.getElementById('searchInput');
-    const cardsContainer = document.getElementById('cardsContainer');
-    const noResult = document.getElementById('noResult');
-    const searchCount = document.getElementById('searchCount');
-
-    searchInput.addEventListener('input', function () {
-      const keyword = this.value.trim().toLowerCase();
-      const cards = cardsContainer.querySelectorAll('.card');
-      let visibleCount = 0;
-
-      cards.forEach(card => {
-        const title = card.querySelector('.card-title')?.textContent.toLowerCase() || '';
-        const desc = card.querySelector('.card-desc')?.textContent.toLowerCase() || '';
-        const match = !keyword || title.includes(keyword) || desc.includes(keyword);
-        card.classList.toggle('card-hidden', !match);
-        if (match) visibleCount++;
+    // ===== 主题切换 =====
+    (function () {
+      var toggle = document.getElementById('themeToggle');
+      toggle.addEventListener('click', function () {
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('theme', next); } catch (e) {}
       });
+    })();
 
-      // 隐藏没有可见卡片的分组
-      cardsContainer.querySelectorAll('.group').forEach(group => {
-        const hasVisible = group.querySelector('.card:not(.card-hidden)');
-        group.classList.toggle('group-hidden', !hasVisible);
+    // ===== 搜索过滤 =====
+    (function () {
+      var searchInput = document.getElementById('searchInput');
+      var cardsContainer = document.getElementById('cardsContainer');
+      var noResult = document.getElementById('noResult');
+      var searchCount = document.getElementById('searchCount');
+
+      searchInput.addEventListener('input', function () {
+        var keyword = this.value.trim().toLowerCase();
+        var cards = cardsContainer.querySelectorAll('.card');
+        var visibleCount = 0;
+
+        cards.forEach(function (card) {
+          var title = card.querySelector('.card-title')?.textContent.toLowerCase() || '';
+          var desc = card.querySelector('.card-desc')?.textContent.toLowerCase() || '';
+          var match = !keyword || title.includes(keyword) || desc.includes(keyword);
+          card.classList.toggle('card-hidden', !match);
+          if (match) visibleCount++;
+        });
+
+        // 隐藏没有可见卡片的分组
+        cardsContainer.querySelectorAll('.group').forEach(function (group) {
+          var hasVisible = group.querySelector('.card:not(.card-hidden)');
+          group.classList.toggle('group-hidden', !hasVisible);
+        });
+
+        noResult.style.display = visibleCount === 0 ? 'flex' : 'none';
+        searchCount.textContent = keyword ? ('找到 ' + visibleCount + ' 个') : '';
       });
-
-      noResult.style.display = visibleCount === 0 ? 'flex' : 'none';
-      searchCount.textContent = keyword ? `找到 ${visibleCount} 个` : '';
-    });
+    })();
   </script>
+
 </body>
 </html>

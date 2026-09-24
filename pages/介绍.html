@@ -6,8 +6,22 @@
   <title>someToys - AI 单页面作品导航站</title>
   <meta name="description" content="专为 AI 生成的单页面 HTML 作品设计的自动化导航站，放文件、推送、自动上线。">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- 尽早应用主题，避免首屏闪烁（FOUC） -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        var theme = saved || (prefersLight ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
   <style>
     :root {
+      /* ===== 暗色主题（默认） ===== */
       --bg: #0f172a;
       --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
       --card-bg: rgba(30, 41, 59, 0.7);
@@ -16,11 +30,40 @@
       --text-muted: #94a3b8;
       --accent: #38bdf8;
       --accent-glow: rgba(56, 189, 248, 0.15);
+      --accent-faint: rgba(56, 189, 248, 0.04);
       --green: #4ade80;
       --purple: #a78bfa;
       --orange: #fb923c;
+      --code-bg: rgba(15, 23, 42, 0.8);
+      --code-text: #cbd5e1;
+      --code-comment: #64748b;
+      --btn-primary-text: #0f172a;
+      --btn-primary-shadow: rgba(56, 189, 248, 0.3);
+      --btn-primary-shadow-hover: rgba(56, 189, 248, 0.45);
       --radius: 14px;
       --radius-sm: 10px;
+    }
+
+    /* ===== 亮色主题 ===== */
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+      --card-bg: rgba(255, 255, 255, 0.75);
+      --card-border: rgba(15, 23, 42, 0.08);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #0ea5e9;
+      --accent-glow: rgba(14, 165, 233, 0.12);
+      --accent-faint: rgba(14, 165, 233, 0.05);
+      --green: #16a34a;
+      --purple: #7c3aed;
+      --orange: #ea580c;
+      --code-bg: rgba(241, 245, 249, 0.9);
+      --code-text: #334155;
+      --code-comment: #94a3b8;
+      --btn-primary-text: #ffffff;
+      --btn-primary-shadow: rgba(14, 165, 233, 0.3);
+      --btn-primary-shadow-hover: rgba(14, 165, 233, 0.45);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -33,16 +76,67 @@
       min-height: 100vh;
       line-height: 1.7;
       -webkit-font-smoothing: antialiased;
+      transition: color 0.3s ease;
     }
 
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
+
+    code {
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      background: var(--accent-faint);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--accent);
+    }
 
     .container {
       max-width: 900px;
       margin: 0 auto;
       padding: 60px 24px 100px;
     }
+
+    /* ===== 主题切换按钮 ===== */
+    .theme-toggle {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease, background 0.3s ease;
+      z-index: 100;
+      padding: 0;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: rotate(15deg) scale(1.06);
+    }
+
+    .theme-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* 暗色下显示太阳（点击切到亮色），亮色下显示月亮 */
+    .theme-toggle .fa-sun { display: block; }
+    .theme-toggle .fa-moon { display: none; }
+
+    [data-theme="light"] .theme-toggle .fa-sun { display: none; }
+    [data-theme="light"] .theme-toggle .fa-moon { display: block; }
 
     /* ===== Hero ===== */
     .hero {
@@ -61,7 +155,7 @@
       font-size: 0.8rem;
       font-weight: 500;
       margin-bottom: 20px;
-      border: 1px solid rgba(56, 189, 248, 0.2);
+      border: 1px solid var(--accent-glow);
     }
 
     .hero h1 {
@@ -70,7 +164,7 @@
       letter-spacing: -0.02em;
       line-height: 1.2;
       margin-bottom: 16px;
-      background: linear-gradient(135deg, #e2e8f0 0%, #38bdf8 100%);
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -105,13 +199,13 @@
 
     .btn-primary {
       background: var(--accent);
-      color: #0f172a;
-      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
+      color: var(--btn-primary-text);
+      box-shadow: 0 4px 20px var(--btn-primary-shadow);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(56, 189, 248, 0.45);
+      box-shadow: 0 8px 28px var(--btn-primary-shadow-hover);
       text-decoration: none;
     }
 
@@ -120,11 +214,12 @@
       color: var(--text);
       border: 1px solid var(--card-border);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .btn-ghost:hover {
-      border-color: rgba(56, 189, 248, 0.4);
-      background: rgba(30, 41, 59, 0.9);
+      border-color: var(--accent);
+      background: var(--card-bg);
       text-decoration: none;
     }
 
@@ -140,6 +235,7 @@
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       margin-bottom: 60px;
     }
 
@@ -149,7 +245,7 @@
       gap: 8px;
       padding: 8px 16px;
       border-radius: 30px;
-      background: rgba(56, 189, 248, 0.08);
+      background: var(--accent-glow);
       font-size: 0.88rem;
       font-weight: 500;
       white-space: nowrap;
@@ -163,9 +259,7 @@
     }
 
     /* ===== Section ===== */
-    .section {
-      margin-bottom: 56px;
-    }
+    .section { margin-bottom: 56px; }
 
     .section-title {
       display: flex;
@@ -195,6 +289,7 @@
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
       position: relative;
       overflow: hidden;
@@ -214,8 +309,8 @@
 
     .feature:hover {
       transform: translateY(-4px);
-      border-color: rgba(56, 189, 248, 0.4);
-      box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1);
+      border-color: var(--accent);
+      box-shadow: 0 8px 32px var(--accent-glow);
     }
 
     .feature-icon {
@@ -258,6 +353,7 @@
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .step-num {
@@ -266,7 +362,7 @@
       height: 32px;
       border-radius: 50%;
       background: var(--accent);
-      color: #0f172a;
+      color: var(--btn-primary-text);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -292,47 +388,52 @@
 
     /* ===== 代码块 ===== */
     .code-block {
-      background: rgba(15, 23, 42, 0.8);
+      background: var(--code-bg);
       border: 1px solid var(--card-border);
       border-radius: var(--radius-sm);
       padding: 14px 16px;
       font-family: "SF Mono", "Fira Code", Consolas, monospace;
       font-size: 0.82rem;
       line-height: 1.7;
-      color: #cbd5e1;
+      color: var(--code-text);
       overflow-x: auto;
       white-space: pre;
       margin-top: 8px;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     .code-block .cmd { color: var(--green); }
     .code-block .path { color: var(--orange); }
-    .code-block .comment { color: #64748b; }
+    .code-block .comment { color: var(--code-comment); }
     .code-block .key { color: var(--purple); }
 
     /* ===== 目录结构 ===== */
     .tree {
-      background: rgba(15, 23, 42, 0.6);
+      background: var(--code-bg);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
       padding: 22px;
       font-family: "SF Mono", "Fira Code", Consolas, monospace;
       font-size: 0.82rem;
       line-height: 1.9;
-      color: #cbd5e1;
+      color: var(--code-text);
       overflow-x: auto;
       white-space: pre;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     .tree .folder { color: var(--accent); }
     .tree .file { color: var(--text); }
-    .tree .note { color: #64748b; }
+    .tree .note { color: var(--code-comment); }
 
     /* ===== 表格 ===== */
     .table-wrap {
       overflow-x: auto;
       border-radius: var(--radius);
       border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     table {
@@ -341,9 +442,7 @@
       font-size: 0.87rem;
     }
 
-    thead {
-      background: rgba(56, 189, 248, 0.08);
-    }
+    thead { background: var(--accent-glow); }
 
     th, td {
       padding: 12px 18px;
@@ -351,20 +450,10 @@
       border-bottom: 1px solid var(--card-border);
     }
 
-    th {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    td {
-      color: var(--text-muted);
-    }
-
+    th { font-weight: 600; color: var(--text); }
+    td { color: var(--text-muted); }
     tbody tr:last-child td { border-bottom: none; }
-
-    tbody tr:hover {
-      background: rgba(56, 189, 248, 0.04);
-    }
+    tbody tr:hover { background: var(--accent-faint); }
 
     /* ===== 提示框 ===== */
     .callout {
@@ -429,10 +518,18 @@
       .features { grid-template-columns: 1fr; }
       .step { flex-direction: column; gap: 12px; }
       th, td { padding: 10px 12px; }
+      .theme-toggle { top: 14px; right: 14px; width: 40px; height: 40px; }
     }
   </style>
 </head>
 <body>
+
+  <!-- 主题切换按钮 -->
+  <button id="themeToggle" class="theme-toggle" aria-label="切换主题" title="切换主题">
+    <i class="fas fa-sun"></i>
+    <i class="fas fa-moon"></i>
+  </button>
+
   <div class="container">
 
     <!-- Hero -->
@@ -506,9 +603,9 @@
           <p>GitHub Actions 在每次推送后自动扫描并更新导航页，无需人工干预。</p>
         </div>
         <div class="feature">
-          <div class="feature-icon"><i class="fas fa-mobile-screen"></i></div>
-          <h3>响应式设计</h3>
-          <p>深色玻璃态风格，桌面和移动端都拥有舒适的浏览体验。</p>
+          <div class="feature-icon"><i class="fas fa-circle-half-stroke"></i></div>
+          <h3>双主题</h3>
+          <p>暗色与亮色主题自由切换，跟随系统偏好，选择自动保存。</p>
         </div>
         <div class="feature">
           <div class="feature-icon"><i class="fas fa-gift"></i></div>
@@ -724,5 +821,19 @@ GitHub Pages 自动部署
     </div>
 
   </div>
+
+  <script>
+    // 主题切换
+    (function () {
+      var toggle = document.getElementById('themeToggle');
+      toggle.addEventListener('click', function () {
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('theme', next); } catch (e) {}
+      });
+    })();
+  </script>
+
 </body>
 </html>
