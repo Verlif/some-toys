@@ -285,3 +285,76 @@ body {
     max-width: 100%;
   }
 }
+
+/* ===== 内容容器 ===== */
+.cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ===== 分组 ===== */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.02em;
+}
+
+.group-title i {
+  color: var(--accent);
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.group-title .group-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: rgba(56, 189, 248, 0.1);
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+
+/* 根目录散页区域：没有标题时留一点顶部呼吸感 */
+.group-root {
+  gap: 0;
+}
+
+/* ===== 卡片网格（改到分组内部） ===== */
+.group .cards-grid,
+.group-root .cards-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+/* 原来 .cards-grid 是直接挂在 body 下的，现在换成 .cards-container */
+.cards-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+/* ===== 搜索隐藏状态 ===== */
+.card.card-hidden {
+  display: none;
+}
+
+.group.group-hidden {
+  display: none;
+}
+
+/* 分组标题在搜索时如果整组被隐藏，就不用管，交给 JS 加 class */

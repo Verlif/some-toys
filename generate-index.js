@@ -5,18 +5,16 @@ const pagesDir = 'pages';
 const templatePath = 'templates/nav-template.html';
 const outputFile = 'index.html';
 
-// 页面显示名映射（可选，优先使用 <title>）
-const titleOverrides = {
-  // 'page1': '自定义标题',
-};
-
-// 图标映射：文件名 → Font Awesome 类名
+// 图标映射：分组名或文件名包含关键词时使用对应图标
 const iconMap = {
   default: 'fa-file-code',
   game: 'fa-gamepad',
+  '小游戏': 'fa-gamepad',
   tool: 'fa-wrench',
+  '工具': 'fa-wrench',
   demo: 'fa-flask',
   blog: 'fa-pen-fancy',
+  ai: 'fa-robot',
 };
 
 function escapeHtml(str) {
@@ -27,50 +25,128 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+function pickIcon(name) {
+  const lower = name.toLowerCase();
+  const key = Object.keys(iconMap).find(k => lower.includes(k.toLowerCase()));
+  return iconMap[key] || iconMap.default;
+}
+
+/**
+ * 读取单个 HTML 文件并生成卡片 HTML
+ * @param {string} filePath 磁盘路径
+ * @param {string} fileName 文件名，如 snake.html
+ * @param {string} urlPath  相对 index.html 的 URL 路径，如 pages/小游戏/snake.html
+ */
+function buildCard(filePath, fileName, urlPath) {
+  let content = '';
+  try {
+    content = fs.readFileSync(filePath, 'utf8');
+  } catch (e) {
+    console.warn(`无法读取 ${filePath}: ${e.message}`);
+  }
+
+  const titleMatch = content.match(/<title>(.*?)<\/title>/i);
+  const rawTitle = titleMatch ? titleMatch[1].trim() : fileName.replace('.html', '');
+  const descMatch = content.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/i);
+  const desc = descMatch ? descMatch[1].trim() : '';
+  const icon = pickIcon(fileName);
+
+  return `
+    <a href="${urlPath}" class="card" target="_blank" rel="noopener">
+      <i class="fas ${icon} card-icon"></i>
+      <span class="card-title">${escapeHtml(rawTitle)}</span>
+      ${desc ? `<span class="card-desc">${escapeHtml(desc)}</span>` : ''}
+    </a>
+  `;
+}
+
+// ---------- 主逻辑 ----------
+
 if (!fs.existsSync(pagesDir)) {
   console.error(`错误：找不到目录 "${pagesDir}"，请确认它已被提交到仓库。`);
   process.exit(1);
 }
 
-const files = fs.readdirSync(pagesDir)
-  .filter(file => file.endsWith('.html'))
+const entries = fs.readdirSync(pagesDir, { withFileTypes: true });
+
+// 第一层：根目录下的 html 文件
+const rootFiles = entries
+  .filter(e => e.isFile() && e.name.toLowerCase().endsWith('.html'))
+  .map(e => e.name)
   .sort();
 
-if (files.length === 0) {
-  console.warn(`警告：${pagesDir} 里没有任何 .html 文件，将生成空导航。`);
-}
+// 第二层：一级子文件夹
+const subDirs = entries
+  .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+  .map(e => e.name)
+  .sort();
 
-const links = files.map(file => {
-  const fullPath = path.join(pagesDir, file);
-  const content = fs.readFileSync(fullPath, 'utf8');
+// 生成根目录卡片
+const rootCardsHtml = rootFiles
+  .map(name => buildCard(
+    path.join(pagesDir, name),
+    name,
+    `${pagesDir}/${name}`
+  ))
+  .join('\n');
 
-  // 读取标题
-  const titleMatch = content.match(/<title>(.*?)<\/title>/i);
-  const rawTitle = titleMatch ? titleMatch[1].trim() : file.replace('.html', '');
-  const baseName = file.replace('.html', '');
-  const title = titleOverrides[baseName] || rawTitle;
+// 生成分组
+const groupsHtml = subDirs.map(dirName => {
+  const dirPath = path.join(pagesDir, dirName);
+  const files = fs.readdirSync(dirPath, { withFileTypes: true })
+    .filter(e => e.isFile() && e.name.toLowerCase().endsWith('.html'))
+    .map(e => e.name)
+    .sort();
 
-  // 读取描述（从 meta description）
-  const descMatch = content.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/i);
-  const desc = descMatch ? descMatch[1].trim() : '';
+  if (files.length === 0) {
+    console.warn(`跳过空分组：${dirName}`);
+    return '';
+  }
 
-  // 选择图标
-  const iconKey = Object.keys(iconMap).find(key =>
-    baseName.toLowerCase().includes(key)
-  );
-  const icon = iconMap[iconKey] || iconMap.default;
+  const groupIcon = pickIcon(dirName);
+  const cards = files
+    .map(name => buildCard(
+      path.join(dirPath, name),
+      name,
+      `${pagesDir}/${dirName}/${name}`
+    ))
+    .join('\n');
 
   return `
-    <a href="${pagesDir}/${file}" class="card" data-title="${escapeHtml(title.toLowerCase())}" data-desc="${escapeHtml(desc.toLowerCase())}">
-      <i class="fas ${icon} card-icon"></i>
-      <span class="card-title">${escapeHtml(title)}</span>
-      ${desc ? `<span class="card-desc">${escapeHtml(desc)}</span>` : ''}
-    </a>
+    <section class="group">
+      <h2 class="group-title">
+        <i class="fas ${groupIcon}"></i>
+        <span>${escapeHtml(dirName)}</span>
+        <span class="group-count">${files.length}</span>
+      </h2>
+      <div class="cards-grid">
+        ${cards}
+      </div>
+    </section>
   `;
-}).join('\n');
+}).filter(Boolean).join('\n');
+
+// 组装内容
+const contentParts = [];
+if (rootCardsHtml) {
+  contentParts.push(`
+    <section class="group group-root">
+      <div class="cards-grid">
+        ${rootCardsHtml}
+      </div>
+    </section>
+  `);
+}
+if (groupsHtml) {
+  contentParts.push(groupsHtml);
+}
+
+const content = contentParts.join('\n');
 
 let template = fs.readFileSync(templatePath, 'utf8');
-template = template.replace('{{links}}', links);
+template = template.replace('{{content}}', content);
 
 fs.writeFileSync(outputFile, template);
-console.log(`导航页 index.html 已生成，共 ${files.length} 个页面。`);
+
+const total = rootFiles.length + subDirs.length;
+console.log(`导航页已生成：${rootFiles.length} 个根页面，${subDirs.length} 个分组。`);

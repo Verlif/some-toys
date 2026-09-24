@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>someToys - AI 单页面作品导航站</title>
+  <meta name="description" content="专为 AI 生成的单页面 HTML 作品设计的自动化导航站，放文件、推送、自动上线。">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --green: #4ade80;
+      --purple: #a78bfa;
+      --orange: #fb923c;
+      --radius: 14px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    /* ===== Hero ===== */
+    .hero {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 20px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #e2e8f0 0%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto 28px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(56, 189, 248, 0.45);
+      text-decoration: none;
+    }
+
+    .btn-ghost {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(30, 41, 59, 0.9);
+      text-decoration: none;
+    }
+
+    /* ===== 流程条 ===== */
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+      margin-bottom: 60px;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 30px;
+      background: rgba(56, 189, 248, 0.08);
+      font-size: 0.88rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .flow-step i { color: var(--accent); }
+
+    .flow-arrow {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    /* ===== Section ===== */
+    .section {
+      margin-bottom: 56px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      letter-spacing: 0.01em;
+    }
+
+    .section-title i {
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    /* ===== 特性卡片 ===== */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .feature {
+      padding: 22px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+      transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .feature:hover::before { opacity: 1; }
+
+    .feature:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 8px 32px rgba(56, 189, 248, 0.1);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    .feature h3 {
+      font-size: 0.98rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .feature p {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ===== 步骤 ===== */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step {
+      display: flex;
+      gap: 18px;
+      padding: 22px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .step-content { flex: 1; min-width: 0; }
+
+    .step-content h3 {
+      font-size: 0.98rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .step-content p {
+      font-size: 0.87rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .step-content p:last-child { margin-bottom: 0; }
+
+    /* ===== 代码块 ===== */
+    .code-block {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: #cbd5e1;
+      overflow-x: auto;
+      white-space: pre;
+      margin-top: 8px;
+    }
+
+    .code-block .cmd { color: var(--green); }
+    .code-block .path { color: var(--orange); }
+    .code-block .comment { color: #64748b; }
+    .code-block .key { color: var(--purple); }
+
+    /* ===== 目录结构 ===== */
+    .tree {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 22px;
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.9;
+      color: #cbd5e1;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .tree .folder { color: var(--accent); }
+    .tree .file { color: var(--text); }
+    .tree .note { color: #64748b; }
+
+    /* ===== 表格 ===== */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--card-border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.87rem;
+    }
+
+    thead {
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    th, td {
+      padding: 12px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    td {
+      color: var(--text-muted);
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover {
+      background: rgba(56, 189, 248, 0.04);
+    }
+
+    /* ===== 提示框 ===== */
+    .callout {
+      display: flex;
+      gap: 14px;
+      padding: 18px 20px;
+      border-radius: var(--radius);
+      border-left: 3px solid var(--accent);
+      background: var(--accent-glow);
+      font-size: 0.88rem;
+      margin-top: 16px;
+    }
+
+    .callout i {
+      color: var(--accent);
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .callout p { color: var(--text); margin: 0; }
+
+    /* ===== 页脚 ===== */
+    .footer {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      transition: color 0.25s ease;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 640px) {
+      .container { padding: 36px 16px 70px; }
+      .hero h1 { font-size: 1.9rem; }
+      .hero p { font-size: 0.95rem; }
+      .flow { padding: 16px; gap: 8px; }
+      .flow-arrow { display: none; }
+      .flow-step { font-size: 0.8rem; padding: 6px 12px; }
+      .features { grid-template-columns: 1fr; }
+      .step { flex-direction: column; gap: 12px; }
+      th, td { padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">
+        <i class="fas fa-wand-magic-sparkles"></i>
+        AI 单页面作品集
+      </div>
+      <h1>someToys</h1>
+      <p>专为 AI 生成的单页面 HTML 作品设计的导航站。放文件、推送、自动上线。</p>
+      <div class="hero-actions">
+        <a href="https://github.com/Verlif/someToys" target="_blank" rel="noopener" class="btn btn-primary">
+          <i class="fab fa-github"></i>
+          查看源码
+        </a>
+        <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="btn btn-ghost">
+          <i class="fas fa-user"></i>
+          @Verlif
+        </a>
+      </div>
+    </div>
+
+    <!-- 流程 -->
+    <div class="flow">
+      <div class="flow-step">
+        <i class="fas fa-file-code"></i>
+        放入 HTML
+      </div>
+      <i class="fas fa-arrow-right flow-arrow"></i>
+      <div class="flow-step">
+        <i class="fab fa-git-alt"></i>
+        推送
+      </div>
+      <i class="fas fa-arrow-right flow-arrow"></i>
+      <div class="flow-step">
+        <i class="fas fa-robot"></i>
+        自动生成
+      </div>
+      <i class="fas fa-arrow-right flow-arrow"></i>
+      <div class="flow-step">
+        <i class="fas fa-rocket"></i>
+        自动上线
+      </div>
+    </div>
+
+    <!-- 特性 -->
+    <div class="section">
+      <h2 class="section-title">
+        <i class="fas fa-star"></i>
+        核心特性
+      </h2>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon"><i class="fas fa-box-open"></i></div>
+          <h3>放进去就能用</h3>
+          <p>把 AI 生成的 HTML 丢进 pages/ 文件夹，推送即可，无需任何额外配置。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon"><i class="fas fa-folder-tree"></i></div>
+          <h3>自动分组</h3>
+          <p>pages/ 下的一级子文件夹自动变成分组，文件夹名即分组标题。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon"><i class="fas fa-magnifying-glass"></i></div>
+          <h3>实时搜索</h3>
+          <p>按标题和描述过滤卡片，无匹配的分组自动隐藏，保持界面整洁。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+          <h3>全自动构建</h3>
+          <p>GitHub Actions 在每次推送后自动扫描并更新导航页，无需人工干预。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon"><i class="fas fa-mobile-screen"></i></div>
+          <h3>响应式设计</h3>
+          <p>深色玻璃态风格，桌面和移动端都拥有舒适的浏览体验。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon"><i class="fas fa-gift"></i></div>
+          <h3>零成本</h3>
+          <p>基于 GitHub Pages 托管，完全免费，自带 HTTPS 和 CDN 加速。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 目录结构 -->
+    <div class="section">
+      <h2 class="section-title">
+        <i class="fas fa-folder-open"></i>
+        目录结构
+      </h2>
+      <div class="tree"><span class="folder">someToys/</span>
+├─ <span class="folder">.github/workflows/</span>
+│  └─ <span class="file">generate-nav.yml</span>          <span class="note"># 自动化工作流</span>
+├─ <span class="folder">pages/</span>                          <span class="note"># 所有作品放这里</span>
+│  ├─ <span class="file">demo.html</span>                    <span class="note"># 根目录页面，直接展示</span>
+│  ├─ <span class="folder">小游戏/</span>                       <span class="note"># 一级子文件夹 → 分组</span>
+│  │  ├─ <span class="file">snake.html</span>
+│  │  └─ <span class="file">tetris.html</span>
+│  └─ <span class="folder">工具/</span>
+│     └─ <span class="file">converter.html</span>
+├─ <span class="folder">templates/</span>
+│  └─ <span class="file">nav-template.html</span>          <span class="note"># 导航页模板</span>
+├─ <span class="folder">assets/</span>
+│  └─ <span class="file">nav.css</span>                      <span class="note"># 导航页样式</span>
+├─ <span class="file">generate-index.js</span>               <span class="note"># 生成脚本</span>
+├─ <span class="file">index.html</span>                      <span class="note"># 自动生成，勿手改</span>
+└─ <span class="file">.nojekyll</span></div>
+    </div>
+
+    <!-- 快速开始 -->
+    <div class="section">
+      <h2 class="section-title">
+        <i class="fas fa-rocket"></i>
+        快速开始
+      </h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>启用 GitHub Pages</h3>
+            <p>打开仓库 <strong>Settings → Pages</strong>，Source 选择 <code>Deploy from a branch</code>，Branch 选 <code>main</code>，文件夹选 <code>/ (root)</code>，保存。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>配置 Actions 写权限</h3>
+            <p>打开 <strong>Settings → Actions → General</strong>，在 Workflow permissions 中选择 <code>Read and write permissions</code>，保存。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>把 HTML 放进 pages/</h3>
+            <p>直接把 AI 生成的文件丢进去。想分组就建一级子文件夹，文件夹名就是分组标题。</p>
+            <div class="code-block"><span class="path">pages/</span>
+├─ <span class="file">demo.html</span>              <span class="comment"># 第一层直接显示</span>
+├─ <span class="path">小游戏/</span>                 <span class="comment"># 分组：小游戏</span>
+│  └─ <span class="file">snake.html</span>
+└─ <span class="path">工具/</span>
+   └─ <span class="file">converter.html</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>推送</h3>
+            <div class="code-block"><span class="cmd">git</span> add pages/
+<span class="cmd">git</span> commit -m <span class="key">"add new page"</span>
+<span class="cmd">git</span> push</div>
+            <p style="margin-top:10px;">Action 自动运行，生成导航页并提交回仓库，GitHub Pages 自动部署。稍等片刻，刷新导航页就能看到新卡片。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图标映射 -->
+    <div class="section">
+      <h2 class="section-title">
+        <i class="fas fa-icons"></i>
+        自动图标映射
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+        生成脚本会根据文件名或分组名自动匹配图标，无需手动配置。
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>关键词</th>
+              <th>图标</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>game</code> / <code>小游戏</code></td>
+              <td><i class="fas fa-gamepad" style="color: var(--accent);"></i> fa-gamepad</td>
+              <td>游戏类页面</td>
+            </tr>
+            <tr>
+              <td><code>tool</code> / <code>工具</code></td>
+              <td><i class="fas fa-wrench" style="color: var(--accent);"></i> fa-wrench</td>
+              <td>实用工具</td>
+            </tr>
+            <tr>
+              <td><code>demo</code></td>
+              <td><i class="fas fa-flask" style="color: var(--accent);"></i> fa-flask</td>
+              <td>演示页面</td>
+            </tr>
+            <tr>
+              <td><code>blog</code></td>
+              <td><i class="fas fa-pen-fancy" style="color: var(--accent);"></i> fa-pen-fancy</td>
+              <td>文章页面</td>
+            </tr>
+            <tr>
+              <td><code>ai</code></td>
+              <td><i class="fas fa-robot" style="color: var(--accent);"></i> fa-robot</td>
+              <td>AI 相关</td>
+            </tr>
+            <tr>
+              <td>其他</td>
+              <td><i class="fas fa-file-code" style="color: var(--accent);"></i> fa-file-code</td>
+              <td>默认图标</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <i class="fas fa-lightbulb"></i>
+        <p>想加新图标，只需在 <code>generate-index.js</code> 的 <code>iconMap</code> 里加一条映射即可，值使用 Font Awesome 的类名。</p>
+      </div>
+    </div>
+
+    <!-- 工作流 -->
+    <div class="section">
+      <h2 class="section-title">
+        <i class="fas fa-diagram-project"></i>
+        工作流程
+      </h2>
+      <div class="code-block"><span class="comment"># 你只需要做第一步</span>
+把 HTML 放入 <span class="path">pages/</span>
+        ↓
+<span class="cmd">git push</span>
+        ↓
+GitHub Actions 触发
+        ↓
+运行 <span class="path">generate-index.js</span>，扫描 pages/ 并生成 <span class="path">index.html</span>
+        ↓
+提交并 push 回仓库
+        ↓
+GitHub Pages 自动部署
+        ↓
+导航页更新，新卡片 / 新分组出现</div>
+    </div>
+
+    <!-- 常见问题 -->
+    <div class="section">
+      <h2 class="section-title">
+        <i class="fas fa-circle-question"></i>
+        常见问题
+      </h2>
+
+      <div class="feature" style="margin-bottom: 12px;">
+        <h3>Action 报错 <code>ENOENT: no such file or directory, scandir 'pages'</code></h3>
+        <p style="margin-top: 8px;">pages/ 文件夹没有被 Git 跟踪。Git 不跟踪空文件夹，放入至少一个 HTML 文件，或添加 pages/.gitkeep 占位文件后提交。</p>
+      </div>
+
+      <div class="feature" style="margin-bottom: 12px;">
+        <h3>Action 报错 <code>remote: Permission to ... denied</code> 或 403</h3>
+        <p style="margin-top: 8px;">检查 Settings → Actions → General → Workflow permissions 是否为 Read and write，并确认工作流中声明了 <code>permissions: contents: write</code>。</p>
+      </div>
+
+      <div class="feature" style="margin-bottom: 12px;">
+        <h3>Action 报错 <code>remote rejected ... (failure)</code></h3>
+        <p style="margin-top: 8px;">通常是因为 main 分支有保护规则，阻止了 bot 推送。到 Settings → Branches 删除或放宽保护规则。</p>
+      </div>
+
+      <div class="feature" style="margin-bottom: 12px;">
+        <h3>访问 Pages 地址显示 404</h3>
+        <p style="margin-top: 8px;">确认 Pages 的 Source 为 Deploy from a branch，分支为 main，文件夹为 / (root)。刚部署完请等待几分钟再刷新。</p>
+      </div>
+
+      <div class="feature" style="margin-bottom: 12px;">
+        <h3>分组没有显示出来</h3>
+        <p style="margin-top: 8px;">确认子文件夹里至少有一个 .html 文件。空文件夹会被跳过。只支持一层文件夹作为分组，嵌套更深的目录会被忽略。</p>
+      </div>
+
+      <div class="feature">
+        <h3>AI 生成的 HTML 里有外部依赖怎么办</h3>
+        <p style="margin-top: 8px;">只要能独立运行即可。依赖 CDN 的 CSS/JS 保持原样；有本地图片等资源，建议一并放进 pages/ 并保持相对路径正确。</p>
+      </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="footer">
+      <div class="footer-links">
+        <a href="https://github.com/Verlif/someToys" target="_blank" rel="noopener">
+          <i class="fab fa-github"></i>
+          GitHub
+        </a>
+        <a href="https://github.com/Verlif" target="_blank" rel="noopener">
+          <i class="fas fa-user"></i>
+          Verlif
+        </a>
+      </div>
+      <p>基于 GitHub Pages 构建 · MIT License</p>
+    </div>
+
+  </div>
+</body>
+</html>
