@@ -9,9 +9,9 @@ const outputFile = 'index.html';
 const iconMap = {
   default: 'fa-file-code',
   game: 'fa-gamepad',
-  '小游戏': 'fa-gamepad',
+  小游戏: 'fa-gamepad',
   tool: 'fa-wrench',
-  '工具': 'fa-wrench',
+  工具: 'fa-wrench',
   demo: 'fa-flask',
   blog: 'fa-pen-fancy',
   ai: 'fa-robot',
@@ -35,7 +35,7 @@ function pickIcon(name) {
  * 读取单个 HTML 文件并生成卡片 HTML
  * @param {string} filePath 磁盘路径
  * @param {string} fileName 文件名，如 snake.html
- * @param {string} urlPath  相对 index.html 的 URL 路径，如 pages/小游戏/snake.html
+ * @param {string} urlPath  相对 index.html 的 URL 路径
  */
 function buildCard(filePath, fileName, urlPath) {
   let content = '';
@@ -148,5 +148,4 @@ template = template.replace('{{content}}', content);
 
 fs.writeFileSync(outputFile, template);
 
-const total = rootFiles.length + subDirs.length;
 console.log(`导航页已生成：${rootFiles.length} 个根页面，${subDirs.length} 个分组。`);
