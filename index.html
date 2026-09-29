@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verlif 的导航站</title>
+  <title>someToys · Verlif 的作品导航</title>
+  <meta name="description" content="AI 单页面作品集：单文件页面与项目文件夹的自动导航站。">
   <link rel="stylesheet" href="assets/nav.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -19,167 +20,581 @@
     })();
   </script>
 </head>
-<body>
+<body id="top">
 
-  <!-- 主题切换按钮 -->
-  <button id="themeToggle" class="theme-toggle" aria-label="切换主题" title="切换主题">
-    <i class="fas fa-sun"></i>
-    <i class="fas fa-moon"></i>
-  </button>
+  <!-- ===== 侧栏：作者信息 + 分组索引 ===== -->
+  <aside class="sidenav">
+    <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="brand" title="GitHub 主页">
+      <img src="https://avatars.githubusercontent.com/Verlif" alt="Verlif" class="avatar">
+      <span class="brand-text">
+        <strong>Verlif</strong>
+        <small>AI 单页面作品集</small>
+      </span>
+    </a>
 
-  <div class="page-wrapper">
+    <nav class="side-links" aria-label="分组索引">
+      <a class="side-link" href="#top" data-target="top" data-depth="0"><i class="fas fa-house"></i><span>首页</span></a>
+<a class="side-link" href="#nav-1" data-target="nav-1" data-depth="0"><i class="fas fa-gamepad"></i><span>games</span><em>1</em></a>
+<a class="side-link" href="#nav-2" data-target="nav-2" data-depth="0"><i class="fas fa-image"></i><span>picture</span><em>1</em></a>
+<a class="side-link" href="#nav-3" data-target="nav-3" data-depth="0"><i class="fas fa-wrench"></i><span>tools</span><em>1</em></a>
+    </nav>
 
-    <!-- GitHub 个人信息区 -->
-    <header class="profile-section">
-      <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="avatar-link">
-        <img src="https://avatars.githubusercontent.com/Verlif" alt="Verlif" class="avatar">
+    <div class="sidenav-foot">
+      <div class="foot-stats">
+        <span><b>0</b> 项目</span>
+        <span><b>4</b> 页面</span>
+        <span><b>3</b> 分组</span>
+      </div>
+      <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="foot-link">
+        <i class="fab fa-github"></i><span>GitHub</span>
       </a>
-      <h1 class="username">Verlif</h1>
-      <p class="bio">AI 单页面作品集</p>
+      <p class="foot-note">生成于 2026-09-29 10:33:12 UTC</p>
+    </div>
+  </aside>
 
-      <div class="github-stats">
-        <a href="https://github.com/Verlif?tab=repositories" target="_blank" rel="noopener" class="stat-item">
-          <i class="fas fa-book"></i>
-          <span>Repositories</span>
-        </a>
-        <a href="https://github.com/Verlif?tab=stars" target="_blank" rel="noopener" class="stat-item">
-          <i class="fas fa-star"></i>
-          <span>Stars</span>
-        </a>
-        <a href="https://github.com/Verlif?tab=followers" target="_blank" rel="noopener" class="stat-item">
-          <i class="fas fa-users"></i>
-          <span>Followers</span>
-        </a>
+  <!-- ===== 主内容 ===== -->
+  <div class="content">
+    <header class="topbar" id="topbar">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="搜索项目（按 / 聚焦）" autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="searchClear" type="button" aria-label="清空搜索"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="topbar-actions">
+        <span class="search-count" id="searchCount"></span>
+        <button class="icon-btn" id="collapseAll" type="button" title="折叠全部分组"><i class="fas fa-compress"></i></button>
+        <button class="icon-btn" id="topBtn" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换主题" title="切换主题（D）">
+          <i class="fas fa-sun" data-theme="light"></i>
+          <i class="fas fa-moon" data-theme="dark"></i>
+        </button>
       </div>
     </header>
 
-    <!-- 搜索框 -->
-    <div class="search-wrapper">
-      <i class="fas fa-search search-icon"></i>
-      <input type="text" id="searchInput" class="search-input" placeholder="搜索页面..." autocomplete="off">
-      <span class="search-count" id="searchCount"></span>
-    </div>
+    <!-- 窄屏分组索引 -->
+    <nav class="rail" id="rail" aria-label="分组索引">
+      <a class="chip" href="#top" data-target="top"><i class="fas fa-house"></i><span>首页</span></a>
+<a class="chip" href="#nav-1" data-target="nav-1"><i class="fas fa-gamepad"></i><span>games</span><em>1</em></a>
+<a class="chip" href="#nav-2" data-target="nav-2"><i class="fas fa-image"></i><span>picture</span><em>1</em></a>
+<a class="chip" href="#nav-3" data-target="nav-3"><i class="fas fa-wrench"></i><span>tools</span><em>1</em></a>
+    </nav>
 
-    <!-- 内容区 -->
-    <main class="cards-container" id="cardsContainer">
-      
-    <section class="group group-root">
-      <div class="cards-grid">
-        
-    <a href="pages/介绍.html" class="card" target="_blank" rel="noopener">
-      <i class="fas fa-file-code card-icon"></i>
+    <main id="content" class="content-inner">
+      <div class="card has-more" data-name="sometoys - ai 单页面作品导航站 专为 ai 生成的单页面 html 作品设计的自动化导航站，放文件、推送、自动上线。 介绍" data-kind="page">
+  <a class="card-link" href="pages/%E4%BB%8B%E7%BB%8D.html" target="_blank" rel="noopener" title="someToys - AI 单页面作品导航站">
+    <span class="card-head">
+      <span class="card-icon"><i class="fas fa-circle-info"></i></span>
       <span class="card-title">someToys - AI 单页面作品导航站</span>
-      <span class="card-desc">专为 AI 生成的单页面 HTML 作品设计的自动化导航站，放文件、推送、自动上线。</span>
-    </a>
+    </span>
+    <span class="card-desc">专为 AI 生成的单页面 HTML 作品设计的自动化导航站，放文件、推送、自动上线。</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>26.8 KB</span><span class="meta-item meta-date" data-iso="2026-09-29"><i class="fas fa-clock"></i>2026-09-29</span></span>
+  </a>
   
-      </div>
-    </section>
-  
-
-    <section class="group">
-      <h2 class="group-title">
-        <i class="fas fa-gamepad"></i>
-        <span>games</span>
-        <span class="group-count">1</span>
-      </h2>
-      <div class="cards-grid">
-        
-    <a href="pages/games/回声躲猫猫.html" class="card" target="_blank" rel="noopener">
-      <i class="fas fa-file-code card-icon"></i>
+  <button class="card-more" type="button" title="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
+</div>
+<section class="group" id="nav-1" data-group="nav-1" data-count="1">
+  <h2 class="group-head">
+    <button class="group-toggle" type="button" aria-expanded="true" aria-controls="nav-1-body">
+      <i class="fas fa-chevron-down group-chevron"></i>
+      <i class="fas fa-gamepad group-icon"></i>
+      <span class="group-name">games</span>
+    </button>
+    <span class="group-count" data-total="1">1</span>
+  </h2>
+  <div class="group-body" id="nav-1-body">
+    <div class="cards-grid">
+      <div class="card has-more" data-name="回声躲猫猫 · echo hide &amp; seek 时间 2:00 剩余躲藏者 6 身份 — 👁 上帝视角 噪声 准 备 3 藏好，别被抓到！ 回声躲猫猫" data-kind="page">
+  <a class="card-link" href="pages/games/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB.html" target="_blank" rel="noopener" title="回声躲猫猫 · Echo Hide &amp; Seek">
+    <span class="card-head">
+      <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">回声躲猫猫 · Echo Hide &amp; Seek</span>
-      
-    </a>
+    </span>
+    <span class="card-desc">时间 2:00 剩余躲藏者 6 身份 — 👁 上帝视角 噪声 准 备 3 藏好，别被抓到！</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>73.3 KB</span><span class="meta-item meta-date" data-iso="2026-09-29"><i class="fas fa-clock"></i>2026-09-29</span></span>
+  </a>
   
-      </div>
-    </section>
-  
-
-    <section class="group">
-      <h2 class="group-title">
-        <i class="fas fa-file-code"></i>
-        <span>picture</span>
-        <span class="group-count">1</span>
-      </h2>
-      <div class="cards-grid">
-        
-    <a href="pages/picture/图片主题色编辑器.html" class="card" target="_blank" rel="noopener">
-      <i class="fas fa-file-code card-icon"></i>
+  <button class="card-more" type="button" title="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
+</div>
+    </div>
+  </div>
+</section>
+<section class="group" id="nav-2" data-group="nav-2" data-count="1">
+  <h2 class="group-head">
+    <button class="group-toggle" type="button" aria-expanded="true" aria-controls="nav-2-body">
+      <i class="fas fa-chevron-down group-chevron"></i>
+      <i class="fas fa-image group-icon"></i>
+      <span class="group-name">picture</span>
+    </button>
+    <span class="group-count" data-total="1">1</span>
+  </h2>
+  <div class="group-body" id="nav-2-body">
+    <div class="cards-grid">
+      <div class="card has-more" data-name="图片主题色替换工具 图片主题色替换 提取主色 · 单独换色 · 点击找色 像素预览 原图 — 滚轮缩放 · 拖拽移动 · 单击找色 · … 图片主题色编辑器" data-kind="page">
+  <a class="card-link" href="pages/picture/%E5%9B%BE%E7%89%87%E4%B8%BB%E9%A2%98%E8%89%B2%E7%BC%96%E8%BE%91%E5%99%A8.html" target="_blank" rel="noopener" title="图片主题色替换工具">
+    <span class="card-head">
+      <span class="card-icon"><i class="fas fa-image"></i></span>
       <span class="card-title">图片主题色替换工具</span>
-      
-    </a>
+    </span>
+    <span class="card-desc">图片主题色替换 提取主色 · 单独换色 · 点击找色 像素预览 原图 — 滚轮缩放 · 拖拽移动 · 单击找色 · …</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>45.1 KB</span><span class="meta-item meta-date" data-iso="2026-09-29"><i class="fas fa-clock"></i>2026-09-29</span></span>
+  </a>
   
-      </div>
-    </section>
-  
-
-    <section class="group">
-      <h2 class="group-title">
-        <i class="fas fa-wrench"></i>
-        <span>tools</span>
-        <span class="group-count">1</span>
-      </h2>
-      <div class="cards-grid">
-        
-    <a href="pages/tools/随机抽奖.html" class="card" target="_blank" rel="noopener">
-      <i class="fas fa-file-code card-icon"></i>
+  <button class="card-more" type="button" title="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
+</div>
+    </div>
+  </div>
+</section>
+<section class="group" id="nav-3" data-group="nav-3" data-count="1">
+  <h2 class="group-head">
+    <button class="group-toggle" type="button" aria-expanded="true" aria-controls="nav-3-body">
+      <i class="fas fa-chevron-down group-chevron"></i>
+      <i class="fas fa-wrench group-icon"></i>
+      <span class="group-name">tools</span>
+    </button>
+    <span class="group-count" data-total="1">1</span>
+  </h2>
+  <div class="group-body" id="nav-3-body">
+    <div class="cards-grid">
+      <div class="card has-more" data-name="随机抽奖 随机抽奖系统 添加抽奖项目 抽奖结果 操作按钮 滚动速度: 慢 快 3次 5次 10次 20次 50次 100次 历… 随机抽奖" data-kind="page">
+  <a class="card-link" href="pages/tools/%E9%9A%8F%E6%9C%BA%E6%8A%BD%E5%A5%96.html" target="_blank" rel="noopener" title="随机抽奖">
+    <span class="card-head">
+      <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">随机抽奖</span>
-      
-    </a>
+    </span>
+    <span class="card-desc">随机抽奖系统 添加抽奖项目 抽奖结果 操作按钮 滚动速度: 慢 快 3次 5次 10次 20次 50次 100次 历…</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>71.5 KB</span><span class="meta-item meta-date" data-iso="2026-09-29"><i class="fas fa-clock"></i>2026-09-29</span></span>
+  </a>
   
-      </div>
-    </section>
-  
+  <button class="card-more" type="button" title="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
+</div>
+    </div>
+  </div>
+</section>
     </main>
 
-    <!-- 无结果提示 -->
     <div class="no-result" id="noResult" style="display:none;">
       <i class="fas fa-inbox"></i>
-      <p>没有找到匹配的页面</p>
+      <p>没有找到匹配的项目</p>
+      <span>试试其它关键词，或按 Esc 清空</span>
     </div>
 
+    <footer class="site-foot">
+      <span>someToys · 放文件 → 推送 → 自动上线</span>
+      <span class="foot-note">生成于 2026-09-29 10:33:12 UTC</span>
+    </footer>
+  </div>
+
+  <!-- ===== 详情弹窗 ===== -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-mask" data-close="1"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" type="button" aria-label="关闭"><i class="fas fa-xmark"></i></button>
+      <div class="modal-head">
+        <span class="modal-icon" id="modalIcon"><i class="fas fa-cube"></i></span>
+        <div>
+          <h3 id="modalTitle"></h3>
+          <p id="modalMeta"></p>
+        </div>
+      </div>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div class="modal-actions">
+        <a class="btn btn-primary" id="modalOpen" href="#" target="_blank" rel="noopener">
+          <i class="fas fa-arrow-up-right-from-square"></i><span>打开页面</span>
+        </a>
+        <button class="btn" id="modalCopy" type="button">
+          <i class="fas fa-link"></i><span>复制链接</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <script>
-    // ===== 主题切换 =====
     (function () {
-      var toggle = document.getElementById('themeToggle');
-      toggle.addEventListener('click', function () {
+      'use strict';
+
+      var content = document.getElementById('content');
+      var topbar = document.getElementById('topbar');
+      var rail = document.getElementById('rail');
+      var searchInput = document.getElementById('searchInput');
+      var searchClear = document.getElementById('searchClear');
+      var searchCount = document.getElementById('searchCount');
+      var noResult = document.getElementById('noResult');
+      var cards = [].slice.call(content.querySelectorAll('.card'));
+      var groups = [].slice.call(content.querySelectorAll('.group'));
+
+      // ---------- 工具 ----------
+
+      function store(key, value) {
+        try {
+          if (value === undefined) return localStorage.getItem(key);
+          if (value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, value);
+        } catch (e) {}
+        return null;
+      }
+
+      /** 去掉卡片里所有高亮标记 */
+      function clearMarks(root) {
+        [].forEach.call(root.querySelectorAll('mark[data-hit]'), function (mark) {
+          var parent = mark.parentNode;
+          parent.replaceChild(document.createTextNode(mark.textContent), mark);
+          parent.normalize();
+        });
+      }
+
+      /** 把命中的文字包进 <mark>，只动文本节点，不破坏结构 */
+      function highlight(root, keyword) {
+        if (!keyword) return 0;
+        var hits = 0;
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+        var nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+
+        nodes.forEach(function (node) {
+          var text = node.nodeValue;
+          var lower = text.toLowerCase();
+          var from = 0;
+          var at = lower.indexOf(keyword, from);
+          if (at < 0) return;
+
+          var frag = document.createDocumentFragment();
+          while (at >= 0) {
+            if (at > from) frag.appendChild(document.createTextNode(text.slice(from, at)));
+            var mark = document.createElement('mark');
+            mark.setAttribute('data-hit', '1');
+            mark.textContent = text.slice(at, at + keyword.length);
+            frag.appendChild(mark);
+            hits++;
+            from = at + keyword.length;
+            at = lower.indexOf(keyword, from);
+          }
+          if (from < text.length) frag.appendChild(document.createTextNode(text.slice(from)));
+          node.parentNode.replaceChild(frag, node);
+        });
+        return hits;
+      }
+
+      /** 不依赖滚动容器的定位：直接算偏移 */
+      function scrollToEl(el) {
+        var rect = el.getBoundingClientRect();
+        var offset = topbar ? topbar.getBoundingClientRect().height + 16 : 0;
+        window.scrollTo({ top: window.pageYOffset + rect.top - offset, behavior: 'smooth' });
+      }
+
+      // ---------- 主题 ----------
+
+      document.getElementById('themeToggle').addEventListener('click', function () {
         var current = document.documentElement.getAttribute('data-theme') || 'dark';
         var next = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        try { localStorage.setItem('theme', next); } catch (e) {}
+        store('theme', next);
       });
-    })();
 
-    // ===== 搜索过滤 =====
-    (function () {
-      var searchInput = document.getElementById('searchInput');
-      var cardsContainer = document.getElementById('cardsContainer');
-      var noResult = document.getElementById('noResult');
-      var searchCount = document.getElementById('searchCount');
+      // ---------- 页面元信息 / 相对时间 ----------
 
-      searchInput.addEventListener('input', function () {
-        var keyword = this.value.trim().toLowerCase();
-        var cards = cardsContainer.querySelectorAll('.card');
-        var visibleCount = 0;
+      function relTime(iso) {
+        if (!iso || !/^\d{4}-\d{2}/.test(iso)) return iso || '';
+        var date = new Date(iso.length <= 10 ? iso + 'T00:00:00' : iso);
+        if (isNaN(date.getTime())) return iso;
+        var days = Math.floor((Date.now() - date.getTime()) / 86400000);
+        if (days <= 0) return '今天';
+        if (days === 1) return '昨天';
+        if (days < 30) return days + ' 天前';
+        if (days < 365) return Math.floor(days / 30) + ' 个月前';
+        if (days < 730) return '1 年前';
+        return Math.floor(days / 365) + ' 年前';
+      }
+
+      [].forEach.call(content.querySelectorAll('.meta-date'), function (el) {
+        var iso = el.getAttribute('data-iso');
+        if (!iso) return;
+        el.setAttribute('title', el.textContent.trim());
+        var rel = relTime(iso);
+        if (rel) el.innerHTML = '<i class="fas fa-clock"></i>' + rel;
+      });
+
+      // ---------- 分组折叠 ----------
+
+      function setCollapsed(group, collapsed, persist) {
+        group.classList.toggle('is-collapsed', collapsed);
+        var toggle = group.querySelector('.group-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        if (persist) {
+          var saved = (store('collapsed') || '').split(',').filter(Boolean);
+          var id = group.getAttribute('data-group');
+          var at = saved.indexOf(id);
+          if (collapsed && at < 0) saved.push(id);
+          if (!collapsed && at >= 0) saved.splice(at, 1);
+          store('collapsed', saved.join(','));
+        }
+      }
+
+      groups.forEach(function (group) {
+        var toggle = group.querySelector('.group-toggle');
+        if (toggle) {
+          toggle.addEventListener('click', function () {
+            setCollapsed(group, !group.classList.contains('is-collapsed'), true);
+            syncCollapseAll();
+          });
+        }
+      });
+
+      var savedCollapsed = (store('collapsed') || '').split(',').filter(Boolean);
+      var collapseAllBtn = document.getElementById('collapseAll');
+      groups.forEach(function (group) {
+        if (savedCollapsed.indexOf(group.getAttribute('data-group')) >= 0) setCollapsed(group, true, false);
+      });
+      function syncCollapseAll() {
+        var anyOpen = groups.some(function (group) { return !group.classList.contains('is-collapsed'); });
+        collapseAllBtn.classList.toggle('is-active', !anyOpen);
+        collapseAllBtn.title = anyOpen ? '折叠全部分组' : '展开全部分组';
+      }
+      syncCollapseAll();
+      collapseAllBtn.addEventListener('click', function () {
+        var anyOpen = groups.some(function (group) { return !group.classList.contains('is-collapsed'); });
+        groups.forEach(function (group) { setCollapsed(group, anyOpen, true); });
+        syncCollapseAll();
+      });
+
+      // ---------- 搜索过滤 ----------
+
+      var filterTimer = null;
+      var observer = null;
+
+      /** 只观察当前可见的分组，用于侧栏高亮 */
+      function syncObserver() {
+        groups.forEach(function (group) {
+          if (group.classList.contains('group-hidden')) observer.unobserve(group);
+          else observer.observe(group);
+        });
+      }
+
+      function applyFilter() {
+        var keyword = searchInput.value.trim().toLowerCase();
 
         cards.forEach(function (card) {
-          var title = card.querySelector('.card-title')?.textContent.toLowerCase() || '';
-          var desc = card.querySelector('.card-desc')?.textContent.toLowerCase() || '';
-          var match = !keyword || title.includes(keyword) || desc.includes(keyword);
+          clearMarks(card);
+          var name = card.getAttribute('data-name') || '';
+          var match = !keyword || name.indexOf(keyword) >= 0;
           card.classList.toggle('card-hidden', !match);
-          if (match) visibleCount++;
+          if (match && keyword) highlight(card, keyword);
         });
 
-        // 隐藏没有可见卡片的分组
-        cardsContainer.querySelectorAll('.group').forEach(function (group) {
+        groups.forEach(function (group) {
           var hasVisible = group.querySelector('.card:not(.card-hidden)');
           group.classList.toggle('group-hidden', !hasVisible);
+
+          var countEl = group.querySelector('.group-count');
+          if (countEl) {
+            var total = group.getAttribute('data-count') || '';
+            if (keyword && hasVisible) {
+              var visible = group.querySelectorAll('.card:not(.card-hidden)').length;
+              countEl.textContent = visible + '/' + total;
+            } else {
+              countEl.textContent = total;
+            }
+          }
+
+          var toggle = group.querySelector('.group-toggle');
+          if (toggle) toggle.disabled = !hasVisible;
+          if (keyword && hasVisible) setCollapsed(group, false, false);
         });
 
+        var visibleCount = cards.filter(function (card) {
+          return !card.classList.contains('card-hidden');
+        }).length;
+
         noResult.style.display = visibleCount === 0 ? 'flex' : 'none';
-        searchCount.textContent = keyword ? ('找到 ' + visibleCount + ' 个') : '';
+        searchClear.classList.toggle('is-visible', !!searchInput.value);
+        searchCount.textContent = keyword ? visibleCount + ' / ' + cards.length : cards.length + ' 个页面';
+
+        if (observer) syncObserver();
+      }
+
+      searchInput.addEventListener('input', function () {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(applyFilter, 80);
       });
+      searchClear.addEventListener('click', function () {
+        searchInput.value = '';
+        applyFilter();
+        searchInput.focus();
+      });
+
+      // ---------- 快捷键 / 跳转 ----------
+
+      document.addEventListener('keydown', function (event) {
+        var target = event.target;
+        var typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+        if (event.key === 'Escape') {
+          if (!document.getElementById('modal').hidden) {
+            closeModal();
+            return;
+          }
+          if (searchInput.value) {
+            searchInput.value = '';
+            applyFilter();
+          } else if (typing) {
+            searchInput.blur();
+          }
+          return;
+        }
+
+        if (typing) return;
+
+        if (event.key === '/' || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k')) {
+          event.preventDefault();
+          searchInput.focus();
+          searchInput.select();
+        } else if (event.key.toLowerCase() === 'd') {
+          document.getElementById('themeToggle').click();
+        }
+      });
+
+      /** 联动展开：目标分组本身、它所有已折叠的祖先分组，必要时先清空搜索 */
+      function revealGroup(group) {
+        if (!group) return;
+        if (group.classList.contains('group-hidden')) {
+          searchInput.value = '';
+          applyFilter();
+        }
+        var node = group;
+        while (node && node !== content) {
+          if (node.classList && node.classList.contains('group') && node.classList.contains('is-collapsed')) {
+            setCollapsed(node, false, true);
+          }
+          node = node.parentElement;
+        }
+        syncCollapseAll();
+      }
+
+      function bindJump(container) {
+        if (!container) return;
+        container.addEventListener('click', function (event) {
+          var link = event.target.closest('a[data-target]');
+          if (!link) return;
+          var id = link.getAttribute('data-target');
+          if (id !== 'top') revealGroup(document.getElementById(id));
+          var el = id === 'top' ? document.body : document.getElementById(id);
+          if (!el) return;
+          event.preventDefault();
+          scrollToEl(el);
+          history.replaceState(null, '', id === 'top' ? location.pathname : '#' + id);
+        });
+      }
+      bindJump(rail);
+      bindJump(document.querySelector('.side-links'));
+
+      // 滚动时高亮当前分组
+      var jumpLinks = [].slice.call(document.querySelectorAll('a[data-target]'));
+      function setActive(id) {
+        jumpLinks.forEach(function (link) {
+          link.classList.toggle('is-active', link.getAttribute('data-target') === id);
+        });
+      }
+
+      if ('IntersectionObserver' in window) {
+        var visible = {};
+        observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            visible[entry.target.id] = entry.isIntersecting ? entry.getBoundingClientRect().top : null;
+          });
+          var best = null;
+          Object.keys(visible).forEach(function (key) {
+            if (visible[key] === null) return;
+            if (!best || visible[key] < visible[best]) best = key;
+          });
+          if (best) setActive(best);
+        }, { rootMargin: '-96px 0px -70% 0px', threshold: 0 });
+        syncObserver();
+      }
+
+      // ---------- 回到顶部 ----------
+
+      var topBtn = document.getElementById('topBtn');
+      function onScroll() {
+        var y = window.pageYOffset;
+        topBtn.classList.toggle('is-visible', y > 320);
+        topbar.classList.toggle('is-stuck', y > 40);
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+      topBtn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      // ---------- 详情弹窗 ----------
+
+      var modal = document.getElementById('modal');
+      var modalIcon = document.getElementById('modalIcon');
+      var modalTitle = document.getElementById('modalTitle');
+      var modalMeta = document.getElementById('modalMeta');
+      var modalDesc = document.getElementById('modalDesc');
+      var modalOpen = document.getElementById('modalOpen');
+      var modalCopy = document.getElementById('modalCopy');
+
+      function openModal(card) {
+        var link = card.querySelector('.card-link');
+        var title = card.querySelector('.card-title');
+        var desc = card.querySelector('.card-desc');
+        var icon = card.querySelector('.card-icon i');
+        var tag = card.querySelector('.card-tag');
+
+        modalIcon.innerHTML = icon ? icon.outerHTML : '';
+        modalTitle.textContent = title ? title.textContent : '';
+        modalMeta.textContent = [
+          tag ? '项目文件夹' : '单文件页面',
+          card.querySelector('.meta-size') ? card.querySelector('.meta-size').textContent.trim() : '',
+          card.querySelector('.meta-date') ? card.querySelector('.meta-date').textContent.trim() : '',
+          desc ? desc.textContent.length + ' 字描述' : '暂无描述',
+        ].filter(Boolean).join(' · ');
+        modalDesc.textContent = desc ? desc.textContent : '这个页面还没有写 description，可以在 <head> 里补一条。';
+        modalOpen.href = link ? link.getAttribute('href') : '#';
+        modal.hidden = false;
+        document.body.classList.add('modal-open');
+        document.getElementById('modalClose').focus();
+      }
+
+      function closeModal() {
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+      }
+
+      content.addEventListener('click', function (event) {
+        var more = event.target.closest('.card-more');
+        var card = more ? more.closest('.card') : null;
+        if (card) {
+          event.preventDefault();
+          openModal(card);
+        }
+      });
+      modal.addEventListener('click', function (event) {
+        if (event.target.closest('[data-close]') || event.target.closest('#modalClose')) closeModal();
+      });
+      modalCopy.addEventListener('click', function () {
+        var url = modalOpen.href;
+        function done() {
+          modalCopy.classList.add('is-done');
+          modalCopy.querySelector('span').textContent = '已复制';
+          setTimeout(function () {
+            modalCopy.classList.remove('is-done');
+            modalCopy.querySelector('span').textContent = '复制链接';
+          }, 1600);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done, function () {
+            window.prompt('复制这个链接：', url);
+          });
+        } else {
+          window.prompt('复制这个链接：', url);
+        }
+      });
+
+      // ---------- 初始化 ----------
+
+      applyFilter();
+      onScroll();
     })();
   </script>
 
