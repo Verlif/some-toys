@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>回声躲猫猫 · Echo Hide &amp; Seek</title>
+<meta name="description" content="只用声波“看”世界的非对称躲猫猫：全黑空间、声波反射、AI 追捕与躲藏。">
+<meta name="tags" content="非对称对抗, 潜行, 声波, 躲猫猫, AI 对抗, 本地双人">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+  <!-- HUD：固定在画面上方，不遮挡游戏区域；剩余时间居中 -->
+  <div id="hud">
+    <div class="hud-side left">
+      <div class="hud-item"><span class="label">剩余躲藏者</span><span id="aliveText">6</span></div>
+      <div class="hud-item"><span class="label">身份</span><span id="roleText">—</span></div>
+      <div class="hud-objective" id="objectiveBadge"><span id="objectiveText">👁 上帝视角 · 观战中</span></div>
+    </div>
+
+    <div id="hudTimerWrap">
+      <div class="hud-timer" id="hudTimer">
+        <span class="label">剩余时间</span>
+        <span id="timeText">2:00</span>
+      </div>
+    </div>
+
+    <div class="hud-side right">
+      <button class="hud-action" id="fullscreenBtn" title="网页全屏">⛶ 全屏</button>
+      <button class="hud-action" id="exitReplayHudBtn" style="display:none" title="退出回放">↩ 退出回放</button>
+      <div class="hud-item cooling" id="noiseMeter">
+        <span class="label">噪声</span>
+        <div class="bar"><div class="fill" id="noiseFill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 游戏画布与各类遮罩 -->
+  <div id="wrap">
+    <canvas id="cv" width="960" height="600"></canvas>
+    <div id="toast"></div>
+
+    <div id="countdownOverlay">
+      <div class="cd-panel">
+        <h2>准 备</h2>
+        <div class="cd-num" id="countdownNum">3</div>
+        <p class="cd-msg" id="countdownMsg">藏好，别被抓到！</p>
+      </div>
+    </div>
+
+    <div id="pauseOverlay">
+      <div class="pause-panel">
+        <h2>暂 停</h2>
+        <p class="pause-hint">按 <kbd>ESC</kbd> 继续游戏</p>
+        <button class="btn again" id="pauseRestart">🔄 &nbsp;重新开始</button>
+        <button class="btn secondary" id="pauseMenu">🏠 &nbsp;返回菜单</button>
+      </div>
+    </div>
+
+    <div id="resultAnimation" aria-hidden="true"></div>
+    <div id="overlay">
+      <div class="panel" id="panel"></div>
+      <button class="result-min-btn" id="resultMinBtn" type="button">— 收起结算</button>
+    </div>
+  </div>
+
+  <!-- 回放控制条独立占位，不覆盖游戏画面。 -->
+  <div id="replayBar" aria-label="回放控制">
+    <span class="replay-title">🎞 回放</span>
+    <button id="replayPlayBtn" type="button" title="播放/暂停">▶</button>
+    <input id="replayRange" type="range" min="0" max="1" step="0.01" value="0" aria-label="回放进度">
+    <span class="replay-time" id="replayTime">0:00 / 0:00</span>
+    <button id="replayExitBtn" type="button" title="退出回放">×</button>
+  </div>
+</div>
+
+<script type="module" src="js/entry.js"></script>
+</body>
+</html>
