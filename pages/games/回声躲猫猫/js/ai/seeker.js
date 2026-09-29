@@ -12,18 +12,18 @@
  */
 import {
   TILE, W, H, RUN_MUL, WALK_MUL, SEEKER_SPEED_MUL,
-  NOISE_AI_MIN_INTERVAL, BASE_SPEED
+  NOISE_AI_MIN_INTERVAL, BASE_SPEED, PROXIMITY_DETECT, DETECT_RANGE
 } from '../core/config.js';
 import { gstate } from '../core/state.js';
 import { nowSec } from '../core/timer.js';
 import { tx, ty, clamp } from '../core/utils.js';
-import { computePathFor, followPath, generateSearchPoints } from '../world/pathfind.js';
-import { moveEntity } from '../world/collision.js';
+import { computePathFor, followPath, generateSearchPoints, hasLineOfSight } from '../world/pathfind.js';
+import { moveEntity, circleHitsWall } from '../world/collision.js';
 import { getOpenCells } from '../world/map.js';
+import { nearestVisibleEnemy } from '../render/vision.js';
 import { tryEmitNoise } from '../audio/sound.js';
 
-/** 选一个“很久没去过”的巡逻点：访问间隔越久分越高，距离越远分越低 */
-export function pickPatrolTarget(e, nowT) {
+/** 选一个“很久没去过”的巡逻点：访问间隔越久分越高，距离越远分越低 */export function pickPatrolTarget(e, nowT) {
   const list = getOpenCells();
   let best = null, bestScore = -Infinity;
   const ai = e.ai;
@@ -42,15 +42,56 @@ export function pickPatrolTarget(e, nowT) {
   return best;
 }
 
+/**
+ * 追击目标是否近到可以直接扑过去。
+ * 只在近距离（8 格内）启用：远了还是要靠寻路绕墙，否则会一头撞进死路。
+ */
+function canPursueDirectly(e, target) {
+  if (!target) return false;
+  const d = Math.hypot(target.x - e.x, target.y - e.y);
+  if (d > TILE * 8) return false;
+  return !circleHitsWall(target.x, target.y, e.r * 0.98);
+}
+
 export function updateSeekerAI(e, dt) {
   const nowT = nowSec();
   const ai = e.ai;
+
+  // 抓到人之后的硬直：站住不动，等冷却结束再继续行动。
+  // 这段时间同时也是“抓捕冷却”，冷却条只在搜捕者阵营的 HUD 上显示。
+  if (e.catchCooldownUntil > nowT) {
+    e.speedMode = 'walk';
+    e.path = null;
+    e.pathIdx = 0;
+    e.goal = null;
+    return;
+  }
 
   // 访问记忆：45 秒内去过的格子不再优先巡逻
   ai.visitedCells.set(`${tx(e.x)},${ty(e.y)}`, nowT);
   if (ai.visitedCells.size > 800) {
     for (const [k, t] of ai.visitedCells) {
       if (nowT - t > 45) ai.visitedCells.delete(k);
+    }
+  }
+
+  // 近距离照面：看见了就直接追，不必先等声波传回来
+  const seen = PROXIMITY_DETECT ? nearestVisibleEnemy(e, DETECT_RANGE) : null;
+  if (seen) {
+    e.spottedTarget = { x: seen.x, y: seen.y, target: seen, arriveTime: nowT };
+  }
+
+  // 目标已经被别人抓走了就作废，否则会一直追着一具“尸体”原地不动：
+  // 目标格变成可通行、findPath 返回空数组，AI 就卡在“原地重算”里直到追击超时。
+  const chaseTarget = e.spottedTarget?.target;
+  if (chaseTarget && !chaseTarget.alive) {
+    e.spottedTarget = null;
+    if (ai.state === 'chase') {
+      ai.state = 'patrol';
+      ai.stateStart = nowT;
+      e.goal = null;
+      e.path = null;
+      e.pathIdx = 0;
     }
   }
 
@@ -151,6 +192,28 @@ export function updateSeekerAI(e, dt) {
 
   e.speedMode = speedMode;
   e.repathTimer -= dt;
+
+  // 追击时如果目标就在眼前且中间没墙，直接直线扑上去。
+  // 只靠寻路会出问题：被追的躲藏者常常贴着墙/角落，追击点落进墙格导致
+  // computePathFor 失败，于是 AI 一边“原地重算”一边烧掉追击时间，看起来就是卡住不动。
+  // 注意：直线走不通时**不要**自己侧向错车 —— 垂直方向会随位置在正负之间翻转，
+  // 结果就是左右抖着不走。走不通就交给下面的寻路分支处理。
+  if (ai.state === 'chase') {
+    const aim = e.spottedTarget?.target;
+    if (aim && aim.alive !== false && canPursueDirectly(e, aim) && hasLineOfSight(e, aim)) {
+      const d = Math.hypot(aim.x - e.x, aim.y - e.y) || 1;
+      const sp = BASE_SPEED * RUN_MUL * SEEKER_SPEED_MUL;
+      const px = e.x, py = e.y;
+      moveEntity(e, (aim.x - e.x) / d * sp * dt, (aim.y - e.y) / d * sp * dt);
+      if (Math.hypot(e.x - px, e.y - py) > sp * dt * 0.2) {
+        e.stuckTimer = 0;
+        e.progressTimer = 0;
+        e.progressBest = null;
+        return;
+      }
+      e.x = px; e.y = py;   // 没走成，交回寻路
+    }
+  }
 
   const needRepath = !e.path || e.pathIdx >= e.path.length || e.repathTimer <= 0;
   if (needRepath && e.goal) {

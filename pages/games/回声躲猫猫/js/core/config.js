@@ -59,6 +59,24 @@ export const NOISE_RAY_MUL  = 2;                      // 主动噪声射线倍�
 export const NOISE_COOLDOWN = 4.0;                    // 玩家噪声冷却（秒）
 export const NOISE_AI_MIN_INTERVAL = 3.5;             // AI 噪声最小间隔（秒）
 
+/* ---------- 近身视野 ---------- */
+export const VISION_TILE_RANGE = 3;      // 双方距离小于 3 格时互相显形
+export const CATCH_COOLDOWN = 2.5;       // 搜捕者抓到人后的硬直 / 抓捕冷却（秒）
+/**
+ * 队友（含 AI 队友）的近身视野是否共享给玩家。
+ *   true  —— 队友靠近某个角色时，玩家也能看到它（默认）
+ *   false —— 只有玩家自己靠近才看得见，黑暗的潜行压力更大
+ */
+export const SHARE_TEAM_VISION = true;
+/**
+ * 双方互相显形（VISION_TILE_RANGE）时，AI 是否也据此行动：
+ * 搜捕者看见躲藏者即刻追击，躲藏者看见搜捕者即刻逃跑 / 换位。
+ * 否则只有玩家单方面看得到对方，AI 仍然“瞎着”，会在近距离呆立。
+ */
+export const PROXIMITY_DETECT = true;
+/** 被 AI 发现的额外距离（px）。0 表示严格等于显形距离 */
+export const DETECT_RANGE = 0;
+
 /* ---------- 墙壁记忆 ---------- */
 export const WALL_MEMORY_HOLD = 1.0;   // 完全保持时长
 export const WALL_MEMORY_FADE = 1.4;   // 淡出时长
@@ -66,6 +84,8 @@ export const WALL_MEMORY_FADE = 1.4;   // 淡出时长
 /* ---------- 探测闪烁 ---------- */
 export const DETECT_RISE_TIME = 0.07;
 export const DETECT_FADE_TIME = 0.9;
+/** 别人扫到自己时是否也在自己身上闪一下：当前统一关闭，减少对画面的干扰 */
+export const SHOW_INCOMING_FLASH = false;
 
 /* ---------- 渲染 ---------- */
 export const PLAYER_MARKER_PULSE_SPEED = 4.0;

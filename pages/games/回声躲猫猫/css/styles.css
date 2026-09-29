@@ -101,6 +101,15 @@
     .hud-objective span::before { content:'👁 观战'; font-size:12px; }
   }
 
+  /* 搜捕者：抓捕后的冷却进度条 */
+  #catchMeter .bar { border-color:rgba(255,140,160,.32); }
+  #catchMeter .fill { background:linear-gradient(90deg,#ff7a92,#ffb37a); }
+  #catchMeter.ready .fill {
+    background:linear-gradient(90deg,#ffb36b,#ff8fa8);
+    box-shadow:0 0 10px rgba(255,140,150,.7);
+  }
+  #catchMeter.ready .label { color:#ffc48f; }
+
   #noiseMeter .bar {
     width: 72px; height: 9px;
     background: rgba(255,255,255,.08);
@@ -116,6 +125,88 @@
     box-shadow: 0 0 10px rgba(127,255,196,.8);
   }
   #noiseMeter.ready .label { color:#7fffc4; }
+
+  /* 双人模式：左右两侧分别显示 P1 / P2 的技能冷却 */
+  #skillCooldowns {
+    position:absolute; left:0; right:0; bottom:0;
+    display:none; justify-content:space-between; align-items:flex-end;
+    padding:0 14px 14px; pointer-events:none; z-index:8;
+  }
+  #skillCooldowns.show { display:flex; }
+  .skill-cd {
+    min-width:150px; padding:7px 11px; border-radius:10px;
+    background:rgba(8,12,20,.52);
+    border:1px solid rgba(120,180,255,.22);
+    backdrop-filter:blur(6px);
+    font-size:11px;
+  }
+  .skill-cd .skill-head {
+    display:flex; justify-content:space-between; align-items:baseline;
+    gap:10px; margin-bottom:5px;
+  }
+  .skill-cd .skill-label { font-weight:800; letter-spacing:1px; font-size:12px; }
+  .skill-cd.p1 .skill-label { color:#7fd3ff; }
+  .skill-cd.p2 .skill-label { color:#ff7fc4; }
+  .skill-row {
+    display:grid; grid-template-columns:auto 44px; align-items:center;
+    column-gap:8px; row-gap:3px; margin-top:6px;
+  }
+  .skill-row:first-of-type { margin-top:0; }
+  .skill-row .skill-name { color:#93a4c6; font-size:11px; }
+  .skill-row .skill-timer { color:#cfe0ff; font-variant-numeric:tabular-nums; font-weight:700; text-align:right; font-size:11px; }
+  .skill-row .bar {
+    grid-column:1 / -1;
+    width:100%; height:8px; border-radius:4px;
+    background:rgba(255,255,255,.08); overflow:hidden;
+  }
+  .skill-row .fill { height:100%; width:100%; border-radius:4px; transition:width .06s linear; }
+  .skill-cd.p1 .skill-row .fill { background:linear-gradient(90deg,#7fd3ff,#a98bff); }
+  .skill-cd.p2 .skill-row .fill { background:linear-gradient(90deg,#ff7fc4,#a98bff); }
+  .skill-row.ready .fill { box-shadow:0 0 10px rgba(127,255,196,.65); background:linear-gradient(90deg,#7fffc4,#7fd3ff); }
+  .skill-row.ready .skill-timer { color:#7fffc4; }
+  .skill-row .skill-hint { grid-column:1 / -1; color:#5f6f92; font-size:10px; letter-spacing:1px; }
+
+  /* 剩余 30 / 20 / 10 秒时的居中提示：只有数字，短暂闪过 */
+  #hudWarn {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(.82);
+    padding:6px 46px; border-radius:22px;
+    background:rgba(30,6,14,.22);
+    color:#ff9db0; font-weight:900; font-variant-numeric:tabular-nums;
+    font-size:clamp(64px,12vw,150px); line-height:1;
+    text-shadow:0 0 40px rgba(255,90,120,.55);
+    opacity:0; pointer-events:none; z-index:9;
+    transition:opacity .14s ease, transform .14s ease;
+  }
+  #hudWarn.show { opacity:.78; transform:translate(-50%,-50%) scale(1); }
+  #hudWarn.ten {
+    color:#ff6b86;
+    font-size:clamp(76px,14vw,180px);
+    text-shadow:0 0 52px rgba(255,60,90,.7);
+  }
+
+  /* 躲藏者被抓的提示横幅：低透明度，尽量不影响对局画面 */
+  #caughtNotice {
+    position:absolute; left:50%; bottom:15%;
+    transform:translate(-50%, 10px);
+    display:flex; flex-direction:column; gap:2px; align-items:center;
+    padding:10px 26px; border-radius:12px;
+    background:rgba(46,10,20,.32);
+    border:1px solid rgba(255,110,140,.20);
+    backdrop-filter:blur(3px);
+    opacity:0; pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease;
+    z-index:9; text-align:center;
+  }
+  #caughtNotice.show { opacity:.72; transform:translate(-50%, 0); }
+  #caughtNotice .cn-main {
+    color:#ff9db0; font-weight:800; letter-spacing:3px;
+    font-size:clamp(13px,1.7vw,19px);
+    text-shadow:0 0 18px rgba(255,80,110,.35);
+  }
+  #caughtNotice .cn-sub {
+    color:#c9a3ad; font-size:clamp(10px,1.2vw,13px);
+    letter-spacing:2px; font-variant-numeric:tabular-nums;
+  }
 
   #wrap {
     position:relative;
@@ -403,6 +494,77 @@
     margin: 8px 0 14px;
     text-align: left;
   }
+
+  /* 结算主视觉：先讲结果 */
+  .result-hero {
+    margin: 2px 0 14px;
+    padding: 12px 10px 14px;
+    border-radius: 16px;
+    border: 1px solid transparent;
+  }
+  .result-hero.win {
+    background: radial-gradient(120% 130% at 50% 0%, rgba(60,255,185,.14), rgba(10,26,22,.35) 70%);
+    border-color: rgba(127,255,196,.28);
+  }
+  .result-hero.lose {
+    background: radial-gradient(120% 130% at 50% 0%, rgba(255,90,120,.14), rgba(30,8,16,.35) 70%);
+    border-color: rgba(255,140,170,.26);
+  }
+  .result-verdict {
+    font-size: clamp(30px,5.4vw,58px);
+    letter-spacing: 8px; font-weight: 900; line-height:1.15;
+    margin: 0;
+  }
+  .result-hero.win .result-verdict {
+    background: linear-gradient(120deg,#7fffc4,#7fd3ff 60%,#a98bff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 24px rgba(127,255,196,.35));
+  }
+  .result-hero.lose .result-verdict {
+    background: linear-gradient(120deg,#ff8fa3,#ffb37a 70%,#a98bff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 24px rgba(255,110,140,.35));
+  }
+  .result-desc {
+    margin-top: 8px;
+    color: #7d8db3; font-size: clamp(11px,1.3vw,13px);
+    letter-spacing: 2px;
+  }
+
+  /* 结算比分板：被抓 / 存活 */
+  .result-board {
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(18px,4vw,46px);
+    margin: 4px 0 12px;
+  }
+  .board-col { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .board-num {
+    font-size: clamp(34px,5.6vw,56px); font-weight:900; line-height:1;
+    font-variant-numeric: tabular-nums;
+  }
+  .board-num i { font-style: normal; font-size:.45em; opacity:.6; margin-left:2px; }
+  .board-num.good { color:#7fffc4; text-shadow:0 0 24px rgba(127,255,196,.35); }
+  .board-num.bad  { color:#ff8fa3; text-shadow:0 0 24px rgba(255,90,120,.3); }
+  .board-cap { color:#6d7d9e; font-size: clamp(10px,1.2vw,12px); letter-spacing:2px; }
+  .board-div { width:1px; align-self:stretch; background:linear-gradient(180deg,transparent,rgba(120,170,255,.35),transparent); }
+
+  /* 结算高光数字：你这局干了什么 */
+  .result-highlights {
+    display:flex; justify-content:center; flex-wrap:wrap;
+    gap:8px; margin-bottom: 12px;
+  }
+  .highlight {
+    flex:1 1 0; min-width:96px; max-width:190px;
+    padding:10px 8px; border-radius:12px;
+    background: rgba(14,22,38,.72);
+    border:1px solid rgba(90,140,255,.18);
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+  }
+  .highlight .hl-val {
+    font-size: clamp(20px,2.6vw,28px); font-weight:900; color:#dceaff;
+    font-variant-numeric: tabular-nums; line-height:1;
+  }
+  .highlight .hl-cap { color:#6d7d9e; font-size: clamp(10px,1.15vw,12px); letter-spacing:1px; }
   .stat-row {
     display: flex; justify-content: space-between; align-items: baseline;
     padding: 5px 0;

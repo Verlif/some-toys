@@ -13,7 +13,7 @@ import { resetTimeBase } from '../core/timer.js';
 import { fmtTime } from '../core/utils.js';
 import { resetReplay } from '../game/replay.js';
 import { startGame } from '../game/main.js';
-import { setOverlayMode } from './hud.js';
+import { setOverlayMode, clearCaughtNotice, resetTimeWarnings } from './hud.js';
 import { dom } from './dom.js';
 
 const MAP_LABELS = { small: '小', medium: '中', large: '大' };
@@ -53,6 +53,8 @@ export function showMenu() {
 
   if (gstate.paused) { gstate.paused = false; dom.pauseOverlay.classList.remove('show'); }
   dom.countdownOverlay.classList.remove('show');
+  clearCaughtNotice();
+  resetTimeWarnings();
   resetTimeBase();
 
   dom.panel.innerHTML = `
@@ -65,7 +67,7 @@ export function showMenu() {
       <b>空格</b> 制造噪声（双倍射线·1.5倍距离·冷却4s）<br>
       <b>Enter</b> 双人模式玩家2制造噪声（方向键移动）<br>
       <b>Backspace</b> 双人模式玩家2快步<br>
-      <b>ESC</b> 暂停 &nbsp;·&nbsp; <b>R</b> 重开<br>
+      <b>ESC</b> 暂停 &nbsp;·&nbsp; <b>R R</b>（连按两次）重开<br>
       <span style="color:#7fd3ff">你只能看到自己阵营的声波</span><br>
       <span style="color:#ff9a70">声波接触到其他角色会闪橙红色</span><br>
       <span style="color:#a8c4f0">墙壁轮廓只被自己的声波点亮</span>

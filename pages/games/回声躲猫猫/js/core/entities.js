@@ -48,6 +48,7 @@ export function makeSeeker(spawn, isPlayer, controlScheme = 'p1') {
     speedMode: 'walk',
     soundTimer: 0,
     noiseCooldownUntil: 0,
+    catchCooldownUntil: 0,  // 抓到人后的抓捕冷却（只有搜捕者阵营能看到进度条）
     _px: spawn.x, _py: spawn.y,
     path: null, pathIdx: 0, repathTimer: 0, stuckCount: 0,
     goal: null,

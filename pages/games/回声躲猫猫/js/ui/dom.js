@@ -19,6 +19,13 @@ export const dom = {
   pauseOverlay: null,
   noiseMeter: null,
   noiseFill: null,
+  catchMeter: null,
+  catchFill: null,
+  caughtNotice: null,
+  caughtNoticeMain: null,
+  caughtNoticeSub: null,
+  hudWarn: null,
+  skillCooldowns: null,
   countdownOverlay: null,
   countdownNum: null,
   countdownMsg: null,
@@ -50,6 +57,13 @@ export function initDom() {
   dom.pauseOverlay = $('pauseOverlay');
   dom.noiseMeter = $('noiseMeter');
   dom.noiseFill = $('noiseFill');
+  dom.catchMeter = $('catchMeter');
+  dom.catchFill = $('catchFill');
+  dom.caughtNotice = $('caughtNotice');
+  dom.caughtNoticeMain = dom.caughtNotice.querySelector('.cn-main');
+  dom.caughtNoticeSub = dom.caughtNotice.querySelector('.cn-sub');
+  dom.hudWarn = $('hudWarn');
+  dom.skillCooldowns = $('skillCooldowns');
   dom.countdownOverlay = $('countdownOverlay');
   dom.countdownNum = $('countdownNum');
   dom.countdownMsg = $('countdownMsg');

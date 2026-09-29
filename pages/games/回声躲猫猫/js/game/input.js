@@ -8,6 +8,18 @@ import { BASE_SPEED, WALK_MUL, RUN_MUL, SEEKER_SPEED_MUL } from '../core/config.
 import { gstate, keys } from '../core/state.js';
 import { moveEntity } from '../world/collision.js';
 import { tryEmitNoise } from '../audio/sound.js';
+import { showToast, hideToast } from '../ui/hud.js';
+
+/** 重开确认：两次 R 之间的最大间隔 */
+const RESET_CONFIRM_MS = 1000;
+let R_ARMED_UNTIL = 0;
+
+function showResetHint() {
+  showToast('再按一次 R 重新开始', RESET_CONFIRM_MS);
+}
+function hideResetHint() {
+  hideToast();
+}
 
 export function handlePlayerInput(dt) {
   if (gstate.spectator || !gstate.players.length) return;
@@ -49,12 +61,30 @@ export function handlePlayerInput(dt) {
 export function bindInput(actions) {
   const { setPaused, exitReplay, showMenu, replayTogglePlay } = actions;
 
+  // 空格会让「当前获得焦点的按钮」被浏览器当作点击激活。
+  // 全屏/暂停菜单按钮点过之后会保留焦点，于是对局中按空格式噪声就会顺带
+  // 触发那个按钮 —— 这正是「按空格有一定概率重新开始」的来源。
+  // 在捕获阶段拦掉默认行为（preventDefault 对空格/回车只在捕获阶段有效），
+  // 再加上点击后主动失焦，双保险。
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') e.preventDefault();
+  }, true);
+
+  const blurFocusedButton = () => {
+    const el = document.activeElement;
+    if (el && typeof el.blur === 'function' && /^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(el.tagName || '')) {
+      el.blur();
+    }
+  };
+  window.addEventListener('click', blurFocusedButton, true);
+
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
     keys[k] = true;
 
     if (e.key === 'Escape' || e.key === 'Esc') {
       e.preventDefault();
+      R_ARMED_UNTIL = 0;   // 暂停/继续会打断重开确认，避免误触
       if (gstate.state === 'playing') setPaused(!gstate.paused);
       else if (gstate.state === 'replay') exitReplay();
       return;
@@ -64,7 +94,19 @@ export function bindInput(actions) {
       e.preventDefault();
     }
 
-    if (k === 'r' && gstate.state !== 'menu') showMenu();
+    // 重开需要按两次 R 确认，避免与 WASD / 空格的连按混在一起误触
+    if (k === 'r' && !e.repeat && gstate.state !== 'menu') {
+      e.preventDefault();
+      const nowT = performance.now();
+      if (nowT <= R_ARMED_UNTIL) {
+        R_ARMED_UNTIL = 0;
+        hideResetHint();
+        showMenu();
+      } else {
+        R_ARMED_UNTIL = nowT + RESET_CONFIRM_MS;
+        showResetHint();
+      }
+    }
     if (k === 'shift' || k === 'backspace') e.preventDefault();
 
     // P1 噪声

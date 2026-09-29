@@ -7,7 +7,7 @@
 import { gstate } from '../core/state.js';
 
 /** 新开一局时初始化统计 */
-export function resetStats(role, { hiderCount, seekerCount, gameTime }) {
+export function resetStats(role, { hiderCount, seekerCount, gameTime, playerCount = 1 }) {
   gstate.stats = {
     playerSoundCount: 0,
     playerNoiseCount: 0,
@@ -18,9 +18,24 @@ export function resetStats(role, { hiderCount, seekerCount, gameTime }) {
     totalHiders: hiderCount,
     totalSeekers: seekerCount,
     gameTimeTotal: gameTime,
-    playerRole: role
+    playerRole: role,
+    // 每位玩家各自抓到的躲藏者数量（下标 = 玩家序号）
+    playerCatchCounts: new Array(Math.max(1, Math.min(2, playerCount))).fill(0)
   };
   return gstate.stats;
+}
+
+/** 记一次玩家抓捕（玩家是搜捕者时才有意义） */
+export function addPlayerCatch(playerIndex) {
+  const list = gstate.stats.playerCatchCounts;
+  if (!list || playerIndex < 0 || playerIndex >= list.length) return;
+  list[playerIndex]++;
+}
+
+export function getPlayerCatchCount(playerIndex) {
+  const list = gstate.stats.playerCatchCounts;
+  if (!list || playerIndex < 0 || playerIndex >= list.length) return 0;
+  return list[playerIndex];
 }
 
 /** 统计项 +1 */
