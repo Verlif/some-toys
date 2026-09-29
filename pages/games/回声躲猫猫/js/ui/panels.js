@@ -64,39 +64,53 @@ export function finishResultScreen(winner) {
     (playerRole === 'seeker' && winner === 'seeker') ||
     (playerRole === 'hider' && winner === 'hiders');
 
-  let title, desc;
+  // 结果导向：标题讲胜负，副标题一句话说清“怎么赢的”
+  let title, desc, outcomeCls;
   if (winner === 'seeker') {
-    title = playerRole === 'seeker' ? '🎉 你赢了！' : '💀 搜捕者获胜';
-    desc  = '所有躲藏者都被抓住了';
+    title = playerRole === 'seeker' ? '你赢了' : '搜捕者获胜';
+    desc = '躲藏者全部落网';
+    outcomeCls = playerWon ? 'win' : 'lose';
   } else {
-    title = playerRole === 'hider' ? '🎉 躲藏者胜利！' : '⏰ 时间到';
-    desc  = '时间耗尽，仍有躲藏者没被找到';
+    title = playerRole === 'hider' ? '你赢了' : '躲藏者获胜';
+    desc = '时间结束，仍有人没被找到';
+    outcomeCls = playerWon ? 'win' : 'lose';
   }
   if (playerRole === 'hider' && gstate.player && !gstate.player.alive) {
-    title = (gstate.cfgPlayerCount === 1)
-      ? '💀 你被抓住了'
-      : (winner === 'hiders' ? '😅 你被抓了，但队友赢了' : '💀 你们被抓住了');
-    desc = winner === 'hiders' ? '时间耗尽，其他躲藏者成功逃脱' : '搜捕者抓住了所有躲藏者';
+    title = gstate.cfgPlayerCount === 1
+      ? '你被抓住了'
+      : (winner === 'hiders' ? '你被抓了，队友赢了' : '你们都被抓住了');
+    desc = winner === 'hiders' ? '队友坚持到了时间结束' : '躲藏者全部落网';
   }
 
   const s = gstate.stats;
+  const caught = s.hidersCaught;
+  const survived = Math.max(0, s.hidersAlive);
+  const total = s.totalHiders;
+
+  // 个人高光：把最能说明“你干了什么”的数字放大
+  const highlights = [];
+  if (playerRole === 'seeker') {
+    const catches = s.playerCatchCounts || [];
+    if (gstate.cfgPlayerCount === 2) {
+      highlights.push({ label: 'P1 抓捕', value: catches[0] || 0 });
+      highlights.push({ label: 'P2 抓捕', value: catches[1] || 0 });
+    } else {
+      highlights.push({ label: '你的抓捕', value: catches[0] || 0 });
+    }
+    highlights.push({ label: '你探测到躲藏者', value: s.playerDetectedEnemy });
+  } else {
+    highlights.push({ label: '你的状态', value: playerAlive ? '存活' : '被抓', text: true });
+    highlights.push({ label: '被探测次数', value: s.playerDetectedByEnemy });
+  }
+  highlights.push({ label: '你制造噪声', value: s.playerNoiseCount });
+
   const rows = [
     { key: '游戏时长', val: fmtTime(s.gameTimeTotal), cls: '' },
     { key: '玩家模式', val: gstate.cfgPlayerCount === 2 ? '双人同阵营' : '单人', cls: '' },
     { key: '追捕者 / 躲藏者', val: `${s.totalSeekers} / ${s.totalHiders}`, cls: '' },
     { key: '你的身份', val: playerRole === 'seeker' ? '🔴 搜捕者' : '🟢 躲藏者', cls: '' },
-    { key: '你的状态', val: playerAlive ? '存活' : '被抓', cls: playerAlive ? 'good' : 'bad' },
-    { key: '躲藏者被抓', val: `${s.hidersCaught} / ${s.totalHiders}`, cls: 'bad' },
-    { key: '躲藏者存活', val: `${s.hidersAlive} / ${s.totalHiders}`, cls: 'good' },
-    { key: '你发声音波次数', val: `${s.playerSoundCount}`, cls: '' },
-    { key: '你使用噪声次数', val: `${s.playerNoiseCount}`, cls: '' }
+    { key: '你发声音波次数', val: `${s.playerSoundCount}`, cls: '' }
   ];
-
-  if (playerRole === 'seeker') {
-    rows.push({ key: '你探测到躲藏者', val: `${s.playerDetectedEnemy} 次`, cls: 'good' });
-  } else {
-    rows.push({ key: '你被追捕者探测', val: `${s.playerDetectedByEnemy} 次`, cls: s.playerDetectedByEnemy > 0 ? 'bad' : 'good' });
-  }
 
   if (gstate.cfgPlayerCount === 2) {
     const aliveP = p => p && (p.type === 'seeker' || p.alive);
@@ -104,10 +118,33 @@ export function finishResultScreen(winner) {
     rows.push({ key: '玩家2状态', val: aliveP(gstate.players[1]) ? '存活' : '被抓', cls: aliveP(gstate.players[1]) ? 'good' : 'bad' });
   }
 
-  const color = playerWon ? '#7fffc4' : '#ff8fa3';
   dom.panel.innerHTML = `
-    <h1 style="background:linear-gradient(120deg,${color},#a98bff);-webkit-background-clip:text;background-clip:text;color:transparent;font-size: clamp(20px,3.2vw,34px);">${title}</h1>
-    <p class="sub">${desc}</p>
+    <div class="result-hero ${outcomeCls}">
+      <h1 class="result-verdict">${title}</h1>
+      <p class="result-desc">${desc}</p>
+    </div>
+
+    <div class="result-board">
+      <div class="board-col">
+        <span class="board-num bad">${caught}<i>/${total}</i></span>
+        <span class="board-cap">躲藏者被抓</span>
+      </div>
+      <div class="board-div"></div>
+      <div class="board-col">
+        <span class="board-num good">${survived}<i>/${total}</i></span>
+        <span class="board-cap">躲藏者存活</span>
+      </div>
+    </div>
+
+    <div class="result-highlights">
+      ${highlights.map(h => `
+        <div class="highlight">
+          <span class="hl-val">${h.value}</span>
+          <span class="hl-cap">${h.label}</span>
+        </div>
+      `).join('')}
+    </div>
+
     <div class="result-stats">
       ${rows.map(r => `
         <div class="stat-row">
@@ -116,6 +153,7 @@ export function finishResultScreen(winner) {
         </div>
       `).join('')}
     </div>
+
     <button class="btn again" id="replayBtn">🎞 &nbsp;观看整场回放</button>
     <button class="btn again" id="againBtn">再来一局</button>
     <button class="btn secondary" id="menuBtn">返回菜单</button>

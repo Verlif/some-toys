@@ -11,12 +11,13 @@
  *   队友（其他躲藏者）的脚步与噪声不会再被写入 heardSound / threatZones，
  *   因此躲藏者不会因为队友跑动而逃跑。
  */
-import { TILE, RUN_MUL, WALK_MUL } from '../core/config.js';
+import { TILE, RUN_MUL, WALK_MUL, PROXIMITY_DETECT, DETECT_RANGE } from '../core/config.js';
 import { gstate } from '../core/state.js';
 import { nowSec } from '../core/timer.js';
 import { tx, ty, rand, clamp } from '../core/utils.js';
 import { computePathFor, followPath, cellQuality } from '../world/pathfind.js';
 import { getOpenCells } from '../world/map.js';
+import { nearestVisibleEnemy } from '../render/vision.js';
 
 /** 藏身点评分：远离威胁与追捕者、靠近墙壁、出口 2~3 个最优、远离队友 */
 function scoreHideSpot(x, y, e, nowT) {
@@ -147,7 +148,7 @@ export function updateHiderAI(e, dt) {
 
   ai.relocateTimer -= dt;
 
-  // 2) 最近的搜捕者（用于决定逃跑/换位，不用于“凭空感知”）
+  // 2) 最近的搜捕者
   let nearbySeeker = null, nearbySeekerDist = Infinity;
   for (const s of gstate.seekers) {
     const d = Math.hypot(s.x - e.x, s.y - e.y);
@@ -155,6 +156,19 @@ export function updateHiderAI(e, dt) {
   }
   ai.dangerScore = nearbySeeker ? clamp(1 - nearbySeekerDist / 420, 0, 1) : 0;
   if (nearbySeeker && nearbySeekerDist < 300) ai.lastThreatPos = { x: nearbySeeker.x, y: nearbySeeker.y };
+
+  // 2.5) 近距离照面：互相显形的那一刻就当自己被看见了 → 立刻逃
+  //      （否则玩家能看见搜捕者、AI 却还在原地发呆）
+  if (PROXIMITY_DETECT) {
+    const seen = nearestVisibleEnemy(e, DETECT_RANGE);
+    if (seen) {
+      ai.detectedBySeeker = nowT;
+      ai.detectedBySeekerPos = { x: seen.x, y: seen.y };
+      nearbySeeker = seen;
+      nearbySeekerDist = Math.hypot(seen.x - e.x, seen.y - e.y);
+      ai.lastThreatPos = { x: seen.x, y: seen.y };
+    }
+  }
 
   // 3) 被搜捕者声波直接探测到 → 立即逃跑
   if (ai.detectedBySeeker && nowT - ai.detectedBySeeker < 2.0) {
@@ -178,12 +192,15 @@ export function updateHiderAI(e, dt) {
   if (ai.state !== 'flee') {
     if ((nearbySeeker && nearbySeekerDist < 150) || (nearestThreat && nearestDist < 200)) {
       // 贴脸威胁 → 逃跑
+      // 注意：威胁可能只来自“看见的搜捕者”而威胁区为空，这里统一用 tx0/ty0
       ai.state = 'flee';
-      const tx0 = nearbySeeker && nearbySeekerDist < 150 ? nearbySeeker.x : nearestThreat.x;
-      const ty0 = nearbySeeker && nearbySeekerDist < 150 ? nearbySeeker.y : nearestThreat.y;
+      const fleeFromSeeker = nearbySeeker && nearbySeekerDist < 150;
+      const tx0 = fleeFromSeeker ? nearbySeeker.x : nearestThreat.x;
+      const ty0 = fleeFromSeeker ? nearbySeeker.y : nearestThreat.y;
       ai.fleeTarget = chooseFleePoint(e, tx0, ty0);
       ai.stateStart = nowT;
-      ai.lastFleeFrom = { x: nearestThreat.x, y: nearestThreat.y };
+      ai.lastFleeFrom = { x: tx0, y: ty0 };
+      ai.lastThreatPos = { x: tx0, y: ty0 };
       e.path = null;
     } else if ((nearbySeeker && nearbySeekerDist < 420) || (nearestThreat && nearestDist < 390)) {
       // 中距离威胁不再原地“冻住”，而是静默换到更安全的躲藏点

@@ -41,11 +41,44 @@ export function beginWorldTransform() {
   ctx.setTransform(scale, 0, 0, scale, ox, oy);
 }
 
-/** 某个声波对当前玩家是否可见 */
+/* ============================================================
+   声波可见性
+============================================================ */
+/** 声波是否是从玩家身上发出的 */
+export function waveEmittedByPlayer(wave) {
+  return !!gstate.player && wave.emitter === gstate.player;
+}
+
+/** 声波是否接触到了玩家（打到玩家身上） */
+export function waveHitsPlayer(wave) {
+  if (!gstate.player || !wave.hits) return false;
+  return wave.hits.some(h => h.target === gstate.player);
+}
+
+/** 某个角色是否属于玩家的阵营（含玩家自己） */
+function isPlayerTeamEntity(entity) {
+  return !!gstate.player && !!entity && entity.type === gstate.player.type;
+}
+
+/** 声波是否与玩家无关（既不是自己发的，也没有打到自己） */
+export function waveInvolvesPlayer(wave) {
+  return waveEmittedByPlayer(wave) || waveHitsPlayer(wave);
+}
+
+/**
+ * 某个声波对当前玩家是否可见。
+ *
+ *   1. 自己阵营的声波 —— 始终可见
+ *   2. 敌方声波 —— 只有真正打到自己身上的那一条才可见
+ *      （被声波照到的瞬间，你能看见探到你的那道波）
+ *   任何情况下，已经出局的躲藏者留下的声波都不再显示。
+ */
 export function waveVisibleToPlayer(wave) {
   if (gstate.state === 'over' || gstate.spectator || !gstate.player) return true;
   if (!wave.emitter) return false;
-  return wave.emitter.type === gstate.player.type;
+  if (wave.emitter.type === 'hider' && !wave.emitter.alive) return false;
+  if (wave.emitter.type === gstate.player.type) return true;
+  return waveHitsPlayer(wave);
 }
 
 /* ============================================================
@@ -96,19 +129,25 @@ export function flashIntensity(t, fadeTime) {
   return Math.max(0, 1 - (t - DETECT_RISE_TIME) / (fadeTime - DETECT_RISE_TIME));
 }
 
-/** 在 (fx,fy) 画一次橙红色脉冲 + 十字准星 */
-export function drawDetectFlash(fx, fy, intensity) {
+/**
+ * 在 (fx,fy) 画一次脉冲 + 十字准星。
+ *
+ * kind: 'self'  —— 自己的声波扫到别人（宣示性，亮橙色、十字准星）
+ *       'incoming' —— 别人的声波打到自己（扩散更大、更暗，读作“我被照到了”）
+ */
+export function drawDetectFlash(fx, fy, intensity, kind = 'self') {
   const ctx = dom.ctx;
-  const alpha = intensity * 0.95;
+  const incoming = kind === 'incoming';
+  const alpha = intensity * (incoming ? 0.8 : 0.95);
 
   ctx.save();
   ctx.shadowColor = `rgba(255, 130, 60, ${alpha})`;
-  ctx.shadowBlur = 20 + intensity * 16;
+  ctx.shadowBlur = (incoming ? 26 : 20) + intensity * 16;
 
-  const outerR = 16 - intensity * 5;
+  const outerR = incoming ? 22 - intensity * 5 : 16 - intensity * 5;
   ctx.beginPath();
   ctx.arc(fx, fy, outerR, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(255, 110, 45, ${alpha * 0.55})`;
+  ctx.fillStyle = `rgba(255, 110, 45, ${alpha * (incoming ? 0.34 : 0.55)})`;
   ctx.fill();
 
   ctx.beginPath();
@@ -118,7 +157,7 @@ export function drawDetectFlash(fx, fy, intensity) {
 
   ctx.strokeStyle = `rgba(255, 200, 140, ${alpha})`;
   ctx.lineWidth = 2;
-  const arm = 12 + intensity * 4;
+  const arm = (incoming ? 15 : 12) + intensity * 4;
   ctx.beginPath();
   ctx.moveTo(fx - arm, fy); ctx.lineTo(fx - 4, fy);
   ctx.moveTo(fx + 4, fy);   ctx.lineTo(fx + arm, fy);
@@ -136,15 +175,20 @@ export function renderDetectFlashes() {
     if (!wave.hits || wave.hits.length === 0) continue;
     if (!wave.emitter) continue;
 
+    const emitter = wave.emitter;
+    const emitterIsPlayer = waveEmittedByPlayer(wave);
+
+    // 正常游戏只提示「自己打出去的那一次」。
+    // 别人的声波（含队友）造成的接触不在玩家画面上闪，避免干扰对局画面。
+    if (!preserveFinal && !emitterIsPlayer) continue;
+
     const frontDist = wave.age * SOUND_SPEED;
 
     for (const hit of wave.hits) {
-      const emitter = wave.emitter;
       const target = hit.target;
 
-      // 正常游戏仅提示玩家自己发出的声波命中其他角色；双人时 P1/P2 都适用
-      if (!preserveFinal && !emitter.isPlayer) continue;
       if (target === emitter) continue;
+      if (!preserveFinal && isPlayerTeamEntity(target)) continue;   // 不显示队友（或自己）被定位的提示
 
       // 闪烁位置就是声波射线与角色首次相交的实际坐标
       const fx = hit.x;
@@ -159,7 +203,7 @@ export function renderDetectFlashes() {
 
       const intensity = flashIntensity(sinceArrival, DETECT_FADE_TIME);
       if (intensity <= 0) continue;
-      drawDetectFlash(fx, fy, intensity);
+      drawDetectFlash(fx, fy, intensity, 'self');
     }
   }
 }

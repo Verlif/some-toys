@@ -32,6 +32,10 @@
         <span class="label">噪声</span>
         <div class="bar"><div class="fill" id="noiseFill"></div></div>
       </div>
+      <div class="hud-item cooling" id="catchMeter">
+        <span class="label">抓捕</span>
+        <div class="bar"><div class="fill" id="catchFill"></div></div>
+      </div>
     </div>
   </div>
 
@@ -39,6 +43,9 @@
   <div id="wrap">
     <canvas id="cv" width="960" height="600"></canvas>
     <div id="toast"></div>
+    <div id="hudWarn"></div>
+    <div id="caughtNotice"><span class="cn-main"></span><span class="cn-sub"></span></div>
+    <div id="skillCooldowns" aria-label="双方技能冷却"></div>
 
     <div id="countdownOverlay">
       <div class="cd-panel">

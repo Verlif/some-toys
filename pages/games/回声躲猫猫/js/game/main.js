@@ -3,7 +3,7 @@
  *
  * 这里是唯一的“游戏推进”入口，渲染与 UI 分别由 render / ui 层订阅状态完成。
  */
-import { START_COUNTDOWN, SPECTATOR_GRACE, setWorldSize } from '../core/config.js';
+import { START_COUNTDOWN, SPECTATOR_GRACE, setWorldSize, CATCH_COOLDOWN } from '../core/config.js';
 import { gstate, countAliveHiders, allHumanHidersDead } from '../core/state.js';
 import { nowSec, beginPause, endPause } from '../core/timer.js';
 import { buildEntities } from '../core/entities.js';
@@ -11,13 +11,13 @@ import { generateMap, forgetOpenCells } from '../world/map.js';
 import { updateSeekerAI } from '../ai/seeker.js';
 import { updateHiderAI } from '../ai/hider.js';
 import { updateMovementSounds, updateSoundWaves } from '../audio/sound.js';
-import { resetStats, setStat, bumpStat } from './stats.js';
+import { resetStats, setStat, bumpStat, addPlayerCatch } from './stats.js';
 import { handlePlayerInput } from './input.js';
 import {
   captureReplayFrame, setReplayStart, resetReplay
 } from './replay.js';
 import { dom } from '../ui/dom.js';
-import { setOverlayMode, showToast } from '../ui/hud.js';
+import { setOverlayMode, showToast, showCaughtNotice, clearCaughtNotice, resetTimeWarnings } from '../ui/hud.js';
 import { showMenu } from '../ui/settings.js';
 import { finishResultScreen, startResultAnimation } from '../ui/panels.js';
 
@@ -67,12 +67,15 @@ export function startGame(role) {
   dom.pauseOverlay.classList.remove('show');
   setOverlayMode({ mode: 'hidden' });
   dom.toast.classList.remove('show');
+  clearCaughtNotice();
+  resetTimeWarnings();
   resetReplay();
 
   resetStats(role, {
     hiderCount: gstate.cfgHiderCount,
     seekerCount: gstate.cfgSeekerCount,
-    gameTime: gstate.cfgGameTime
+    gameTime: gstate.cfgGameTime,
+    playerCount: gstate.cfgPlayerCount
   });
 
   // 进入开局倒计时
@@ -151,28 +154,54 @@ export function update(dt) {
 /**
  * 搜捕者碰到躲藏者即淘汰。
  *
+ * 刚抓到人的搜捕者会进入短暂「抓捕冷却」，冷却期间不能再抓下一个人；
+ * 冷却进度条只对搜捕者阵营显示（见 ui/hud.js）。
+ *
  * 玩家侧（单人 1 名 / 双人 2 名，均属同一阵营）只要**所有**玩家都被抓，
  * 立即转入上帝视角观战，继续看 AI 打完剩下的对局。
  */
 function resolveCatches() {
+  const nowT = nowSec();
+  const caughtThisFrame = new Set();
+
   for (const h of gstate.hiders) {
     if (!h.alive) continue;
     for (const s of gstate.seekers) {
-      if (Math.hypot(s.x - h.x, s.y - h.y) < s.r + h.r + 2) {
-        h.alive = false;
-        bumpStat('hidersCaught');
-        if (h.isPlayer && !gstate.spectator) {
-          const aliveHumanHiders = gstate.players.filter(p => p.type === 'hider' && p.alive).length;
-          if (aliveHumanHiders === 0) gstate.spectator = true;
-          if (gstate.cfgPlayerCount === 1) {
-            showToast('你被抓住了！');
-          } else {
-            showToast(aliveHumanHiders === 0 ? '你们都被抓住了！' : '一名玩家被抓住了！');
-          }
-        }
-        break;
-      }
+      if (s.catchCooldownUntil > nowT) continue;              // 冷却中，抓不到人
+      if (Math.hypot(s.x - h.x, s.y - h.y) >= s.r + h.r + 2) continue;
+
+      h.alive = false;
+      caughtThisFrame.add(h);
+      s.catchCooldownUntil = nowT + CATCH_COOLDOWN;
+      bumpStat('hidersCaught');
+      // 记录是「哪位玩家」抓到的（AI 得手时不记）
+      const catcherIndex = gstate.players.indexOf(s);
+      if (catcherIndex >= 0) addPlayerCatch(catcherIndex);
+      notifyHiderCaught(h);
+      break;
     }
+  }
+
+  // 同一帧内可能有多人被淘汰（多个搜捕者同时得手），人数统计在结算前统一刷新
+  if (caughtThisFrame.size > 0) setStat('hidersAlive', countAliveHiders());
+}
+
+/**
+ * 躲藏者被淘汰时的画面提示。
+ * 所有躲藏者（含 AI 队友）被抓都会提示，让玩家随时知道还剩几个人。
+ */
+function notifyHiderCaught(h) {
+  const total = gstate.cfgHiderCount;
+  const remain = countAliveHiders();
+
+  // 低透明度横幅，不遮挡也基本不干扰对局
+  showCaughtNotice(remain > 0 ? `躲藏者被抓捕 · 剩余 ${remain} 人` : '躲藏者已被全部抓捕', remain, total);
+
+  if (h.isPlayer && !gstate.spectator) {
+    const aliveHumanHiders = gstate.players.filter(p => p.type === 'hider' && p.alive).length;
+    if (aliveHumanHiders === 0) gstate.spectator = true;
+    if (gstate.cfgPlayerCount === 1) showToast('你被抓住了！');
+    else showToast(aliveHumanHiders === 0 ? '你们都被抓住了！' : '一名玩家被抓住了！');
   }
 }
 

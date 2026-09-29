@@ -15,6 +15,7 @@ import {
   beginWorldTransform, waveVisibleToPlayer,
   drawWallMemories, renderDetectFlashes, drawDetectFlash, flashIntensity
 } from './sight.js';
+import { entitiesVisibleTo, canSeeEntity } from './vision.js';
 
 /* ============================================================
    上帝视角完整地图
@@ -124,6 +125,59 @@ function drawPlayerMarkers(nowT, labelPlayers) {
 }
 
 /* ============================================================
+   近身可见的角色
+============================================================ */
+/**
+ * 游戏中只画出玩家“看得见”的其他角色：
+ *   · 3 格以内的任何角色
+ *   · 搜捕者之间的互相位置
+ * 看不见的人不会画，所以黑暗里的对手依旧只靠声波暴露。
+ */
+function drawVisibleCharacters(nowT) {
+  const ctx = dom.ctx;
+  const me = gstate.player;
+  const visible = entitiesVisibleTo(me);
+
+  for (const e of visible) {
+    if (e.isPlayer) continue;   // 玩家标记由 drawPlayerMarkers 统一处理
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r + 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = e.type === 'seeker' ? 'rgba(255, 80, 110, 0.9)' : 'rgba(60, 220, 150, 0.85)';
+    ctx.fill();
+
+    // 细描边，让近身的角色在黑洞洞的画面里更清楚
+    ctx.strokeStyle = e.type === 'seeker' ? 'rgba(255, 170, 190, 0.85)' : 'rgba(180, 255, 220, 0.8)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 双人模式下给看得见的队友标上 P1 / P2
+  if (gstate.cfgPlayerCount === 2) {
+    for (let i = 0; i < gstate.players.length; i++) {
+      const p = gstate.players[i];
+      if (!p || p === me || !canSeeEntity(me, p)) continue;
+      const pulse = 0.5 + 0.5 * Math.sin(nowT * PLAYER_MARKER_PULSE_SPEED + i * Math.PI);
+      ctx.save();
+      ctx.globalAlpha = 0.5 + pulse * 0.4;
+      ctx.strokeStyle = PLAYER_COLORS[i] || PLAYER_COLORS[0];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 12 + pulse * 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.font = '700 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = PLAYER_COLORS[i] || PLAYER_COLORS[0];
+      ctx.fillText(i === 0 ? 'P1' : 'P2', p.x, p.y - 17);
+      ctx.restore();
+    }
+  }
+}
+
+/* ============================================================
    主渲染
 ============================================================ */
 export function render() {
@@ -183,7 +237,8 @@ export function render() {
     }
     drawPlayerMarkers(nowT, true);
   } else if (gstate.players.length) {
-    // 游戏中只显示玩家自己的标记（AI 不可见）
+    // 游戏进行中：先画近身可见的其他角色，再画自己的标记
+    drawVisibleCharacters(nowT);
     drawPlayerMarkers(nowT, false);
   }
 }
