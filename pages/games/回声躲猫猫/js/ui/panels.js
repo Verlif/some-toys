@@ -1,20 +1,32 @@
 /**
  * 结算面板与结果动画。
  *
- * 流程：endGame(winner) → 结果动画（1.9s，冻结画面）→ 结算面板（可最小化）。
+ * 流程：sim 判定胜负 → EVT.MATCH_END → 结果动画（1.9s，冻结画面）→ 结算面板（可最小化）。
+ * 按钮回调通过 ui/actions.js 的注册表注入，避免和 flow / settings 互相 import 成环。
  */
 import { fmtTime } from '../core/utils.js';
 import { gstate } from '../core/state.js';
 import { nowSec } from '../core/timer.js';
-import { captureReplayFrame, startReplay } from '../game/replay.js';
-import { startGame } from '../game/main.js';
-import { showMenu } from './settings.js';
+import { captureReplayFrame } from '../sim/replay.js';
+import { setSimPaused } from '../sim/simulation.js';
+import { actions } from './actions.js';
 import { setOverlayMode } from './hud.js';
 import { dom } from './dom.js';
 
+/** 结果面板上的按钮回调（由 ui/flow.js 注册） */
+let resultActions = {
+  onReplay: () => actions.startReplay(),
+  onRestart: () => actions.startGame(gstate.selectedRole),
+  onMenu: () => actions.openMenu()
+};
+
+export function setResultActions(impl) {
+  resultActions = { ...resultActions, ...impl };
+}
+
 /* ============================================================
    结果动画
-============================================================ */
+   ============================================================ */
 export function startResultAnimation(winner) {
   if (gstate.state === 'over' || gstate.state === 'replay' || gstate.state === 'resultAnimation') return;
   captureReplayFrame(true);
@@ -22,7 +34,7 @@ export function startResultAnimation(winner) {
   gstate.pendingGameEnd = null;
   gstate.showGodView = true;
   gstate.spectator = true;
-  if (gstate.paused) { gstate.paused = false; dom.pauseOverlay.classList.remove('show'); }
+  if (gstate.paused) { setSimPaused(false); dom.pauseOverlay.classList.remove('show'); }
   dom.countdownOverlay.classList.remove('show');
   gstate.state = 'resultAnimation';
   gstate.resultAnimWinner = winner;
@@ -50,7 +62,7 @@ export function startResultAnimation(winner) {
 
 /* ============================================================
    结算面板
-============================================================ */
+   ============================================================ */
 export function finishResultScreen(winner) {
   gstate.state = 'over';
   gstate.pendingGameEnd = null;
@@ -102,14 +114,17 @@ export function finishResultScreen(winner) {
     highlights.push({ label: '你的状态', value: playerAlive ? '存活' : '被抓', text: true });
     highlights.push({ label: '被探测次数', value: s.playerDetectedByEnemy });
   }
-  highlights.push({ label: '你制造噪声', value: s.playerNoiseCount });
+  highlights.push({ label: '你捡到的道具', value: s.playerItemsCollected || 0 });
 
   const rows = [
     { key: '游戏时长', val: fmtTime(s.gameTimeTotal), cls: '' },
     { key: '玩家模式', val: gstate.cfgPlayerCount === 2 ? '双人同阵营' : '单人', cls: '' },
     { key: '追捕者 / 躲藏者', val: `${s.totalSeekers} / ${s.totalHiders}`, cls: '' },
     { key: '你的身份', val: playerRole === 'seeker' ? '🔴 搜捕者' : '🟢 躲藏者', cls: '' },
-    { key: '你发声音波次数', val: `${s.playerSoundCount}`, cls: '' }
+    { key: '你发声音波次数', val: `${s.playerSoundCount}`, cls: '' },
+    { key: '道具刷新 / 被捡', val: `${s.itemsSpawned || 0} / ${s.itemsCollected || 0}`, cls: '' },
+    { key: '道具效果触发', val: `${s.itemEffects || 0}`, cls: '' },
+    { key: '本局种子', val: `${s.seed ?? gstate.seed}`, cls: '' }
   ];
 
   if (gstate.cfgPlayerCount === 2) {
@@ -161,14 +176,14 @@ export function finishResultScreen(winner) {
   setOverlayMode({ mode: 'result' });
   dom.resultMinBtn.textContent = '— 收起结算';
 
-  document.getElementById('replayBtn').addEventListener('click', () => startReplay());
-  document.getElementById('againBtn').addEventListener('click', () => startGame(gstate.selectedRole));
-  document.getElementById('menuBtn').addEventListener('click', showMenu);
+  document.getElementById('replayBtn').addEventListener('click', () => resultActions.onReplay());
+  document.getElementById('againBtn').addEventListener('click', () => resultActions.onRestart());
+  document.getElementById('menuBtn').addEventListener('click', () => resultActions.onMenu());
 }
 
 /* ============================================================
    结算面板最小化
-============================================================ */
+   ============================================================ */
 export function bindResultMinimize() {
   dom.resultMinBtn.addEventListener('click', () => {
     if (gstate.state !== 'over') return;

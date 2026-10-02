@@ -1,8 +1,12 @@
 /**
  * 地图生成：随机矩形障碍物 + 连通性检测，保证不存在闭合区域。
+ *
+ * 随机数全部走 core/rng.js：同一个种子必然生成同一张地图，
+ * 联机时房主只需要把种子发给客户端。
  */
 import { COLS, ROWS, WALL_COUNT } from '../core/config.js';
 import { gstate } from '../core/state.js';
+import { rng } from '../core/rng.js';
 
 /** 随机撒一批矩形障碍物，四周留出边界墙 */
 function buildRandomMap() {
@@ -12,13 +16,13 @@ function buildRandomMap() {
 
   for (let i = 0; i < WALL_COUNT; i++) {
     let w, h;
-    const r = Math.random();
-    if (r < 0.22)      { w = 4 + ((Math.random() * 3) | 0); h = 1; }
-    else if (r < 0.44) { w = 1; h = 4 + ((Math.random() * 3) | 0); }
-    else               { w = 1 + ((Math.random() * 3) | 0); h = 1 + ((Math.random() * 3) | 0); }
+    const r = rng();
+    if (r < 0.22)      { w = 4 + ((rng() * 3) | 0); h = 1; }
+    else if (r < 0.44) { w = 1; h = 4 + ((rng() * 3) | 0); }
+    else               { w = 1 + ((rng() * 3) | 0); h = 1 + ((rng() * 3) | 0); }
 
-    const x = 1 + ((Math.random() * (COLS - 2 - w)) | 0);
-    const y = 1 + ((Math.random() * (ROWS - 2 - h)) | 0);
+    const x = 1 + ((rng() * (COLS - 2 - w)) | 0);
+    const y = 1 + ((rng() * (ROWS - 2 - h)) | 0);
     for (let yy = y; yy < y + h; yy++)
       for (let xx = x; xx < x + w; xx++) g[yy][xx] = 1;
   }
@@ -96,11 +100,6 @@ export function getOpenCells() {
   return gstate.openCells;
 }
 
-export function randomOpenCell() {
-  const list = getOpenCells();
-  return list[(Math.random() * list.length) | 0];
-}
-
 /** 丢弃空地缓存（重开一局时必须调用） */
 export function forgetOpenCells() {
   gstate.openCells = null;
@@ -108,4 +107,10 @@ export function forgetOpenCells() {
 
 export function openCellCount() {
   return getOpenCells().length;
+}
+
+/** 随机取一个空地格子（走可播种随机流） */
+export function randomOpenCell() {
+  const list = getOpenCells();
+  return list[(rng() * list.length) | 0];
 }

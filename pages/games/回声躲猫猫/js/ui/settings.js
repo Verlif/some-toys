@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 菜单与设置面板。
  *
  * 面板内容直接写进 #panel，按钮用事件委托绑定，
@@ -6,13 +6,13 @@
  */
 import {
   DEFAULT_GAME_TIME, DEFAULT_SEEKER_COUNT, DEFAULT_HIDER_COUNT,
-  DEFAULT_PLAYER_COUNT, DEFAULT_MAP_SIZE, DEFAULT_ROLE
+  DEFAULT_PLAYER_COUNT, DEFAULT_MAP_SIZE, ITEM_TYPES
 } from '../core/config.js';
 import { gstate } from '../core/state.js';
 import { resetTimeBase } from '../core/timer.js';
 import { fmtTime } from '../core/utils.js';
-import { resetReplay } from '../game/replay.js';
-import { startGame } from '../game/main.js';
+import { resetReplayData } from '../sim/replay.js';
+import { actions } from './actions.js';
 import { setOverlayMode, clearCaughtNotice, resetTimeWarnings } from './hud.js';
 import { dom } from './dom.js';
 
@@ -43,13 +43,16 @@ export function showMenu() {
   gstate.players = [];
   gstate.soundWaves = [];
   gstate.wallMemoryMap = new Map();
+  gstate.items = [];
+  gstate.itemLog = [];
   gstate.pendingGameEnd = null;
+  gstate.matchOver = false;
   gstate.frozenRenderTime = null;
   gstate.resultAnimRemain = 0;
   gstate.resultAnimWinner = null;
   dom.resultAnimation.classList.remove('show');
   dom.resultAnimation.innerHTML = '';
-  resetReplay();
+  resetReplayData();
 
   if (gstate.paused) { gstate.paused = false; dom.pauseOverlay.classList.remove('show'); }
   dom.countdownOverlay.classList.remove('show');
@@ -70,7 +73,9 @@ export function showMenu() {
       <b>ESC</b> 暂停 &nbsp;·&nbsp; <b>R R</b>（连按两次）重开<br>
       <span style="color:#7fd3ff">你只能看到自己阵营的声波</span><br>
       <span style="color:#ff9a70">声波接触到其他角色会闪橙红色</span><br>
-      <span style="color:#a8c4f0">墙壁轮廓只被自己的声波点亮</span>
+      <span style="color:#a8c4f0">墙壁轮廓由自己与队友的声波共同点亮</span><br>
+      <span style="color:#ffd166">每 20 秒随机刷新一个道具 · 全场可见 · 碰到即拾取</span><br>
+      <span style="color:#8ea3c8">${Object.values(ITEM_TYPES).map(t => `${t.icon} ${t.name}：${t.desc}`).join(' &nbsp;·&nbsp; ')}</span>
     </p>
   `;
   setOverlayMode({ mode: 'menu' });
@@ -182,6 +187,6 @@ function renderSettingsPanel() {
   syncModeCounts();
   updateValLabels();
 
-  dom.panel.querySelector('#startBtn').addEventListener('click', () => startGame(gstate.selectedRole));
+  dom.panel.querySelector('#startBtn').addEventListener('click', () => actions.startGame(gstate.selectedRole));
   dom.panel.querySelector('#backBtn').addEventListener('click', showMenu);
 }

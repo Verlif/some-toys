@@ -1,4 +1,4 @@
-/**
+﻿/**
  * HUD 更新与提示条。
  * 元素引用来自 ui/dom.js，不在这里做 getElementById。
  */
@@ -6,7 +6,8 @@ import { NOISE_COOLDOWN, CATCH_COOLDOWN } from '../core/config.js';
 import { gstate, countAliveHiders } from '../core/state.js';
 import { visualNowSec } from '../core/timer.js';
 import { fmtTime } from '../core/utils.js';
-import { getReplayFrameAt, getReplayState } from '../game/replay.js';
+import { frozenRemain, hasteRemain, revealRemain } from '../core/status.js';
+import { getReplayFrameAt, replayDuration } from '../sim/replay.js';
 import { dom } from './dom.js';
 
 /** 遮罩模式：'menu' | 'result' | 'hidden' */
@@ -184,13 +185,37 @@ export function resetTimeWarnings() {
   hideTimeWarning();
 }
 
+/* ---------- 状态条：道具倒计时 + 自身效果 ---------- */
+function updateStatusItem(active) {
+  if (!dom.statusItem) return;
+  if (!active) {
+    if (dom.statusItem.style.display !== 'none') dom.statusItem.style.display = 'none';
+    return;
+  }
+  const parts = [];
+  if (gstate.items.length) parts.push(`🎁 场上 ${gstate.items.length}`);
+  parts.push(`下一个道具 ${Math.max(0, Math.ceil(gstate.itemTimer))}s`);
+  const p = gstate.player;
+  if (p) {
+    const fr = frozenRemain(p);
+    if (fr > 0) parts.push(`❄ 定格 ${fr.toFixed(1)}s`);
+    const ha = hasteRemain(p);
+    if (ha > 0) parts.push(`⚡ 加速 ${ha.toFixed(1)}s`);
+    const rv = revealRemain(p);
+    if (rv > 0) parts.push(`👁 显形 ${rv.toFixed(1)}s`);
+  }
+  const text = parts.join(' · ');
+  if (dom.statusText.textContent !== text) dom.statusText.textContent = text;
+  if (dom.statusItem.style.display === 'none') dom.statusItem.style.display = '';
+}
+
 /* ---------- HUD ---------- */
 export function updateHUD() {
-  const replay = getReplayState();
+  const replayElapsed = gstate.replayElapsed || 0;
   const fmtReplayTime = sec => fmtTime(Math.max(0, sec || 0));
 
   dom.timeText.textContent = gstate.state === 'replay'
-    ? fmtReplayTime(Math.max(0, replay.duration - replay.elapsed))
+    ? fmtReplayTime(Math.max(0, replayDuration() - replayElapsed))
     : fmtTime(gstate.timeLeft);
 
   // 最后 20 秒开始闪烁，最后 10 秒闪烁更快、更醒目
@@ -205,7 +230,7 @@ export function updateHUD() {
   dom.aliveText.textContent = gstate.hiders.length ? countAliveHiders() : gstate.cfgHiderCount;
 
   if (gstate.state === 'replay') {
-    const frame = getReplayFrameAt(replay.elapsed);
+    const frame = getReplayFrameAt(replayElapsed);
     dom.aliveText.textContent = String(frame ? frame.entities.filter(e => e.type === 'hider' && e.alive).length : 0);
     dom.roleText.textContent = '🎞 回放';
     setObjectiveBadgeText('🎞 上帝视角 · 回放');
@@ -227,6 +252,9 @@ export function updateHUD() {
 
   // 双人模式下两个玩家各自的技能冷却条显示在画面左右，HUD 里就不再重复
   updateSkillCooldowns(canShowMeters && dual);
+
+  // 道具倒计时 / 自身状态
+  updateStatusItem(inMatch && !gstate.spectator);
 
   // 噪声冷却（P1）
   if (canShowMeters && !dual) {

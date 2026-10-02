@@ -7,8 +7,14 @@
  *   2. 躲藏者声波命中搜捕者 → 该躲藏者 AI 在命中点留下威胁区
  *   3. 声音传播到附近角色     → 只有敌对阵营的接收方才会写入 heardSound
  *
- * ★ 关键：第 3 条必须做阵营判定。同一阵营（队友）的声音只会被“听见”，
- *   不会产生任何 AI 反应，否则躲藏者 AI 会对着队友的脚步逃跑。
+ * ★ 关键：第 3 条必须做阵营判定（core/teams.js）。
+ *   同一阵营（队友）的声音只会被“听见”，不会产生任何 AI 反应，
+ *   否则躲藏者 AI 会对着队友的脚步逃跑。
+ *
+ * ★ 联机友好：
+ *   一次发声只广播**一条很短的描述**（谁、在哪、多大、射线角度偏移），
+ *   客户端用同一张地图与同一个偏移量在本地重建射线 —— 带宽不用传整棵射线树。
+ *   见 emitSound() 末尾的 EVT.SOUND_EMITTED 与 rebuildSoundFromEvent()。
  */
 import {
   TILE, SOUND_SPEED, SOUND_INTERVAL, MAX_BOUNCE, MAX_SOUND_WAVES,
@@ -18,8 +24,14 @@ import {
 } from '../core/config.js';
 import { gstate } from '../core/state.js';
 import { nowSec } from '../core/timer.js';
-import { shouldReactToSound } from '../ai/reaction.js';
-import { bumpStat } from '../game/stats.js';
+import { rng } from '../core/rng.js';
+import { emit, EVT } from '../core/events.js';
+import { shouldReactToSound } from '../core/teams.js';
+import { bumpStat } from './stats.js';
+
+/* ============================================================
+   射线投射
+   ============================================================ */
 
 /**
  * 从 (sx,sy) 沿 angle 投射一条射线。
@@ -100,34 +112,9 @@ export function castRay(sx, sy, angle, maxDist, maxBounce, emitter, entityHits, 
         entityHits.push({
           x: hitX, y: hitY, dist: hitDist,
           emitter: emitter,
-          target: entityHit
+          target: entityHit,
+          hitTime: nowT
         });
-
-        // 搜捕者的声波锁定躲藏者
-        if (emitter.type === 'seeker' && entityHit.type === 'hider' && entityHit.ai) {
-          entityHit.ai.detectedBySeeker = nowT;
-          entityHit.ai.detectedBySeekerPos = { x: emitter.x, y: emitter.y };
-        }
-        // 躲藏者的声波扫到搜捕者：在搜捕者所在位置留下威胁区（而不是射线上的擦碰点）
-        if (emitter.type === 'hider' && entityHit.type === 'seeker' && emitter.ai) {
-          const threatX = entityHit.x, threatY = entityHit.y;
-          const existing = emitter.ai.threatZones.find(
-            t => Math.hypot(t.x - threatX, t.y - threatY) < 60
-          );
-          if (existing) {
-            existing.time = nowT;
-            existing.intensity = Math.max(existing.intensity, 1.5);
-          } else {
-            emitter.ai.threatZones.push({
-              x: threatX, y: threatY, time: nowT, intensity: 1.5
-            });
-          }
-        }
-
-        // 统计：与玩家相关的探测
-        if (emitter.isPlayer && !entityHit.isPlayer) bumpStat('playerDetectedEnemy');
-        if (entityHit.isPlayer && !emitter.isPlayer) bumpStat('playerDetectedByEnemy');
-
         break;
       }
 
@@ -149,51 +136,43 @@ export function castRay(sx, sy, angle, maxDist, maxBounce, emitter, entityHits, 
   return path;
 }
 
-/**
- * 发射一次声波。
- * @param {object} e 发射者实体
- * @param {boolean} isNoise 是否为主动噪声
- */
-export function emitSound(e, isNoise = false) {
-  const isRun = (e.speedMode === 'run') && !isNoise;
+/** 一次发声的参数（半径 / 强度 / 射线数） */
+function soundParams(isNoise, isRun) {
   const maxRadius = isNoise ? NOISE_RADIUS : (isRun ? RUN_SOUND_RADIUS : WALK_SOUND_RADIUS);
   const strength = isNoise ? 1.4 : (isRun ? 1.0 : 0.5);
-
   let rayCount;
   if (isNoise) rayCount = RUN_RAY_COUNT * NOISE_RAY_MUL;
   else if (isRun) rayCount = RUN_RAY_COUNT;
   else rayCount = WALK_RAY_COUNT;
+  return { maxRadius, strength, rayCount };
+}
 
+/**
+ * 只做几何：从 (ox,oy) 投射一圈射线，返回射线与命中。
+ * 模拟与“客户端重建声波”共用这一份实现，保证两端画出来一样。
+ */
+function castSound({ ox, oy, emitter, isNoise, isRun, angleOffset, rayCount, maxRadius }) {
   const rays = [];
   const rawHits = [];
   const wallHits = [];
-  const angleOffset = Math.random() * Math.PI * 2 / rayCount;
-
   for (let i = 0; i < rayCount; i++) {
     const angle = (i / rayCount) * Math.PI * 2 + angleOffset;
-    const path = castRay(e.x, e.y, angle, maxRadius, MAX_BOUNCE, e, rawHits, wallHits);
+    const path = castRay(ox, oy, angle, maxRadius, MAX_BOUNCE, emitter, rawHits, wallHits);
     if (path.length > 1) rays.push(path);
   }
-
   // 同一目标只保留最近的一次命中，避免闪烁叠成一团
   const hitMap = new Map();
   for (const h of rawHits) {
     const key = h.target;
     if (!hitMap.has(key) || h.dist < hitMap.get(key).dist) hitMap.set(key, h);
   }
-  const hits = Array.from(hitMap.values());
-  const nowT = nowSec();
+  return { rays, hits: Array.from(hitMap.values()), wallHits };
+}
 
-  gstate.soundWaves.push({
-    x: e.x, y: e.y,
-    maxRadius, strength, age: 0,
-    rays, hits, emitTime: nowT,
-    emitter: e
-  });
-
-  // 墙壁记忆：以 emitterId 区分，只有发射者本人能看到自己点亮的墙
+/** 墙壁记忆写入（模拟与客户端重建共用） */
+function rememberWalls(emitterId, wallHits, strength, nowT) {
   for (const wh of wallHits) {
-    const key = `${e.id},${wh.gx},${wh.gy}`;
+    const key = `${emitterId},${wh.gx},${wh.gy}`;
     const arrivalTime = nowT + wh.dist / SOUND_SPEED;
     const existing = gstate.wallMemoryMap.get(key);
     if (existing) {
@@ -204,13 +183,44 @@ export function emitSound(e, isNoise = false) {
       existing.strength = Math.max(existing.strength, strength);
     } else {
       gstate.wallMemoryMap.set(key, {
-        emitterId: e.id,
+        emitterId,
         gx: wh.gx, gy: wh.gy,
         arrivals: [arrivalTime],
         strength
       });
     }
   }
+}
+
+/* ============================================================
+   发声
+   ============================================================ */
+
+/**
+ * 发射一次声波。
+ * @param {object} e 发射者实体
+ * @param {boolean} isNoise 是否为主动噪声
+ * @param {object} [opts] opts.silentStat 不统计；opts.noEvent 不广播事件（客户端重建时用）
+ */
+export function emitSound(e, isNoise = false, opts = {}) {
+  const isRun = (e.speedMode === 'run') && !isNoise;
+  const { maxRadius, strength, rayCount } = soundParams(isNoise, isRun);
+  const angleOffset = rng() * Math.PI * 2 / rayCount;
+
+  const { rays, hits, wallHits } = castSound({
+    ox: e.x, oy: e.y, emitter: e, isNoise, isRun, angleOffset, rayCount, maxRadius
+  });
+  const nowT = nowSec();
+
+  gstate.soundWaves.push({
+    x: e.x, y: e.y,
+    maxRadius, strength, age: 0,
+    rays, hits, emitTime: nowT,
+    emitter: e,
+    angleOffset, isNoise, isRun
+  });
+
+  rememberWalls(e.id, wallHits, strength, nowT);
 
   // 搜捕者 AI：声波扫到躲藏者时记录命中点，到达后才开始追击
   if (e.type === 'seeker' && !e.isPlayer) {
@@ -247,24 +257,84 @@ export function emitSound(e, isNoise = false) {
       };
     }
   }
+
+  // 广播给网络层：一条极短的消息就够客户端本地重建出同样的声波
+  if (!opts.noEvent) {
+    emit(EVT.SOUND_EMITTED, {
+      emitterId: e.id,
+      emitterType: e.type,
+      x: e.x, y: e.y,
+      isNoise, isRun, angleOffset, rayCount,
+      maxRadius, strength,
+      speedMode: e.speedMode
+    });
+  }
+}
+
+/**
+ * 客户端侧：用房主广播的发声描述在本地重建声波。
+ * 只影响画面（射线 / 墙壁记忆 / 命中闪烁），不改 AI 状态——
+ * AI 的状态由房主的快照说了算。
+ */
+export function rebuildSoundFromEvent(payload) {
+  if (!payload) return null;
+  const emitter = gstate.entities.find(x => x.id === payload.emitterId) || null;
+  // 发射者已不在本地（例如刚加入）：用一个临时壳做几何计算，仅用于画线
+  const shell = emitter || {
+    id: payload.emitterId,
+    type: payload.emitterType || 'hider',
+    x: payload.x, y: payload.y,
+    r: 0
+  };
+  const isRun = payload.isRun;
+  const rayCount = payload.rayCount || soundParams(!!payload.isNoise, isRun).rayCount;
+  const maxRadius = payload.maxRadius || soundParams(!!payload.isNoise, isRun).maxRadius;
+  const strength = payload.strength ?? 0.5;
+
+  const { rays, hits, wallHits } = castSound({
+    ox: payload.x, oy: payload.y, emitter: shell,
+    isNoise: !!payload.isNoise, isRun, angleOffset: payload.angleOffset || 0,
+    rayCount, maxRadius
+  });
+  const nowT = nowSec();
+  gstate.soundWaves.push({
+    x: payload.x, y: payload.y,
+    maxRadius, strength, age: 0,
+    rays, hits, emitTime: nowT,
+    emitter: shell,
+    angleOffset: payload.angleOffset || 0,
+    isNoise: !!payload.isNoise, isRun
+  });
+  rememberWalls(payload.emitterId, wallHits, strength, nowT);
+
+  if (gstate.soundWaves.length > MAX_SOUND_WAVES) {
+    gstate.soundWaves.splice(0, gstate.soundWaves.length - MAX_SOUND_WAVES);
+  }
+  return { rays, hits };
 }
 
 /** 尝试发出主动噪声，冷却中返回 false */
-export function tryEmitNoise(e) {
+export function tryEmitNoise(e, opts = {}) {
   const nowT = nowSec();
   const cooldown = e.isPlayer ? NOISE_COOLDOWN : NOISE_AI_MIN_INTERVAL;
   if (e.noiseCooldownUntil && nowT < e.noiseCooldownUntil) return false;
   e.noiseCooldownUntil = nowT + cooldown;
-  if (e.isPlayer) bumpStat('playerNoiseCount');
-  emitSound(e, true);
+  if (e.isPlayer && !opts.silentStat) bumpStat('playerNoiseCount');
+  emitSound(e, true, opts);
   return true;
 }
 
 /**
+ * 道具效果：让某个角色**无视冷却**立刻发出一次噪声。
+ * 这是“喧嚣之铃”的核心，所以不能走 tryEmitNoise（会被冷却挡住）。
+ */
+export function forceNoise(e) {
+  e.noiseCooldownUntil = nowSec() + (e.isPlayer ? NOISE_COOLDOWN : NOISE_AI_MIN_INTERVAL);
+  emitSound(e, true, { silentStat: true });
+}
+
+/**
  * 移动发声：所有会动的角色每隔 SOUND_INTERVAL 自动发出一次脚步/奔跑声波。
- *
- * 注意：声波照常发射（队友也能“看到”声波），但 emitSound 内部已经过滤掉
- * 同阵营的 AI 反应，所以躲藏者对着队友跑步不会再触发队友逃跑。
  */
 export function updateMovementSounds(dt) {
   for (const e of gstate.entities) {
