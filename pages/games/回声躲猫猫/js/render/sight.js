@@ -1,16 +1,17 @@
-/**
+﻿/**
  * 表现层基础：画布适配、世界坐标变换，以及“感知类”特效
  * （声波可见性、墙壁记忆、探测闪烁）。
  *
  * 可见性规则：
  *   · 声波射线只显示自己阵营的（搜捕者看不到躲藏者的声波，反之亦然）
- *   · 墙壁轮廓只被自己的声波点亮（wallMemoryMap 以 emitterId 区分）
+ *   · 墙壁轮廓由自己 + 同阵营队友的声波一起点亮（wallMemoryMap 以 emitterId 区分，
+ *     默认共享见 SHARE_TEAM_WALL_MEMORY）；敌方声波不会给出任何地形信息
  *   · 探测闪烁只对相关方可见（自己的声波扫到别人 / 别人的声波扫到自己）
  */
 import {
   W, H, TILE, SOUND_SPEED,
   WALL_MEMORY_HOLD, WALL_MEMORY_FADE,
-  DETECT_RISE_TIME, DETECT_FADE_TIME
+  DETECT_RISE_TIME, DETECT_FADE_TIME, SHARE_TEAM_WALL_MEMORY
 } from '../core/config.js';
 import { gstate } from '../core/state.js';
 import { visualNowSec } from '../core/timer.js';
@@ -60,11 +61,6 @@ function isPlayerTeamEntity(entity) {
   return !!gstate.player && !!entity && entity.type === gstate.player.type;
 }
 
-/** 声波是否与玩家无关（既不是自己发的，也没有打到自己） */
-export function waveInvolvesPlayer(wave) {
-  return waveEmittedByPlayer(wave) || waveHitsPlayer(wave);
-}
-
 /**
  * 某个声波对当前玩家是否可见。
  *
@@ -84,19 +80,36 @@ export function waveVisibleToPlayer(wave) {
 /* ============================================================
    墙壁记忆
 ============================================================ */
+/**
+ * 哪些发射者的墙壁记忆对玩家可见：自己 + 同阵营队友（含 AI 队友）。
+ * 共享的是「轮廓」本身，不需要靠近，也不会泄露敌方声波照过的墙。
+ * 已经出局的躲藏者不再共享（和声波射线的处理保持一致）。
+ */
+function sharedMemoryEmitterIds(observer) {
+  const ids = new Set();
+  if (!observer) return ids;
+  ids.add(observer.id);
+  if (!SHARE_TEAM_WALL_MEMORY) return ids;
+  for (const e of gstate.entities) {
+    if (e === observer || e.type !== observer.type) continue;
+    if (e.type === 'hider' && !e.alive) continue;
+    ids.add(e.id);
+  }
+  return ids;
+}
+
 export function drawWallMemories() {
   if (!gstate.player) return;
   const ctx = dom.ctx;
-  const playerId = gstate.player.id;
   const nowT = visualNowSec();
   const totalLife = WALL_MEMORY_HOLD + WALL_MEMORY_FADE;
+  const visibleEmitters = sharedMemoryEmitterIds(gstate.player);
 
   for (const [key, wm] of gstate.wallMemoryMap) {
-    if (wm.emitterId !== playerId) continue;
-
-    // 顺带清理过期到达记录
+    // 顺带清理过期到达记录（不区分发射者，否则队友的残留会永远留在表里）
     wm.arrivals = wm.arrivals.filter(t => nowT - t < totalLife);
     if (wm.arrivals.length === 0) { gstate.wallMemoryMap.delete(key); continue; }
+    if (!visibleEmitters.has(wm.emitterId)) continue;
 
     let latestPast = -Infinity;
     for (const t of wm.arrivals) {

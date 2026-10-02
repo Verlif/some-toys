@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DOM 引用集中缓存。
  *
  * 单独成一个模块，是为了让 hud / replay / panels 都能安全地取用 DOM，
@@ -25,6 +25,8 @@ export const dom = {
   caughtNoticeMain: null,
   caughtNoticeSub: null,
   hudWarn: null,
+  statusItem: null,
+  statusText: null,
   skillCooldowns: null,
   countdownOverlay: null,
   countdownNum: null,
@@ -40,7 +42,7 @@ export const dom = {
   replayExitBtn: null
 };
 
-/** 必须在任何模块使用 dom 之前调用一次（entry.js 里调用） */
+/** 必须在任何模块使用 dom 之前调用一次（main.js 里调用） */
 export function initDom() {
   const $ = id => document.getElementById(id);
   dom.canvas = $('cv');
@@ -63,6 +65,8 @@ export function initDom() {
   dom.caughtNoticeMain = dom.caughtNotice.querySelector('.cn-main');
   dom.caughtNoticeSub = dom.caughtNotice.querySelector('.cn-sub');
   dom.hudWarn = $('hudWarn');
+  dom.statusItem = $('statusItem');
+  dom.statusText = $('statusText');
   dom.skillCooldowns = $('skillCooldowns');
   dom.countdownOverlay = $('countdownOverlay');
   dom.countdownNum = $('countdownNum');
