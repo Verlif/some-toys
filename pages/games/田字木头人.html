@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>木头人</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{
+    width:100%;height:100%;overflow:hidden;background:#0e1017;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #game{display:block;position:absolute;inset:0;}
+
+  #overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(8,10,16,.85);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    transition:opacity .35s ease;z-index:10;padding:20px;
+  }
+  #overlay.hidden{opacity:0;pointer-events:none;}
+
+  .panel{
+    text-align:center;padding:36px 34px;width:min(520px,100%);
+    background:linear-gradient(165deg,#242a3b,#161a26);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.65);
+    animation:pop .32s ease;
+    max-height:92vh;overflow-y:auto;
+  }
+  .panel::-webkit-scrollbar{width:6px;}
+  .panel::-webkit-scrollbar-track{background:transparent;}
+  .panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px;}
+  @keyframes pop{from{transform:scale(.93);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+  /* ============================
+     开始标题页
+  ============================ */
+  .start-panel{
+    padding:72px 46px 60px;
+    background:radial-gradient(ellipse at 50% 30%,#1f2636 0%,#11141e 75%);
+    border:1px solid rgba(255,255,255,.06);
+    position:relative;
+    overflow:hidden;
+  }
+  .start-panel::before{
+    content:'';
+    position:absolute;inset:-50%;
+    background:radial-gradient(circle at 50% 50%,rgba(255,217,138,.08) 0%,transparent 55%);
+    animation:startGlow 6s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes startGlow{
+    0%,100%{opacity:.5;transform:scale(1);}
+    50%{opacity:1;transform:scale(1.1);}
+  }
+  .start-title{
+    font-size:72px;font-weight:900;letter-spacing:22px;
+    margin-bottom:18px;padding-left:22px;
+    position:relative;
+    background:linear-gradient(180deg,#ffe6a8 0%,#ffd98a 40%,#d9992f 100%);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent;
+    filter:drop-shadow(0 4px 20px rgba(255,217,138,.4));
+    animation:titleFloat 4s ease-in-out infinite;
+  }
+  @keyframes titleFloat{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-8px);}
+  }
+  .start-sub{
+    font-size:14px;color:#8a94ab;letter-spacing:10px;
+    margin-bottom:52px;padding-left:10px;position:relative;
+  }
+  .start-btn{
+    display:inline-block;padding:18px 62px 18px 70px;
+    font-family:inherit;font-size:18px;font-weight:800;letter-spacing:8px;
+    color:#1a1d28;border:none;border-radius:40px;cursor:pointer;
+    background:linear-gradient(180deg,#ffe19a,#efb44b);
+    box-shadow:0 10px 36px rgba(240,182,77,.42),
+               inset 0 1px 0 rgba(255,255,255,.55);
+    transition:transform .18s ease,box-shadow .18s ease;
+    position:relative;
+  }
+  .start-btn:hover{
+    transform:translateY(-3px);
+    box-shadow:0 16px 48px rgba(240,182,77,.62),
+               inset 0 1px 0 rgba(255,255,255,.55);
+  }
+  .start-btn:active{transform:scale(.96);}
+  .start-hint{
+    font-size:12px;color:#5d6579;letter-spacing:2px;
+    margin-top:36px;line-height:2;position:relative;
+  }
+  .start-hint b{color:#8a94ab;font-weight:600;}
+
+  /* ============================
+     模式菜单面板（三段式布局）
+  ============================ */
+  .menu-panel{
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    max-height:92vh;
+    overflow:hidden;
+  }
+  .menu-header{
+    flex-shrink:0;
+    padding:34px 34px 8px;
+  }
+  .menu-header h1{
+    font-size:24px;color:#f0e6d2;letter-spacing:8px;font-weight:800;
+    margin-bottom:8px;padding-left:8px;
+  }
+  .menu-header .sub{
+    font-size:13px;color:#8a94ab;letter-spacing:1.5px;
+    line-height:1.7;
+  }
+  .menu-header .sub b{color:#e8b96a;font-weight:600;}
+
+  .menu-scroll{
+    flex:1 1 auto;
+    overflow-y:auto;
+    padding:8px 34px 4px;
+    min-height:0;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,.15) transparent;
+  }
+  .menu-scroll::-webkit-scrollbar{width:6px;}
+  .menu-scroll::-webkit-scrollbar-track{background:transparent;margin:4px 0;}
+  .menu-scroll::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.12);border-radius:3px;
+  }
+  .menu-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22);}
+
+  .menu-footer{
+    flex-shrink:0;
+    padding:16px 34px 28px;
+    border-top:1px solid rgba(255,255,255,.06);
+    background:linear-gradient(180deg,rgba(22,26,38,0) 0%,rgba(20,24,35,.85) 40%,rgba(20,24,35,.95) 100%);
+    position:relative;
+  }
+  .menu-footer::before{
+    content:'';
+    position:absolute;top:-22px;left:0;right:0;height:22px;
+    background:linear-gradient(180deg,transparent,rgba(20,24,35,.6));
+    pointer-events:none;
+  }
+
+  /* 分组标签 */
+  .group-label{
+    display:flex;align-items:center;gap:10px;
+    font-size:12px;color:#6a7388;letter-spacing:3px;
+    margin:16px 4px 12px;font-weight:700;
+  }
+  .group-label:first-child{margin-top:4px;}
+  .group-label::before,
+  .group-label::after{
+    content:'';flex:1;height:1px;
+  }
+  .group-label::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.08));}
+  .group-label::after{background:linear-gradient(90deg,rgba(255,255,255,.08),transparent);}
+
+  /* 模式按钮 */
+  .mode-btn{
+    display:flex;align-items:center;gap:14px;
+    width:100%;padding:14px 18px;margin-bottom:9px;
+    font-family:inherit;color:#e8e2d4;text-align:left;
+    background:rgba(255,255,255,.055);
+    border:1px solid rgba(255,255,255,.09);border-radius:14px;cursor:pointer;
+    transition:all .18s ease;
+    position:relative;
+  }
+  .mode-btn:hover{
+    background:rgba(255,217,138,.13);border-color:rgba(255,217,138,.5);
+    transform:translateY(-1px);
+    box-shadow:0 6px 20px rgba(240,182,77,.15);
+  }
+  .mode-btn:active{transform:scale(.985);}
+  .mode-btn:last-child{margin-bottom:4px;}
+  .mode-icon{
+    flex-shrink:0;width:44px;height:44px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:800;letter-spacing:0;
+    background:rgba(255,255,255,.06);
+  }
+  .mode-icon.icon-solo{background:rgba(160,160,175,.16);}
+  .mode-icon.icon-p1{background:rgba(232,144,106,.18);}
+  .mode-icon.icon-p2{background:rgba(96,150,230,.18);}
+  .mode-icon.icon-both{background:linear-gradient(135deg,rgba(232,144,106,.2),rgba(96,150,230,.2));}
+  .mode-body{flex:1;min-width:0;}
+  .mode-title{
+    font-size:14px;font-weight:700;letter-spacing:.5px;
+    margin-bottom:3px;color:#f0e6d2;
+  }
+  .mode-desc{
+    font-size:11.5px;font-weight:400;color:#8791a8;line-height:1.55;
+    letter-spacing:.3px;
+  }
+  .mode-desc .hl{color:#e8b96a;font-weight:600;}
+  .mode-comp{
+    font-size:11px;color:#5d6579;margin-top:4px;letter-spacing:.3px;
+  }
+  .mode-comp b{color:#7a8499;font-weight:600;}
+
+  /* 数量选择器 */
+  .count-selector .cs-label{
+    font-size:12px;color:#8a94ab;letter-spacing:2.5px;
+    font-weight:700;margin-bottom:11px;display:block;
+  }
+  .count-btns{
+    display:flex;gap:8px;justify-content:center;
+  }
+  .count-btn{
+    flex:1;height:48px;border-radius:11px;
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.05);
+    color:#c8cfdd;font-family:inherit;font-size:18px;font-weight:800;
+    cursor:pointer;transition:all .15s;
+    display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:1px;
+  }
+  .count-btn small{
+    font-size:9px;font-weight:500;letter-spacing:.5px;
+    color:#6a7388;transition:color .15s;
+  }
+  .count-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18);}
+  .count-btn.active{
+    background:linear-gradient(180deg,rgba(255,217,138,.28),rgba(255,217,138,.15));
+    border-color:rgba(255,217,138,.7);
+    color:#ffd98a;
+    box-shadow:0 4px 16px rgba(240,182,77,.25), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .count-btn.active small{color:#d4b576;}
+
+  /* 底部按钮 */
+  .back-btn{
+    display:block;width:100%;margin-top:12px;padding:11px;
+    font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:2.5px;
+    color:#7a8499;background:transparent;
+    border:1px solid rgba(255,255,255,.07);border-radius:11px;cursor:pointer;
+    transition:all .16s ease;
+  }
+  .back-btn:hover{color:#e8e2d4;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);}
+
+  /* ============================
+     暂停 & 结算
+  ============================ */
+  .pause-icon{
+    font-size:38px;margin-bottom:16px;color:#ffd98a;
+    letter-spacing:14px;font-weight:300;
+    padding-left:14px;
+  }
+  .panel h1.pause-title{
+    font-size:22px;letter-spacing:8px;margin-bottom:28px;padding-left:8px;
+  }
+
+  .primary-btn{
+    display:block;width:100%;padding:15px 40px;
+    font-family:inherit;font-size:15px;font-weight:800;letter-spacing:5px;
+    color:#1a1d28;border:none;border-radius:14px;cursor:pointer;
+    background:linear-gradient(180deg,#ffd98a,#efb44b);
+    box-shadow:0 8px 26px rgba(240,182,77,.35),
+               inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .15s ease,box-shadow .15s ease;
+    margin-bottom:10px;
+  }
+  .primary-btn:hover{
+    box-shadow:0 12px 34px rgba(240,182,77,.5),
+               inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  .primary-btn:active{transform:scale(.97);}
+
+  .secondary-btn{
+    display:block;width:100%;padding:13px;
+    font-family:inherit;font-size:13px;font-weight:600;letter-spacing:2.5px;
+    color:#a8b0c4;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.09);border-radius:12px;cursor:pointer;
+    transition:all .15s ease;margin-bottom:8px;
+  }
+  .secondary-btn:hover{color:#e8e2d4;background:rgba(255,255,255,.09);}
+
+  /* 结算 */
+  .result-header{margin-bottom:22px;}
+  .result-icon{
+    font-size:56px;margin-bottom:12px;line-height:1;
+    filter:drop-shadow(0 6px 20px rgba(255,217,138,.25));
+  }
+  .result-title{font-size:26px;letter-spacing:6px;font-weight:900;margin-bottom:8px;}
+  .result-desc{font-size:13.5px;color:#98a2b8;line-height:1.9;letter-spacing:.3px;}
+  .win-c{color:#ffd98a;text-shadow:0 0 24px rgba(255,217,138,.4);}
+  .lose-c{color:#ff7a7a;text-shadow:0 0 24px rgba(255,122,122,.35);}
+
+  .stats-grid{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:9px;margin-bottom:24px;
+  }
+  .stat-item{
+    padding:15px 10px;border-radius:13px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06);
+    transition:background .15s;
+  }
+  .stat-item:hover{background:rgba(255,255,255,.06);}
+  .stat-item.full{grid-column:span 2;}
+  .stat-value{
+    font-size:20px;font-weight:800;color:#f0e6d2;
+    letter-spacing:1px;margin-bottom:5px;line-height:1;
+  }
+  .stat-value.warn{color:#efb44b;}
+  .stat-value.good{color:#7dd98a;}
+  .stat-value.bad{color:#ff7a7a;}
+  .stat-label{
+    font-size:11px;color:#8791a8;letter-spacing:1px;line-height:1.4;
+  }
+
+  /* ============================
+     触屏按钮
+  ============================ */
+  #touchArea{position:absolute;inset:0;z-index:5;display:none;pointer-events:none;}
+  .touch-btn{
+    position:absolute;bottom:26px;width:92px;height:92px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.08);color:#e8e2d4;
+    font-family:inherit;font-size:12px;font-weight:600;letter-spacing:1px;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    pointer-events:auto;transition:background .1s,border-color .1s;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .touch-btn .arr{font-size:26px;line-height:1;}
+  .touch-btn.on{background:rgba(255,217,138,.3);border-color:rgba(255,217,138,.7);}
+  #btnP1{left:22px;}
+  #btnP2{right:22px;border-color:rgba(96,150,230,.35);}
+  #btnP2.on{background:rgba(96,150,230,.3);border-color:rgba(96,150,230,.75);}
+  #btnWrite{
+    left:50%;transform:translateX(-50%);width:112px;height:112px;
+    border-color:rgba(255,217,138,.4);font-size:14px;
+  }
+  #btnWrite.on{background:rgba(255,217,138,.35);border-color:rgba(255,217,138,.85);}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="touchArea">
+  <button class="touch-btn" id="btnP1"><span class="arr">←</span>P1</button>
+  <button class="touch-btn" id="btnP2"><span class="arr">←</span>P2</button>
+  <button class="touch-btn" id="btnWrite">按住<br>写字</button>
+</div>
+
+<div id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================================================================
+   常量
+================================================================ */
+const VW = 1440, VH = 560;
+const GROUND_Y = 470;
+
+const BOARD = { x: 50,  y: 100, w: 380, h: 340 };
+const INNER = { x: 62,  y: 112, w: 356, h: 316 };
+
+const CHAR_SIZE = 256;
+const CHAR_X = INNER.x + (INNER.w - CHAR_SIZE) / 2;
+const CHAR_Y = INNER.y + (INNER.h - CHAR_SIZE) / 2;
+
+const WRITER_X      = 460;
+const WOLF_SPEED    = 165;
+const AI_WOLF_SPEED = 105;
+const STROKE_TIME   = 1.4;
+const TOTAL_STROKES = 5;
+const LOOK_GRACE    = 0.30;
+const AI_REACT_MIN  = 0.12;
+const AI_REACT_MAX  = 0.46;
+const CATCH_DIST    = 62;
+const MIN_DIST      = 58;
+
+const WRITER_MAX_TIME = 50;
+const LOOK_PENALTY    = 3;
+
+/* 木头人位置池（从远到近），支持 8 名，距离拉长 */
+const WOLF_POSITIONS = [1420, 1345, 1270, 1195, 1120, 1045, 970, 895];
+
+/* 「田」字五画（归一化坐标） */
+const STROKES = [
+  [[0.14, 0.10], [0.14, 0.90]],
+  [[0.14, 0.10], [0.86, 0.10], [0.86, 0.90]],
+  [[0.14, 0.50], [0.86, 0.50]],
+  [[0.50, 0.10], [0.50, 0.90]],
+  [[0.14, 0.90], [0.86, 0.90]]
+];
+
+const MODE = {
+  SOLO_WOLF   : 'solo_wolf',
+  SOLO_WRITER : 'solo_writer',
+  P1W         : 'p1w',
+  P2W         : 'p2w',
+  TWOW        : 'twow'
+};
+
+const HUMAN_WOLF_COUNT = {
+  [MODE.SOLO_WOLF]   : 1,
+  [MODE.SOLO_WRITER] : 0,
+  [MODE.P1W]         : 1,
+  [MODE.P2W]         : 1,
+  [MODE.TWOW]        : 2
+};
+
+/* 木头人数量选项 */
+const WOLF_COUNT_OPTIONS = [1, 2, 4, 8];
+
+/* ================================================================
+   工具
+================================================================ */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const lerp  = (a,b,t) => a + (b-a) * t;
+const rand  = (a,b) => a + Math.random() * (b-a);
+
+function roundRect(c, x, y, w, h, r){
+  r = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+  c.beginPath();
+  c.moveTo(x+r, y);
+  c.lineTo(x+w-r, y);   c.arcTo(x+w, y, x+w, y+r, r);
+  c.lineTo(x+w, y+h-r); c.arcTo(x+w, y+h, x+w-r, y+h, r);
+  c.lineTo(x+r, y+h);   c.arcTo(x, y+h, x, y+h-r, r);
+  c.lineTo(x, y+r);     c.arcTo(x, y, x+r, y, r);
+  c.closePath();
+}
+
+function strokeLength(stroke){
+  let len = 0;
+  for (let i = 0; i < stroke.length - 1; i++){
+    const dx = stroke[i+1][0] - stroke[i][0];
+    const dy = stroke[i+1][1] - stroke[i][1];
+    len += Math.sqrt(dx*dx + dy*dy);
+  }
+  return len;
+}
+
+function strokePointAt(stroke, t){
+  const total = strokeLength(stroke);
+  let remaining = t * total;
+  for (let i = 0; i < stroke.length - 1; i++){
+    const dx = stroke[i+1][0] - stroke[i][0];
+    const dy = stroke[i+1][1] - stroke[i][1];
+    const seg = Math.sqrt(dx*dx + dy*dy);
+    if (remaining <= seg){
+      const k = seg > 0 ? remaining / seg : 0;
+      return [stroke[i][0] + dx * k, stroke[i][1] + dy * k];
+    }
+    remaining -= seg;
+  }
+  return stroke[stroke.length - 1];
+}
+
+/* ================================================================
+   画布
+================================================================ */
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
+let dpr = 1, viewScale = 1, viewOx = 0, viewOy = 0, cssW = 0, cssH = 0;
+
+function resize(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cssW = window.innerWidth; cssH = window.innerHeight;
+  canvas.width  = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  viewScale = Math.min(cssW / VW, cssH / VH);
+  viewOx = (cssW - VW * viewScale) / 2;
+  viewOy = (cssH - VH * viewScale) / 2;
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+
+/* ================================================================
+   音效
+================================================================ */
+let actx = null;
+function initAudio(){
+  if (!actx){
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+  }
+  if (actx && actx.state === 'suspended') actx.resume();
+}
+function tone(freq, dur, type, vol, delay){
+  if (!actx) return;
+  const t0 = actx.currentTime + (delay || 0);
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol || 0.1, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t0); o.stop(t0 + dur + 0.03);
+}
+const sfxCatch    = () => { tone(190,0.16,'sawtooth',0.09); tone(110,0.34,'sawtooth',0.09,0.13); };
+const sfxWriterWin= () => { [392,523.25,659.25,783.99].forEach((f,i)=>tone(f,0.3,'triangle',0.08,i*0.1)); };
+const sfxWolfWin  = () => { [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,0.28,'triangle',0.085,i*0.09)); };
+const sfxPenalty  = () => { tone(220,0.12,'square',0.055); tone(165,0.18,'square',0.055,0.10); };
+const sfxTimeUp   = () => { tone(330,0.3,'sawtooth',0.08); tone(220,0.5,'sawtooth',0.09,0.25); };
+
+/* ================================================================
+   键盘
+================================================================ */
+const keyState = {};
+
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'escape'){
+    e.preventDefault();
+    togglePause();
+    return;
+  }
+  if (!keyState[k]) keyState[k] = true;
+  if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  keyState[k] = false;
+  if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
+});
+window.addEventListener('blur', () => { for (const k in keyState) keyState[k] = false; });
+
+/* 触屏 */
+const touchArea = document.getElementById('touchArea');
+const btnP1 = document.getElementById('btnP1');
+const btnP2 = document.getElementById('btnP2');
+const btnWrite = document.getElementById('btnWrite');
+let touchP1 = false, touchP2 = false, touchWrite = false;
+
+if ('ontouchstart' in window) touchArea.style.display = 'block';
+
+function bindTouch(btn, setter){
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault(); setter(true); btn.classList.add('on'); initAudio();
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => {
+    btn.addEventListener(ev, () => { setter(false); btn.classList.remove('on'); });
+  });
+}
+bindTouch(btnP1, v => touchP1 = v);
+bindTouch(btnP2, v => touchP2 = v);
+bindTouch(btnWrite, v => touchWrite = v);
+
+/* ================================================================
+   游戏世界
+================================================================ */
+let world = null;
+let wolfTotalCount = 1;
+
+function makeWriter(isAI){
+  return {
+    x: WRITER_X,
+    facing: 0,
+    writing: isAI,
+    isAI,
+    aiTimer: isAI ? rand(2.0, 4.0) : 0,
+    writeProgress: 0,
+    lookTimer: 0,
+    looking: false
+  };
+}
+
+function makeWolf(id, index, x, isAI){
+  return {
+    id, index, x,
+    isAI: !!isAI,
+    alive: true, caught: false,
+    bob: 0, legPhase: 0, fallT: 0,
+    moving: false,
+    pauseTimer: 0, reactTimer: 0, reacting: false
+  };
+}
+
+function startGame(mode){
+  initAudio();
+  for (const k in keyState) keyState[k] = false;
+  touchP1 = touchP2 = touchWrite = false;
+  btnP1.classList.remove('on');
+  btnP2.classList.remove('on');
+  btnWrite.classList.remove('on');
+
+  const w = {
+    mode, active: true, paused: false, over: false,
+    winner: null, reason: '', overlayDelay: 0,
+    time: 0, wolves: [], writer: null, shake: 0,
+    writerTimeLeft: WRITER_MAX_TIME,
+    floatTexts: [], timeFlash: 0,
+    stats: { looks: 0, strokesDone: 0, wolvesCaught: 0, wolvesTotal: 0 }
+  };
+
+  const aiWriter = (mode === MODE.SOLO_WOLF || mode === MODE.TWOW);
+  w.writer = makeWriter(aiWriter);
+
+  btnWrite.style.display = 'none';
+
+  const h = HUMAN_WOLF_COUNT[mode] || 0;
+  const total = Math.max(wolfTotalCount, h);
+  const a = total - h;
+  let posIdx = 0;
+
+  if (mode === MODE.SOLO_WOLF){
+    w.wolves.push(makeWolf('P1', 0, WOLF_POSITIONS[posIdx++], false));
+    btnP1.style.display = 'flex'; btnP2.style.display = 'none';
+  } else if (mode === MODE.P1W){
+    w.wolves.push(makeWolf('P2', 1, WOLF_POSITIONS[posIdx++], false));
+    btnP1.style.display = 'none'; btnP2.style.display = 'flex';
+  } else if (mode === MODE.P2W){
+    w.wolves.push(makeWolf('P1', 0, WOLF_POSITIONS[posIdx++], false));
+    btnP1.style.display = 'flex'; btnP2.style.display = 'none';
+  } else if (mode === MODE.TWOW){
+    w.wolves.push(makeWolf('P1', 0, WOLF_POSITIONS[posIdx++], false));
+    w.wolves.push(makeWolf('P2', 1, WOLF_POSITIONS[posIdx++], false));
+    btnP1.style.display = 'flex'; btnP2.style.display = 'flex';
+  } else if (mode === MODE.SOLO_WRITER){
+    btnP1.style.display = 'none'; btnP2.style.display = 'none';
+    btnWrite.style.display = 'flex';
+  }
+
+  for (let i = 0; i < a; i++){
+    const idx = (h + i) % 2;
+    const px = WOLF_POSITIONS[posIdx++] || WOLF_POSITIONS[WOLF_POSITIONS.length - 1];
+    w.wolves.push(makeWolf('AI-' + (i+1), idx, px, true));
+  }
+
+  w.stats.wolvesTotal = w.wolves.length;
+  world = w;
+  hideOverlay();
+}
+
+/* ================================================================
+   结束
+================================================================ */
+function endGame(winner, reason){
+  if (!world || world.over) return;
+  world.over   = true;
+  world.winner = winner;
+  world.reason = reason;
+  world.overlayDelay = 0.95;
+  world.shake = winner === 'writer' ? 0.7 : 0;
+
+  world.stats.strokesDone = Math.floor(world.writer.writeProgress);
+  world.stats.wolvesCaught = world.wolves.filter(w => !w.alive).length;
+
+  if (winner === 'writer') sfxWriterWin();
+  else sfxWolfWin();
+}
+
+/* ================================================================
+   暂停
+================================================================ */
+function togglePause(){
+  if (!world || world.over) return;
+  world.paused = !world.paused;
+  if (world.paused){
+    for (const k in keyState) keyState[k] = false;
+    touchP1 = touchP2 = touchWrite = false;
+    btnP1.classList.remove('on');
+    btnP2.classList.remove('on');
+    btnWrite.classList.remove('on');
+    showPauseMenu();
+  } else {
+    hideOverlay();
+  }
+}
+
+/* ================================================================
+   输入判断
+================================================================ */
+function isWriterKeyHeld(){
+  if (!world || world.writer.isAI) return false;
+  if (world.mode === MODE.SOLO_WRITER){
+    return touchWrite || !!keyState[' '] || !!keyState['arrowup'] || !!keyState['arrowdown'];
+  }
+  if (world.mode === MODE.P1W) return touchWrite || !!keyState[' '];
+  if (world.mode === MODE.P2W) return touchWrite || !!(keyState['arrowup'] || keyState['arrowdown']);
+  return false;
+}
+
+function isWolfPressing(wolf){
+  if (!world || wolf.isAI) return false;
+  const p1 = touchP1, p2 = touchP2;
+
+  if (world.mode === MODE.SOLO_WOLF){
+    return p1 || !!keyState['a'] || !!keyState['d'] ||
+           !!keyState['arrowleft'] || !!keyState['arrowright'];
+  }
+  if (world.mode === MODE.P1W){
+    return p2 || !!keyState['arrowleft'] || !!keyState['arrowright'] ||
+           !!keyState['a'] || !!keyState['d'];
+  }
+  if (world.mode === MODE.P2W){
+    return p1 || !!keyState['a'] || !!keyState['d'] ||
+           !!keyState['arrowleft'] || !!keyState['arrowright'];
+  }
+  if (world.mode === MODE.TWOW){
+    if (wolf.index === 0) return p1 || !!keyState['a'] || !!keyState['d'];
+    return p2 || !!keyState['arrowleft'] || !!keyState['arrowright'];
+  }
+  return false;
+}
+
+/* ================================================================
+   更新写字人
+================================================================ */
+function updateWriter(dt){
+  const wr = world.writer;
+
+  if (!world.over){
+    world.writerTimeLeft -= dt;
+    if (world.writerTimeLeft <= 0){
+      world.writerTimeLeft = 0;
+      sfxTimeUp();
+      endGame('wolf', '写字人的时间耗尽了');
+      return;
+    }
+  }
+
+  if (wr.isAI && !world.over){
+    wr.aiTimer -= dt;
+    if (wr.aiTimer <= 0){
+      if (wr.writing){ wr.writing = false; wr.aiTimer = rand(0.5, 1.3); }
+      else            { wr.writing = true;  wr.aiTimer = rand(2.2, 4.2); }
+    }
+  }
+
+  if (!wr.isAI && !world.over){
+    wr.writing = isWriterKeyHeld();
+  }
+
+  const target = wr.writing ? 0 : 1;
+  wr.facing = lerp(wr.facing, target, Math.min(1, dt * 14));
+
+  if (!wr.writing){
+    wr.lookTimer += dt;
+    wr.looking = wr.lookTimer > LOOK_GRACE;
+  } else {
+    wr.lookTimer = 0;
+    wr.looking = false;
+  }
+
+  if (wr.writing && !world.over){
+    wr.writeProgress += dt / STROKE_TIME;
+    if (wr.writeProgress >= TOTAL_STROKES){
+      wr.writeProgress = TOTAL_STROKES;
+      endGame('writer', '写字人写完了「田」字');
+    }
+  }
+}
+
+/* ================================================================
+   更新 AI 木头人
+================================================================ */
+function updateAIWolf(wolf, dt){
+  const wr = world.writer;
+
+  if (world.over){ wolf.moving = false; return; }
+  if (!wolf.alive){
+    wolf.fallT = Math.min(1, wolf.fallT + dt * 3);
+    wolf.moving = false;
+    return;
+  }
+
+  const writerLooking = !wr.writing;
+  const tooClose = wolf.x <= wr.x + MIN_DIST + 0.5;
+
+  if (!writerLooking){
+    wolf.reacting = false;
+    wolf.reactTimer = 0;
+
+    if (wolf.pauseTimer > 0){
+      wolf.pauseTimer -= dt;
+      wolf.moving = false;
+      wolf.bob = lerp(wolf.bob, 0, Math.min(1, dt * 10));
+      if (wolf.x <= wr.x + CATCH_DIST){
+        endGame('wolf', '木头人摸到了写字人的后背！');
+      }
+      return;
+    }
+
+    const frac = wr.writeProgress - Math.floor(wr.writeProgress);
+    if (frac > 0.72 && frac < 1 && Math.random() < 1.8 * dt){
+      wolf.pauseTimer = rand(0.35, 0.95);
+      wolf.moving = false;
+      wolf.bob = lerp(wolf.bob, 0, Math.min(1, dt * 10));
+      if (wolf.x <= wr.x + CATCH_DIST){
+        endGame('wolf', '木头人摸到了写字人的后背！');
+      }
+      return;
+    }
+
+    if (!tooClose){
+      wolf.moving = true;
+      wolf.x -= AI_WOLF_SPEED * dt;
+      wolf.x = Math.max(wolf.x, wr.x + MIN_DIST);
+      wolf.legPhase += dt * 13;
+      wolf.bob = Math.sin(wolf.legPhase * 2) * 2.6;
+    } else {
+      wolf.moving = false;
+      wolf.bob = lerp(wolf.bob, 0, Math.min(1, dt * 10));
+    }
+
+    if (wolf.x <= wr.x + CATCH_DIST){
+      endGame('wolf', '木头人摸到了写字人的后背！');
+    }
+    return;
+  }
+
+  if (wolf.moving){
+    if (!wolf.reacting){
+      wolf.reacting = true;
+      wolf.reactTimer = rand(AI_REACT_MIN, AI_REACT_MAX);
+    }
+    wolf.reactTimer -= dt;
+
+    if (wolf.reactTimer > 0){
+      wolf.x -= AI_WOLF_SPEED * dt * 0.55;
+      wolf.x = Math.max(wolf.x, wr.x + MIN_DIST);
+      wolf.legPhase += dt * 13;
+      wolf.bob = Math.sin(wolf.legPhase * 2) * 2.6;
+
+      if (wr.looking){
+        wolf.alive = false;
+        wolf.caught = true;
+        wolf.moving = false;
+        wolf.reacting = false;
+        wolf.reactTimer = 0;
+        sfxCatch();
+        return;
+      }
+    } else {
+      wolf.moving = false;
+      wolf.reacting = false;
+      wolf.reactTimer = 0;
+      wolf.bob = lerp(wolf.bob, 0, Math.min(1, dt * 10));
+    }
+  } else {
+    wolf.reacting = false;
+    wolf.reactTimer = 0;
+    wolf.bob = lerp(wolf.bob, 0, Math.min(1, dt * 10));
+  }
+
+  if (wolf.x <= wr.x + CATCH_DIST){
+    endGame('wolf', '木头人摸到了写字人的后背！');
+  }
+}
+
+/* ================================================================
+   更新人类木头人
+================================================================ */
+function updateHumanWolf(wolf, dt){
+  if (!wolf.alive){
+    wolf.fallT = Math.min(1, wolf.fallT + dt * 3);
+    wolf.moving = false;
+    return;
+  }
+  if (world.over){ wolf.moving = false; return; }
+
+  const pressing = isWolfPressing(wolf);
+  const canMove  = wolf.x > world.writer.x + MIN_DIST + 0.5;
+
+  if (pressing && canMove){
+    wolf.x -= WOLF_SPEED * dt;
+    wolf.x = Math.max(wolf.x, world.writer.x + MIN_DIST);
+    wolf.legPhase += dt * 13;
+    wolf.bob = Math.sin(wolf.legPhase * 2) * 2.6;
+    wolf.moving = true;
+
+    if (world.writer.looking){
+      wolf.alive = false;
+      wolf.caught = true;
+      wolf.moving = false;
+      sfxCatch();
+    }
+  } else {
+    wolf.moving = false;
+    wolf.bob = lerp(wolf.bob, 0, Math.min(1, dt * 10));
+  }
+
+  if (wolf.alive && wolf.x <= world.writer.x + CATCH_DIST){
+    endGame('wolf', `${wolf.id} 摸到了写字人的后背！`);
+  }
+}
+
+function updateWolves(dt){
+  for (const wolf of world.wolves){
+    if (wolf.isAI) updateAIWolf(wolf, dt);
+    else updateHumanWolf(wolf, dt);
+  }
+  if (!world.over && world.wolves.every(w => !w.alive)){
+    endGame('writer', '所有木头人都被抓住了');
+  }
+}
+
+/* ================================================================
+   更新
+================================================================ */
+function update(dt){
+  if (!world) return;
+  if (world.paused) return;
+
+  if (world.shake > 0) world.shake = Math.max(0, world.shake - dt * 3.2);
+  if (world.timeFlash > 0) world.timeFlash = Math.max(0, world.timeFlash - dt * 2.2);
+
+  if (world.active){
+    const wr = world.writer;
+    const wasWriting = wr.writing;
+
+    world.time += dt;
+    updateWriter(dt);
+    updateWolves(dt);
+
+    if (!world.over && wasWriting && !wr.writing){
+      world.writerTimeLeft = Math.max(0, world.writerTimeLeft - LOOK_PENALTY);
+      world.timeFlash = 1;
+      world.stats.looks++;
+      sfxPenalty();
+
+      world.floatTexts.push({
+        x: VW / 2, y: 78,
+        text: '-' + LOOK_PENALTY + 's',
+        life: 0.9, maxLife: 0.9
+      });
+
+      if (world.writerTimeLeft <= 0){
+        world.writerTimeLeft = 0;
+        sfxTimeUp();
+        endGame('wolf', '写字人的时间耗尽了');
+      }
+    }
+
+    for (let i = world.floatTexts.length - 1; i >= 0; i--){
+      const ft = world.floatTexts[i];
+      ft.life -= dt;
+      ft.y -= dt * 26;
+      if (ft.life <= 0) world.floatTexts.splice(i, 1);
+    }
+  }
+
+  if (world.over && world.overlayDelay > 0){
+    world.overlayDelay -= dt;
+    if (world.overlayDelay <= 0){
+      world.overlayDelay = 0;
+      showResult();
+    }
+  }
+}
+
+/* ================================================================
+   渲染 — 背景
+================================================================ */
+function drawBackground(){
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  g.addColorStop(0, '#2b3050');
+  g.addColorStop(1, '#191d2e');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, VW, GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < VW; x += 60){
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, GROUND_Y); ctx.stroke();
+  }
+
+  ctx.fillStyle = '#141726';
+  ctx.fillRect(0, GROUND_Y - 16, VW, 16);
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(0, GROUND_Y - 16, VW, 1.5);
+
+  const fg = ctx.createLinearGradient(0, GROUND_Y, 0, VH);
+  fg.addColorStop(0, '#413729');
+  fg.addColorStop(1, '#282216');
+  ctx.fillStyle = fg;
+  ctx.fillRect(0, GROUND_Y, VW, VH - GROUND_Y);
+
+  ctx.fillStyle = 'rgba(255,220,160,0.07)';
+  ctx.fillRect(0, GROUND_Y, VW, 2);
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < VW; x += 90){
+    ctx.beginPath();
+    ctx.moveTo(x, GROUND_Y);
+    ctx.lineTo(x - 40, VH);
+    ctx.stroke();
+  }
+}
+
+/* ================================================================
+   渲染 — 黑板
+================================================================ */
+function drawBoard(){
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetY = 10;
+  ctx.fillStyle = '#6b4a2f';
+  roundRect(ctx, BOARD.x, BOARD.y, BOARD.w, BOARD.h, 10);
+  ctx.fill();
+  ctx.restore();
+
+  const bg = ctx.createLinearGradient(BOARD.x, BOARD.y, BOARD.x, BOARD.y + BOARD.h);
+  bg.addColorStop(0, '#7d5738');
+  bg.addColorStop(1, '#52371e');
+  ctx.fillStyle = bg;
+  roundRect(ctx, BOARD.x, BOARD.y, BOARD.w, BOARD.h, 10);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255,220,170,0.12)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, BOARD.x+2, BOARD.y+2, BOARD.w-4, BOARD.h-4, 9);
+  ctx.stroke();
+
+  const ig = ctx.createLinearGradient(INNER.x, INNER.y, INNER.x+INNER.w, INNER.y+INNER.h);
+  ig.addColorStop(0, '#1d352a');
+  ig.addColorStop(.5, '#152a20');
+  ig.addColorStop(1, '#1d352a');
+  ctx.fillStyle = ig;
+  roundRect(ctx, INNER.x, INNER.y, INNER.w, INNER.h, 4);
+  ctx.fill();
+
+  const rg = ctx.createLinearGradient(0, INNER.y, 0, INNER.y + INNER.h * 0.45);
+  rg.addColorStop(0, 'rgba(255,255,255,0.045)');
+  rg.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = rg;
+  roundRect(ctx, INNER.x, INNER.y, INNER.w, INNER.h * 0.45, 4);
+  ctx.fill();
+}
+
+/* ================================================================
+   渲染 — 粉笔字「田」
+================================================================ */
+function drawOneStrokePath(stroke, t){
+  const pts = stroke;
+  if (!pts || pts.length < 2) return;
+
+  let total = 0;
+  const segs = [];
+  for (let i = 0; i < pts.length - 1; i++){
+    const dx = pts[i+1][0] - pts[i][0];
+    const dy = pts[i+1][1] - pts[i][1];
+    const len = Math.sqrt(dx*dx + dy*dy);
+    segs.push(len);
+    total += len;
+  }
+
+  const target = clamp(t, 0, 1) * total;
+  let remaining = target;
+
+  ctx.beginPath();
+  ctx.moveTo(CHAR_X + pts[0][0]*CHAR_SIZE, CHAR_Y + pts[0][1]*CHAR_SIZE);
+
+  for (let i = 0; i < pts.length - 1; i++){
+    if (remaining >= segs[i]){
+      ctx.lineTo(CHAR_X + pts[i+1][0]*CHAR_SIZE, CHAR_Y + pts[i+1][1]*CHAR_SIZE);
+      remaining -= segs[i];
+    } else {
+      const k = segs[i] > 0 ? remaining / segs[i] : 0;
+      const x = pts[i][0] + (pts[i+1][0] - pts[i][0]) * k;
+      const y = pts[i][1] + (pts[i+1][1] - pts[i][1]) * k;
+      ctx.lineTo(CHAR_X + x*CHAR_SIZE, CHAR_Y + y*CHAR_SIZE);
+      break;
+    }
+  }
+  ctx.stroke();
+}
+
+function drawChalk(){
+  const wr = world.writer;
+  const total = wr.writeProgress;
+  const done  = Math.floor(total);
+  const part  = total - done;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(246,250,255,0.9)';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(255,255,255,0.4)';
+  ctx.shadowBlur = 6;
+
+  for (let i = 0; i < done; i++){
+    drawOneStrokePath(STROKES[i], 1);
+  }
+  if (done < TOTAL_STROKES && part > 0){
+    drawOneStrokePath(STROKES[done], part);
+  }
+  ctx.restore();
+}
+
+function getChalkPos(){
+  const wr = world.writer;
+  const total = wr.writeProgress;
+  const done = Math.floor(total);
+  const part = total - done;
+  const idx = Math.min(done, TOTAL_STROKES - 1);
+  const t = done >= TOTAL_STROKES ? 1 : part;
+  const pt = strokePointAt(STROKES[idx], t);
+  return {
+    x: CHAR_X + pt[0] * CHAR_SIZE,
+    y: CHAR_Y + pt[1] * CHAR_SIZE
+  };
+}
+
+/* ================================================================
+   渲染 — 写字人
+================================================================ */
+function drawWriterHead(x, y, r, f){
+  const backA = clamp(1 - f * 1.7, 0, 1);
+  if (backA > 0.01){
+    ctx.globalAlpha = backA;
+    ctx.fillStyle = '#31323c';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.beginPath(); ctx.arc(x - r*0.28, y - r*0.28, r*0.42, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  const frontA = clamp((f - 0.28) / 0.72, 0, 1);
+  if (frontA > 0.01){
+    ctx.globalAlpha = frontA;
+
+    ctx.fillStyle = '#f2c9a0';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = '#31323c';
+    ctx.beginPath();
+    ctx.arc(x, y - 1, r + 1.5, Math.PI, Math.PI*2);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#e5b98e';
+    ctx.beginPath(); ctx.arc(x - r*0.96, y + r*0.08, r*0.24, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + r*0.96, y + r*0.08, r*0.24, 0, Math.PI*2); ctx.fill();
+
+    const eyeY = y + r*0.18, eyeDX = r*0.36;
+    ctx.fillStyle = '#1c1c24';
+    ctx.beginPath(); ctx.arc(x - eyeDX, eyeY, 2.9, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + eyeDX, eyeY, 2.9, 0, Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle = '#1c1c24';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - eyeDX - 6, eyeY - 9);
+    ctx.lineTo(x - eyeDX + 5, eyeY - 5.5);
+    ctx.moveTo(x + eyeDX + 6, eyeY - 9);
+    ctx.lineTo(x + eyeDX - 5, eyeY - 5.5);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x, y + r*0.42, r*0.26, 0.15*Math.PI, 0.85*Math.PI);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(230,120,110,0.22)';
+    ctx.beginPath(); ctx.arc(x - r*0.55, y + r*0.38, r*0.22, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + r*0.55, y + r*0.38, r*0.22, 0, Math.PI*2); ctx.fill();
+
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawWriter(){
+  const wr = world.writer;
+  const wx = wr.x, gy = GROUND_Y, f = wr.facing;
+
+  const hipY = gy - 58;
+  const shoulderY = gy - 132;
+  const headY = gy - 158;
+  const headR = 23;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(wx, gy + 4, 32, 9, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#343a52';
+  ctx.lineWidth = 14;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(wx - 10, hipY); ctx.lineTo(wx - 13, gy - 4);
+  ctx.moveTo(wx + 10, hipY); ctx.lineTo(wx + 13, gy - 4);
+  ctx.stroke();
+
+  const bodyGrad = ctx.createLinearGradient(wx - 26, 0, wx + 26, 0);
+  bodyGrad.addColorStop(0, '#4d6ea3');
+  bodyGrad.addColorStop(.5, '#5f83bd');
+  bodyGrad.addColorStop(1, '#44618f');
+  ctx.fillStyle = bodyGrad;
+  roundRect(ctx, wx - 26, shoulderY, 52, hipY - shoulderY + 8, 16);
+  ctx.fill();
+
+  const chalk = getChalkPos();
+  const handX = lerp(chalk.x, wx - 30, f);
+  const handY = lerp(chalk.y, hipY - 2, f);
+
+  ctx.strokeStyle = '#5f83bd';
+  ctx.lineWidth = 11;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(wx - 19, shoulderY + 20);
+  ctx.lineTo(handX, handY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(wx + 19, shoulderY + 20);
+  ctx.lineTo(wx + 28, hipY - 6);
+  ctx.stroke();
+
+  if (f < 0.6){
+    ctx.fillStyle = '#f2c9a0';
+    ctx.beginPath(); ctx.arc(handX, handY, 6.5, 0, Math.PI*2); ctx.fill();
+  }
+
+  drawWriterHead(wx, headY, headR, f);
+
+  if (wr.looking && wr.lookTimer > 0.10){
+    const a = clamp(1 - (wr.lookTimer - 0.10) * 2.5, 0, 1);
+    if (a > 0){
+      ctx.save();
+      ctx.globalAlpha = a * 0.9;
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = 'bold 34px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', wx + 40, headY - 28);
+      ctx.restore();
+    }
+  }
+}
+
+/* ================================================================
+   渲染 — 木头人
+================================================================ */
+function drawWolf(wolf){
+  const px = wolf.x;
+  const gy = GROUND_Y;
+  const bob = wolf.bob;
+  const alive = wolf.alive;
+  const fall = wolf.fallT;
+
+  const legY = gy - 4;
+  const hipY = gy - 52;
+  const shoulderY = gy - 110 + bob;
+  const headY = gy - 132 + bob;
+  const headR = 20;
+
+  const isP1 = wolf.index === 0;
+  const isAI = wolf.isAI;
+
+  let shirt, armCol, legCol;
+  if (!alive){
+    shirt = ['#4a4a55','#5a5a68'];
+    armCol = '#4e4e5a';
+    legCol = '#3a3a44';
+  } else if (isAI){
+    shirt = ['#5f6b80','#7e8aa0'];
+    armCol = '#7e8aa0';
+    legCol = '#3a4254';
+  } else if (isP1){
+    shirt = ['#c96a52','#e08268'];
+    armCol = '#d4745c';
+    legCol = '#2d3247';
+  } else {
+    shirt = ['#4a6fb5','#6d92d4'];
+    armCol = '#5f83bd';
+    legCol = '#252d42';
+  }
+
+  ctx.save();
+  if (fall > 0.01){
+    ctx.globalAlpha = 1 - fall * 0.55;
+    ctx.translate(px, gy);
+    ctx.rotate(fall * 1.15);
+    ctx.translate(-px, -gy);
+  }
+
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(px, gy + 4, 24, 7.5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  const moving = alive && wolf.moving;
+  const swing = moving ? Math.sin(wolf.legPhase) * 9 : 0;
+
+  ctx.strokeStyle = legCol;
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(px - 7, hipY); ctx.lineTo(px - 7 + swing, legY);
+  ctx.moveTo(px + 7, hipY); ctx.lineTo(px + 7 - swing, legY);
+  ctx.stroke();
+
+  const bg = ctx.createLinearGradient(px - 20, 0, px + 20, 0);
+  bg.addColorStop(0, shirt[0]);
+  bg.addColorStop(1, shirt[1]);
+  ctx.fillStyle = bg;
+  roundRect(ctx, px - 20, shoulderY, 40, hipY - shoulderY + 6, 13);
+  ctx.fill();
+
+  ctx.strokeStyle = armCol;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(px - 17, shoulderY + 12);
+  ctx.lineTo(px - 23 + swing * 0.6, hipY - 8);
+  ctx.moveTo(px + 17, shoulderY + 12);
+  ctx.lineTo(px + 23 - swing * 0.6, hipY - 8);
+  ctx.stroke();
+
+  ctx.fillStyle = alive ? '#f2c9a0' : '#b0a89e';
+  ctx.beginPath(); ctx.arc(px, headY, headR, 0, Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = alive ? (isAI ? '#3a3f4a' : '#2b2b35') : '#3e3e46';
+  ctx.beginPath();
+  ctx.arc(px, headY, headR, Math.PI, Math.PI*2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = alive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)';
+  ctx.beginPath();
+  ctx.arc(px - headR*0.3, headY - headR*0.35, headR*0.4, 0, Math.PI*2);
+  ctx.fill();
+
+  if (moving && Math.random() < 0.35){
+    ctx.fillStyle = 'rgba(200,180,140,0.18)';
+    ctx.beginPath();
+    ctx.arc(px + 18 + Math.random()*10, gy - 4 - Math.random()*8,
+            2 + Math.random()*3, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  if (!alive){
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold 26px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('×', px, headY - 30);
+  }
+
+  ctx.restore();
+}
+
+/* ================================================================
+   渲染 — 时间条
+================================================================ */
+function drawTimer(){
+  if (!world || world.over) return;
+
+  const t = world.writerTimeLeft;
+  const pct = clamp(t / WRITER_MAX_TIME, 0, 1);
+
+  const barW = 320;
+  const barH = 18;
+  const barX = (VW - barW) / 2;
+  const barY = 26;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = 'rgba(10,12,20,0.7)';
+  roundRect(ctx, barX - 8, barY - 8, barW + 16, barH + 16, 12);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, barX, barY, barW, barH, 9);
+  ctx.fill();
+
+  let fillColor;
+  if (world.timeFlash > 0.4){
+    const fl = Math.sin(world.timeFlash * 30) * 0.5 + 0.5;
+    fillColor = fl > 0.5 ? '#ff5555' : '#ff8888';
+  } else if (pct > 0.5) fillColor = '#7dd98a';
+  else if (pct > 0.25) fillColor = '#efb44b';
+  else {
+    const fl = Math.sin(world.time * 8) * 0.5 + 0.5;
+    fillColor = fl > 0.5 ? '#ff5555' : '#ff8888';
+  }
+
+  const fillW = barW * pct;
+  if (fillW > 0.5){
+    ctx.save();
+    ctx.shadowColor = fillColor;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = fillColor;
+    roundRect(ctx, barX, barY, fillW, barH, 9);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  roundRect(ctx, barX + 2, barY + 2, Math.max(0, fillW - 4), barH * 0.35, 5);
+  ctx.fill();
+
+  ctx.save();
+  ctx.font = 'bold 13px -apple-system,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillText('⏱ ' + t.toFixed(1) + 's', VW/2 + 1, barY + barH/2 + 1);
+  ctx.fillStyle = pct > 0.25 ? '#0e1017' : '#fff';
+  ctx.fillText('⏱ ' + t.toFixed(1) + 's', VW/2, barY + barH/2);
+  ctx.restore();
+
+  ctx.save();
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(240,230,210,0.55)';
+  ctx.fillText('写字人', barX - 16, barY + barH/2);
+  ctx.restore();
+}
+
+/* ================================================================
+   渲染 — 飘字
+================================================================ */
+function drawFloatTexts(){
+  if (!world) return;
+  for (const ft of world.floatTexts){
+    const a = clamp(ft.life / ft.maxLife, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.font = 'bold 26px -apple-system,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText(ft.text, ft.x + 2, ft.y + 2);
+    ctx.fillStyle = '#ff5555';
+    ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.restore();
+  }
+}
+
+/* ================================================================
+   渲染 — 危险提示
+================================================================ */
+function drawDangerVignette(){
+  if (!world || world.over) return;
+  const wr = world.writer;
+  if (wr.writing) return;
+
+  const intensity = clamp(wr.lookTimer / 0.35, 0, 1);
+  const g = ctx.createRadialGradient(VW/2, VH/2, VH*0.32, VW/2, VH/2, VH*0.92);
+  g.addColorStop(0, 'rgba(220,60,60,0)');
+  g.addColorStop(1, 'rgba(200,40,40,' + (0.22 * intensity) + ')');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, VW, VH);
+}
+
+/* ================================================================
+   渲染主函数
+================================================================ */
+function render(){
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.fillStyle = '#0e1017';
+  ctx.fillRect(0, 0, cssW, cssH);
+
+  ctx.save();
+  ctx.translate(viewOx, viewOy);
+  ctx.scale(viewScale, viewScale);
+
+  if (world && world.shake > 0){
+    const s = world.shake * 9;
+    ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
+  }
+
+  drawBackground();
+  drawBoard();
+
+  if (world){
+    drawChalk();
+    drawWriter();
+    for (const wolf of world.wolves) drawWolf(wolf);
+    drawDangerVignette();
+    drawTimer();
+    drawFloatTexts();
+  }
+
+  ctx.restore();
+}
+
+/* ================================================================
+   主循环
+================================================================ */
+let lastTime = performance.now();
+function loop(now){
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ================================================================
+   覆盖层
+================================================================ */
+const overlay = document.getElementById('overlay');
+const panel   = document.getElementById('panel');
+
+function hideOverlay(){ overlay.classList.add('hidden'); }
+function showOverlay(){ overlay.classList.remove('hidden'); }
+
+/* ---------- 开始标题页 ---------- */
+function showStartScreen(){
+  world = null;
+  touchArea.style.display = 'none';
+  btnWrite.style.display = 'none';
+
+  panel.className = 'panel start-panel';
+  panel.innerHTML = `
+    <div class="start-title">木 头 人</div>
+    <div class="start-sub">背 后 的 脚 步 声</div>
+    <button class="start-btn" id="startGameBtn">开 始 游 戏</button>
+    <div class="start-hint">
+      按 <b>ESC</b> 暂停 &nbsp;·&nbsp; 写字人总时长 <b>50 秒</b> &nbsp;·&nbsp; 每次回头 <b>-3 秒</b>
+    </div>
+  `;
+
+  document.getElementById('startGameBtn').addEventListener('click', () => {
+    initAudio();
+    showModeMenu();
+  });
+
+  showOverlay();
+}
+
+/* ---------- 更新木头人组成提示 ---------- */
+function updateWolfCompositionLabels(){
+  for (const mode in HUMAN_WOLF_COUNT){
+    const el = panel.querySelector(`.mode-btn[data-mode="${mode}"] .mode-comp`);
+    if (!el) continue;
+    const h = HUMAN_WOLF_COUNT[mode];
+    const total = Math.max(wolfTotalCount, h);
+    const a = total - h;
+    if (a > 0){
+      el.innerHTML = `木头人 <b>${total}</b> 名 · <b>${h}</b> 人类 + <b>${a}</b> AI`;
+    } else {
+      el.innerHTML = `木头人 <b>${total}</b> 名 · <b>${h}</b> 人类`;
+    }
+  }
+}
+
+/* ---------- 模式选择页 ---------- */
+function showModeMenu(){
+  panel.className = 'panel menu-panel';
+
+  /* 生成数量按钮 */
+  const countLabels = { 1:'独行', 2:'成双', 4:'结队', 8:'成群' };
+  let countBtnsHTML = '';
+  for (const n of WOLF_COUNT_OPTIONS){
+    const active = (n === wolfTotalCount) ? ' active' : '';
+    countBtnsHTML += `<button class="count-btn${active}" data-count="${n}">${n}<small>${countLabels[n]}</small></button>`;
+  }
+
+  panel.innerHTML = `
+    <div class="menu-header">
+      <h1>选 择 模 式</h1>
+      <div class="sub">游戏中按 <b>ESC</b> 暂停</div>
+    </div>
+
+    <div class="menu-scroll">
+      <div class="group-label">单 人 模 式</div>
+
+      <button class="mode-btn" data-mode="solo_wolf">
+        <div class="mode-icon icon-solo">🙋</div>
+        <div class="mode-body">
+          <div class="mode-title">你是木头人 · AI 写字</div>
+          <div class="mode-desc">用 <span class="hl">A / D</span> 或 <span class="hl">← →</span> 靠近，AI 随时会回头</div>
+          <div class="mode-comp"></div>
+        </div>
+      </button>
+
+      <button class="mode-btn" data-mode="solo_writer">
+        <div class="mode-icon icon-solo">✍️</div>
+        <div class="mode-body">
+          <div class="mode-title">你是写字人 · AI 木头人</div>
+          <div class="mode-desc">按住 <span class="hl">空格</span> 或 <span class="hl">↑ ↓</span> 写「田」，松开回头抓 AI</div>
+          <div class="mode-comp"></div>
+        </div>
+      </button>
+
+      <div class="group-label">双 人 模 式</div>
+
+      <button class="mode-btn" data-mode="p1w">
+        <div class="mode-icon icon-p1">P1</div>
+        <div class="mode-body">
+          <div class="mode-title">P1 写字人 &nbsp;·&nbsp; P2 木头人</div>
+          <div class="mode-desc">P1 按住<span class="hl">空格</span>写「田」 · P2 用<span class="hl">← →</span>靠近</div>
+          <div class="mode-comp"></div>
+        </div>
+      </button>
+
+      <button class="mode-btn" data-mode="p2w">
+        <div class="mode-icon icon-p2">P2</div>
+        <div class="mode-body">
+          <div class="mode-title">P1 木头人 &nbsp;·&nbsp; P2 写字人</div>
+          <div class="mode-desc">P2 按住<span class="hl">↑ 或 ↓</span>写「田」 · P1 用<span class="hl">A D</span>靠近</div>
+          <div class="mode-comp"></div>
+        </div>
+      </button>
+
+      <button class="mode-btn" data-mode="twow">
+        <div class="mode-icon icon-both">双</div>
+        <div class="mode-body">
+          <div class="mode-title">P1 + P2 双木头人 vs AI</div>
+          <div class="mode-desc">两人同时靠近 AI · P1 用 <span class="hl">A D</span> · P2 用 <span class="hl">← →</span></div>
+          <div class="mode-comp"></div>
+        </div>
+      </button>
+    </div>
+
+    <div class="menu-footer">
+      <div class="count-selector">
+        <span class="cs-label">木 头 人 总 数</span>
+        <div class="count-btns">
+          ${countBtnsHTML}
+        </div>
+      </div>
+      <button class="back-btn" id="backToStartBtn">← 返 回</button>
+    </div>
+  `;
+
+  updateWolfCompositionLabels();
+
+  panel.querySelectorAll('.count-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); e.preventDefault();
+      wolfTotalCount = parseInt(btn.dataset.count, 10) || 1;
+      panel.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateWolfCompositionLabels();
+    });
+  });
+
+  panel.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => startGame(btn.dataset.mode));
+  });
+
+  document.getElementById('backToStartBtn').addEventListener('click', showStartScreen);
+
+  showOverlay();
+}
+
+/* ---------- 暂停菜单 ---------- */
+function showPauseMenu(){
+  panel.className = 'panel';
+  panel.innerHTML = `
+    <div class="pause-icon">| |</div>
+    <h1 class="pause-title">游 戏 暂 停</h1>
+    <button class="primary-btn" id="resumeBtn">继 续 游 戏</button>
+    <button class="secondary-btn" id="restartBtn">重 新 开 始</button>
+    <button class="secondary-btn" id="menuBtn">返 回 主 菜 单</button>
+    <div class="start-hint" style="margin-top:22px;">按 <b>ESC</b> 继续</div>
+  `;
+
+  document.getElementById('resumeBtn').addEventListener('click', () => {
+    if (!world) return;
+    world.paused = false;
+    hideOverlay();
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    if (!world) return;
+    const m = world.mode;
+    world.paused = false;
+    startGame(m);
+  });
+
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    showStartScreen();
+  });
+
+  showOverlay();
+}
+
+/* ---------- 结算页 ---------- */
+function showResult(){
+  const win = world.winner === 'wolf';
+
+  const titleMap = {
+    'wolf'  : '木头人胜利',
+    'writer': '写字人胜利'
+  };
+
+  let icon, desc;
+  if (win){
+    icon = '🏃';
+    desc = world.reason + '<br>木头人成功摸到了写字人的后背';
+  } else {
+    icon = '✍️';
+    desc = world.reason + '<br>木头人没能在写字人写完「田」字前摸到他';
+  }
+
+  const playTime = world.time.toFixed(1);
+  const strokesDone = Math.min(world.stats.strokesDone, TOTAL_STROKES);
+  const strokesPct = Math.round((world.stats.strokesDone / TOTAL_STROKES) * 100);
+  const looks = world.stats.looks;
+  const timeLeft = world.writerTimeLeft.toFixed(1);
+  const caught = world.stats.wolvesCaught;
+  const total = world.stats.wolvesTotal;
+
+  const strokeCls = world.stats.strokesDone >= TOTAL_STROKES ? 'good'
+                  : world.stats.strokesDone >= 3 ? 'warn' : 'bad';
+  const timeCls = world.writerTimeLeft > WRITER_MAX_TIME * 0.5 ? 'good'
+                : world.writerTimeLeft > WRITER_MAX_TIME * 0.25 ? 'warn' : 'bad';
+
+  panel.className = 'panel';
+  panel.innerHTML = `
+    <div class="result-header">
+      <div class="result-icon">${icon}</div>
+      <div class="result-title ${win ? 'win-c' : 'lose-c'}">${titleMap[world.winner]}</div>
+      <div class="result-desc">${desc}</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value">${playTime}s</div>
+        <div class="stat-label">游戏时长</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value ${strokeCls}">${strokesDone} / ${TOTAL_STROKES}</div>
+        <div class="stat-label">完成笔画 · ${strokesPct}%</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${looks} 次</div>
+        <div class="stat-label">回头次数</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value ${timeCls}">${timeLeft}s</div>
+        <div class="stat-label">剩余时间</div>
+      </div>
+      <div class="stat-item full">
+        <div class="stat-value">${caught} / ${total}</div>
+        <div class="stat-label">木头人被抓住 / 总数量</div>
+      </div>
+    </div>
+
+    <button class="primary-btn" id="againBtn">再 玩 一 次</button>
+    <button class="secondary-btn" id="menuBtn">返 回 主 菜 单</button>
+  `;
+
+  document.getElementById('againBtn').addEventListener('click', () => {
+    startGame(world.mode);
+  });
+
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    showStartScreen();
+  });
+
+  showOverlay();
+}
+
+/* ================================================================
+   启动
+================================================================ */
+resize();
+showStartScreen();
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
