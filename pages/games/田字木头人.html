@@ -35,9 +35,6 @@
   .panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px;}
   @keyframes pop{from{transform:scale(.93);opacity:0;}to{transform:scale(1);opacity:1;}}
 
-  /* ============================
-     开始标题页
-  ============================ */
   .start-panel{
     padding:72px 46px 60px;
     background:radial-gradient(ellipse at 50% 30%,#1f2636 0%,#11141e 75%);
@@ -96,9 +93,6 @@
   }
   .start-hint b{color:#8a94ab;font-weight:600;}
 
-  /* ============================
-     模式菜单面板（三段式布局）
-  ============================ */
   .menu-panel{
     padding:0;
     display:flex;
@@ -149,7 +143,6 @@
     pointer-events:none;
   }
 
-  /* 分组标签 */
   .group-label{
     display:flex;align-items:center;gap:10px;
     font-size:12px;color:#6a7388;letter-spacing:3px;
@@ -163,7 +156,6 @@
   .group-label::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.08));}
   .group-label::after{background:linear-gradient(90deg,rgba(255,255,255,.08),transparent);}
 
-  /* 模式按钮 */
   .mode-btn{
     display:flex;align-items:center;gap:14px;
     width:100%;padding:14px 18px;margin-bottom:9px;
@@ -205,7 +197,6 @@
   }
   .mode-comp b{color:#7a8499;font-weight:600;}
 
-  /* 数量选择器 */
   .count-selector .cs-label{
     font-size:12px;color:#8a94ab;letter-spacing:2.5px;
     font-weight:700;margin-bottom:11px;display:block;
@@ -235,7 +226,6 @@
   }
   .count-btn.active small{color:#d4b576;}
 
-  /* 底部按钮 */
   .back-btn{
     display:block;width:100%;margin-top:12px;padding:11px;
     font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:2.5px;
@@ -245,9 +235,6 @@
   }
   .back-btn:hover{color:#e8e2d4;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);}
 
-  /* ============================
-     暂停 & 结算
-  ============================ */
   .pause-icon{
     font-size:38px;margin-bottom:16px;color:#ffd98a;
     letter-spacing:14px;font-weight:300;
@@ -282,7 +269,6 @@
   }
   .secondary-btn:hover{color:#e8e2d4;background:rgba(255,255,255,.09);}
 
-  /* 结算 */
   .result-header{margin-bottom:22px;}
   .result-icon{
     font-size:56px;margin-bottom:12px;line-height:1;
@@ -316,9 +302,6 @@
     font-size:11px;color:#8791a8;letter-spacing:1px;line-height:1.4;
   }
 
-  /* ============================
-     触屏按钮
-  ============================ */
   #touchArea{position:absolute;inset:0;z-index:5;display:none;pointer-events:none;}
   .touch-btn{
     position:absolute;bottom:26px;width:92px;height:92px;border-radius:50%;
@@ -374,7 +357,7 @@ const CHAR_Y = INNER.y + (INNER.h - CHAR_SIZE) / 2;
 const WRITER_X      = 460;
 const WOLF_SPEED    = 165;
 const AI_WOLF_SPEED = 105;
-const STROKE_TIME   = 1.4;
+const STROKE_TIME   = 2;    // 每画耗时（加快）
 const TOTAL_STROKES = 5;
 const LOOK_GRACE    = 0.30;
 const AI_REACT_MIN  = 0.12;
@@ -384,9 +367,12 @@ const MIN_DIST      = 58;
 
 const WRITER_MAX_TIME = 50;
 const LOOK_PENALTY    = 3;
+const COUNTDOWN_TIME  = 3.0;
+const START_FLASH_DUR = 0.7;
 
-/* 木头人位置池（从远到近），支持 8 名，距离拉长 */
-const WOLF_POSITIONS = [1420, 1345, 1270, 1195, 1120, 1045, 970, 895];
+/* 所有木头人的同一起点 */
+const WOLF_START_X = 1380;
+const WOLF_SPACING = 14;
 
 /* 「田」字五画（归一化坐标） */
 const STROKES = [
@@ -413,7 +399,6 @@ const HUMAN_WOLF_COUNT = {
   [MODE.TWOW]        : 2
 };
 
-/* 木头人数量选项 */
 const WOLF_COUNT_OPTIONS = [1, 2, 4, 8];
 
 /* ================================================================
@@ -508,6 +493,10 @@ const sfxWriterWin= () => { [392,523.25,659.25,783.99].forEach((f,i)=>tone(f,0.3
 const sfxWolfWin  = () => { [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,0.28,'triangle',0.085,i*0.09)); };
 const sfxPenalty  = () => { tone(220,0.12,'square',0.055); tone(165,0.18,'square',0.055,0.10); };
 const sfxTimeUp   = () => { tone(330,0.3,'sawtooth',0.08); tone(220,0.5,'sawtooth',0.09,0.25); };
+const sfxCountdown= (n) => {
+  if (n > 0) tone(660,0.14,'triangle',0.07);
+  else       tone(880,0.32,'triangle',0.09);
+};
 
 /* ================================================================
    键盘
@@ -564,10 +553,10 @@ function makeWriter(isAI){
     facing: 0,
     writing: isAI,
     isAI,
-    aiTimer: isAI ? rand(2.0, 4.0) : 0,
     writeProgress: 0,
     lookTimer: 0,
-    looking: false
+    looking: false,
+    aiLookDur: 0
   };
 }
 
@@ -596,6 +585,10 @@ function startGame(mode){
     time: 0, wolves: [], writer: null, shake: 0,
     writerTimeLeft: WRITER_MAX_TIME,
     floatTexts: [], timeFlash: 0,
+    countdown: COUNTDOWN_TIME,
+    started: false,
+    startFlash: 0,
+    lastCountdownNum: -1,
     stats: { looks: 0, strokesDone: 0, wolvesCaught: 0, wolvesTotal: 0 }
   };
 
@@ -607,20 +600,21 @@ function startGame(mode){
   const h = HUMAN_WOLF_COUNT[mode] || 0;
   const total = Math.max(wolfTotalCount, h);
   const a = total - h;
-  let posIdx = 0;
+
+  const wolfSpecs = [];
 
   if (mode === MODE.SOLO_WOLF){
-    w.wolves.push(makeWolf('P1', 0, WOLF_POSITIONS[posIdx++], false));
+    wolfSpecs.push({ id:'P1', idx:0, isAI:false });
     btnP1.style.display = 'flex'; btnP2.style.display = 'none';
   } else if (mode === MODE.P1W){
-    w.wolves.push(makeWolf('P2', 1, WOLF_POSITIONS[posIdx++], false));
+    wolfSpecs.push({ id:'P2', idx:1, isAI:false });
     btnP1.style.display = 'none'; btnP2.style.display = 'flex';
   } else if (mode === MODE.P2W){
-    w.wolves.push(makeWolf('P1', 0, WOLF_POSITIONS[posIdx++], false));
+    wolfSpecs.push({ id:'P1', idx:0, isAI:false });
     btnP1.style.display = 'flex'; btnP2.style.display = 'none';
   } else if (mode === MODE.TWOW){
-    w.wolves.push(makeWolf('P1', 0, WOLF_POSITIONS[posIdx++], false));
-    w.wolves.push(makeWolf('P2', 1, WOLF_POSITIONS[posIdx++], false));
+    wolfSpecs.push({ id:'P1', idx:0, isAI:false });
+    wolfSpecs.push({ id:'P2', idx:1, isAI:false });
     btnP1.style.display = 'flex'; btnP2.style.display = 'flex';
   } else if (mode === MODE.SOLO_WRITER){
     btnP1.style.display = 'none'; btnP2.style.display = 'none';
@@ -628,10 +622,14 @@ function startGame(mode){
   }
 
   for (let i = 0; i < a; i++){
-    const idx = (h + i) % 2;
-    const px = WOLF_POSITIONS[posIdx++] || WOLF_POSITIONS[WOLF_POSITIONS.length - 1];
-    w.wolves.push(makeWolf('AI-' + (i+1), idx, px, true));
+    wolfSpecs.push({ id:'AI-' + (i+1), idx:(h + i) % 2, isAI:true });
   }
+
+  wolfSpecs.forEach((spec, i) => {
+    const offset = (i - (wolfSpecs.length - 1) / 2) * WOLF_SPACING;
+    const x = WOLF_START_X + offset;
+    w.wolves.push(makeWolf(spec.id, spec.idx, x, spec.isAI));
+  });
 
   w.stats.wolvesTotal = w.wolves.length;
   world = w;
@@ -711,6 +709,94 @@ function isWolfPressing(wolf){
 }
 
 /* ================================================================
+   AI 写字人决策
+   ----------------------------------------------------------------
+   依据：
+     · 最近木头人的距离（危险度）
+     · 木头人是否在移动（威胁度）
+     · 剩余时间（时间压力——每次回头消耗 3 秒）
+     · 当前写字进度（快写完时优先写完）
+   输出：
+     · 何时回头（概率判定）
+     · 回头持续多久（危险越高，看得越久）
+================================================================ */
+function updateAIWriterDecision(wr, dt){
+  const aliveWolves = world.wolves.filter(w => w.alive);
+
+  /* 没有可抓的木头人——专心写字 */
+  if (aliveWolves.length === 0){
+    wr.writing = true;
+    return;
+  }
+
+  /* ---- 收集威胁信息 ---- */
+  let nearestDist = Infinity;
+  let nearestMoving = false;
+  let anyMoving = false;
+
+  for (const wolf of aliveWolves){
+    const d = wolf.x - wr.x;          // 木头人总在写字人右侧，d > 0
+    if (d < nearestDist){
+      nearestDist = d;
+      nearestMoving = wolf.moving;
+    }
+    if (wolf.moving) anyMoving = true;
+  }
+
+  /* ---- 危险度：距离越近 + 正在移动 → 越危险 ---- */
+  const DANGER_RANGE = 700;
+  const distFactor = clamp((DANGER_RANGE - (nearestDist - MIN_DIST)) / DANGER_RANGE, 0, 1);
+  const moveBonus   = nearestMoving ? 0.18 : 0;
+  const anyMoveBonus = (anyMoving && !nearestMoving) ? 0.08 : 0;
+  const danger = clamp(distFactor + moveBonus + anyMoveBonus, 0, 1);
+
+  /* ---- 时间压力：剩余时间越少越紧张 ---- */
+  const timeLeft = world.writerTimeLeft;
+  const timePressure = clamp(1 - timeLeft / WRITER_MAX_TIME, 0, 1);
+
+  /* ---- 书写进度 0..1 ---- */
+  const progress = wr.writeProgress / TOTAL_STROKES;
+
+  /* ---- 状态机 ---- */
+  if (wr.writing){
+    /* 每秒回头的期望概率 */
+    let lookRate = 0.12;                  // 基础
+    lookRate += danger * 0.85;            // 危险驱动
+
+    /* 木头人已经贴到脸上——必须看 */
+    if (nearestDist < MIN_DIST + 150) lookRate += 0.6;
+
+    /* 时间紧张时压低回头意愿（每次回头 -3 秒） */
+    lookRate *= (1 - timePressure * 0.4);
+
+    /* 快写完了，优先完成 */
+    if (progress > 0.75) lookRate *= 0.55;
+
+    /* 概率判定 */
+    if (Math.random() < lookRate * dt){
+      wr.writing = false;
+      wr.lookTimer = 0;
+      /* 回头持续时长：危险越高，看得越久 */
+      wr.aiLookDur = 0.5 + danger * 0.7 + Math.random() * 0.3;
+    }
+  } else {
+    /* 回头中——决定何时转回去 */
+    const minDur = wr.aiLookDur || 0.5;
+    const maxDur = minDur + 0.8;
+
+    if (wr.lookTimer >= maxDur){
+      /* 回头时间上限已到——必须转回去 */
+      wr.writing = true;
+      wr.aiLookDur = 0;
+    } else if (wr.lookTimer >= minDur && !anyMoving){
+      /* 木头人都停住了，回去写字 */
+      wr.writing = true;
+      wr.aiLookDur = 0;
+    }
+  }
+}
+
+/* ================================================================
    更新写字人
 ================================================================ */
 function updateWriter(dt){
@@ -727,11 +813,7 @@ function updateWriter(dt){
   }
 
   if (wr.isAI && !world.over){
-    wr.aiTimer -= dt;
-    if (wr.aiTimer <= 0){
-      if (wr.writing){ wr.writing = false; wr.aiTimer = rand(0.5, 1.3); }
-      else            { wr.writing = true;  wr.aiTimer = rand(2.2, 4.2); }
-    }
+    updateAIWriterDecision(wr, dt);
   }
 
   if (!wr.isAI && !world.over){
@@ -908,6 +990,27 @@ function updateWolves(dt){
 function update(dt){
   if (!world) return;
   if (world.paused) return;
+
+  /* ---------- 倒计时阶段 ---------- */
+  if (!world.started){
+    world.countdown -= dt;
+
+    const n = Math.ceil(world.countdown);
+    if (n !== world.lastCountdownNum && n > 0){
+      world.lastCountdownNum = n;
+      sfxCountdown(n);
+    }
+
+    if (world.countdown <= 0){
+      world.countdown = 0;
+      world.started = true;
+      world.startFlash = START_FLASH_DUR;
+      sfxCountdown(0);
+    }
+    return;
+  }
+
+  if (world.startFlash > 0) world.startFlash = Math.max(0, world.startFlash - dt);
 
   if (world.shake > 0) world.shake = Math.max(0, world.shake - dt * 3.2);
   if (world.timeFlash > 0) world.timeFlash = Math.max(0, world.timeFlash - dt * 2.2);
@@ -1349,6 +1452,29 @@ function drawWolf(wolf){
 }
 
 /* ================================================================
+   渲染 — 起点标记
+================================================================ */
+function drawStartLine(){
+  if (!world || world.started) return;
+  if (world.wolves.length === 0) return;
+
+  const leftX = Math.min(...world.wolves.map(w => w.x)) - 24;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,217,138,0.45)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 6]);
+
+  ctx.beginPath();
+  ctx.moveTo(leftX, GROUND_Y - 160);
+  ctx.lineTo(leftX, GROUND_Y);
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/* ================================================================
    渲染 — 时间条
 ================================================================ */
 function drawTimer(){
@@ -1456,6 +1582,97 @@ function drawDangerVignette(){
 }
 
 /* ================================================================
+   渲染 — 321 倒计时
+================================================================ */
+function drawCountdown(){
+  if (!world || world.started) return;
+
+  ctx.fillStyle = 'rgba(8,10,16,0.42)';
+  ctx.fillRect(0, 0, VW, VH);
+
+  const n = Math.ceil(world.countdown);
+  if (n <= 0) return;
+
+  const p = clamp(1 - (world.countdown - (n - 1)), 0, 1);
+  const scale = 1 + (1 - p) * 0.55;
+
+  let alpha = 1;
+  if (p < 0.10) alpha = p / 0.10;
+  else if (p > 0.72) alpha = 1 - (p - 0.72) / 0.28;
+  alpha = clamp(alpha, 0, 1);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(VW / 2, VH / 2);
+  ctx.scale(scale, scale);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.shadowColor = 'rgba(255,217,138,0.65)';
+  ctx.shadowBlur = 60;
+
+  const grad = ctx.createLinearGradient(0, -100, 0, 100);
+  grad.addColorStop(0, '#fff2c8');
+  grad.addColorStop(0.5, '#ffd98a');
+  grad.addColorStop(1, '#d9992f');
+  ctx.fillStyle = grad;
+
+  ctx.font = '900 200px -apple-system,BlinkMacSystemFont,sans-serif';
+  ctx.fillText(String(n), 0, 0);
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,217,138,' + (0.35 * (1 - p)) + ')';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(0, 0, 130 + p * 60, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.55 + Math.sin(world.countdown * 6) * 0.15;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#c8cfdd';
+  ctx.font = 'bold 16px -apple-system,sans-serif';
+  ctx.fillText('准 备', VW / 2, VH / 2 + 180);
+  ctx.restore();
+}
+
+/* ================================================================
+   渲染 — 「开始！」提示
+================================================================ */
+function drawStartFlash(){
+  if (!world || !world.started || world.startFlash <= 0) return;
+
+  const p = 1 - world.startFlash / START_FLASH_DUR;
+  const alpha = clamp(1 - p, 0, 1);
+  const scale = 1 + p * 0.7;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(VW / 2, VH / 2);
+  ctx.scale(scale, scale);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.shadowColor = 'rgba(255,217,138,0.9)';
+  ctx.shadowBlur = 60;
+
+  const grad = ctx.createLinearGradient(0, -70, 0, 70);
+  grad.addColorStop(0, '#fff2c8');
+  grad.addColorStop(1, '#efb44b');
+  ctx.fillStyle = grad;
+
+  ctx.font = '900 150px -apple-system,BlinkMacSystemFont,sans-serif';
+  ctx.fillText('开 始 !', 0, 0);
+
+  ctx.restore();
+}
+
+/* ================================================================
    渲染主函数
 ================================================================ */
 function render(){
@@ -1481,10 +1698,13 @@ function render(){
   if (world){
     drawChalk();
     drawWriter();
+    drawStartLine();
     for (const wolf of world.wolves) drawWolf(wolf);
     drawDangerVignette();
     drawTimer();
     drawFloatTexts();
+    drawCountdown();
+    drawStartFlash();
   }
 
   ctx.restore();
@@ -1523,7 +1743,8 @@ function showStartScreen(){
     <div class="start-sub">背 后 的 脚 步 声</div>
     <button class="start-btn" id="startGameBtn">开 始 游 戏</button>
     <div class="start-hint">
-      按 <b>ESC</b> 暂停 &nbsp;·&nbsp; 写字人总时长 <b>50 秒</b> &nbsp;·&nbsp; 每次回头 <b>-3 秒</b>
+      按 <b>ESC</b> 暂停 &nbsp;·&nbsp; 开局 <b>3 秒倒计时</b><br>
+      写字人总时长 <b>50 秒</b> &nbsp;·&nbsp; 每次回头 <b>-3 秒</b>
     </div>
   `;
 
@@ -1555,7 +1776,6 @@ function updateWolfCompositionLabels(){
 function showModeMenu(){
   panel.className = 'panel menu-panel';
 
-  /* 生成数量按钮 */
   const countLabels = { 1:'独行', 2:'成双', 4:'结队', 8:'成群' };
   let countBtnsHTML = '';
   for (const n of WOLF_COUNT_OPTIONS){
@@ -1576,7 +1796,7 @@ function showModeMenu(){
         <div class="mode-icon icon-solo">🙋</div>
         <div class="mode-body">
           <div class="mode-title">你是木头人 · AI 写字</div>
-          <div class="mode-desc">用 <span class="hl">A / D</span> 或 <span class="hl">← →</span> 靠近，AI 随时会回头</div>
+          <div class="mode-desc">用 <span class="hl">A / D</span> 或 <span class="hl">← →</span> 靠近，AI 会看距离与时间决定何时回头</div>
           <div class="mode-comp"></div>
         </div>
       </button>
