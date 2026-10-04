@@ -85,6 +85,7 @@ function snapshot(t) {
       pe: e.pendingExplosions.map(p => ({ x: p.x, y: p.y, timer: p.timer }))
     })),
     booms: game.explosions.map(x => ({ x: x.x, y: x.y, t: x.t, dur: x.dur, cells: x.cells })),
-    rips: game.ripples.map(r => ({ x: r.x, y: r.y, t: r.t, dur: r.dur, maxR: r.maxR, color: r.color }))
+    rips: game.ripples.map(r => ({ x: r.x, y: r.y, t: r.t, dur: r.dur, maxR: r.maxR, color: r.color })),
+    fg: game.flags.map(f => f.takenBy)      // 旗帜归属（数量少，随实体帧一起采即可）
   };
 }

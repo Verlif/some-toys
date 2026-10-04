@@ -11,6 +11,7 @@ import {
   togglePlay, setSpeed, seek, advance, buildScene
 } from '../sim/replay.js';
 import { showScreen } from './screens.js';
+import { fitReplayStage } from './fit.js';
 
 const STEP = 2;          // 快进 / 快退步长（秒）
 const fmt = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
@@ -91,6 +92,7 @@ export function openReplay({ caption = '', onBack, onRestart, onMenu } = {}) {
   draw();
 
   showScreen('replayScreen');
+  fitReplayStage();     // 画布按可视区等比放大到最大
   return true;
 }
 

@@ -23,6 +23,39 @@ export const DIRS8 = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
 /* ── 地雷类型 ── */
 export const MINE_NONE = 0, MINE_INSTANT = 1, MINE_DELAYED = 2;
 
+/* ── 减秒奖励（都是「全队每人」共享） ── */
+export const FLAG_BONUS       = 5;    // 每面旗：该队每人最终用时 -5 秒
+export const DEFUSE_BONUS     = 1;    // 每排掉一颗雷：该队每人最终用时 -1 秒
+
+/* ── 旗帜 ── */
+export const FLAG_MIN_GAP     = 7;    // 旗与旗之间的最小曼哈顿格距
+export const FLAG_EXIT_MARGIN = 6;    // 旗与出口的最小格距（不给终点送温暖）
+export const FLAG_MAX_DETOUR  = 22;   // 夺旗允许的最大绕路格数，超了就直接冲出口
+
+/* ── AI ── */
+export const AI_ROLES = ['runner', 'flagRunner', 'defuser'];
+export const DEFUSER_SEARCH_R   = 24;  // 排雷手搜索「已知雷」的半径（格）
+export const DEFUSER_MAX_JOBS   = 3;   // 排这么多雷之后回归冲刺
+export const MINE_BEST_CHANCE   = 0.85;// 遇到雷时选择「最优解」的概率（其余随机，保留多样性）
+export const MINE_LOOKAHEAD     = 3;   // 前瞻几格找已知雷（只看下一格来不及：速度 4.5 格/秒）
+export const RESCUE_RADIUS      = 120; // 救援半径（像素）
+export const RESCUE_STANDOFF    = 26;  // 到位后保持的距离，不再挤成一团
+export const RESCUE_MAX_TIME    = 2.5; // 单人救援最多守这么久，之后放弃
+
+/** 终点冲刺：离出口这么近就开始评估「直冲」 */
+export const EXIT_RUSH_TILES   = 12;
+/** 直冲概率；剩下的继续按角色思考（小概率保留变数） */
+export const EXIT_RUSH_CHANCE  = 0.85;
+/** 没选择直冲的话，隔多久再评估一次（秒） */
+export const EXIT_RUSH_RETRY   = 1.5;
+
+/* ── 画布分辨率 ──
+   逻辑坐标系恒为 CW × CH；位图分辨率 = 显示尺寸 × DPR（上限 MAX_DPR），
+   由 render() 开头的 setTransform 把逻辑坐标映射到设备像素，
+   放大后线条与文字仍是矢量清晰度，而不是把小位图拉伸。 */
+export const MAX_DPR = 2;
+export const MAX_BACKING_PX = 8e6;   // 位图总像素上限：4K/带鱼屏上避免填充量爆炸拖垮帧率
+
 /* ── 键盘 ── */
 export const BLOCKED_KEYS = ['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ControlLeft','ControlRight','Slash'];
 

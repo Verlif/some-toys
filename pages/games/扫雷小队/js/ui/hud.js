@@ -1,6 +1,7 @@
 /**
  * HUD：每张队伍卡片显示到达 / 倒地人数，顶栏显示计时与结算倒计时。
  */
+import { FLAG_BONUS } from '../core/config.js';
 import { settings, game } from '../core/state.js';
 
 export function renderHUD() {
@@ -23,7 +24,10 @@ export function renderHUD() {
           <div class="stat">
             ${arrived}/${members.length} 到达${downed > 0 ? ` · ${downed} 倒地` : ''}
           </div>
-        </div>
+          <div class="stat flags">
+            🚩 ${team.flags}${game.flags.length ? '/' + game.flags.length : ''}
+            ${team.flags ? ` · 每人 -${team.flags * FLAG_BONUS}s` : ''}
+          </div>        </div>
       </div>
     `;
   }

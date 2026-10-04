@@ -1,13 +1,24 @@
 /* 结算界面：概览 / 图表 / 统计。全自适应，320px 窄窗到宽屏都能看 */
 
+/* 面板本身不超过一屏：头部与底部按钮固定，只有中间内容滚动 */
 .result-panel{
   width:100%;
   max-width:min(1120px,100%);
-  padding:clamp(14px,2vw,24px) clamp(12px,2vw,24px) clamp(14px,2vw,20px);
+  max-height:calc(100vh - 32px);
+  display:flex;
+  flex-direction:column;
+  padding:clamp(14px,2vw,24px) clamp(12px,2vw,24px) clamp(12px,1.6vw,18px);
+}
+@supports (height:100dvh){
+  .result-panel{max-height:calc(100dvh - 32px)}
 }
 
-/* ── 头部 ── */
-.result-head{text-align:center;margin-bottom:clamp(10px,1.8vh,18px)}
+/* ── 头部（固定） ── */
+.result-head{
+  flex:0 0 auto;
+  text-align:center;
+  margin-bottom:clamp(8px,1.4vh,14px);
+}
 .result-title{
   font-size:clamp(12px,1.7vw,17px);
   letter-spacing:clamp(3px,1vw,9px);
@@ -36,13 +47,42 @@
 }
 .chip-label{font-style:normal;font-size:clamp(9px,1vw,10.5px);color:#5a6b7f;letter-spacing:1px;white-space:nowrap}
 
-/* ── 卡片网格：宽屏两栏，窄屏自动堆叠 ── */
-.result-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
-  gap:clamp(10px,1.4vw,16px);
-  margin-bottom:clamp(10px,1.4vw,16px);
+/* ── tab 切换 ── */
+.result-tabs{
+  flex:0 0 auto;
+  display:flex;gap:4px;
+  margin-bottom:clamp(8px,1.2vh,12px);
+  border-bottom:1px solid #16202e;
 }
+.tab{
+  flex:1;
+  padding:7px 8px;
+  background:transparent;border:none;
+  border-bottom:2px solid transparent;
+  color:#54657a;font-size:clamp(11px,1.25vw,13px);
+  letter-spacing:1px;cursor:pointer;font-family:inherit;transition:.15s;
+  white-space:nowrap;
+}
+.tab:hover{color:#8fa3ba}
+.tab.active{color:#eef3fa;border-bottom-color:#3b82f6;font-weight:700}
+
+/* ── 中部（唯一滚动区） ── */
+.result-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  /* 让滚动条贴住内容边缘，滚动区与卡片之间不留割裂感 */
+  margin:0 -4px;
+  padding:0 4px 2px;
+}
+.tab-page{display:none;flex-direction:column;gap:clamp(10px,1.4vw,14px)}
+.tab-page.active{display:flex}
+.result-scroll::-webkit-scrollbar{width:8px}
+.result-scroll::-webkit-scrollbar-thumb{background:#243348;border-radius:4px}
+.result-scroll::-webkit-scrollbar-thumb:hover{background:#32455f}
+.result-scroll::-webkit-scrollbar-track{background:transparent}
+
 .card{
   background:#0a1018;
   border:1px solid #16202e;
@@ -58,13 +98,30 @@
   line-height:1.4;
 }
 
-/* ── 柱状图 ── */
+/* ── 柱状图：独占一整行，横轴不再和队伍排名抢宽度 ── */
 .chart{
+  position:relative;
   display:flex;gap:2px;align-items:flex-end;
-  height:clamp(128px,21vh,200px);
-  padding:0 2px;margin-bottom:6px;
+  height:clamp(150px,24vh,230px);
+  padding:3px 2px 0;      /* 给柱顶数值与高亮描边留点余量，避免被 overflow 裁掉 */
+  margin-bottom:6px;
   border-bottom:1px solid #1a2433;
+  overflow-x:auto;
+  overflow-y:hidden;
 }
+/* 50% 参考线 */
+.chart::before{
+  content:'';position:absolute;left:0;right:0;top:50%;
+  border-top:1px dashed rgba(148,163,184,.13);pointer-events:none;
+}
+.chart .ax{
+  position:absolute;right:0;
+  font-size:9.5px;color:#3f4f61;font-variant-numeric:tabular-nums;
+  pointer-events:none;
+}
+.chart .ax-max{top:0}
+.chart .ax-zero{bottom:2px}
+
 .bar-group{
   flex:1 1 0;display:flex;flex-direction:column;align-items:center;
   height:100%;justify-content:flex-end;min-width:0;position:relative;
@@ -82,9 +139,18 @@
 }
 .bar-defused{font-size:clamp(8.5px,1vw,10px);color:#fbbf24;margin-top:1px;line-height:1.2}
 
+/* 称号：柱子下方的金色小标签 */
+.bar-title{
+  font-size:clamp(8px,.95vw,9.5px);color:#fbbf24;margin-top:1px;line-height:1.25;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  text-shadow:0 0 6px rgba(251,191,36,.35);
+}
+
 /* 人多（>12 人）时柱子变窄：隐掉次要文字，只保留真人标签 */
 .chart.dense .bar-defused{display:none}
-.chart.dense .bar-group:not(.is-player) .bar-name{display:none}
+.chart.dense .bar-title{display:none}
+.chart.dense .bar-group:not(.is-player) .bar-name,
+.chart.dense .bar-group:not(.is-player) .bar-value{display:none}
 .chart.dense .bar-group.is-player .bar-name{font-weight:700}
 
 /* 真人玩家：金色柱顶数值 + 微光，柱体是斜条纹（颜色在 JS 里给） */
@@ -131,12 +197,13 @@
   color:#d4e0ee;font-weight:700;font-variant-numeric:tabular-nums;
   min-width:50px;text-align:right;
 }
-.team-sub{font-size:clamp(9.5px,1.05vw,10.5px);color:#4a5c70;padding:0 clamp(7px,1vw,12px) 4px}
+.team-line .tmeta.flag{color:#fbbf24;font-weight:700}
+.team-sub{font-size:clamp(9.5px,1.05vw,10.5px);color:#4a5c70;padding:0 clamp(7px,1vw,12px) 4px;line-height:1.5}
 
 /* ── 完整统计表 ── */
 .table-wrap{
   overflow:auto;
-  max-height:min(46vh,420px);
+  max-height:min(52vh,520px);   /* 独占一个 tab，给足高度；表头吸顶 */
   border:1px solid #1a2433;border-radius:9px;
   -webkit-overflow-scrolling:touch;
 }
@@ -152,20 +219,118 @@
   border-bottom:1px solid #131c29;color:#8fa3ba;white-space:nowrap;
 }
 .stat-table tbody tr:last-child td{border-bottom:none}
-.stat-table tbody tr:hover{background:#0d131c}
+.stat-table tbody tr.main-row{cursor:pointer}
+.stat-table tbody tr.main-row:hover,
+.stat-table tbody tr.main-row.open{background:#111a26}
+.stat-table tbody tr.fx-row:hover{background:transparent}
+.stat-table tbody tr.fx-row td{padding:0;border-bottom:1px solid #131c29}
 .stat-table .num{font-variant-numeric:tabular-nums;text-align:right;color:#c8d3e0}
+.stat-table .raw{color:#6b7c91}
+.stat-table .final{color:#e6edf6;font-weight:700}
+.stat-table .cut-cell .cut{
+  font-style:normal;font-size:9.5px;color:#fbbf24;font-weight:700;
+  background:rgba(251,191,36,.12);border-radius:4px;padding:1px 5px;
+}
+.stat-table .cut-cell .cut.none{color:#3f4f61;background:transparent;font-weight:400}
+.fx-caret{
+  display:inline-block;margin-left:4px;font-size:9px;color:#3f4f61;
+  transition:transform .15s;
+}
+.main-row.open .fx-caret{transform:rotate(90deg);color:#fbbf24}
 .stat-table .c-rank{color:#4a5c70;width:22px}
+
+/* ── 展开的「用时明细」 ── */
+.fx-box{
+  padding:clamp(7px,1.1vh,11px) clamp(9px,1.2vw,13px);
+  background:#080d15;
+  display:flex;flex-direction:column;gap:6px;
+}
+.fx-expr{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:clamp(10.5px,1.15vw,12.5px);
+  color:#cfe0f2;font-variant-numeric:tabular-nums;
+  letter-spacing:.3px;
+  background:#0d141f;border:1px solid #1a2433;border-radius:7px;
+  padding:5px 8px;overflow-x:auto;white-space:nowrap;
+}
+.fx-chips{display:flex;flex-wrap:wrap;gap:4px}
+.fx-chip{
+  font-size:10px;padding:2px 7px;border-radius:5px;
+  background:rgba(251,191,36,.1);color:#fbbf24;white-space:nowrap;
+}
+.fx-chip.none{background:rgba(148,163,184,.1);color:#5a6b7f}
+.fx-items{display:flex;flex-direction:column;gap:3px}
+.fx-item{
+  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
+  font-size:clamp(9.5px,1.05vw,11px);color:#8fa3ba;line-height:1.6;
+}
+.fx-item.none{color:#4a5c70}
+.fx-item .fx-ico{font-size:12px;flex-shrink:0}
+.fx-item .fx-label{font-weight:700;color:#c8d3e0;min-width:34px}
+.fx-item .fx-term{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color:#7288a0;font-variant-numeric:tabular-nums;
+}
+.fx-item .fx-delta{color:#fbbf24;font-weight:700;font-variant-numeric:tabular-nums}
+.fx-item .fx-note{color:#4a5c70;flex:1 1 160px;min-width:0}
+.fx-foot{
+  font-size:clamp(9px,1vw,10.5px);color:#3f4f61;line-height:1.6;
+  border-top:1px dashed #1a2433;padding-top:5px;
+}
+
+/* ── 用时计算公式卡 ── */
+.formula-card{display:flex;flex-direction:column;gap:7px}
+.fx-formula{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:clamp(10px,1.15vw,12px);
+  color:#fbbf24;background:#0d141f;
+  border:1px solid #24334a;border-radius:7px;
+  padding:7px 9px;line-height:1.6;overflow-x:auto;white-space:nowrap;
+}
+.fx-rules{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:3px}
+.fx-rules li{font-size:clamp(9.5px,1.05vw,11px);color:#7288a0;line-height:1.6}
+.fx-rules b{color:#c8d3e0}
+.fx-toggle{
+  align-self:flex-start;
+  background:#131c29;border:1px solid #26344a;border-radius:7px;
+  color:#8fa3ba;font-size:clamp(10px,1.1vw,11.5px);
+  padding:5px 12px;cursor:pointer;font-family:inherit;transition:.15s;
+}
+.fx-toggle:hover{background:#1a2433;color:#e0eaf5}
+
+.badge{font-size:10px;padding:1px 6px;border-radius:4px}
 .stat-table .c-name{font-weight:700}
 .stat-table .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+/* 称号徽章（完整统计的角色名后面） */
+.stat-table .ttl{
+  display:inline-block;margin-left:5px;vertical-align:middle;
+  font-size:9.5px;padding:1px 6px;border-radius:20px;white-space:nowrap;
+  color:#fcd34d;
+  background:linear-gradient(90deg,rgba(251,191,36,.2),rgba(251,191,36,.05));
+  border:1px solid rgba(251,191,36,.28);
+  cursor:help;
+}
+
+/* ── 完整统计 tab：关掉外层滚动，高度全部给表格（只有表格内部滚） ── */
+.result-panel.stats-mode .result-scroll{overflow:hidden}
+.result-panel.stats-mode .tab-page[data-page="stats"]{height:100%;min-height:0}
+.result-panel.stats-mode .tab-page[data-page="stats"] .card:last-child{
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+}
+.result-panel.stats-mode .table-wrap{flex:1 1 auto;min-height:0;max-height:none}
 
 .badge{font-size:10px;padding:1px 6px;border-radius:4px}
 .badge.ok{background:rgba(34,197,94,.15);color:#4ade80}
 .badge.no{background:rgba(148,163,184,.12);color:#94a3b8}
 
-/* ── 底部按钮 ── */
+/* ── 底部按钮（固定） ── */
 .result-actions{
+  flex:0 0 auto;
   display:flex;flex-wrap:wrap;gap:8px;
-  margin-top:clamp(10px,1.6vh,18px);
+  margin-top:clamp(8px,1.2vh,14px);
+  padding-top:clamp(8px,1.2vh,14px);
+  border-top:1px solid #16202e;
 }
 .result-actions .menu-btn{
   flex:1 1 140px;
@@ -194,4 +359,21 @@
 @media (max-width:380px){
   .stat-chips{grid-template-columns:repeat(2,1fr)}
   .chart{height:120px}
+}
+/* 矮屏：头部压到只剩标题+冠军，把高度让给内容 */
+@media (max-height:620px){
+  .stat-chips{display:none}
+  .result-title{margin-bottom:0}
+  .winner-line{margin-bottom:6px}
+}
+@media (max-height:480px){
+  .winner-line{display:none}
+  .result-actions{padding-top:8px;margin-top:8px}
+}
+/* 矮屏看完整统计：公式卡只留公式本身，把高度全给表格 */
+@media (max-height:620px){
+  .result-panel.stats-mode .fx-rules{display:none}
+}
+@media (max-height:480px){
+  .result-panel.stats-mode .fx-toggle{display:none}
 }
