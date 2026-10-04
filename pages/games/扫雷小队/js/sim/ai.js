@@ -24,12 +24,19 @@
  *   1. team.minesFound 当版本号，一有新雷就检查自己的路径有没有被挡；
  *   2. 前瞻 MINE_LOOKAHEAD 格找已知雷，而不是只看下一格；
  *   3. 移动前的硬性保险：绝不主动踩进已知雷格（除非正要去拆它）。
+ *
+ * ── 出发区与入口走廊（修：进场前反复思考、把入口堵成一团）
+ *   迷宫左侧的出发区里没有任何可决策的东西，AI 只朝自己的入口直线走——
+ *   不思考、不扫描、不寻路。跨过入口后进入「走廊模式」：路线只在第一次算一次
+ *   （这就是「最多计算一次」），之后卡住了也只是静默重算，不再停下来思考，
+ *   否则先到的人一停，后面整队人都堵在入口外。
  */
 import {
   W, H, DIRS8, OUTSIDE_COLS, TILE, DEFUSE_DURATION,
   FLAG_MAX_DETOUR, DEFUSER_SEARCH_R, DEFUSER_MAX_JOBS,
   MINE_BEST_CHANCE, MINE_LOOKAHEAD, RESCUE_RADIUS, RESCUE_STANDOFF, RESCUE_MAX_TIME,
-  EXIT_RUSH_TILES, EXIT_RUSH_CHANCE, EXIT_RUSH_RETRY
+  EXIT_RUSH_TILES, EXIT_RUSH_CHANCE, EXIT_RUSH_RETRY,
+  ENTRY_CORRIDOR_COLS, ENTRY_TIMEOUT
 } from '../core/config.js';
 import { idx, inBounds, tileOf } from '../core/utils.js';
 import { game } from '../core/state.js';
@@ -37,9 +44,29 @@ import { moveEntity, moveToward } from '../world/collision.js';
 import { findPath } from '../world/pathfind.js';
 import { startScan, revealScan, startDefuse, completeDefuse } from './scan.js';
 
-/** 让 AI 停顿一小会儿，制造「思考」的节奏感 */
+/**
+ * 让 AI 停顿一小会儿，制造「思考」的节奏感。
+ *
+ * 出发区与入口走廊里恒为 no-op：那里没有可决策的东西，停下来思考只会把后面的人堵住。
+ * 返回是否真的进入了思考——调用方据此决定这一帧要不要就此返回。
+ */
 function triggerThink(e, fixed) {
+  if (e.corridor) return false;
   e.thinkTimer = fixed !== undefined ? fixed : (0.5 + Math.random() * 1.5);
+  return true;
+}
+
+/** 出发区：朝自己的入口直线走过去。不走 A*、不扫描、不思考 */
+function walkToEntrance(e, dt) {
+  const entY = game.entranceYs[e.entranceId % game.entranceYs.length];
+  const targetY = entY * TILE + TILE / 2;
+  if (Math.abs(e.y - targetY) > 3) {
+    moveEntity(e, 0, Math.sign(targetY - e.y) * e.speed * dt);
+  } else {
+    e.y = targetY;
+    e.faceX = 1; e.faceY = 0;
+    moveEntity(e, e.speed * dt, 0);
+  }
 }
 
 /** 沿路径推进；连续两帧几乎没动就判定卡住，清空路径重新决策 */
@@ -321,43 +348,57 @@ export function updateAI(e, dt) {
 
   const team = game.teams[e.teamId];
   const cx = tileOf(e.x), cy = tileOf(e.y);
-  if (!e.enteredMaze && cx >= OUTSIDE_COLS + 1) e.enteredMaze = true;
+  if (!e.enteredMaze && cx >= OUTSIDE_COLS + 1) {
+    e.enteredMaze = true;
+    e.corridor = true;          // 刚跨过入口 → 转入走廊模式
+    e.corridorTimer = 0;
+  }
+
+  /* ── 出发区：不做任何决策，只走到自己的入口 ── */
+  if (!e.enteredMaze) {
+    e.thinkTimer = 0;
+    walkToEntrance(e, dt);
+    return;
+  }
+
+  /* ── 入口走廊：走完这段就转回正常 AI ──
+     走廊里唯一的「计算」是第一次算路线；之后就算被同伴挤住也只静默重算，
+     不会再触发思考停顿（以前先到的人一停，整队堵在入口外反复思考）。 */
+  if (e.corridor) {
+    e.corridorTimer += dt;
+    if (cx > OUTSIDE_COLS + ENTRY_CORRIDOR_COLS || e.corridorTimer > ENTRY_TIMEOUT) {
+      e.corridor = false;
+      e.thinkTimer = 0;
+      e.goal = null; e.goalTimer = 0;              // 出了走廊再按分工重新选目标
+      e.aiScanTimer = 0.8 + Math.random() * 1.2;   // 也别一到就扫，留点缓冲
+    } else {
+      e.thinkTimer = 0;
+    }
+  }
 
   // 思考等待
   if (e.thinkTimer > 0) { e.thinkTimer -= dt; return; }
 
-  // 未进入迷宫：先走到自己的入口
-  if (!e.enteredMaze) {
-    const entY = game.entranceYs[e.entranceId % game.entranceYs.length];
-    const targetY = entY * TILE + TILE / 2;
-    if (Math.abs(e.y - targetY) > 3) {
-      const dy = Math.sign(targetY - e.y);
-      moveEntity(e, 0, dy * e.speed * dt);
-    } else {
-      e.y = targetY;
-      e.faceX = 1; e.faceY = 0;
-      moveEntity(e, e.speed * dt, 0);
-    }
-    return;
-  }
-
-  // 生存：有限救援（不再出现一人倒地、全队围观的场面）
-  if (tryRescue(e, dt)) return;
+  // 生存：有限救援（走廊里不救，先把人带进去再说）
+  if (!e.corridor && tryRescue(e, dt)) return;
 
   // 共享视野：队友扫出新雷 → 挡到我路上了就立刻重算
   reactToNewIntel(e, team);
 
   // 终点冲刺判定（很便宜，每帧都算），决定这一帧是直冲还是继续思考
-  const rushing = updateRushMode(e, cx, cy, dt);
-  const goal = ensureGoal(e, team, cx, cy, dt, rushing);
+  const rushing = !e.corridor && updateRushMode(e, cx, cy, dt);
+  // 走廊里目标恒为出口：不跑「夺旗 / 排雷」那套 A*，全场最多算一次路线
+  const goal = e.corridor
+    ? { x: game.exitX, y: game.exitY, kind: 'exit' }
+    : ensureGoal(e, team, cx, cy, dt, rushing);
 
   /* ========== 重大决策 1：首次路线选择 ========== */
   if (!e.initialRouteChosen) {
     e.initialRouteChosen = true;
     e.path = pathToGoal(e, team, cx, cy, goal) || [];
     e.pathTimer = 3.0;
-    triggerThink(e, 1.0 + Math.random() * 1.0);
-    return;
+    // 走廊里 triggerThink 是 no-op，于是这一帧会继续往下走，不会杵在门口
+    if (triggerThink(e, 1.0 + Math.random() * 1.0)) return;
   }
 
   /* ========== 重大决策 2：前方已知有雷 → 排雷 vs 绕路 ========== */
@@ -403,8 +444,7 @@ export function updateAI(e, dt) {
             e.pathTimer = 2.0;
             e.wantToDefuse = null;
           }
-          triggerThink(e);
-          return;
+          if (triggerThink(e)) return;      // 走廊里不真的停下，直接继续走
         }
 
         // 雷还在几格之外：先重新绕开它，等它变成 path[0] 再决定拆不拆
@@ -453,8 +493,7 @@ export function updateAI(e, dt) {
         e.defuseApproachTimer = 0;
         e.mineDecisionLock = false;
         e.path = null;
-        triggerThink(e, 0.6);
-        return;
+        if (triggerThink(e, 0.6)) return;
       }
 
       moveToward(e, tx, ty, dt);
@@ -464,7 +503,7 @@ export function updateAI(e, dt) {
 
   /* ========== 重大决策 3：复杂岔路口 → 重新评估路径 ========== */
   const cellKey = cx + ',' + cy;
-  if (e.path && e.path.length > 0 && e.lastJunctionCell !== cellKey) {
+  if (!e.corridor && e.path && e.path.length > 0 && e.lastJunctionCell !== cellKey) {
     let openDirs = 0, unknownDirs = 0;
     for (let d = 0; d < 8; d++) {
       const nx = cx + DIRS8[d][0], ny = cy + DIRS8[d][1];
@@ -487,21 +526,23 @@ export function updateAI(e, dt) {
     }
   }
 
-  /* ========== 常规：智能扫描 ========== */
-  e.aiScanTimer -= dt;
-  if (e.aiScanTimer <= 0 && e.scanCooldown <= 0) {
-    const ratio = localUnknownRatio(cx, cy, team, 2);
-    const sameCell = e.lastScanCell === cellKey;
-    const recent = (game.elapsed - e.lastScanTime) < 4.0;
+  /* ========== 常规：智能扫描（走廊里不扫，先走进去） ========== */
+  if (!e.corridor) {
+    e.aiScanTimer -= dt;
+    if (e.aiScanTimer <= 0 && e.scanCooldown <= 0) {
+      const ratio = localUnknownRatio(cx, cy, team, 2);
+      const sameCell = e.lastScanCell === cellKey;
+      const recent = (game.elapsed - e.lastScanTime) < 4.0;
 
-    if (ratio > 0.4 && !(sameCell && recent)) {
-      startScan(e);
-      e.lastScanCell = cellKey;
-      e.lastScanTime = game.elapsed;
-      e.aiScanTimer = 2.5 + Math.random() * 2.5;
-      return;
+      if (ratio > 0.4 && !(sameCell && recent)) {
+        startScan(e);
+        e.lastScanCell = cellKey;
+        e.lastScanTime = game.elapsed;
+        e.aiScanTimer = 2.5 + Math.random() * 2.5;
+        return;
+      }
+      e.aiScanTimer = 1;
     }
-    e.aiScanTimer = 1;
   }
 
   /* ========== 常规：朝角色目标寻路 ========== */

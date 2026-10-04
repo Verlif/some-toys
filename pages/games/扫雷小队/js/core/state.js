@@ -7,11 +7,14 @@
  *   render/ 只读
  *   ui/    负责重置与生命周期
  */
+import { PLAYER_TEAM_SPLIT } from './config.js';
+
 export const settings = {
   playerCount: 1,   // 真人玩家数（1 或 2）
   teamCount: 2,     // 队伍数（2 ~ 5）
   teamSize: 2,      // 每队人数（1 ~ 5）
-  mineCount: 60     // 地雷数量
+  mineCount: 60,    // 地雷数量
+  playerTeams: PLAYER_TEAM_SPLIT  // 双人时的阵容：split 各带一队 / same 并肩同队
 };
 
 export const game = {

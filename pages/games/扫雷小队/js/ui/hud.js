@@ -13,13 +13,15 @@ export function renderHUD() {
     const arrived = members.filter(e => e.arrived).length;
     const downed = members.filter(e => e.downed && !e.arrived).length;
     const isHuman = members.some(e => e.isPlayer);
+    const humanCount = members.filter(e => e.isPlayer).length;
+    const humanTag = humanCount > 1 ? `玩家 ×${humanCount}` : '玩家';
 
     html += `
       <div class="team-card" style="border-color:${team.color}${isHuman ? '88' : '33'}">
         <div class="dot" style="background:${team.color}"></div>
         <div class="info">
           <div class="name" style="color:${team.color}">
-            ${team.name}${isHuman ? ' <span class="tag">玩家</span>' : ''}
+            ${team.name}${isHuman ? ` <span class="tag">${humanTag}</span>` : ''}
           </div>
           <div class="stat">
             ${arrived}/${members.length} 到达${downed > 0 ? ` · ${downed} 倒地` : ''}

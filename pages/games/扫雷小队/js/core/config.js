@@ -10,6 +10,10 @@ export const W = 57, H = 27, TILE = 16;
 export const CW = W * TILE, CH = H * TILE;
 export const OUTSIDE_COLS = 4;   // 左侧出发区宽度（不属于迷宫内部）
 
+/* ── 本地双人的队伍安排 ── */
+export const PLAYER_TEAM_SPLIT = 'split';  // 各带一队：P1 → 红队、P2 → 蓝队，两队各自记分
+export const PLAYER_TEAM_SAME  = 'same';   // 并肩同队：两人都在红队（需每队 ≥ 2 人）
+
 /* ── 队伍（最多 5 支，每队最多 5 人） ── */
 export const MAX_TEAMS = 5, MAX_TEAM_SIZE = 5;
 export const TEAM_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#a855f7', '#06b6d4'];
@@ -48,6 +52,12 @@ export const EXIT_RUSH_TILES   = 12;
 export const EXIT_RUSH_CHANCE  = 0.85;
 /** 没选择直冲的话，隔多久再评估一次（秒） */
 export const EXIT_RUSH_RETRY   = 1.5;
+
+/* ── 出发区 / 入口走廊 ──
+   迷宫左侧空地里没有任何可决策的东西，跨过入口后的一小段也一样：
+   AI 在这两段里只管走进去，不思考、不扫描、不重估岔路，路线最多算一次。 */
+export const ENTRY_CORRIDOR_COLS = 3;   // 入口往里这几列仍算走廊
+export const ENTRY_TIMEOUT       = 8;   // 走廊里最多待这么久，超时强制转回正常 AI（兜底防卡死）
 
 /* ── 画布分辨率 ──
    逻辑坐标系恒为 CW × CH；位图分辨率 = 显示尺寸 × DPR（上限 MAX_DPR），

@@ -6,9 +6,14 @@
 .btn{flex:1 1 58px;padding:9px 4px;background:#131c29;border:1px solid #1f2d40;border-radius:8px;color:#7288a0;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .btn:hover{background:#1a2638;color:#b8c8dc}
 .btn.active{background:#1d4ed8;border-color:#3b82f6;color:#fff;font-weight:700}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn:disabled:hover{background:#131c29;color:#7288a0}
+
+.row-note{font-size:11px;color:#4a5c70;line-height:1.7;margin-top:8px}
+.row-note:empty{display:none}
 
 .slider-row{display:flex;align-items:center;gap:12px}
 .slider-row input[type=range]{flex:1;accent-color:#3b82f6;height:4px}
 .slider-row .val{font-size:16px;font-weight:700;color:#60a5fa;min-width:36px;text-align:right;font-variant-numeric:tabular-nums}
 
-.hint{font-size:12px;color:#4a5c70;text-align:center;line-height:1.7;margin-bottom:16px;min-height:18px}
+.hint{font-size:12px;color:#4a5c70;text-align:center;line-height:1.7;margin-bottom:16px;min-height:18px;white-space:pre-line}
