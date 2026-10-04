@@ -1,0 +1,64 @@
+/* ================================================================
+   开始标题页
+================================================================ */
+.start-panel {
+  padding: 72px 46px 60px;
+  background: radial-gradient(ellipse at 50% 30%, #1f2636 0%, #11141e 75%);
+  border: 1px solid rgba(255, 255, 255, .06);
+  position: relative;
+  overflow: hidden;
+}
+.start-panel::before {
+  content: '';
+  position: absolute; inset: -50%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 217, 138, .08) 0%, transparent 55%);
+  animation: startGlow 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes startGlow {
+  0%, 100% { opacity: .5; transform: scale(1); }
+  50%      { opacity: 1;  transform: scale(1.1); }
+}
+
+.start-title {
+  font-size: 72px; font-weight: 900; letter-spacing: 22px;
+  margin-bottom: 18px; padding-left: 22px;
+  position: relative;
+  background: linear-gradient(180deg, #ffe6a8 0%, #ffd98a 40%, #d9992f 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(0 4px 20px rgba(255, 217, 138, .4));
+  animation: titleFloat 4s ease-in-out infinite;
+}
+@keyframes titleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+.start-sub {
+  font-size: 14px; color: #8a94ab; letter-spacing: 10px;
+  margin-bottom: 52px; padding-left: 10px; position: relative;
+}
+
+.start-btn {
+  display: inline-block; padding: 18px 62px 18px 70px;
+  font-family: inherit; font-size: 18px; font-weight: 800; letter-spacing: 8px;
+  color: #1a1d28; border: none; border-radius: 40px; cursor: pointer;
+  background: linear-gradient(180deg, #ffe19a, #efb44b);
+  box-shadow: 0 10px 36px rgba(240, 182, 77, .42),
+              inset 0 1px 0 rgba(255, 255, 255, .55);
+  transition: transform .18s ease, box-shadow .18s ease;
+  position: relative;
+}
+.start-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px rgba(240, 182, 77, .62),
+              inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+.start-btn:active { transform: scale(.96); }
+
+.start-hint {
+  font-size: 12px; color: #5d6579; letter-spacing: 2px;
+  margin-top: 36px; line-height: 2; position: relative;
+}
+.start-hint b { color: #8a94ab; font-weight: 600; }

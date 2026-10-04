@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>扫雷小队 · 迷宫竞速</title>
+<meta name="description" content="组队扫雷迷宫竞速：最多 5 支小队、每队 5 人同场出发，扫描迷雾、标记并排除地雷，抢先抵达右侧出口，赛后可倍速回放复盘。">
+<meta name="tags" content="小游戏, 扫雷, 迷宫, 组队竞速, 本地双人, AI 对抗, 回放, Canvas">
+<meta name="date" content="2026-10-04">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/menu.css">
+<link rel="stylesheet" href="css/options.css">
+<link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/overlay.css">
+<link rel="stylesheet" href="css/result.css">
+<link rel="stylesheet" href="css/replay.css">
+</head>
+<body>
+
+<!-- 主菜单背景：一局正在进行的演示对局（透明 + 模糊） -->
+<canvas id="menuCanvas" aria-hidden="true"></canvas>
+
+<!-- ========== 主菜单 ========== -->
+<div id="menuScreen" class="screen active">
+  <div class="menu-box">
+    <h1>扫雷小队</h1>
+    <div class="subtitle">迷 宫 · 协 作 · 竞 速</div>
+
+    <p class="menu-desc">
+      带上你的小队闯进随机生成的迷宫：扫描迷雾、标记并排除地雷，抢在对手之前抵达出口。
+      踩雷会倒地 5 秒——这一脚，是绕过去，还是停下来拆掉它？
+    </p>
+
+    <div class="feature-row">
+      <div class="feature">
+        <span class="fi">🚩</span><b>2–5 支小队</b><i>每队最多 5 人，同场最多 25 人竞速</i>
+      </div>
+      <div class="feature">
+        <span class="fi">📡</span><b>扫描与排雷</b><i>轻按扫描 0.5 秒，按住接续 2 秒排雷</i>
+      </div>
+      <div class="feature">
+        <span class="fi">💥</span><b>用命换情报</b><i>爆炸清空波及格，并共享给所有队伍</i>
+      </div>
+      <div class="feature">
+        <span class="fi">🎞</span><b>赛后回放</b><i>倍速 / 暂停 / 拖拽进度复盘整局</i>
+      </div>
+    </div>
+
+    <button class="menu-btn primary" id="btnToOptions">开 始 游 戏</button>
+
+    <div class="menu-keys">
+      <span><kbd>WASD</kbd> P1 移动</span>
+      <span><kbd>空格</kbd> P1 扫描 / 排雷</span>
+      <span><kbd>方向键</kbd> P2 移动</span>
+      <span><kbd>Ctrl</kbd> P2 扫描 / 排雷</span>
+      <span><kbd>ESC</kbd> 暂停</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 选项 ========== -->
+<div id="optionsScreen" class="screen">
+  <div class="panel">
+    <h1>游 戏 选 项</h1>
+    <div class="sub">配置你的扫雷小队</div>
+
+    <div class="row">
+      <label>玩家数量</label>
+      <div class="btn-group" data-setting="playerCount">
+        <button class="btn" data-value="1">单人</button>
+        <button class="btn" data-value="2">本地双人</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <label>队伍数量</label>
+      <div class="btn-group" data-setting="teamCount">
+        <button class="btn" data-value="2">2 队</button>
+        <button class="btn" data-value="3">3 队</button>
+        <button class="btn" data-value="4">4 队</button>
+        <button class="btn" data-value="5">5 队</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <label>每队人数</label>
+      <div class="btn-group" data-setting="teamSize">
+        <button class="btn" data-value="1">1 人</button>
+        <button class="btn" data-value="2">2 人</button>
+        <button class="btn" data-value="3">3 人</button>
+        <button class="btn" data-value="4">4 人</button>
+        <button class="btn" data-value="5">5 人</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <label>地雷数量 · <span class="val" id="mineVal">60</span></label>
+      <div class="slider-row">
+        <input type="range" id="mineSlider" min="20" max="140" value="60" step="5">
+      </div>
+    </div>
+
+    <div class="hint" id="optionsHint"></div>
+
+    <button class="menu-btn primary" id="btnStart">开 始 游 戏</button>
+    <button class="menu-btn" id="btnBackMenu">返 回</button>
+  </div>
+</div>
+
+<!-- ========== 游戏 ========== -->
+<div id="gameScreen" class="screen">
+  <div class="game-wrap">
+    <div class="topbar">
+      <span id="timerDisplay" class="timer">0.00s</span>
+      <span id="countdownDisplay" class="countdown"></span>
+      <span id="statusDisplay">准备中…</span>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="hud"></div>
+    <div class="tips">
+      <kbd>WASD</kbd> 玩家1移动 · <kbd>空格</kbd> 轻按=扫描 / 按住0.5秒+持续按住=排雷 &nbsp;|&nbsp;
+      <kbd>方向键</kbd> 玩家2移动 · <kbd>Ctrl</kbd> 同上 &nbsp;|&nbsp;
+      <kbd>ESC</kbd> 暂停
+    </div>
+  </div>
+</div>
+
+<!-- ========== 回放（独立页面，从结算进入） ========== -->
+<div id="replayScreen" class="screen">
+  <div class="replay-stage">
+
+    <div class="replay-head">
+      <div class="rh-left">
+        <span class="rh-title">🎞 对 局 回 放</span>
+        <span class="rh-caption" id="rpCaption"></span>
+      </div>
+      <button class="rp-exit" id="rpBack">← 返回结算</button>
+    </div>
+
+    <div class="replay-view">
+      <canvas id="replayCanvas" title="点击播放 / 暂停"></canvas>
+    </div>
+
+    <div class="replay-bar">
+      <div class="rb-row rb-main">
+        <button class="rp-btn big" id="rpStepBack" title="后退 2 秒">⏪</button>
+        <button class="rp-btn big" id="rpPlay" title="播放 / 暂停（空格）">⏸</button>
+        <button class="rp-btn big" id="rpStepFwd" title="前进 2 秒">⏩</button>
+
+        <div class="rp-speed" id="rpSpeed">
+          <button data-speed="0.5">0.5×</button>
+          <button data-speed="1" class="active">1×</button>
+          <button data-speed="2">2×</button>
+          <button data-speed="4">4×</button>
+        </div>
+
+        <span class="rp-time" id="rpTime">0:00.0 / 0:00.0</span>
+      </div>
+
+      <div class="rb-row rb-seek">
+        <input type="range" id="rpRange" min="0" max="1000" step="1" value="0" aria-label="回放进度">
+      </div>
+
+      <div class="rb-row rb-foot">
+        <span class="rp-tips">空格 播放 / 暂停 · ← → 快退快进 2 秒 · 拖拽进度条跳转 · ESC 返回结算</span>
+        <button class="menu-btn sm" id="rpRestart">再 来 一 局</button>
+        <button class="menu-btn sm" id="rpMenu">返 回 主 菜 单</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== 暂停 ========== -->
+<div id="pauseOverlay" class="overlay hidden">
+  <div class="panel" style="max-width:320px">
+    <h1 style="letter-spacing:8px">已 暂 停</h1>
+    <div class="sub">按 ESC 也可继续</div>
+    <button class="menu-btn primary" id="btnResume">继 续 游 戏</button>
+    <button class="menu-btn" id="btnRestart">重 新 开 始</button>
+    <button class="menu-btn" id="btnToMenu">返 回 主 菜 单</button>
+  </div>
+</div>
+
+<!-- ========== 结算 ========== -->
+<div id="resultOverlay" class="overlay hidden"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

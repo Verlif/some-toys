@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>木头人</title>
+<meta name="description" content="黑板前的回头博弈：写字人背身写「田」，木头人趁他不注意摸到后背就赢。支持单人、本地双人，以及 1/2/4/8 名木头人混战。">
+<meta name="tags" content="小游戏, 木头人, 非对称对抗, 本地双人, AI 对抗, Canvas">
+<meta name="date" content="2026-10-04">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/overlay.css">
+<link rel="stylesheet" href="css/start.css">
+<link rel="stylesheet" href="css/menu.css">
+<link rel="stylesheet" href="css/dialog.css">
+<link rel="stylesheet" href="css/result.css">
+<link rel="stylesheet" href="css/touch.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="touchArea">
+  <button class="touch-btn" id="btnP1"><span class="arr">←</span>P1</button>
+  <button class="touch-btn" id="btnP2"><span class="arr">←</span>P2</button>
+  <button class="touch-btn" id="btnWrite">按住<br>写字</button>
+  <button class="touch-btn noise-btn" id="btnNoise1">声响<small>P1</small></button>
+  <button class="touch-btn noise-btn" id="btnNoise2">声响<small>P2</small></button>
+</div>
+
+<div id="overlay">
+  <div class="panel" id="panel"></div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

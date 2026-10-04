@@ -1,0 +1,155 @@
+/* 回放页：独立全屏页面，画布自适应铺满剩余空间 */
+
+#replayScreen.active{
+  height:calc(100vh - 24px);
+  max-width:min(1500px,100%);
+}
+@supports (height:100dvh){
+  #replayScreen.active{height:calc(100dvh - 24px)}
+}
+
+.replay-stage{
+  width:100%;
+  height:100%;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:clamp(6px,1vh,12px);
+}
+
+/* ── 顶部 ── */
+.replay-head{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.rh-left{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
+.rh-title{
+  font-size:clamp(14px,1.8vw,19px);
+  font-weight:800;
+  letter-spacing:clamp(2px,.6vw,6px);
+  color:#eef3fa;
+}
+.rh-caption{font-size:clamp(11px,1.2vw,13px);color:#7c8fa6;font-weight:600}
+
+.rp-exit{
+  flex-shrink:0;
+  padding:7px 14px;
+  background:#131c29;
+  border:1px solid #1f2d40;
+  border-radius:8px;
+  color:#8fa3ba;
+  font-size:12px;
+  letter-spacing:1px;
+  cursor:pointer;
+  font-family:inherit;
+  transition:.15s;
+}
+.rp-exit:hover{background:#1a2638;color:#d4e0ee;border-color:#2c4159}
+
+/* ── 画布 ── */
+.replay-view{
+  flex:1;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#080c12;
+  border:1px solid #1a2433;
+  border-radius:12px;
+  padding:clamp(4px,.8vh,8px);
+  box-shadow:inset 0 0 60px rgba(0,0,0,.5);
+}
+/* 画布保持 CW×CH 逻辑分辨率，由 CSS 等比缩放填满可视区 */
+#replayCanvas{
+  display:block;
+  max-width:100%;
+  max-height:100%;
+  width:auto;
+  height:auto;
+  border-radius:8px;
+  image-rendering:pixelated;
+  cursor:pointer;
+  box-shadow:0 0 0 1px #16202e,0 18px 46px rgba(0,0,0,.6);
+}
+
+/* ── 控制条 ── */
+.replay-bar{
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  gap:clamp(5px,.9vh,10px);
+  background:#0d131c;
+  border:1px solid #1a2433;
+  border-radius:12px;
+  padding:clamp(8px,1.2vh,13px) clamp(10px,1.4vw,16px);
+  box-shadow:0 14px 40px rgba(0,0,0,.45);
+}
+.rb-row{display:flex;align-items:center;gap:clamp(6px,1vw,12px);flex-wrap:wrap}
+
+.rp-btn{
+  width:30px;height:30px;flex-shrink:0;
+  border-radius:8px;
+  background:#1d4ed8;border:1px solid #3b82f6;
+  color:#fff;font-size:13px;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  font-family:inherit;transition:.15s;
+}
+.rp-btn:hover{filter:brightness(1.18)}
+.rp-btn.paused{background:#334155;border-color:#475569}
+.rp-btn.big{width:clamp(32px,3.4vw,40px);height:clamp(32px,3.4vw,40px);font-size:15px}
+
+.rp-speed{display:flex;gap:3px;flex-shrink:0}
+.rp-speed button{
+  padding:5px clamp(6px,.9vw,10px);
+  font-size:clamp(10px,1.1vw,12px);
+  background:#131c29;border:1px solid #1f2d40;
+  border-radius:6px;color:#7288a0;cursor:pointer;font-family:inherit;transition:.15s;
+}
+.rp-speed button:hover{background:#1a2638;color:#b8c8dc}
+.rp-speed button.active{background:#1d4ed8;border-color:#3b82f6;color:#fff;font-weight:700}
+
+.rp-time{
+  font-size:clamp(10px,1.15vw,12.5px);
+  color:#9fb2c8;
+  font-variant-numeric:tabular-nums;
+  margin-left:auto;
+  white-space:nowrap;
+}
+
+.rb-seek input[type=range]{
+  flex:1;
+  min-width:120px;
+  width:100%;
+  accent-color:#3b82f6;
+  height:5px;
+  cursor:pointer;
+}
+
+.rp-tips{
+  flex:1;
+  min-width:150px;
+  font-size:clamp(9.5px,1vw,11px);
+  color:#4a5c70;
+  line-height:1.5;
+}
+.menu-btn.sm{
+  width:auto;
+  flex:0 1 auto;
+  padding:8px 14px;
+  margin-bottom:0;
+  font-size:12px;
+  letter-spacing:2px;
+  white-space:nowrap;
+}
+
+/* ── 窄屏 ── */
+@media (max-width:640px){
+  .rh-caption{display:none}
+  .rb-main .rp-time{margin-left:0;width:100%;text-align:left}
+  .rp-btn.big{width:34px;height:34px}
+  .rb-foot .menu-btn.sm{flex:1 1 100px}
+}

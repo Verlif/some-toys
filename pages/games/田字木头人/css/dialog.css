@@ -1,0 +1,36 @@
+/* ================================================================
+   暂停面板与通用按钮（结算页也复用这两个按钮样式）
+================================================================ */
+.pause-icon {
+  font-size: 38px; margin-bottom: 16px; color: #ffd98a;
+  letter-spacing: 14px; font-weight: 300;
+  padding-left: 14px;
+}
+.panel h1.pause-title {
+  font-size: 22px; letter-spacing: 8px; margin-bottom: 28px; padding-left: 8px;
+}
+
+.primary-btn {
+  display: block; width: 100%; padding: 15px 40px;
+  font-family: inherit; font-size: 15px; font-weight: 800; letter-spacing: 5px;
+  color: #1a1d28; border: none; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(180deg, #ffd98a, #efb44b);
+  box-shadow: 0 8px 26px rgba(240, 182, 77, .35),
+              inset 0 1px 0 rgba(255, 255, 255, .5);
+  transition: transform .15s ease, box-shadow .15s ease;
+  margin-bottom: 10px;
+}
+.primary-btn:hover {
+  box-shadow: 0 12px 34px rgba(240, 182, 77, .5),
+              inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+.primary-btn:active { transform: scale(.97); }
+
+.secondary-btn {
+  display: block; width: 100%; padding: 13px;
+  font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 2.5px;
+  color: #a8b0c4; background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .09); border-radius: 12px; cursor: pointer;
+  transition: all .15s ease; margin-bottom: 8px;
+}
+.secondary-btn:hover { color: #e8e2d4; background: rgba(255, 255, 255, .09); }

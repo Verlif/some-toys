@@ -1,0 +1,5 @@
+/* 覆盖层：暂停 / 结算共用的全屏遮罩 */
+
+/* align-items:flex-start + 子元素 margin:auto：内容超高时顶部不会被裁掉 */
+.overlay{position:fixed;inset:0;background:rgba(4,7,12,.86);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:16px;overflow-y:auto}
+.overlay>.panel{margin:auto}

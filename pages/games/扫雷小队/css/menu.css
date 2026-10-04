@@ -1,0 +1,75 @@
+/* 主菜单：背景演示画布 + 介绍内容 */
+
+/* 背景：一局正在进行的演示对局，压暗 + 模糊，只作壁纸 */
+#menuCanvas{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  object-fit:cover;
+  object-position:center;
+  opacity:.30;
+  filter:blur(3px) saturate(.85);
+  z-index:-1;
+  display:none;
+  pointer-events:none;
+  image-rendering:pixelated;
+}
+body.at-menu #menuCanvas{display:block}
+
+/* 暗角：让中间的菜单内容读起来更清楚 */
+body.at-menu::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,
+    rgba(6,9,14,.10) 0%,
+    rgba(6,9,14,.62) 55%,
+    #06090e 100%);
+}
+
+#menuScreen{justify-content:center;min-height:100vh}
+
+.menu-box{
+  width:100%;
+  max-width:560px;
+  text-align:center;
+  background:rgba(10,15,23,.62);
+  backdrop-filter:blur(12px);
+  border:1px solid #1a2433;
+  border-radius:20px;
+  padding:34px 30px 26px;
+  box-shadow:0 30px 80px rgba(0,0,0,.65);
+}
+.menu-box h1{font-size:44px;letter-spacing:12px;color:#f0f6ff;margin-bottom:4px;text-shadow:0 0 40px rgba(59,130,246,.5);font-weight:800}
+.menu-box .subtitle{font-size:13px;letter-spacing:6px;color:#3b82f6;margin-bottom:20px;font-weight:500}
+
+.menu-desc{font-size:13px;line-height:1.95;color:#8fa3ba;margin:0 auto 22px;max-width:440px}
+
+.feature-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:24px;text-align:left}
+.feature{
+  background:#0d131c;
+  border:1px solid #1a2433;
+  border-radius:10px;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  transition:.18s;
+}
+.feature:hover{background:#111a26;border-color:#28374d}
+.feature .fi{font-size:16px;line-height:1}
+.feature b{font-size:12.5px;color:#d4e0ee;letter-spacing:1px;font-weight:700}
+.feature i{font-style:normal;font-size:11px;color:#5a6b7f;line-height:1.5}
+
+.menu-box .menu-btn{margin-bottom:0}
+
+.menu-keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;margin-top:16px;font-size:11px;color:#4a5c70}
+
+@media (max-width:520px){
+  .menu-box{padding:26px 18px 20px}
+  .menu-box h1{font-size:32px;letter-spacing:7px}
+  .feature-row{grid-template-columns:1fr}
+}

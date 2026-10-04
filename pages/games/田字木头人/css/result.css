@@ -1,0 +1,35 @@
+/* ================================================================
+   结算面板：胜负标题与统计网格
+================================================================ */
+.result-header { margin-bottom: 22px; }
+.result-icon {
+  font-size: 56px; margin-bottom: 12px; line-height: 1;
+  filter: drop-shadow(0 6px 20px rgba(255, 217, 138, .25));
+}
+.result-title { font-size: 26px; letter-spacing: 6px; font-weight: 900; margin-bottom: 8px; }
+.result-desc { font-size: 13.5px; color: #98a2b8; line-height: 1.9; letter-spacing: .3px; }
+.win-c  { color: #ffd98a; text-shadow: 0 0 24px rgba(255, 217, 138, .4); }
+.lose-c { color: #ff7a7a; text-shadow: 0 0 24px rgba(255, 122, 122, .35); }
+
+.stats-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 9px; margin-bottom: 24px;
+}
+.stat-item {
+  padding: 15px 10px; border-radius: 13px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .06);
+  transition: background .15s;
+}
+.stat-item:hover { background: rgba(255, 255, 255, .06); }
+.stat-item.full { grid-column: span 2; }
+
+.stat-value {
+  font-size: 20px; font-weight: 800; color: #f0e6d2;
+  letter-spacing: 1px; margin-bottom: 5px; line-height: 1;
+}
+.stat-value.warn { color: #efb44b; }
+.stat-value.good { color: #7dd98a; }
+.stat-value.bad  { color: #ff7a7a; }
+
+.stat-label { font-size: 11px; color: #8791a8; letter-spacing: 1px; line-height: 1.4; }
