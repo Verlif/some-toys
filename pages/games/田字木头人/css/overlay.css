@@ -1,0 +1,29 @@
+/* ================================================================
+   覆盖层：菜单 / 暂停 / 结算共用的遮罩与面板外壳
+================================================================ */
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 10, 16, .85);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: opacity .35s ease;
+  z-index: 10; padding: 20px;
+}
+#overlay.hidden { opacity: 0; pointer-events: none; }
+
+.panel {
+  text-align: center; padding: 36px 34px; width: min(520px, 100%);
+  background: linear-gradient(165deg, #242a3b, #161a26);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 24px; box-shadow: 0 24px 70px rgba(0, 0, 0, .65);
+  animation: pop .32s ease;
+  max-height: 92vh; overflow-y: auto;
+}
+.panel::-webkit-scrollbar { width: 6px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+.panel::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); border-radius: 3px; }
+
+@keyframes pop {
+  from { transform: scale(.93); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
