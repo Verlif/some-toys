@@ -92,6 +92,8 @@ export function downEntity(e) {
   e.stuckCounter = 0;
   e.rushMode = false;      // 倒地后重新评估是否直冲
   e.rushRetry = 0;
+  e.corridor = false;      // 已经进过场了，复活后直接走正常 AI
+  e.corridorTimer = 0;
   cancelDefuse(e);
   e.path = null;
   e.goal = null;
