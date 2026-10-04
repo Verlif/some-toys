@@ -1,12 +1,21 @@
-/* 对局界面：顶栏、画布、队伍卡片、操作提示 */
+/* 对局界面：顶栏、画布、队伍卡片、操作提示
+   宽度由 js/ui/fit.js 按可视区算出后写回 .game-wrap，高度随之等比，不拉伸 */
 
-#gameScreen.active{max-width:1000px}
+#gameScreen.active{max-width:none;justify-content:center;min-height:calc(100vh - 24px)}
+@supports (height:100dvh){
+  #gameScreen.active{min-height:calc(100dvh - 24px)}
+}
 .game-wrap{width:100%;display:flex;flex-direction:column;gap:7px}
-.topbar{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#7288a0;padding:0 4px;font-variant-numeric:tabular-nums;gap:10px}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:4px 10px;
+  font-size:13px;color:#7288a0;padding:0 4px;font-variant-numeric:tabular-nums;
+}
 .topbar .timer{font-size:20px;font-weight:700;color:#e0eaf5;letter-spacing:1px}
 .topbar .countdown{font-size:15px;font-weight:700;color:#fbbf24;letter-spacing:1px}
 
-canvas{display:block;width:100%;height:auto;border-radius:8px;background:#080c12;box-shadow:0 0 0 1px #16202e,0 20px 50px rgba(0,0,0,.6);image-rendering:pixelated}
+/* 位图分辨率由 js/core/canvas.js 对齐到「显示尺寸 × DPR」，所以不要像素化放大 */
+canvas{display:block;width:100%;height:auto;border-radius:8px;background:#080c12;box-shadow:0 0 0 1px #16202e,0 20px 50px rgba(0,0,0,.6)}
 
 #hud{display:flex;gap:5px;flex-wrap:wrap}
 .team-card{flex:1;min-width:100px;background:#0d131c;border:1px solid #1a2433;border-radius:7px;padding:6px 8px;display:flex;align-items:center;gap:7px}
@@ -18,3 +27,11 @@ canvas{display:block;width:100%;height:auto;border-radius:8px;background:#080c12
 
 .tips{text-align:center;font-size:11px;color:#3f4f61;line-height:1.9}
 kbd{background:#16202e;border:1px solid #26344a;border-bottom-width:2px;border-radius:3px;padding:0 5px;font-size:11px;color:#8fa3ba;font-family:inherit}
+
+/* 窄窗：画布本来就会等比缩小，顺手把顶栏与提示也压一档 */
+@media (max-width:560px){
+  .topbar{font-size:11px}
+  .topbar .timer{font-size:16px}
+  .topbar .countdown{font-size:12px}
+  .tips{font-size:10px;line-height:1.7}
+}

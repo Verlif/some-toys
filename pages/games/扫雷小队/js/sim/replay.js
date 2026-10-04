@@ -125,6 +125,11 @@ export function buildScene(t) {
     entranceYs: game.entranceYs,
     exitX: game.exitX,
     exitY: game.exitY,
+    // 旗帜位置固定，归属随录像帧走
+    flags: (game.flags || []).map((f, i) => ({
+      x: f.x, y: f.y,
+      takenBy: a.fg ? a.fg[i] : f.takenBy
+    })),
     elapsed: t,
     state: 'playing',
     screenShake: 0,

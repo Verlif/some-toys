@@ -21,6 +21,7 @@ export const game = {
   // 场景
   walls: null,      // Uint8Array：1=墙
   mines: null,      // Uint8Array：地雷类型
+  flags: [],        // { x, y, takenBy, takenAt, claim } —— 全图可见的旗帜
   entranceYs: [],   // 各入口所在行
   exitX: 0, exitY: 0,
 

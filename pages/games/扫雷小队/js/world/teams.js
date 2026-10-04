@@ -15,6 +15,7 @@ export function createTeams() {
       known: new Uint8Array(W * H),
       fog: new Float32Array(W * H).fill(1),
       minesFound: 0,
+      flags: 0,          // 本队已夺旗数（每面让全队每人 -FLAG_BONUS 秒）
       members: []
     });
   }

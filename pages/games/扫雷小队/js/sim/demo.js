@@ -10,6 +10,7 @@ import { settings, game } from '../core/state.js';
 import { generateMaze } from '../world/maze.js';
 import { placeMines } from '../world/mines.js';
 import { createTeams } from '../world/teams.js';
+import { placeFlags } from '../world/flags.js';
 import { createEntities } from '../world/entities.js';
 import { stepMatch } from './simulation.js';
 
@@ -25,6 +26,7 @@ export function startDemo() {
   game.exitY = maze.exitY;
   game.mines = placeMines();
   game.teams = createTeams();
+  game.flags = placeFlags(game.teams.length);
   game.entities = [];
   createEntities();
 

@@ -5,7 +5,7 @@
  * update() 额外处理开局倒计时，并返回 true 表示本局结束，由 main.js 转交 ui/flow 做结算，
  * 这样模拟层完全不依赖界面层。
  */
-import { W, H, FOG_REGEN, FOG_VISION_R, END_COUNTDOWN } from '../core/config.js';
+import { W, H, TILE, FOG_REGEN, FOG_VISION_R, END_COUNTDOWN, TEAM_COLORS } from '../core/config.js';
 import { idx, inBounds, tileOf } from '../core/utils.js';
 import { game } from '../core/state.js';
 import { updatePlayer } from './player.js';
@@ -13,6 +13,38 @@ import { updateAI } from './ai.js';
 import { checkMineHit, triggerExplosion, updateRespawn, inExitZone } from './hazard.js';
 import { clearFogCircle, cancelDefuse } from './scan.js';
 import { updateEffects } from './effects.js';
+
+/** 夺旗：踩到旗格即归该队所有，全队每人最终 -FLAG_BONUS 秒 */
+function updateFlags() {
+  for (const f of game.flags) {
+    if (f.takenBy >= 0) continue;
+
+    for (const e of game.entities) {
+      if (e.downed || e.arrived) continue;
+      if (tileOf(e.x) !== f.x || tileOf(e.y) !== f.y) continue;
+
+      f.takenBy = e.teamId;
+      f.takenAt = game.elapsed;
+      f.claim = null;
+      game.teams[e.teamId].flags++;
+      e.stats.flags++;
+
+      const px = f.x * TILE + TILE / 2, py = f.y * TILE + TILE / 2;
+      game.ripples.push({ x: px, y: py, t: 0, dur: 0.7, maxR: TILE * 3, color: TEAM_COLORS[e.teamId] });
+      for (let k = 0; k < 14; k++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 30 + Math.random() * 70;
+        game.particles.push({
+          x: px, y: py,
+          vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+          life: 0.5 + Math.random() * 0.5, maxLife: 1.0,
+          size: 1.5 + Math.random() * 2, hue: 45 + Math.random() * 15
+        });
+      }
+      break;
+    }
+  }
+}
 
 /** 对局进行中的一步推进；返回 true 表示本局应当结束 */
 export function stepMatch(dt) {
@@ -77,6 +109,7 @@ export function stepMatch(dt) {
   }
 
   updateRespawn(dt);
+  updateFlags();
 
   /* 到达检测 */
   for (const e of game.entities) {

@@ -88,9 +88,21 @@ export function downEntity(e) {
   e.thinkTimer = 0;
   e.wantToDefuse = null;
   e.mineDecisionLock = false;
+  e.mineLockKey = null;
   e.stuckCounter = 0;
+  e.rushMode = false;      // 倒地后重新评估是否直冲
+  e.rushRetry = 0;
   cancelDefuse(e);
   e.path = null;
+  e.goal = null;
+  e.goalTimer = 0;
+
+  // 倒地就放弃夺旗目标，让队友能接手；也不再占用 / 等待救援名额
+  if (e.flagTarget && e.flagTarget.claim === e) e.flagTarget.claim = null;
+  e.flagTarget = null;
+  if (e.rescueTarget && e.rescueTarget.rescuer === e) e.rescueTarget.rescuer = null;
+  e.rescueTarget = null;
+  e.rescueTimer = 0;
 
   const gx = tileOf(e.x), gy = tileOf(e.y);
   if (inBounds(gx, gy)) {
@@ -110,6 +122,16 @@ export function updateRespawn(dt) {
       e.invuln = 2.5;
       e.initialRouteChosen = false;
       e.routeRepickCount = 0;
+      e.rushMode = false;
+      e.rushRetry = 0;
+      e.goal = null;
+      e.goalTimer = 0;
+
+      // 起身：把救援者放开，别让他继续守着空气
+      if (e.rescuer) {
+        if (e.rescuer.rescueTarget === e) { e.rescuer.rescueTarget = null; e.rescuer.rescueTimer = 0; }
+        e.rescuer = null;
+      }
     }
   }
 }

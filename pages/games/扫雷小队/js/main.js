@@ -16,8 +16,7 @@
  *   结算后由 ui/replay 接管回放画布，主循环只负责喂 dt。
  */
 import { game } from './core/state.js';
-import { ctx as gameCtx } from './core/canvas.js';
-import { CW, CH } from './core/config.js';
+import { ctx as gameCtx, dpr, setResolutionScale } from './core/canvas.js';
 import { initKeyboard } from './input/keyboard.js';
 import { update } from './sim/simulation.js';
 import { updateDemo, startDemo } from './sim/demo.js';
@@ -28,10 +27,11 @@ import { initOptions } from './ui/options.js';
 import { bindButtons, endGame, togglePause } from './ui/flow.js';
 import { showScreen } from './ui/screens.js';
 import { tickReplay, isReplayOpen } from './ui/replay.js';
+import { fitGameStage, fitAll, consumeFit } from './ui/fit.js';
 
 /** 菜单背景画布（独立 ctx，避免污染对局画布） */
 const menuCanvas = document.getElementById('menuCanvas');
-if (menuCanvas) { menuCanvas.width = CW; menuCanvas.height = CH; }
+if (menuCanvas) setResolutionScale(menuCanvas, dpr());
 const menuCtx = menuCanvas ? menuCanvas.getContext('2d') : null;
 
 function loop(t) {
@@ -48,6 +48,8 @@ function loop(t) {
     if (update(dt)) endGame();
     render(gameCtx);
     renderHUD();
+    // 等 HUD 有内容后再量一次高度，此时围栏高度才是真实值
+    if (consumeFit()) fitGameStage();
     // 只在真正开打后录制：倒计时阶段 game.elapsed 不动，采样没有意义
     if (game.state === 'playing') record(dt);
   } else if (game.walls && (game.state === 'paused' || game.state === 'ended') && !isReplayOpen()) {
@@ -62,6 +64,10 @@ function boot() {
   initKeyboard({ onEscape: togglePause });
   initOptions();
   bindButtons();
+  window.addEventListener('resize', () => {
+    if (menuCanvas) setResolutionScale(menuCanvas, dpr());   // 拖到不同 DPR 的屏幕
+    fitAll();
+  });
   showScreen('menuScreen');
   startDemo();           // 菜单背景：一局全 AI 的演示对局
   requestAnimationFrame(loop);

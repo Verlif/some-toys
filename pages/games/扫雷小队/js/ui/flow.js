@@ -7,6 +7,7 @@ import { game } from '../core/state.js';
 import { generateMaze } from '../world/maze.js';
 import { placeMines } from '../world/mines.js';
 import { createTeams } from '../world/teams.js';
+import { placeFlags } from '../world/flags.js';
 import { createEntities } from '../world/entities.js';
 import { startRecording, stopRecording } from '../sim/recorder.js';
 import { startDemo } from '../sim/demo.js';
@@ -14,6 +15,7 @@ import { collectResults } from '../sim/scoring.js';
 import { showScreen, showOverlay, hideOverlay, backToMenu as backToMenuScreen } from './screens.js';
 import { showResults } from './result.js';
 import { openReplay, closeReplay } from './replay.js';
+import { requestFit } from './fit.js';
 
 /** 装配一局：迷宫 → 地雷 → 队伍 → 实体 → 3 秒倒计时 → 开始录像 */
 export function startGame() {
@@ -30,6 +32,7 @@ export function startGame() {
 
   game.mines = placeMines();
   game.teams = createTeams();
+  game.flags = placeFlags(game.teams.length);   // 旗帜数量 = 队伍数量
 
   game.entities = [];
   game.explosions = [];
@@ -52,6 +55,7 @@ export function startGame() {
   createEntities();
   startRecording();
   game.state = 'countdown';
+  requestFit();          // 等第一帧 HUD 渲染完再由主循环测量并适配尺寸
 }
 
 export function pauseGame() {
