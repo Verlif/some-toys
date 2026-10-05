@@ -58,6 +58,8 @@ export const EXIT_RUSH_RETRY   = 1.5;
    AI 在这两段里只管走进去，不思考、不扫描、不重估岔路，路线最多算一次。 */
 export const ENTRY_CORRIDOR_COLS = 3;   // 入口往里这几列仍算走廊
 export const ENTRY_TIMEOUT       = 8;   // 走廊里最多待这么久，超时强制转回正常 AI（兜底防卡死）
+/** 待在出发区期间唯一那次思考的时长（秒）：允许想一次，但绝不能走一步想一步 */
+export const STAGING_THINK_TIME  = 0.5;
 
 /* ── 画布分辨率 ──
    逻辑坐标系恒为 CW × CH；位图分辨率 = 显示尺寸 × DPR（上限 MAX_DPR），
