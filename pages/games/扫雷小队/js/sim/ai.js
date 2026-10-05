@@ -26,9 +26,12 @@
  *   3. 移动前的硬性保险：绝不主动踩进已知雷格（除非正要去拆它）。
  *
  * ── 出发区与入口走廊（修：进场前反复思考、把入口堵成一团）
- *   迷宫左侧的出发区里没有任何可决策的东西，AI 只朝自己的入口直线走——
- *   不思考、不扫描、不寻路。跨过入口后进入「走廊模式」：路线只在第一次算一次
- *   （这就是「最多计算一次」），之后卡住了也只是静默重算，不再停下来思考，
+ *   迷宫左侧的出发区里没有任何可决策的东西，AI 只朝自己的入口直线走。
+ *   「是否在出发区」按**位置实时判定**，不用一次性标记——AI 进了迷宫也可能被
+ *   绕回来 / 挤回来，那时同样该安静地走回入口，而不是在空地上又寻路又扫描，
+ *   走一步思考一会。每次回到出发区只允许思考 STAGING_THINK_TIME 一次。
+ *   跨过入口后进入「走廊模式」：路线只在第一次算一次（这就是「最多计算一次」），
+ *   之后卡住了也只是静默重算，不再停下来思考，
  *   否则先到的人一停，后面整队人都堵在入口外。
  */
 import {
@@ -36,7 +39,7 @@ import {
   FLAG_MAX_DETOUR, DEFUSER_SEARCH_R, DEFUSER_MAX_JOBS,
   MINE_BEST_CHANCE, MINE_LOOKAHEAD, RESCUE_RADIUS, RESCUE_STANDOFF, RESCUE_MAX_TIME,
   EXIT_RUSH_TILES, EXIT_RUSH_CHANCE, EXIT_RUSH_RETRY,
-  ENTRY_CORRIDOR_COLS, ENTRY_TIMEOUT
+  ENTRY_CORRIDOR_COLS, ENTRY_TIMEOUT, STAGING_THINK_TIME
 } from '../core/config.js';
 import { idx, inBounds, tileOf } from '../core/utils.js';
 import { game } from '../core/state.js';
@@ -67,6 +70,22 @@ function walkToEntrance(e, dt) {
     e.faceX = 1; e.faceY = 0;
     moveEntity(e, e.speed * dt, 0);
   }
+}
+
+/**
+ * 寻路统一入口。人已经在迷宫里（起点 x >= OUTSIDE_COLS）时禁止路径绕回左侧出发区——
+ * 那片空地没有出口，允许它走回去 AI 就会进进出出、在空地上反复决策。
+ */
+function route(team, sx, sy, gx, gy, extra) {
+  return findPath(sx, sy, gx, gy, team,
+    Object.assign({ noStaging: sx >= OUTSIDE_COLS }, extra || null));
+}
+
+/** 解除救援关系（双向引用都要清，否则倒地者会被永久占着） */
+function releaseRescue(e) {
+  if (e.rescueTarget) e.rescueTarget.rescuer = null;
+  e.rescueTarget = null;
+  e.rescueTimer = 0;
 }
 
 /** 沿路径推进；连续两帧几乎没动就判定卡住，清空路径重新决策 */
@@ -177,16 +196,16 @@ function releaseClaim(e) {
 
 /** 夺旗手选目标：只接受「绕路不超过 FLAG_MAX_DETOUR 格」的旗 */
 function pickFlag(e, team, cx, cy) {
-  const base = pathLen(findPath(cx, cy, game.exitX, game.exitY, team));
+  const base = pathLen(route(team, cx, cy, game.exitX, game.exitY));
   let best = null, bestCost = Infinity;
 
   for (const f of game.flags) {
     if (f.takenBy >= 0) continue;
     if (f.claim && f.claim !== e && f.claim.teamId === e.teamId) continue;   // 同队已有人盯上
 
-    const toFlag = findPath(cx, cy, f.x, f.y, team);
+    const toFlag = route(team, cx, cy, f.x, f.y);
     if (!toFlag) continue;
-    const toExit = findPath(f.x, f.y, game.exitX, game.exitY, team);
+    const toExit = route(team, f.x, f.y, game.exitX, game.exitY);
     const cost = toFlag.length + pathLen(toExit);
     if (cost - base > FLAG_MAX_DETOUR) continue;      // 太绕了，不如直接冲出口
     if (cost < bestCost) { bestCost = cost; best = f; }
@@ -268,7 +287,7 @@ function computeGoal(e, team, cx, cy, rushing) {
 
 /** 朝角色目标寻路；目标是雷格时放开终点限制（排雷手要走到雷跟前） */
 function pathToGoal(e, team, cx, cy, goal) {
-  return findPath(cx, cy, goal.x, goal.y, team,
+  return route(team, cx, cy, goal.x, goal.y,
     goal.kind === 'mine' ? { allowMineGoal: true } : null);
 }
 
@@ -293,6 +312,7 @@ function tryRescue(e, dt) {
   for (const o of game.entities) {
     if (o === e || !o.downed || o.teamId !== e.teamId) continue;
     if (o.rescuer && o.rescuer !== e) continue;              // 已经有人去救了
+    if (tileOf(o.x) < OUTSIDE_COLS) continue;                // 还在出发区的队友不用救，他自己会走进来
     const d = Math.hypot(o.x - e.x, o.y - e.y);
     if (d > RESCUE_RADIUS || d >= bestD) continue;
     bestD = d; target = o;
@@ -348,15 +368,42 @@ export function updateAI(e, dt) {
 
   const team = game.teams[e.teamId];
   const cx = tileOf(e.x), cy = tileOf(e.y);
-  if (!e.enteredMaze && cx >= OUTSIDE_COLS + 1) {
-    e.enteredMaze = true;
-    e.corridor = true;          // 刚跨过入口 → 转入走廊模式
-    e.corridorTimer = 0;
+
+  /* ── 出发区（迷宫左侧空地）──
+     判定按**位置实时**算，不用一次性标记：AI 进了迷宫之后也可能被绕回 / 挤回这里，
+     那时同样该安静地走回入口，而不是在空地上又寻路又扫描，走一步思考一会。
+     每次回到出发区只允许思考一次（STAGING_THINK_TIME），用完就不再想。 */
+  const inStaging = cx < OUTSIDE_COLS;
+  if (inStaging !== e.inStaging) {
+    e.inStaging = inStaging;
+    if (inStaging) {
+      // 回到出发区：清掉迷宫里残留的意图，下次跨过入口重新走一遍走廊模式
+      e.stagingThinkUsed = false;
+      e.corridor = false;
+      releaseRescue(e);
+      e.path = null; e.pathTimer = 0;
+      e.wantToDefuse = null; e.defuseApproachTimer = 0;
+      e.mineDecisionLock = false; e.mineLockKey = null;
+      e.goal = null; e.goalTimer = 0;
+      e.lastJunctionCell = null;
+    } else {
+      // 刚跨过入口 → 走廊模式（重新进场也要重算一次初始路线）
+      e.corridor = true;
+      e.corridorTimer = 0;
+      e.thinkTimer = 0;
+      e.initialRouteChosen = false;
+      e.goal = null; e.goalTimer = 0;
+      e.lastJunctionCell = null;
+      e.mineLockKey = null;
+    }
   }
 
-  /* ── 出发区：不做任何决策，只走到自己的入口 ── */
-  if (!e.enteredMaze) {
-    e.thinkTimer = 0;
+  if (inStaging) {
+    if (!e.stagingThinkUsed) {
+      e.stagingThinkUsed = true;      // 唯一的一次，之后只管往入口走
+      e.thinkTimer = STAGING_THINK_TIME;
+    }
+    if (e.thinkTimer > 0) { e.thinkTimer -= dt; return; }
     walkToEntrance(e, dt);
     return;
   }
@@ -551,7 +598,7 @@ export function updateAI(e, dt) {
     // 严格绕不开（雷把走廊封死了）时退回「软」路径：把雷当成很贵的一步先走过去，
     // 等它进入 path[0] 自然会触发排雷决策，总比原地罚站着不动好
     e.path = pathToGoal(e, team, cx, cy, goal)
-          || findPath(cx, cy, goal.x, goal.y, team, { softMines: true })
+          || route(team, cx, cy, goal.x, goal.y, { softMines: true })
           || [];
     e.pathTimer = 0.8 + Math.random() * 0.4;
   }

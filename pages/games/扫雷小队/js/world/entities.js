@@ -96,7 +96,10 @@ export function createEntities() {
         arrived: false, arrivedAt: 0,
         pendingExplosions: [],
         entranceId: entIdx % game.entranceYs.length,
-        enteredMaze: false,
+        // 出发区（迷宫左侧空地）：按位置实时判定，不做一次性标记，
+        // 这样进去之后又被绕回来也能正确地走回入口，而不是在空地上反复决策
+        inStaging: true,
+        stagingThinkUsed: false,   // 本次待在出发区期间，那唯一一次思考是否已用掉
         // 入口走廊：刚跨过入口的这一小段只管往里走，不思考、不扫描
         corridor: false,
         corridorTimer: 0,
