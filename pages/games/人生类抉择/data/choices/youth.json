@@ -1,0 +1,1485 @@
+{
+  "title": "少年 12-17",
+  "events": [
+    {
+      "id": "e11",
+      "name": "升学",
+      "min": 12,
+      "max": 17,
+      "text": "升学压力山大的年纪，你决定……",
+      "left": {
+        "label": "熬夜刷题",
+        "fx": {
+          "career": 8,
+          "energy": -8,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "劳逸结合",
+        "fx": {
+          "career": 3,
+          "energy": 5,
+          "health": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e12",
+      "name": "同桌",
+      "min": 12,
+      "max": 17,
+      "text": "你悄悄喜欢上了同桌，今天她冲你笑了。",
+      "left": {
+        "label": "鼓起勇气表白",
+        "fx": {
+          "mood": 4,
+          "social": -2,
+          "rel": {
+            "love": 10
+          }
+        },
+        "flags": {
+          "metLove": true
+        },
+        "milestone": "情窦初开"
+      },
+      "right": {
+        "label": "藏在心里",
+        "fx": {
+          "mood": -2,
+          "career": 2,
+          "rel": {
+            "love": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e13",
+      "name": "朋友",
+      "min": 12,
+      "max": 17,
+      "text": "朋友约你通宵去网吧打游戏。",
+      "left": {
+        "label": "通宵开黑",
+        "fx": {
+          "social": 6,
+          "mood": 3,
+          "energy": -7,
+          "health": -4,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "回家睡觉",
+        "fx": {
+          "energy": 3,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e14",
+      "name": "奶茶店",
+      "min": 12,
+      "max": 17,
+      "text": "暑假，奶茶店招兼职，时薪还不错。",
+      "left": {
+        "label": "去打工",
+        "fx": {
+          "money": 8,
+          "energy": -6,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "在家躺平",
+        "fx": {
+          "energy": 5,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e15",
+      "name": "体检",
+      "min": 12,
+      "max": 17,
+      "text": "体检报告说：再不动起来，就要近视加深加发胖了。",
+      "left": {
+        "label": "开始晨跑",
+        "fx": {
+          "health": 4,
+          "energy": -3,
+          "mood": 1,
+          "skills": {
+            "fitness": 6
+          }
+        }
+      },
+      "right": {
+        "label": "不管了",
+        "fx": {
+          "health": -3,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e16",
+      "name": "分科",
+      "min": 12,
+      "max": 17,
+      "text": "文理分科，你纠结得头发都掉了。",
+      "left": {
+        "label": "选喜欢的",
+        "fx": {
+          "mood": 5,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "选好就业的",
+        "fx": {
+          "career": 5,
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e17",
+      "name": "好朋友",
+      "min": 12,
+      "max": 17,
+      "text": "最好的朋友要转学去外地了。",
+      "left": {
+        "label": "好好告别",
+        "fx": {
+          "rel": {
+            "friends": 8
+          },
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "装作没事",
+        "fx": {
+          "mood": -2,
+          "rel": {
+            "friends": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e18",
+      "name": "妈妈",
+      "min": 12,
+      "max": 17,
+      "text": "妈妈最近脾气很冲，今天又数落了你一顿。",
+      "left": {
+        "label": "顶回去",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "family": -5
+          }
+        }
+      },
+      "right": {
+        "label": "忍忍哄她",
+        "fx": {
+          "rel": {
+            "family": 6
+          },
+          "mood": -2,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e19",
+      "name": "校运会",
+      "min": 12,
+      "max": 17,
+      "text": "校运会报名长跑，你跑不跑？",
+      "left": {
+        "label": "报名参赛",
+        "fx": {
+          "social": 3,
+          "health": 3,
+          "energy": -5,
+          "skills": {
+            "fitness": 8
+          }
+        }
+      },
+      "right": {
+        "label": "当观众",
+        "fx": {
+          "energy": 2,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_a1",
+      "name": "纸条",
+      "min": 13,
+      "max": 17,
+      "text": "课桌里多了一张折成心形的纸条。",
+      "left": {
+        "label": "认真回应",
+        "fx": {
+          "mood": 5,
+          "career": -4
+        },
+        "rel": {
+          "love": 8
+        }
+      },
+      "right": {
+        "label": "装作没看到",
+        "fx": {
+          "career": 2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_a2",
+      "name": "志愿",
+      "min": 15,
+      "max": 17,
+      "text": "志愿表摆在桌上，重点高中还是就近？",
+      "left": {
+        "label": "冲一把重点",
+        "fx": {
+          "career": 6,
+          "energy": -5,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "就近读算了",
+        "fx": {
+          "mood": 3,
+          "career": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_a3",
+      "name": "刷题",
+      "min": 14,
+      "max": 17,
+      "text": "离考试还有三天，桌上堆着没做完的卷子。",
+      "left": {
+        "label": "通宵刷完",
+        "fx": {
+          "career": 5,
+          "health": -4,
+          "energy": -6
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "睡够再说",
+        "fx": {
+          "energy": 4,
+          "career": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_a4",
+      "name": "校运会",
+      "min": 12,
+      "max": 17,
+      "text": "班里的长跑名额还空着一个。",
+      "left": {
+        "label": "报名一千五",
+        "fx": {
+          "health": 4,
+          "energy": -6,
+          "social": 4
+        },
+        "skills": {
+          "fitness": 4
+        }
+      },
+      "right": {
+        "label": "去当观众",
+        "fx": {
+          "social": 2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_a5",
+      "name": "第一口酒",
+      "min": 15,
+      "max": 17,
+      "text": "同学聚会，有人把啤酒推到你面前。",
+      "left": {
+        "label": "尝一口",
+        "fx": {
+          "mood": 4,
+          "health": -3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "推回去",
+        "fx": {
+          "health": 2,
+          "social": -2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_a6",
+      "name": "网吧",
+      "min": 14,
+      "max": 17,
+      "text": "网吧里有人在喊你名字，今晚据说双倍经验。",
+      "left": {
+        "label": "通宵走起",
+        "fx": {
+          "mood": 6,
+          "health": -4,
+          "energy": -6,
+          "career": -4
+        }
+      },
+      "right": {
+        "label": "回家睡觉",
+        "fx": {
+          "career": 2,
+          "mood": -2,
+          "energy": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_a7",
+      "name": "转学",
+      "min": 14,
+      "max": 17,
+      "text": "那个总坐窗边的人，下周就要转走了。",
+      "left": {
+        "label": "说出口",
+        "fx": {
+          "mood": 3,
+          "social": -2
+        },
+        "rel": {
+          "love": 10
+        }
+      },
+      "right": {
+        "label": "藏在心里",
+        "fx": {
+          "mood": -4,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b1",
+      "name": "镜子",
+      "min": 12,
+      "max": 15,
+      "text": "你的声音在半年里变得连自己都不认识。",
+      "left": {
+        "label": "少说话",
+        "fx": {
+          "social": -4,
+          "mood": -2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "照常朗读",
+        "fx": {
+          "mood": 3,
+          "social": 4
+        },
+        "skills": {
+          "charm": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b2",
+      "name": "走廊",
+      "min": 13,
+      "max": 17,
+      "text": "你在走廊撞见一个人，心跳忽然乱了一拍。",
+      "left": {
+        "label": "多看两眼",
+        "fx": {
+          "mood": 6,
+          "social": 2,
+          "career": -3
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "低头走过去",
+        "fx": {
+          "mood": -3,
+          "career": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "metLove"
+      }
+    },
+    {
+      "id": "yt_b3",
+      "name": "教务处",
+      "min": 14,
+      "max": 16,
+      "text": "分班名单贴出来了，你在哪个班决定了接下来两年。",
+      "left": {
+        "label": "去重点班",
+        "fx": {
+          "career": 6,
+          "mood": -4,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 6
+        }
+      },
+      "right": {
+        "label": "留在普通班",
+        "fx": {
+          "mood": 5,
+          "career": -4,
+          "social": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b4",
+      "name": "成绩单",
+      "min": 13,
+      "max": 17,
+      "text": "成绩单要签字，数字不太好看。",
+      "left": {
+        "label": "动手改一改",
+        "fx": {
+          "mood": 3,
+          "career": -5,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "原样拿回家",
+        "fx": {
+          "mood": -5,
+          "career": 3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b5",
+      "name": "操场",
+      "min": 12,
+      "max": 17,
+      "text": "放学后有两个选项：球场和网吧。",
+      "left": {
+        "label": "去球场",
+        "fx": {
+          "health": 6,
+          "social": 5,
+          "energy": -5
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "去网吧",
+        "fx": {
+          "mood": 6,
+          "health": -4,
+          "money": -5,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b6",
+      "name": "教室",
+      "min": 13,
+      "max": 17,
+      "text": "换座位了，你被分到了那个人斜后方。",
+      "left": {
+        "label": "认真听课",
+        "fx": {
+          "career": 5,
+          "mood": -2
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "整节课看背影",
+        "fx": {
+          "mood": 6,
+          "career": -4
+        },
+        "rel": {
+          "love": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b7",
+      "name": "后门",
+      "min": 14,
+      "max": 17,
+      "text": "下午第二节是自习，后门没人守。",
+      "left": {
+        "label": "翻墙出去",
+        "fx": {
+          "mood": 7,
+          "career": -6,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "老实坐着",
+        "fx": {
+          "career": 4,
+          "mood": -4,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b8",
+      "name": "办公室",
+      "min": 14,
+      "max": 17,
+      "text": "你和那个人传的纸条，被老师截住了。",
+      "left": {
+        "label": "承认",
+        "fx": {
+          "mood": -5,
+          "career": 2,
+          "social": 4
+        },
+        "rel": {
+          "love": 5
+        }
+      },
+      "right": {
+        "label": "说是借笔记",
+        "fx": {
+          "mood": -2,
+          "career": 3,
+          "social": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "dating"
+      }
+    },
+    {
+      "id": "yt_b9",
+      "name": "台灯",
+      "min": 15,
+      "max": 17,
+      "text": "离中考还有三个月，台灯可以亮到几点。",
+      "left": {
+        "label": "熬到两点",
+        "fx": {
+          "career": 7,
+          "health": -5,
+          "energy": -7,
+          "mood": -3
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "十一点就睡",
+        "fx": {
+          "health": 4,
+          "energy": 5,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b10",
+      "name": "饭桌",
+      "min": 12,
+      "max": 17,
+      "text": "饭桌上又因为成绩吵起来了。",
+      "left": {
+        "label": "摔门回房",
+        "fx": {
+          "mood": -5,
+          "social": -3,
+          "career": 2
+        },
+        "rel": {
+          "family": -5
+        }
+      },
+      "right": {
+        "label": "把话说完",
+        "fx": {
+          "mood": -2,
+          "social": 4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b11",
+      "name": "志愿表",
+      "min": 17,
+      "max": 17,
+      "text": "高考志愿表摊在桌上，四个空格要填满。",
+      "left": {
+        "label": "填喜欢的",
+        "fx": {
+          "mood": 6,
+          "career": 4,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "填好就业的",
+        "fx": {
+          "money": 6,
+          "career": 5,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b12",
+      "name": "文理",
+      "min": 15,
+      "max": 16,
+      "text": "文理分科，你两科都不算拔尖。",
+      "left": {
+        "label": "选理科",
+        "fx": {
+          "career": 5,
+          "money": 4,
+          "mood": -3
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "选文科",
+        "fx": {
+          "mood": 5,
+          "social": 4,
+          "money": -3
+        },
+        "skills": {
+          "charm": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b13",
+      "name": "琴行",
+      "min": 13,
+      "max": 17,
+      "text": "同学弹了一段吉他，你手痒了。",
+      "left": {
+        "label": "借钱买琴",
+        "fx": {
+          "money": -8,
+          "mood": 6,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 6
+        }
+      },
+      "right": {
+        "label": "借他的练",
+        "fx": {
+          "mood": 3,
+          "social": 4
+        },
+        "skills": {
+          "craft": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b14",
+      "name": "抽屉",
+      "min": 13,
+      "max": 17,
+      "text": "你的日记被人翻过，页角有折痕。",
+      "left": {
+        "label": "换把锁",
+        "fx": {
+          "mood": -4,
+          "career": 3,
+          "social": -2
+        }
+      },
+      "right": {
+        "label": "当面问清楚",
+        "fx": {
+          "mood": -2,
+          "social": 5
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b15",
+      "name": "聚会",
+      "min": 15,
+      "max": 17,
+      "text": "同学过生日，桌上摆了几瓶啤酒。",
+      "left": {
+        "label": "端起来",
+        "fx": {
+          "social": 5,
+          "mood": 4,
+          "health": -5,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "换成可乐",
+        "fx": {
+          "health": 3,
+          "social": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b16",
+      "name": "小卖部",
+      "min": 15,
+      "max": 17,
+      "text": "小卖部后面有人递烟过来。",
+      "left": {
+        "label": "接一根",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "health": -6,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "摆手走开",
+        "fx": {
+          "health": 4,
+          "social": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b17",
+      "name": "镜子前",
+      "min": 15,
+      "max": 17,
+      "text": "你想染个头发，学校不让。",
+      "left": {
+        "label": "染了再说",
+        "fx": {
+          "mood": 6,
+          "social": 5,
+          "career": -4,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "忍到毕业",
+        "fx": {
+          "mood": -3,
+          "career": 4,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b18",
+      "name": "聊天框",
+      "min": 14,
+      "max": 17,
+      "text": "聊了半年的网友说，周末见一面吧。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 6,
+          "mood": 5,
+          "money": -5,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "再等等",
+        "fx": {
+          "mood": -3,
+          "social": -2,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b19",
+      "name": "厕所",
+      "min": 13,
+      "max": 17,
+      "text": "有人在厕所里被围住了，你正好撞见。",
+      "left": {
+        "label": "喊老师",
+        "fx": {
+          "social": 6,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "装没看见",
+        "fx": {
+          "mood": -5,
+          "social": -4,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b20",
+      "name": "礼物",
+      "min": 13,
+      "max": 17,
+      "text": "好朋友生日，你看中一个太贵的东西。",
+      "left": {
+        "label": "咬牙买下",
+        "fx": {
+          "money": -9,
+          "social": 7,
+          "mood": 5
+        },
+        "rel": {
+          "friends": 6
+        }
+      },
+      "right": {
+        "label": "自己做一张卡",
+        "fx": {
+          "money": 1,
+          "mood": 4,
+          "social": 3
+        },
+        "skills": {
+          "craft": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b21",
+      "name": "社团",
+      "min": 13,
+      "max": 17,
+      "text": "招新摊位摆了一整条走廊。",
+      "left": {
+        "label": "报辩论社",
+        "fx": {
+          "social": 5,
+          "career": 5,
+          "energy": -4
+        },
+        "skills": {
+          "charm": 5
+        }
+      },
+      "right": {
+        "label": "报摄影社",
+        "fx": {
+          "mood": 6,
+          "money": -6,
+          "energy": -3
+        },
+        "skills": {
+          "craft": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b22",
+      "name": "额头",
+      "min": 13,
+      "max": 16,
+      "text": "额头上冒出一片，你开始不敢抬头。",
+      "left": {
+        "label": "买药认真涂",
+        "fx": {
+          "health": 4,
+          "mood": 3,
+          "money": -4,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "戴帽子遮",
+        "fx": {
+          "mood": -4,
+          "social": -3,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b23",
+      "name": "跑道",
+      "min": 13,
+      "max": 17,
+      "text": "体育达标测试，一千米。",
+      "left": {
+        "label": "拼命跑",
+        "fx": {
+          "health": 6,
+          "energy": -6,
+          "mood": 3
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "慢慢走完",
+        "fx": {
+          "energy": 3,
+          "health": -2,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b24",
+      "name": "课桌",
+      "min": 14,
+      "max": 17,
+      "text": "手机藏在课本后面，老师正走过来。",
+      "left": {
+        "label": "继续玩",
+        "fx": {
+          "mood": 5,
+          "career": -6,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "收起来",
+        "fx": {
+          "career": 4,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b25",
+      "name": "海报",
+      "min": 13,
+      "max": 17,
+      "text": "墙上海报里的那个人，你连生日都背得出。",
+      "left": {
+        "label": "攒钱看演唱会",
+        "fx": {
+          "money": -10,
+          "mood": 8,
+          "career": -4
+        }
+      },
+      "right": {
+        "label": "买张海报就行",
+        "fx": {
+          "money": -2,
+          "mood": 4,
+          "career": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b26",
+      "name": "楼顶",
+      "min": 14,
+      "max": 17,
+      "text": "最好的朋友说了句让你难受的话。",
+      "left": {
+        "label": "当面问清楚",
+        "fx": {
+          "social": 6,
+          "mood": -2
+        },
+        "rel": {
+          "friends": 6
+        }
+      },
+      "right": {
+        "label": "冷处理",
+        "fx": {
+          "mood": -5,
+          "social": -5,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b27",
+      "name": "车站",
+      "min": 16,
+      "max": 17,
+      "text": "你想一个人去隔壁城市看海。",
+      "left": {
+        "label": "买票出发",
+        "fx": {
+          "mood": 8,
+          "money": -8,
+          "social": 4,
+          "career": -3
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "等考完再说",
+        "fx": {
+          "mood": -4,
+          "career": 4,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b28",
+      "name": "医院",
+      "min": 14,
+      "max": 17,
+      "text": "奶奶住院了，走廊里都是消毒水味。",
+      "left": {
+        "label": "请假陪床",
+        "fx": {
+          "mood": -5,
+          "energy": -6,
+          "career": -4
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "周末再去",
+        "fx": {
+          "mood": -3,
+          "career": 3
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b29",
+      "name": "厨房",
+      "min": 14,
+      "max": 17,
+      "text": "爸妈在里屋压低声音，提到了「钱」字。",
+      "left": {
+        "label": "装作没听见",
+        "fx": {
+          "mood": -4,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "出去说我少花点",
+        "fx": {
+          "mood": -3,
+          "money": 4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b30",
+      "name": "街口",
+      "min": 15,
+      "max": 17,
+      "text": "奶茶店招兼职，一小时八块。",
+      "left": {
+        "label": "去发传单",
+        "fx": {
+          "money": 6,
+          "energy": -5,
+          "career": 3,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "在家复习",
+        "fx": {
+          "career": 5,
+          "mood": -3,
+          "money": -2
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b31",
+      "name": "课堂",
+      "min": 13,
+      "max": 17,
+      "text": "老师点你回答，你一个字答不上来。",
+      "left": {
+        "label": "站着承认",
+        "fx": {
+          "mood": -4,
+          "career": 3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "胡诌一个",
+        "fx": {
+          "mood": -2,
+          "social": -2,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b32",
+      "name": "报名表",
+      "min": 15,
+      "max": 17,
+      "text": "学科竞赛报名表传到最后一排。",
+      "left": {
+        "label": "签字",
+        "fx": {
+          "career": 7,
+          "energy": -6,
+          "mood": -2
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "传过去",
+        "fx": {
+          "mood": 3,
+          "energy": 3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b33",
+      "name": "厨房",
+      "min": 13,
+      "max": 17,
+      "text": "爸妈都不在家，冰箱里还有鸡蛋。",
+      "left": {
+        "label": "照着菜谱做",
+        "fx": {
+          "mood": 5,
+          "energy": -3,
+          "health": 3
+        },
+        "skills": {
+          "cooking": 7
+        }
+      },
+      "right": {
+        "label": "泡面解决",
+        "fx": {
+          "mood": 2,
+          "health": -3,
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b34",
+      "name": "机场",
+      "min": 16,
+      "max": 17,
+      "text": "第一次坐飞机，舷窗外的云像棉花。",
+      "left": {
+        "label": "全程拍照",
+        "fx": {
+          "mood": 7,
+          "social": 4,
+          "money": -3
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "闭眼补觉",
+        "fx": {
+          "energy": 6,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b35",
+      "name": "课本",
+      "min": 14,
+      "max": 17,
+      "text": "课本里夹着一封信，字写得很用力。",
+      "left": {
+        "label": "回信",
+        "fx": {
+          "mood": 7,
+          "social": 5,
+          "career": -5
+        },
+        "rel": {
+          "love": 8
+        }
+      },
+      "right": {
+        "label": "装作没看到",
+        "fx": {
+          "career": 5,
+          "mood": -4
+        },
+        "rel": {
+          "love": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "metLove"
+      }
+    },
+    {
+      "id": "yt_b36",
+      "name": "礼堂",
+      "min": 17,
+      "max": 17,
+      "text": "毕业典礼，校长在台上念了很长一段话。",
+      "left": {
+        "label": "认真听完",
+        "fx": {
+          "mood": 5,
+          "career": 4,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "偷偷溜出去拍照",
+        "fx": {
+          "social": 6,
+          "mood": 6,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b37",
+      "name": "床",
+      "min": 17,
+      "max": 17,
+      "text": "明天高考，你睁着眼到凌晨三点。",
+      "left": {
+        "label": "起来再背一遍",
+        "fx": {
+          "career": 5,
+          "energy": -6,
+          "mood": -4
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "强迫自己睡",
+        "fx": {
+          "energy": 6,
+          "health": 3,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b38",
+      "name": "电脑",
+      "min": 17,
+      "max": 17,
+      "text": "你发现志愿被人改过，第一个不是你填的。",
+      "left": {
+        "label": "改回来",
+        "fx": {
+          "mood": 6,
+          "career": 3,
+          "social": -4
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "right": {
+        "label": "认了",
+        "fx": {
+          "mood": -6,
+          "career": -3,
+          "money": 4
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b39",
+      "name": "校门",
+      "min": 15,
+      "max": 17,
+      "text": "校外有人堵你同学，让你一起去。",
+      "left": {
+        "label": "一起去",
+        "fx": {
+          "social": 6,
+          "health": -7,
+          "career": -5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "拉同学走",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "health": 2,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_b40",
+      "name": "黑板",
+      "min": 13,
+      "max": 17,
+      "text": "下周的黑板报没人愿意出。",
+      "left": {
+        "label": "举手接下",
+        "fx": {
+          "social": 5,
+          "mood": 4,
+          "energy": -5
+        },
+        "skills": {
+          "craft": 6
+        }
+      },
+      "right": {
+        "label": "低头装忙",
+        "fx": {
+          "energy": 3,
+          "mood": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    }
+  ]
+}

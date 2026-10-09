@@ -61,20 +61,6 @@
         <div class="sub">岁<br><span id="yearText">第1年</span></div>
       </div>
       <div class="stagechip" id="stageChip">童年</div>
-      <div class="icons">
-        <button class="iconbtn" id="btnSound" title="声音" aria-label="声音">
-          <svg id="icSound" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
-        </button>
-        <button class="iconbtn" id="btnArch" title="人生档案" aria-label="人生档案">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        </button>
-        <button class="iconbtn" id="btnLog" title="抉择履历" aria-label="抉择履历">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
-        </button>
-        <button class="iconbtn" id="btnRestart" title="重新开始" aria-label="重新开始">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
-        </button>
-      </div>
     </header>
 
     <!-- 属性条 -->
@@ -162,10 +148,11 @@
   </div>
 </div>
 
-<!-- ===== 抽屉：抉择履历 / 人生档案 ===== -->
+<!-- ===== 底部浮窗：抉择履历 / 人生档案（从底部上浮） ===== -->
 <div class="backdrop" id="backdrop"></div>
 
 <div class="drawer" id="drawerLog" role="dialog" aria-label="抉择履历">
+  <div class="grab" aria-hidden="true"><i></i></div>
   <div class="head">
     <h3 class="font-d">抉择履历</h3>
     <button class="close" id="closeLog" aria-label="关闭">
@@ -176,6 +163,7 @@
 </div>
 
 <div class="drawer" id="drawerArch" role="dialog" aria-label="人生档案">
+  <div class="grab" aria-hidden="true"><i></i></div>
   <div class="head">
     <h3 class="font-d">人生档案</h3>
     <button class="close" id="closeArch" aria-label="关闭">
@@ -184,6 +172,28 @@
   </div>
   <div class="body" id="archBody"></div>
 </div>
+
+<!-- ===== 底部标签栏：带文字，点击后从底部上浮出对应浮窗 ===== -->
+<nav class="tabbar" id="tabbar" aria-label="游戏操作">
+  <div class="tabin">
+    <button class="tab" id="btnArch" title="人生档案">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+      <span class="tx">档案</span>
+    </button>
+    <button class="tab" id="btnLog" title="抉择履历">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg></span>
+      <span class="tx">履历</span>
+    </button>
+    <button class="tab" id="btnSound" title="声音开关" aria-pressed="false">
+      <span class="ic"><svg id="icSound" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg></span>
+      <span class="tx" id="txSound">声音</span>
+    </button>
+    <button class="tab danger" id="btnRestart" title="重新开始">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg></span>
+      <span class="tx">重开</span>
+    </button>
+  </div>
+</nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -205,6 +215,7 @@
   if (location.protocol === 'file:') {
     document.getElementById('bootError').classList.add('show');
     document.getElementById('app').style.display = 'none';
+    document.getElementById('tabbar').style.display = 'none';
   }
 </script>
 

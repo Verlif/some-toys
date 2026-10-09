@@ -19,6 +19,15 @@
 @media (min-width: 720px) {
   #app { max-width: 900px; padding: 18px 20px 24px; }
 
+  /* 底部标签栏跟着容器一起变宽，按钮更大 */
+  .tabin { max-width: 900px; }
+  .tab { padding: 9px 4px 10px; }
+  .tab .ic svg { width: 22px; height: 22px; }
+  .tab .tx { font-size: 12px; }
+
+  /* 上浮浮窗更宽一点，横向不铺满 */
+  .drawer { max-width: 640px; bottom: 16px; max-height: 76dvh; }
+
   /* 属性条六项铺成一行 */
   .meters { grid-template-columns: repeat(6, 1fr); gap: 10px; }
   .mwrap { padding: 9px 10px 10px; }
@@ -38,9 +47,20 @@
  * ============================================================= */
 @media (min-width: 1024px) {
   #app { max-width: 1080px; padding: 22px 24px 28px; }
+  body.in-game #app { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 
   .topbar { margin-bottom: 16px; }
   .agecard .big { font-size: 34px; }
+
+  /* 标签栏：悬停高亮，图标与文字都放大 */
+  .tabin { max-width: 1080px; }
+  .tab { padding: 10px 4px 11px; gap: 4px; }
+  .tab .ic svg { width: 24px; height: 24px; }
+  .tab .tx { font-size: 12.5px; }
+  .tab:hover { background: var(--c-fill); }
+  .tab.danger:hover { background: #F7E7E2; }
+
+  .drawer { max-width: 720px; bottom: 20px; border-radius: 26px; }
 
   .meters { gap: 12px; margin-bottom: 14px; }
   .mwrap { padding: 10px 12px 11px; border-radius: 15px; }
@@ -94,4 +114,10 @@
   .hintrow { display: none; }
   .narrate { min-height: 58px; }
   .narrate .nb-chips { display: none; }
+
+  /* 矮屏：压缩标签栏，给卡片让出高度 */
+  .tab { padding: 5px 4px 6px; gap: 1px; }
+  .tab .ic svg { width: 18px; height: 18px; }
+  .tab .tx { font-size: 10.5px; }
+  body.in-game #app { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 }

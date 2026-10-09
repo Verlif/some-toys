@@ -1,0 +1,722 @@
+{
+  "title": "宠物链（先收养，才有后面的故事）",
+  "events": [
+    {
+      "id": "pt_1",
+      "name": "流浪猫",
+      "min": 8,
+      "max": 70,
+      "text": "楼下有只三花猫，已经蹲了你三天。",
+      "cond": {
+        "noFlag": "pet"
+      },
+      "left": {
+        "label": "抱回家",
+        "fx": {
+          "money": -4,
+          "mood": 6,
+          "energy": -3
+        },
+        "flags": {
+          "pet": true,
+          "petCat": true
+        }
+      },
+      "right": {
+        "label": "走开",
+        "fx": {
+          "mood": -3,
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_2",
+      "name": "朋友的狗",
+      "min": 8,
+      "max": 60,
+      "text": "朋友搬家，问你要不要接手他的狗。",
+      "cond": {
+        "noFlag": "pet"
+      },
+      "left": {
+        "label": "接回家",
+        "fx": {
+          "money": -6,
+          "mood": 6,
+          "energy": -4
+        },
+        "flags": {
+          "pet": true,
+          "petDog": true
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_3",
+      "name": "拆家",
+      "min": 9,
+      "max": 70,
+      "text": "回家开门那一刻，你就知道完了。",
+      "cond": {
+        "flag": "petDog"
+      },
+      "left": {
+        "label": "认真训",
+        "fx": {
+          "energy": -4,
+          "mood": -2
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "right": {
+        "label": "认了，赔吧",
+        "fx": {
+          "money": -5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_4",
+      "name": "遛狗",
+      "min": 10,
+      "max": 75,
+      "text": "它叼着绳站在门口，眼神不容拒绝。",
+      "cond": {
+        "flag": "petDog"
+      },
+      "left": {
+        "label": "每天两小时",
+        "fx": {
+          "health": 4,
+          "energy": -4,
+          "mood": 4
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "right": {
+        "label": "楼下转转就行",
+        "fx": {
+          "energy": 2,
+          "health": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_5",
+      "name": "它病了",
+      "min": 11,
+      "max": 78,
+      "text": "宠物医院说，手术费够你半个月工资。",
+      "cond": {
+        "flag": "petDog"
+      },
+      "left": {
+        "label": "治",
+        "fx": {
+          "money": -12,
+          "mood": -4,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "保守治疗",
+        "fx": {
+          "money": -4,
+          "mood": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_6",
+      "name": "它老了",
+      "min": 40,
+      "max": 82,
+      "text": "它开始跟不上你的脚步了。",
+      "cond": {
+        "flag": "petDog"
+      },
+      "left": {
+        "label": "天天陪着",
+        "fx": {
+          "mood": -5,
+          "energy": -4
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "right": {
+        "label": "送回老家养",
+        "fx": {
+          "mood": -3,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_7",
+      "name": "它跑了",
+      "min": 12,
+      "max": 75,
+      "text": "门没关严，院子里空空的。",
+      "cond": {
+        "flag": "petDog"
+      },
+      "left": {
+        "label": "全城找",
+        "fx": {
+          "energy": -6,
+          "mood": -4,
+          "social": 4,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "贴启事等着",
+        "fx": {
+          "mood": -6,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_8",
+      "name": "半夜跑酷",
+      "min": 10,
+      "max": 78,
+      "text": "凌晨三点，它在你胸口上起飞。",
+      "cond": {
+        "flag": "petCat"
+      },
+      "left": {
+        "label": "爬起来陪玩",
+        "fx": {
+          "energy": -4,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "关到门外",
+        "fx": {
+          "energy": 3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_9",
+      "name": "绝育",
+      "min": 12,
+      "max": 70,
+      "text": "医生建议做，说对它好。",
+      "cond": {
+        "flag": "pet"
+      },
+      "once": true,
+      "left": {
+        "label": "做",
+        "fx": {
+          "money": -6,
+          "mood": 2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "不做",
+        "fx": {
+          "money": 2,
+          "mood": -3,
+          "energy": -3
+        }
+      }
+    },
+    {
+      "id": "pt_10",
+      "name": "拍照",
+      "min": 10,
+      "max": 80,
+      "text": "它今天特别上镜，你想留下点什么。",
+      "cond": {
+        "flag": "pet"
+      },
+      "left": {
+        "label": "去拍一套",
+        "fx": {
+          "money": -5,
+          "mood": 5,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "手机随手拍",
+        "fx": {
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_11",
+      "name": "最后一天",
+      "min": 45,
+      "max": 85,
+      "text": "它躺在你脚边，呼吸很轻。",
+      "cond": {
+        "flag": "pet"
+      },
+      "once": true,
+      "left": {
+        "label": "好好告别",
+        "fx": {
+          "mood": -6
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "马上再养一只",
+        "fx": {
+          "money": -6,
+          "mood": 4
+        }
+      }
+    },
+    {
+      "id": "pt_12",
+      "name": "闯祸",
+      "min": 12,
+      "max": 78,
+      "text": "它把邻居的花园刨了，邻居在门口等着。",
+      "cond": {
+        "flag": "pet"
+      },
+      "left": {
+        "label": "赔钱道歉",
+        "fx": {
+          "money": -8,
+          "social": -4,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "据理力争",
+        "fx": {
+          "social": -6,
+          "mood": 2,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_b1",
+      "name": "训练班",
+      "min": 9,
+      "max": 70,
+      "text": "训犬师说，问题不在狗，在人。",
+      "left": {
+        "label": "报班",
+        "fx": {
+          "money": -9,
+          "mood": 5,
+          "energy": -5,
+          "social": 4
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "自己教",
+        "fx": {
+          "mood": 3,
+          "energy": -6,
+          "career": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "petDog"
+      }
+    },
+    {
+      "id": "pt_b2",
+      "name": "寄养",
+      "min": 12,
+      "max": 75,
+      "text": "出差五天，它得有人管。",
+      "left": {
+        "label": "寄养机构",
+        "fx": {
+          "money": -8,
+          "mood": -3,
+          "energy": 2,
+          "career": 4
+        }
+      },
+      "right": {
+        "label": "托给朋友",
+        "fx": {
+          "money": -2,
+          "mood": 4,
+          "social": 5,
+          "career": -2
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    },
+    {
+      "id": "pt_b3",
+      "name": "毛",
+      "min": 10,
+      "max": 78,
+      "text": "沙发、毛衣、饭碗里，全是毛。",
+      "left": {
+        "label": "天天梳",
+        "fx": {
+          "mood": 3,
+          "energy": -4,
+          "health": 2
+        },
+        "skills": {
+          "craft": 2
+        }
+      },
+      "right": {
+        "label": "随它去",
+        "fx": {
+          "mood": -3,
+          "health": -2,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    },
+    {
+      "id": "pt_b4",
+      "name": "疫苗",
+      "min": 9,
+      "max": 78,
+      "text": "该打第二针了，它一到医院就抖。",
+      "left": {
+        "label": "准时去",
+        "fx": {
+          "money": -5,
+          "health": 3,
+          "mood": -2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "再拖拖",
+        "fx": {
+          "money": 3,
+          "health": -4,
+          "mood": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    },
+    {
+      "id": "pt_b5",
+      "name": "椅子",
+      "min": 10,
+      "max": 78,
+      "text": "它占着你那把椅子，一动不动。",
+      "left": {
+        "label": "另找地方坐",
+        "fx": {
+          "mood": 5,
+          "energy": 2,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "把它抱走",
+        "fx": {
+          "mood": -2,
+          "energy": 2,
+          "health": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "petCat"
+      }
+    },
+    {
+      "id": "pt_b6",
+      "name": "公司",
+      "min": 22,
+      "max": 60,
+      "text": "公司说这周可以带宠物上班。",
+      "left": {
+        "label": "带去",
+        "fx": {
+          "mood": 7,
+          "social": 6,
+          "career": -3,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "怕它闹",
+        "fx": {
+          "mood": -3,
+          "career": 3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "petDog"
+      }
+    },
+    {
+      "id": "pt_b7",
+      "name": "账号",
+      "min": 20,
+      "max": 70,
+      "text": "你给它开了个账号，第一条就有赞。",
+      "left": {
+        "label": "认真运营",
+        "fx": {
+          "mood": 6,
+          "social": 6,
+          "energy": -5,
+          "career": 2
+        },
+        "flags": {
+          "fame": true
+        }
+      },
+      "right": {
+        "label": "随手发",
+        "fx": {
+          "mood": 4,
+          "energy": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    },
+    {
+      "id": "pt_b8",
+      "name": "门口",
+      "min": 10,
+      "max": 78,
+      "text": "你下班开门，它第一次等在玄关。",
+      "left": {
+        "label": "蹲下来摸摸",
+        "fx": {
+          "mood": 8,
+          "energy": -2,
+          "social": 3
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "right": {
+        "label": "换鞋再说",
+        "fx": {
+          "mood": -2,
+          "career": 3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    },
+    {
+      "id": "pt_b9",
+      "name": "第二只",
+      "min": 14,
+      "max": 72,
+      "text": "救助站说，还有一只跟它很合。",
+      "left": {
+        "label": "领回来",
+        "fx": {
+          "money": -8,
+          "mood": 7,
+          "energy": -6,
+          "social": 4
+        },
+        "flags": {
+          "pet": true
+        }
+      },
+      "right": {
+        "label": "先不了",
+        "fx": {
+          "money": 3,
+          "mood": -4,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    },
+    {
+      "id": "pt_b10",
+      "name": "意外",
+      "min": 12,
+      "max": 75,
+      "text": "它咬了邻居一口，不深，但流血了。",
+      "left": {
+        "label": "赔礼加疫苗费",
+        "fx": {
+          "money": -9,
+          "social": 5,
+          "mood": -4
+        },
+        "rel": {
+          "friends": 3
+        }
+      },
+      "right": {
+        "label": "说是对方先动手",
+        "fx": {
+          "money": 3,
+          "social": -6,
+          "mood": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "petDog"
+      }
+    },
+    {
+      "id": "pt_b11",
+      "name": "沙发",
+      "min": 11,
+      "max": 78,
+      "text": "沙发背面已经成了一条一条的。",
+      "left": {
+        "label": "买猫抓板",
+        "fx": {
+          "money": -5,
+          "mood": 4,
+          "energy": -2
+        },
+        "skills": {
+          "craft": 3
+        }
+      },
+      "right": {
+        "label": "套个罩子",
+        "fx": {
+          "money": -3,
+          "mood": -2,
+          "energy": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "petCat"
+      }
+    },
+    {
+      "id": "pt_b12",
+      "name": "回老家",
+      "min": 12,
+      "max": 78,
+      "text": "过年要回老家，它怎么办。",
+      "left": {
+        "label": "一起带回去",
+        "fx": {
+          "money": -7,
+          "mood": 6,
+          "energy": -5,
+          "social": 4
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "留在城里托人喂",
+        "fx": {
+          "money": -4,
+          "mood": -4,
+          "career": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    },
+    {
+      "id": "pt_b13",
+      "name": "救助站",
+      "min": 16,
+      "max": 78,
+      "text": "救助站缺周末的人手，也缺粮。",
+      "left": {
+        "label": "去当志愿者",
+        "fx": {
+          "social": 6,
+          "mood": 6,
+          "energy": -5,
+          "money": -4
+        },
+        "flags": {
+          "volunteer": true
+        }
+      },
+      "right": {
+        "label": "捐点粮",
+        "fx": {
+          "money": -5,
+          "mood": 4,
+          "social": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "pet"
+      }
+    }
+  ]
+}

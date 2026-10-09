@@ -1,0 +1,590 @@
+{
+  "title": "特质专属",
+  "events": [
+    {
+      "id": "e71",
+      "name": "冒险",
+      "min": 16,
+      "max": 70,
+      "cond": {
+        "trait": "adventurer"
+      },
+      "text": "周六，你突发奇想要独自去山里徒步。",
+      "left": {
+        "label": "说走就走",
+        "fx": {
+          "mood": 6,
+          "health": 2,
+          "energy": -6,
+          "skills": {
+            "fitness": 5
+          }
+        }
+      },
+      "right": {
+        "label": "改去商场",
+        "fx": {
+          "mood": 3,
+          "money": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e72",
+      "name": "网红店",
+      "min": 14,
+      "max": 80,
+      "cond": {
+        "trait": "foodie"
+      },
+      "text": "新开的网红餐厅排了两小时队。",
+      "left": {
+        "label": "排！必须吃到",
+        "fx": {
+          "mood": 6,
+          "health": -2,
+          "money": -5,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "路过就好",
+        "fx": {
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e73",
+      "name": "书店",
+      "min": 12,
+      "max": 70,
+      "cond": {
+        "trait": "scholar"
+      },
+      "text": "书店全场打折，你抱着一摞书纠结。",
+      "left": {
+        "label": "全买",
+        "fx": {
+          "skills": {
+            "knowledge": 8
+          },
+          "mood": 3,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "只买最想读的",
+        "fx": {
+          "skills": {
+            "knowledge": 2
+          },
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e74",
+      "name": "撸铁",
+      "min": 18,
+      "max": 70,
+      "cond": {
+        "trait": "gymrat"
+      },
+      "text": "练友约你深夜加练一组。",
+      "left": {
+        "label": "走起",
+        "fx": {
+          "health": 3,
+          "energy": -6,
+          "mood": 2,
+          "skills": {
+            "fitness": 8
+          }
+        }
+      },
+      "right": {
+        "label": "明天再说",
+        "fx": {
+          "energy": 3,
+          "health": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_a1",
+      "name": "坏消息",
+      "min": 14,
+      "max": 80,
+      "text": "一件事砸了，可你总觉得还没到最坏。",
+      "cond": {
+        "trait": "optimist"
+      },
+      "left": {
+        "label": "往好处想",
+        "fx": {
+          "mood": 7,
+          "energy": 3
+        }
+      },
+      "right": {
+        "label": "先难过一会儿",
+        "fx": {
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_a2",
+      "name": "周末",
+      "min": 20,
+      "max": 60,
+      "text": "周末两天，同事在群里 @ 你要方案。",
+      "cond": {
+        "trait": "workaholic"
+      },
+      "left": {
+        "label": "打开电脑",
+        "fx": {
+          "career": 7,
+          "energy": -6,
+          "health": -3,
+          "money": 4
+        }
+      },
+      "right": {
+        "label": "装作没看见",
+        "fx": {
+          "career": -3,
+          "mood": 4,
+          "energy": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_a3",
+      "name": "人多的地方",
+      "min": 14,
+      "max": 80,
+      "text": "屋里全是人，你贴着墙站着。",
+      "cond": {
+        "trait": "introvert"
+      },
+      "left": {
+        "label": "再待一会儿",
+        "fx": {
+          "social": 4,
+          "energy": -4,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "先撤",
+        "fx": {
+          "social": -4,
+          "energy": 4,
+          "mood": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_a4",
+      "name": "打折",
+      "min": 16,
+      "max": 80,
+      "text": "全场五折，可你并不缺这个东西。",
+      "cond": {
+        "trait": "thrifty"
+      },
+      "left": {
+        "label": "需要才买",
+        "fx": {
+          "money": 4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "便宜就囤",
+        "fx": {
+          "money": -5,
+          "mood": 3,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_b1",
+      "name": "山顶",
+      "min": 18,
+      "max": 60,
+      "text": "徒步群里发了条没人走过的路线。",
+      "left": {
+        "label": "第一个报名",
+        "fx": {
+          "health": 6,
+          "mood": 8,
+          "energy": -7,
+          "social": 5
+        },
+        "skills": {
+          "fitness": 7
+        }
+      },
+      "right": {
+        "label": "劝大家别去",
+        "fx": {
+          "mood": -4,
+          "social": -3,
+          "health": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "adventurer"
+      }
+    },
+    {
+      "id": "tr_b2",
+      "name": "车站",
+      "min": 18,
+      "max": 55,
+      "text": "一张特价机票，目的地你念不出名字。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": -10,
+          "mood": 8,
+          "social": 5,
+          "career": -4,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "攒着下次",
+        "fx": {
+          "money": 6,
+          "mood": -5,
+          "career": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "adventurer"
+      }
+    },
+    {
+      "id": "tr_b3",
+      "name": "巷子深处",
+      "min": 14,
+      "max": 70,
+      "text": "拐了七个弯才找到的那家小店，排到街口。",
+      "left": {
+        "label": "排",
+        "fx": {
+          "mood": 7,
+          "money": -6,
+          "energy": -4,
+          "health": -2
+        },
+        "skills": {
+          "cooking": 5
+        }
+      },
+      "right": {
+        "label": "换一家",
+        "fx": {
+          "mood": -4,
+          "money": 2,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "foodie"
+      }
+    },
+    {
+      "id": "tr_b4",
+      "name": "厨房",
+      "min": 16,
+      "max": 70,
+      "text": "一道菜你复刻了四次，还是差一点。",
+      "left": {
+        "label": "再试第五次",
+        "fx": {
+          "mood": 6,
+          "money": -5,
+          "energy": -5
+        },
+        "skills": {
+          "cooking": 8
+        }
+      },
+      "right": {
+        "label": "差不多就行",
+        "fx": {
+          "mood": 3,
+          "energy": 3
+        },
+        "skills": {
+          "cooking": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "foodie"
+      }
+    },
+    {
+      "id": "tr_b5",
+      "name": "图书馆",
+      "min": 14,
+      "max": 60,
+      "text": "闭馆音乐响了，你还没看完那一章。",
+      "left": {
+        "label": "借回去看",
+        "fx": {
+          "career": 7,
+          "mood": 5,
+          "energy": -6
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "明天再来",
+        "fx": {
+          "career": 3,
+          "mood": -2,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "scholar"
+      }
+    },
+    {
+      "id": "tr_b6",
+      "name": "研讨会",
+      "min": 22,
+      "max": 65,
+      "text": "有场研讨会，门票不便宜，主题很对味。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": -8,
+          "career": 8,
+          "social": 5,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "看直播",
+        "fx": {
+          "money": 1,
+          "career": 4,
+          "energy": -2
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "scholar"
+      }
+    },
+    {
+      "id": "tr_b7",
+      "name": "坏消息",
+      "min": 16,
+      "max": 70,
+      "text": "一件不太好的事，你笑了笑就过去了。",
+      "left": {
+        "label": "往好处想",
+        "fx": {
+          "mood": 7,
+          "career": 3,
+          "health": 2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "先难过一会儿",
+        "fx": {
+          "mood": -5,
+          "social": 4,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "optimist"
+      }
+    },
+    {
+      "id": "tr_b8",
+      "name": "假期",
+      "min": 20,
+      "max": 60,
+      "text": "假期第二天，工作群来了新需求。",
+      "left": {
+        "label": "打开电脑",
+        "fx": {
+          "career": 8,
+          "money": 6,
+          "health": -5,
+          "mood": -4,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "装作没看见",
+        "fx": {
+          "mood": 6,
+          "health": 4,
+          "career": -5,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "workaholic"
+      }
+    },
+    {
+      "id": "tr_b9",
+      "name": "聚会邀请",
+      "min": 16,
+      "max": 70,
+      "text": "十几人的聚会，你只认识两个人。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 6,
+          "mood": -5,
+          "energy": -5,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "在家待着",
+        "fx": {
+          "mood": 6,
+          "energy": 5,
+          "career": 4,
+          "social": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "introvert"
+      }
+    },
+    {
+      "id": "tr_b10",
+      "name": "打折",
+      "min": 16,
+      "max": 70,
+      "text": "第二件半价，第二件其实用不上。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": -6,
+          "mood": 4,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "只买一件",
+        "fx": {
+          "money": 5,
+          "mood": -2,
+          "career": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "thrifty"
+      }
+    },
+    {
+      "id": "tr_b11",
+      "name": "清晨",
+      "min": 16,
+      "max": 70,
+      "text": "五点半，外面还黑着。",
+      "left": {
+        "label": "出门跑十公里",
+        "fx": {
+          "health": 8,
+          "mood": 6,
+          "energy": -7
+        },
+        "skills": {
+          "fitness": 8
+        }
+      },
+      "right": {
+        "label": "睡到七点",
+        "fx": {
+          "energy": 6,
+          "health": -2,
+          "mood": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "gymrat"
+      }
+    },
+    {
+      "id": "tr_b12",
+      "name": "器械区",
+      "min": 18,
+      "max": 70,
+      "text": "有个动作你一直做不标准。",
+      "left": {
+        "label": "请教练纠正",
+        "fx": {
+          "money": -8,
+          "health": 6,
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "fitness": 7
+        }
+      },
+      "right": {
+        "label": "照自己感觉来",
+        "fx": {
+          "health": -4,
+          "mood": 3,
+          "energy": -3
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "trait": "gymrat"
+      }
+    }
+  ]
+}

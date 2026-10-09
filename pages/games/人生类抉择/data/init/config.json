@@ -1,0 +1,115 @@
+{
+  "initial": {
+    "age": 6,
+    "stats": {
+      "health": 60,
+      "mood": 60,
+      "money": 55,
+      "energy": 60,
+      "social": 55,
+      "career": 40
+    },
+    "skills": {
+      "knowledge": 20,
+      "cooking": 10,
+      "fitness": 20,
+      "charm": 15,
+      "craft": 10
+    },
+    "rel": {
+      "family": 60,
+      "friends": 50,
+      "love": 0
+    },
+    "traitCount": 2
+  },
+  "flags": {
+    "metLove": false,
+    "married": false,
+    "hasChild": false,
+    "house": false,
+    "pet": false,
+    "degree": false,
+    "peaked": false,
+    "retired": false,
+    "biz": false,
+    "petDog": false,
+    "petCat": false,
+    "dating": false,
+    "childGrown": false,
+    "grandchild": false,
+    "divorced": false,
+    "bizSuccess": false,
+    "bizFail": false,
+    "chronic": false,
+    "car": false,
+    "study": false,
+    "moved": false,
+    "garden": false,
+    "volunteer": false,
+    "fame": false,
+    "debt": false
+  },
+  "tuning": {
+    "winAge": 80,
+    "retireAge": 60,
+    "moodDecay": 2,
+    "degreeMinCareer": 30,
+    "degreeMinAge": 18,
+    "peakCareer": 60,
+    "aspirationMoodBonus": 5,
+    "swipeThreshold": 70,
+    "dangerLow": 14,
+    "dangerHigh": 86,
+    "warnLow": 25,
+    "warnHigh": 75
+  },
+  "grades": [
+    {
+      "min": 430,
+      "g": "传奇的一生",
+      "c": "#C9A227"
+    },
+    {
+      "min": 350,
+      "g": "美满的一生",
+      "c": "#4E9A6F"
+    },
+    {
+      "min": 280,
+      "g": "有滋有味的一生",
+      "c": "#5E9CC4"
+    },
+    {
+      "min": 0,
+      "g": "平凡的一生",
+      "c": "#8A7C63"
+    }
+  ],
+  "flagLabels": {
+    "metLove": "有过心动",
+    "married": "已婚",
+    "hasChild": "有孩子",
+    "house": "有房子",
+    "pet": "养了宠物",
+    "degree": "有正经工作",
+    "retired": "已退休",
+    "biz": "在创业",
+    "petDog": "养了狗",
+    "petCat": "养了猫",
+    "dating": "恋爱中",
+    "childGrown": "孩子已长大",
+    "grandchild": "抱上孙辈",
+    "divorced": "离过婚",
+    "bizSuccess": "创业成功",
+    "bizFail": "创业失败",
+    "chronic": "慢性病在身",
+    "car": "有车",
+    "study": "在外求学",
+    "moved": "搬过家",
+    "garden": "种了点东西",
+    "volunteer": "在做志愿",
+    "fame": "小有名气",
+    "debt": "背着债"
+  }
+}

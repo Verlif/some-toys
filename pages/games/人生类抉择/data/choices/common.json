@@ -1,0 +1,1004 @@
+{
+  "title": "全年龄通吃",
+  "events": [
+    {
+      "id": "e63",
+      "name": "老朋友",
+      "min": 6,
+      "max": 120,
+      "text": "深夜，老朋友发来一句「最近还好吗？」",
+      "left": {
+        "label": "好好聊聊",
+        "fx": {
+          "social": 5,
+          "mood": 4,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "已读不回",
+        "fx": {
+          "mood": -1,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e64",
+      "name": "彩票站",
+      "min": 18,
+      "max": 120,
+      "text": "路过彩票店，兜里刚好有两块钱。",
+      "left": {
+        "label": "买一张碰碰运气",
+        "fx": {
+          "money": -2,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "攒着",
+        "fx": {
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e65",
+      "name": "深夜",
+      "min": 16,
+      "max": 120,
+      "text": "深夜肚子咕咕叫，外卖软件在向你招手。",
+      "left": {
+        "label": "点份烧烤",
+        "fx": {
+          "mood": 4,
+          "health": -4,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "喝口水睡吧",
+        "fx": {
+          "energy": -1,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e66",
+      "name": "大雨",
+      "min": 8,
+      "max": 120,
+      "text": "出门时突降大雨，你恰好没带伞。",
+      "left": {
+        "label": "冒雨跑回家",
+        "fx": {
+          "health": -3,
+          "mood": 2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "打车",
+        "fx": {
+          "money": -4,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e67",
+      "name": "黑猫",
+      "min": 8,
+      "max": 120,
+      "text": "路边一只黑猫停下来，盯着你看了三秒。",
+      "left": {
+        "label": "蹲下来看看",
+        "fx": {
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "赶路要紧",
+        "fx": {
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e68",
+      "name": "朋友",
+      "min": 15,
+      "max": 80,
+      "text": "朋友约你周末去爬山。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 4,
+          "mood": 3,
+          "energy": -4,
+          "skills": {
+            "fitness": 4
+          }
+        }
+      },
+      "right": {
+        "label": "在家补觉",
+        "fx": {
+          "energy": 5,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e69",
+      "name": "新技能",
+      "min": 18,
+      "max": 70,
+      "text": "你突然想学一门新技能：烘焙、乐器或木工。",
+      "left": {
+        "label": "报班认真学",
+        "fx": {
+          "money": -5,
+          "mood": 4,
+          "energy": -3,
+          "skills": {
+            "craft": 8
+          }
+        }
+      },
+      "right": {
+        "label": "想想就算了",
+        "fx": {
+          "mood": 1,
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e70",
+      "name": "工作群",
+      "min": 20,
+      "max": 60,
+      "text": "深夜，工作群里有人@你。",
+      "left": {
+        "label": "秒回",
+        "fx": {
+          "career": 2,
+          "energy": -3,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "明早再说",
+        "fx": {
+          "energy": 3,
+          "mood": 1,
+          "career": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_a1",
+      "name": "下雨",
+      "min": 12,
+      "max": 85,
+      "text": "出门才发现下雨了，伞在玄关。",
+      "left": {
+        "label": "照常出门",
+        "fx": {
+          "health": -3,
+          "mood": 3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "宅一天",
+        "fx": {
+          "mood": 2,
+          "energy": 3,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_a2",
+      "name": "抽奖",
+      "min": 12,
+      "max": 85,
+      "text": "商场门口摆着抽奖箱，围观的人不少。",
+      "left": {
+        "label": "试一把",
+        "fx": {
+          "money": -4,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "走开",
+        "fx": {
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_a3",
+      "name": "旧衣服",
+      "min": 16,
+      "max": 85,
+      "text": "衣柜塞不下了，有些吊牌都没摘。",
+      "left": {
+        "label": "捐掉",
+        "fx": {
+          "mood": 4,
+          "social": 3,
+          "money": -1
+        }
+      },
+      "right": {
+        "label": "继续留着",
+        "fx": {
+          "money": 2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_a4",
+      "name": "聚餐",
+      "min": 16,
+      "max": 80,
+      "text": "群里又在约饭，这周第三次了。",
+      "left": {
+        "label": "赴约",
+        "fx": {
+          "money": -5,
+          "social": 5,
+          "mood": 4,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "推掉",
+        "fx": {
+          "money": 3,
+          "mood": -1,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_a5",
+      "name": "深夜外卖",
+      "min": 16,
+      "max": 75,
+      "text": "十一点半，手机里的烧烤店还亮着。",
+      "left": {
+        "label": "点",
+        "fx": {
+          "mood": 5,
+          "health": -4,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "忍住",
+        "fx": {
+          "health": 3,
+          "money": 3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_a6",
+      "name": "新手艺",
+      "min": 14,
+      "max": 80,
+      "text": "刷到一个教程，看着也不难。",
+      "left": {
+        "label": "报个班",
+        "fx": {
+          "money": -6,
+          "mood": 4
+        },
+        "skills": {
+          "craft": 8
+        }
+      },
+      "right": {
+        "label": "看视频自学",
+        "fx": {
+          "energy": -3
+        },
+        "skills": {
+          "craft": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b1",
+      "name": "天气",
+      "min": 8,
+      "max": 79,
+      "text": "昨天气象台说降温，你忘了看。",
+      "left": {
+        "label": "加件衣服",
+        "fx": {
+          "health": 4,
+          "mood": 2,
+          "social": -1
+        }
+      },
+      "right": {
+        "label": "扛一下",
+        "fx": {
+          "health": -5,
+          "mood": 3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b2",
+      "name": "路边",
+      "min": 8,
+      "max": 79,
+      "text": "地上躺着二十块钱，四下没人。",
+      "left": {
+        "label": "捡起来",
+        "fx": {
+          "money": 6,
+          "mood": 4,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "交给失物处",
+        "fx": {
+          "money": 1,
+          "mood": 5,
+          "social": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b3",
+      "name": "消息",
+      "min": 12,
+      "max": 79,
+      "text": "很久不联系的人发来一句「在吗」。",
+      "left": {
+        "label": "热情回",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "energy": -3
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "过会儿再说",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b4",
+      "name": "周末早晨",
+      "min": 10,
+      "max": 79,
+      "text": "闹钟响了，今天没有必须做的事。",
+      "left": {
+        "label": "再睡一小时",
+        "fx": {
+          "energy": 6,
+          "health": 2,
+          "mood": 4,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "起来做点什么",
+        "fx": {
+          "career": 5,
+          "mood": -2,
+          "energy": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b5",
+      "name": "便利店",
+      "min": 12,
+      "max": 79,
+      "text": "关东煮的热气糊了满脸，窗外下着雨。",
+      "left": {
+        "label": "买一杯",
+        "fx": {
+          "money": -3,
+          "mood": 5,
+          "health": -1,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "冲进雨里",
+        "fx": {
+          "health": -3,
+          "mood": -2,
+          "money": 2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b6",
+      "name": "耳机",
+      "min": 12,
+      "max": 79,
+      "text": "随机播放跳出一首很老的歌。",
+      "left": {
+        "label": "听完",
+        "fx": {
+          "mood": 6,
+          "energy": 2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "切掉",
+        "fx": {
+          "mood": -2,
+          "career": 3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b7",
+      "name": "充电",
+      "min": 14,
+      "max": 79,
+      "text": "手机剩百分之三，充电器不在手边。",
+      "left": {
+        "label": "找",
+        "fx": {
+          "energy": -3,
+          "mood": -2,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "关机一会儿",
+        "fx": {
+          "mood": 4,
+          "energy": 4,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b8",
+      "name": "排队",
+      "min": 10,
+      "max": 79,
+      "text": "队伍很长，前面的人一直在打电话。",
+      "left": {
+        "label": "等等",
+        "fx": {
+          "mood": -3,
+          "energy": -2,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "换个窗口",
+        "fx": {
+          "mood": 3,
+          "energy": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b9",
+      "name": "深夜",
+      "min": 16,
+      "max": 79,
+      "text": "关灯之后，脑子反而开始运转。",
+      "left": {
+        "label": "想清楚再睡",
+        "fx": {
+          "mood": -4,
+          "career": 5,
+          "energy": -4,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "数羊",
+        "fx": {
+          "health": 4,
+          "energy": 5,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b10",
+      "name": "镜子",
+      "min": 14,
+      "max": 79,
+      "text": "洗手台的镜子里，你多看了一眼。",
+      "left": {
+        "label": "挺好",
+        "fx": {
+          "mood": 5,
+          "social": 3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "赶紧走开",
+        "fx": {
+          "mood": -4,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b11",
+      "name": "快递",
+      "min": 14,
+      "max": 79,
+      "text": "快递到了，是你上个月冲动买的。",
+      "left": {
+        "label": "拆开用",
+        "fx": {
+          "mood": 6,
+          "money": -2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "退掉",
+        "fx": {
+          "money": 5,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b12",
+      "name": "旧物",
+      "min": 14,
+      "max": 79,
+      "text": "一件坏了的东西，修比买还贵。",
+      "left": {
+        "label": "修",
+        "fx": {
+          "money": -5,
+          "mood": 5,
+          "career": 3,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 6
+        }
+      },
+      "right": {
+        "label": "扔",
+        "fx": {
+          "money": -3,
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b13",
+      "name": "房间",
+      "min": 12,
+      "max": 79,
+      "text": "房间乱到找不到钥匙。",
+      "left": {
+        "label": "彻底收拾",
+        "fx": {
+          "mood": 5,
+          "energy": -6,
+          "career": 4
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "先找个能站的地方",
+        "fx": {
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b14",
+      "name": "菜谱",
+      "min": 14,
+      "max": 79,
+      "text": "你照着视频做一道没做过的菜。",
+      "left": {
+        "label": "认真做",
+        "fx": {
+          "mood": 6,
+          "health": 3,
+          "money": -4,
+          "energy": -4
+        },
+        "skills": {
+          "cooking": 7
+        }
+      },
+      "right": {
+        "label": "点外卖",
+        "fx": {
+          "money": -5,
+          "health": -3,
+          "mood": 3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b15",
+      "name": "路口",
+      "min": 12,
+      "max": 79,
+      "text": "有人拿着手机在路口转圈，像在找路。",
+      "left": {
+        "label": "上去指路",
+        "fx": {
+          "social": 6,
+          "mood": 5,
+          "energy": -2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "低头走过",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b16",
+      "name": "楼道",
+      "min": 10,
+      "max": 79,
+      "text": "邻居在楼道里跟你打招呼，你没记住他姓什么。",
+      "left": {
+        "label": "笑着聊两句",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "energy": -2
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "right": {
+        "label": "点头快走",
+        "fx": {
+          "social": -3,
+          "mood": -2,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b17",
+      "name": "傍晚",
+      "min": 12,
+      "max": 79,
+      "text": "傍晚的天色很好，走不走。",
+      "left": {
+        "label": "出去走",
+        "fx": {
+          "health": 5,
+          "mood": 5,
+          "energy": -3
+        },
+        "skills": {
+          "fitness": 4
+        }
+      },
+      "right": {
+        "label": "窝着",
+        "fx": {
+          "energy": 4,
+          "health": -2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b18",
+      "name": "屏幕",
+      "min": 14,
+      "max": 79,
+      "text": "一小时的短视频，还是一本一百页的书。",
+      "left": {
+        "label": "刷视频",
+        "fx": {
+          "mood": 5,
+          "career": -4,
+          "health": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "看书",
+        "fx": {
+          "career": 5,
+          "mood": 3,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b19",
+      "name": "通讯录",
+      "min": 14,
+      "max": 79,
+      "text": "你翻到「家」那个号码，上次打是两周前。",
+      "left": {
+        "label": "打",
+        "fx": {
+          "mood": 5,
+          "social": 5,
+          "energy": -2,
+          "career": -2
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "改天",
+        "fx": {
+          "mood": -4,
+          "career": 3
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b20",
+      "name": "梦",
+      "min": 8,
+      "max": 79,
+      "text": "梦里回到了一栋早拆了的楼。",
+      "left": {
+        "label": "记下来",
+        "fx": {
+          "mood": 4,
+          "career": 4,
+          "energy": -2
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "right": {
+        "label": "翻个身",
+        "fx": {
+          "mood": -2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b21",
+      "name": "衣柜",
+      "min": 14,
+      "max": 79,
+      "text": "有些东西三年没碰过了。",
+      "left": {
+        "label": "捐掉",
+        "fx": {
+          "mood": 5,
+          "social": 5,
+          "energy": -5,
+          "money": 2
+        }
+      },
+      "right": {
+        "label": "万一用得上",
+        "fx": {
+          "mood": 2,
+          "energy": -1,
+          "money": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b22",
+      "name": "巷子",
+      "min": 10,
+      "max": 79,
+      "text": "巷子里有只动物盯着你看，很瘦。",
+      "left": {
+        "label": "喂点东西",
+        "fx": {
+          "mood": 6,
+          "money": -3,
+          "social": 4,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "走过去",
+        "fx": {
+          "mood": -4,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b23",
+      "name": "车站",
+      "min": 14,
+      "max": 79,
+      "text": "人群里有个背影，像极了一个人。",
+      "left": {
+        "label": "追上去看",
+        "fx": {
+          "mood": 4,
+          "social": 3,
+          "energy": -3,
+          "career": -2
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "right": {
+        "label": "站着目送",
+        "fx": {
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b24",
+      "name": "身体",
+      "min": 16,
+      "max": 79,
+      "text": "身体给了一个很轻的信号，你注意到了。",
+      "left": {
+        "label": "去查查",
+        "fx": {
+          "health": 6,
+          "money": -6,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "再观察",
+        "fx": {
+          "health": -5,
+          "money": 2,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b25",
+      "name": "笔记本",
+      "min": 14,
+      "max": 79,
+      "text": "你想把明年要做的事写下来。",
+      "left": {
+        "label": "写",
+        "fx": {
+          "career": 6,
+          "mood": 4,
+          "energy": -3
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "记在心里",
+        "fx": {
+          "mood": 2,
+          "career": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_b26",
+      "name": "窗",
+      "min": 10,
+      "max": 79,
+      "text": "窗外下了一整夜，早上停了。",
+      "left": {
+        "label": "出去走走",
+        "fx": {
+          "mood": 5,
+          "health": 3,
+          "energy": -3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "继续躺着",
+        "fx": {
+          "energy": 5,
+          "mood": -2,
+          "health": -1
+        }
+      },
+      "once": true
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "note": "启动时按此清单加载。新增剧本文件只需在这里登记，无需改代码。",
+  "init": [
+    "init/meters.json",
+    "init/config.json",
+    "init/traits.json",
+    "init/aspirations.json",
+    "init/endings.json"
+  ],
+  "choices": [
+    "choices/childhood.json",
+    "choices/youth.json",
+    "choices/adulthood.json",
+    "choices/prime.json",
+    "choices/senior.json",
+    "choices/elder.json",
+    "choices/common.json",
+    "choices/trait.json",
+    "choices/gated.json",
+    "choices/pet.json",
+    "choices/family.json",
+    "choices/career.json",
+    "choices/life.json"
+  ]
+}

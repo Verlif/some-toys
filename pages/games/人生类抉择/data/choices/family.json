@@ -1,0 +1,1383 @@
+{
+  "title": "家庭链（心动 → 恋爱 → 婚姻 → 育儿 → 空巢 → 孙辈）",
+  "events": [
+    {
+      "id": "fm_1",
+      "name": "心动",
+      "min": 16,
+      "max": 45,
+      "text": "有个人在你视线里出现了第三次。",
+      "cond": [
+        {
+          "noFlag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ],
+      "left": {
+        "label": "上前认识",
+        "fx": {
+          "mood": 5,
+          "energy": -3
+        },
+        "rel": {
+          "love": 10
+        },
+        "flags": {
+          "metLove": true
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_2",
+      "name": "第一次约会",
+      "min": 17,
+      "max": 48,
+      "text": "地点你来定，钱也你出。",
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ],
+      "left": {
+        "label": "精心安排",
+        "fx": {
+          "money": -6,
+          "mood": 4
+        },
+        "rel": {
+          "love": 8
+        }
+      },
+      "right": {
+        "label": "随便吃吃",
+        "fx": {
+          "money": 2
+        },
+        "rel": {
+          "love": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_3",
+      "name": "见家长",
+      "min": 19,
+      "max": 50,
+      "text": "「什么时候带回来看看？」这句话听了半年。",
+      "cond": {
+        "flag": "metLove"
+      },
+      "left": {
+        "label": "去",
+        "fx": {
+          "mood": -3,
+          "energy": -3
+        },
+        "rel": {
+          "love": 5,
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "再等等",
+        "fx": {
+          "mood": 1
+        },
+        "rel": {
+          "love": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_4",
+      "name": "同居",
+      "min": 20,
+      "max": 50,
+      "text": "两边房租加起来，够租一整套了。",
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ],
+      "left": {
+        "label": "搬一起",
+        "fx": {
+          "money": 4,
+          "mood": 4,
+          "social": -3
+        },
+        "rel": {
+          "love": 7
+        },
+        "flags": {
+          "dating": true
+        }
+      },
+      "right": {
+        "label": "保持距离",
+        "fx": {
+          "money": -2
+        },
+        "rel": {
+          "love": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_5",
+      "name": "戒指",
+      "min": 22,
+      "max": 55,
+      "text": "戒指在口袋里放了半个月了。",
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ],
+      "once": true,
+      "left": {
+        "label": "跪下来",
+        "fx": {
+          "money": -8,
+          "mood": 7
+        },
+        "rel": {
+          "love": 10
+        },
+        "flags": {
+          "married": true
+        },
+        "milestone": "步入婚姻"
+      },
+      "right": {
+        "label": "再想想",
+        "fx": {
+          "mood": -2
+        },
+        "rel": {
+          "love": -5
+        }
+      }
+    },
+    {
+      "id": "fm_6",
+      "name": "家务",
+      "min": 23,
+      "max": 70,
+      "text": "水槽里的碗，已经攒到第二天了。",
+      "cond": {
+        "flag": "married"
+      },
+      "left": {
+        "label": "全包了",
+        "fx": {
+          "energy": -5,
+          "mood": -2
+        },
+        "rel": {
+          "love": 5
+        }
+      },
+      "right": {
+        "label": "排个班",
+        "fx": {
+          "mood": 3
+        },
+        "rel": {
+          "love": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_7",
+      "name": "要不要孩子",
+      "min": 25,
+      "max": 45,
+      "text": "双方父母都不催了，反而是你们自己聊起。",
+      "cond": [
+        {
+          "flag": "married"
+        },
+        {
+          "noFlag": "hasChild"
+        }
+      ],
+      "once": true,
+      "left": {
+        "label": "生",
+        "fx": {
+          "money": -10,
+          "energy": -8,
+          "mood": 5
+        },
+        "rel": {
+          "family": 8
+        },
+        "flags": {
+          "hasChild": true
+        },
+        "milestone": "为人父母"
+      },
+      "right": {
+        "label": "两个人也挺好",
+        "fx": {
+          "money": 8,
+          "energy": 5
+        },
+        "rel": {
+          "love": 3
+        }
+      }
+    },
+    {
+      "id": "fm_8",
+      "name": "夜哭",
+      "min": 26,
+      "max": 42,
+      "text": "凌晨两点，哭声准时响起。",
+      "cond": {
+        "flag": "hasChild"
+      },
+      "left": {
+        "label": "起来哄",
+        "fx": {
+          "energy": -6,
+          "mood": -3
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "装睡",
+        "fx": {
+          "energy": 3,
+          "mood": -1
+        },
+        "rel": {
+          "love": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_9",
+      "name": "学区房",
+      "min": 30,
+      "max": 48,
+      "text": "中介说这套房，对口的小学年年第一。",
+      "cond": {
+        "flag": "hasChild"
+      },
+      "left": {
+        "label": "砸锅卖铁买",
+        "fx": {
+          "money": -20,
+          "career": 3,
+          "mood": 3
+        },
+        "rel": {
+          "family": 5
+        },
+        "flags": {
+          "house": true
+        }
+      },
+      "right": {
+        "label": "就近上学",
+        "fx": {
+          "money": 8,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_10",
+      "name": "长大",
+      "min": 45,
+      "max": 70,
+      "text": "孩子的行李已经收拾好了，比你走得还利索。",
+      "cond": {
+        "flag": "hasChild"
+      },
+      "once": true,
+      "left": {
+        "label": "放手",
+        "fx": {
+          "mood": 5
+        },
+        "rel": {
+          "family": 4
+        },
+        "flags": {
+          "childGrown": true
+        }
+      },
+      "right": {
+        "label": "再管几年",
+        "fx": {
+          "mood": -2
+        },
+        "rel": {
+          "family": -3
+        }
+      }
+    },
+    {
+      "id": "fm_11",
+      "name": "空巢",
+      "min": 46,
+      "max": 78,
+      "text": "屋里安静得能听见冰箱在响。",
+      "cond": {
+        "flag": "childGrown"
+      },
+      "left": {
+        "label": "找点事做",
+        "fx": {
+          "social": 5,
+          "mood": 4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "守着电话",
+        "fx": {
+          "mood": -5
+        },
+        "rel": {
+          "family": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_12",
+      "name": "远方",
+      "min": 46,
+      "max": 78,
+      "text": "孩子说要去外地，语气比通知还轻。",
+      "cond": {
+        "flag": "childGrown"
+      },
+      "left": {
+        "label": "支持",
+        "fx": {
+          "mood": 3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "劝他留下",
+        "fx": {
+          "mood": 2
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_13",
+      "name": "抱孙辈",
+      "min": 52,
+      "max": 80,
+      "text": "电话那头说，你当爷爷/奶奶了。",
+      "cond": {
+        "flag": "childGrown"
+      },
+      "once": true,
+      "left": {
+        "label": "帮忙带",
+        "fx": {
+          "energy": -6,
+          "mood": 6
+        },
+        "rel": {
+          "family": 8
+        },
+        "flags": {
+          "grandchild": true
+        },
+        "milestone": "含饴弄孙"
+      },
+      "right": {
+        "label": "出钱不出力",
+        "fx": {
+          "money": -8
+        },
+        "rel": {
+          "family": 4
+        }
+      }
+    },
+    {
+      "id": "fm_14",
+      "name": "危机",
+      "min": 28,
+      "max": 68,
+      "text": "同一件事，你们已经吵了第三遍。",
+      "cond": {
+        "flag": "married"
+      },
+      "left": {
+        "label": "摊开聊",
+        "fx": {
+          "mood": -4,
+          "energy": -4
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "冷处理",
+        "fx": {
+          "mood": -2
+        },
+        "rel": {
+          "love": -8
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_15",
+      "name": "离婚",
+      "min": 30,
+      "max": 70,
+      "text": "这两个字终于被说出口了。",
+      "cond": {
+        "flag": "married"
+      },
+      "once": true,
+      "left": {
+        "label": "离",
+        "fx": {
+          "money": -15,
+          "mood": 4,
+          "social": -5
+        },
+        "rel": {
+          "love": -20
+        },
+        "flags": {
+          "married": false,
+          "divorced": true
+        }
+      },
+      "right": {
+        "label": "凑合过",
+        "fx": {
+          "mood": -4
+        },
+        "rel": {
+          "love": -5
+        }
+      }
+    },
+    {
+      "id": "fm_16",
+      "name": "金婚",
+      "min": 72,
+      "max": 85,
+      "text": "算算日子，居然五十年了。",
+      "cond": {
+        "flag": "married"
+      },
+      "once": true,
+      "left": {
+        "label": "办一场",
+        "fx": {
+          "money": -10,
+          "mood": 8,
+          "energy": -5
+        },
+        "rel": {
+          "family": 8
+        },
+        "milestone": "金婚 · 相伴半生"
+      },
+      "right": {
+        "label": "两个人吃顿饭",
+        "fx": {
+          "mood": 5
+        },
+        "rel": {
+          "love": 5
+        }
+      }
+    },
+    {
+      "id": "fm_17",
+      "name": "同居之后",
+      "min": 20,
+      "max": 55,
+      "cond": {
+        "flag": "dating"
+      },
+      "text": "住到一起第一个月，牙膏该从哪头挤都能吵起来。",
+      "left": {
+        "label": "立个规矩",
+        "fx": {
+          "mood": -2,
+          "energy": -3
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "忍忍就过去了",
+        "fx": {
+          "mood": -4
+        },
+        "rel": {
+          "love": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_b1",
+      "name": "表白",
+      "min": 16,
+      "max": 45,
+      "text": "话到嘴边，说和不说是两回事。",
+      "left": {
+        "label": "说出口",
+        "fx": {
+          "mood": 8,
+          "social": 5,
+          "career": -3,
+          "energy": -3
+        },
+        "flags": {
+          "dating": true
+        },
+        "rel": {
+          "love": 9
+        }
+      },
+      "right": {
+        "label": "继续当朋友",
+        "fx": {
+          "mood": -6,
+          "career": 4,
+          "social": 3
+        },
+        "rel": {
+          "love": 3
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "dating"
+        },
+        {
+          "noFlag": "married"
+        }
+      ]
+    },
+    {
+      "id": "fm_b2",
+      "name": "第一次吵架",
+      "min": 17,
+      "max": 50,
+      "text": "为一件很小的事，两个人都没退。",
+      "left": {
+        "label": "先道歉",
+        "fx": {
+          "mood": -3,
+          "social": 6,
+          "energy": -3
+        },
+        "rel": {
+          "love": 7
+        }
+      },
+      "right": {
+        "label": "各自冷静",
+        "fx": {
+          "mood": -6,
+          "social": -4,
+          "career": 3
+        },
+        "rel": {
+          "love": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "dating"
+      }
+    },
+    {
+      "id": "fm_b3",
+      "name": "对方父母",
+      "min": 19,
+      "max": 52,
+      "text": "今天要去见对方的爸妈，你换了三件衣服。",
+      "left": {
+        "label": "带上好酒",
+        "fx": {
+          "money": -8,
+          "social": 6,
+          "mood": 4,
+          "energy": -3
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "空手去",
+        "fx": {
+          "money": 3,
+          "social": -4,
+          "mood": -3
+        },
+        "rel": {
+          "love": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "dating"
+      }
+    },
+    {
+      "id": "fm_b4",
+      "name": "两家人",
+      "min": 22,
+      "max": 55,
+      "text": "两家人坐一桌，话题绕着房子转。",
+      "left": {
+        "label": "打圆场",
+        "fx": {
+          "mood": -3,
+          "social": 6,
+          "energy": -4
+        },
+        "rel": {
+          "love": 6,
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "把话挑明",
+        "fx": {
+          "mood": -5,
+          "social": -3,
+          "career": 4
+        },
+        "rel": {
+          "love": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "dating"
+      }
+    },
+    {
+      "id": "fm_b5",
+      "name": "婚房",
+      "min": 24,
+      "max": 52,
+      "text": "婚房写谁的名字，两边都有自己的道理。",
+      "left": {
+        "label": "一起出",
+        "fx": {
+          "money": -13,
+          "mood": 4,
+          "social": 5
+        },
+        "flags": {
+          "house": true
+        },
+        "rel": {
+          "love": 7
+        }
+      },
+      "right": {
+        "label": "各出各的",
+        "fx": {
+          "money": -8,
+          "mood": -4,
+          "social": -3
+        },
+        "flags": {
+          "house": true
+        },
+        "rel": {
+          "love": -3
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ]
+    },
+    {
+      "id": "fm_b6",
+      "name": "彩礼",
+      "min": 24,
+      "max": 50,
+      "text": "数字报出来了，比你想的多一位。",
+      "left": {
+        "label": "想办法凑",
+        "fx": {
+          "money": -12,
+          "mood": -5,
+          "social": 4
+        },
+        "flags": {
+          "debt": true
+        },
+        "rel": {
+          "love": 5,
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "坐下来谈",
+        "fx": {
+          "money": -5,
+          "mood": -3,
+          "social": 5,
+          "career": 3
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ]
+    },
+    {
+      "id": "fm_b7",
+      "name": "婚礼预算",
+      "min": 24,
+      "max": 52,
+      "text": "婚庆报了两套方案，差价够一趟旅行。",
+      "left": {
+        "label": "选贵的",
+        "fx": {
+          "money": -14,
+          "mood": 7,
+          "social": 7,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "选便宜的",
+        "fx": {
+          "money": -5,
+          "mood": 4,
+          "social": -3,
+          "career": 3
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ]
+    },
+    {
+      "id": "fm_b8",
+      "name": "蜜月",
+      "min": 24,
+      "max": 55,
+      "text": "婚后第一趟旅行，去远一点还是近一点。",
+      "left": {
+        "label": "远",
+        "fx": {
+          "money": -11,
+          "mood": 8,
+          "social": 5,
+          "energy": -6,
+          "health": -2
+        },
+        "rel": {
+          "love": 8
+        }
+      },
+      "right": {
+        "label": "近",
+        "fx": {
+          "money": -4,
+          "mood": 5,
+          "energy": -2,
+          "career": 3
+        },
+        "rel": {
+          "love": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "fm_b9",
+      "name": "厨房",
+      "min": 26,
+      "max": 68,
+      "text": "长辈来住两周，厨房的用法成了问题。",
+      "left": {
+        "label": "让出去",
+        "fx": {
+          "mood": -4,
+          "social": 6,
+          "energy": 3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "坚持自己来",
+        "fx": {
+          "mood": -3,
+          "social": -4,
+          "career": 3,
+          "energy": -3
+        },
+        "skills": {
+          "cooking": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "fm_b10",
+      "name": "分工",
+      "min": 26,
+      "max": 50,
+      "text": "孩子的夜奶、家务、加班，总得有人多扛。",
+      "left": {
+        "label": "你多扛点",
+        "fx": {
+          "health": -5,
+          "energy": -7,
+          "mood": -3,
+          "social": 5
+        },
+        "rel": {
+          "family": 7,
+          "love": 5
+        }
+      },
+      "right": {
+        "label": "摊开说清楚",
+        "fx": {
+          "mood": -3,
+          "social": 4,
+          "career": 3,
+          "energy": -3
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "fm_b11",
+      "name": "作业本",
+      "min": 28,
+      "max": 46,
+      "text": "孩子的作业本上有个空着的名字。",
+      "left": {
+        "label": "陪着补完",
+        "fx": {
+          "mood": -3,
+          "energy": -5,
+          "career": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "让他自己承担",
+        "fx": {
+          "mood": -2,
+          "career": 4,
+          "social": -2
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "fm_b12",
+      "name": "病房",
+      "min": 27,
+      "max": 46,
+      "text": "孩子住院，床位在走廊加的。",
+      "left": {
+        "label": "轮流守夜",
+        "fx": {
+          "health": -6,
+          "energy": -8,
+          "mood": -6,
+          "money": -7
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "请护工",
+        "fx": {
+          "money": -11,
+          "health": -2,
+          "mood": -3,
+          "career": -2
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "fm_b13",
+      "name": "家长会",
+      "min": 28,
+      "max": 46,
+      "text": "家长会在周三下午，和你的会撞了。",
+      "left": {
+        "label": "请假去",
+        "fx": {
+          "career": -4,
+          "mood": 5,
+          "social": 4,
+          "energy": -3
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "让另一半去",
+        "fx": {
+          "career": 4,
+          "mood": -4,
+          "money": -2
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "fm_b14",
+      "name": "抽屉",
+      "min": 38,
+      "max": 52,
+      "text": "你在孩子抽屉里看到一叠信。",
+      "left": {
+        "label": "装作没看见",
+        "fx": {
+          "mood": -3,
+          "career": 3,
+          "social": 3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "找个机会聊聊",
+        "fx": {
+          "mood": 4,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "fm_b15",
+      "name": "坦白",
+      "min": 36,
+      "max": 55,
+      "text": "孩子说有件事要告诉你们，声音在抖。",
+      "left": {
+        "label": "听完再说话",
+        "fx": {
+          "mood": 5,
+          "social": 6,
+          "energy": -4
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "一时接受不了",
+        "fx": {
+          "mood": -7,
+          "social": -5,
+          "career": 3
+        },
+        "rel": {
+          "family": -6
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "fm_b16",
+      "name": "报到",
+      "min": 44,
+      "max": 62,
+      "text": "送孩子去大学，宿舍在六楼。",
+      "left": {
+        "label": "帮他铺好床",
+        "fx": {
+          "mood": 6,
+          "energy": -6,
+          "money": -6,
+          "social": 4
+        },
+        "flags": {
+          "childGrown": true
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "送到楼下",
+        "fx": {
+          "mood": -3,
+          "career": 4,
+          "money": -3
+        },
+        "flags": {
+          "childGrown": true
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "fm_b17",
+      "name": "喜宴",
+      "min": 48,
+      "max": 72,
+      "text": "孩子要结婚了，你被安排在长辈席。",
+      "left": {
+        "label": "上台说两句",
+        "fx": {
+          "mood": 7,
+          "social": 7,
+          "energy": -4,
+          "money": -9
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "坐着就好",
+        "fx": {
+          "mood": 4,
+          "social": 3,
+          "money": -6
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "childGrown"
+      }
+    },
+    {
+      "id": "fm_b18",
+      "name": "亲家",
+      "min": 48,
+      "max": 74,
+      "text": "两家人第一次正式坐下来谈。",
+      "left": {
+        "label": "客客气气",
+        "fx": {
+          "mood": 3,
+          "social": 6,
+          "energy": -4,
+          "money": -5
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "直来直去",
+        "fx": {
+          "mood": -3,
+          "social": -4,
+          "career": 4
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "childGrown"
+      }
+    },
+    {
+      "id": "fm_b19",
+      "name": "小客人",
+      "min": 52,
+      "max": 80,
+      "text": "孙辈要在你家住一个暑假。",
+      "left": {
+        "label": "接下来",
+        "fx": {
+          "mood": 7,
+          "energy": -7,
+          "health": -4,
+          "money": -6
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "住几天就行",
+        "fx": {
+          "mood": 3,
+          "energy": -3,
+          "money": -2
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "grandchild"
+      }
+    },
+    {
+      "id": "fm_b20",
+      "name": "手机",
+      "min": 58,
+      "max": 80,
+      "text": "孙辈把门关上了，说你们不懂。",
+      "left": {
+        "label": "敲门进去",
+        "fx": {
+          "mood": -3,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "等他自己出来",
+        "fx": {
+          "mood": -5,
+          "social": -3,
+          "career": 3
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "grandchild"
+      }
+    },
+    {
+      "id": "fm_b21",
+      "name": "再遇",
+      "min": 32,
+      "max": 70,
+      "text": "分开几年后，又有人让你心动。",
+      "left": {
+        "label": "试试",
+        "fx": {
+          "mood": 7,
+          "social": 6,
+          "energy": -4,
+          "money": -5
+        },
+        "rel": {
+          "love": 7
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "mood": -4,
+          "career": 4,
+          "health": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "divorced"
+      }
+    },
+    {
+      "id": "fm_b22",
+      "name": "病床边",
+      "min": 40,
+      "max": 79,
+      "text": "老伴要做手术，签字的是你。",
+      "left": {
+        "label": "签",
+        "fx": {
+          "mood": -6,
+          "health": -4,
+          "energy": -6,
+          "money": -10
+        },
+        "rel": {
+          "love": 9
+        }
+      },
+      "right": {
+        "label": "再找一家医院",
+        "fx": {
+          "mood": -4,
+          "career": 4,
+          "money": -6,
+          "energy": -4
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "fm_b23",
+      "name": "家庭群",
+      "min": 30,
+      "max": 79,
+      "text": "家庭群里有人发了个链接，一看就不靠谱。",
+      "left": {
+        "label": "耐心解释",
+        "fx": {
+          "mood": -3,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "不说话",
+        "fx": {
+          "mood": 3,
+          "social": -3,
+          "career": 3
+        },
+        "rel": {
+          "family": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    }
+  ]
+}

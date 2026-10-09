@@ -1,0 +1,72 @@
+{
+  "aspirations": {
+    "rich": {
+      "name": "财富自由",
+      "desc": "50 岁前攒下 80 点金钱",
+      "award": "攒够了底气，往后不必为钱低头",
+      "check": [
+        {
+          "age": {
+            "max": 50
+          }
+        },
+        {
+          "stat": {
+            "id": "money",
+            "min": 80
+          }
+        }
+      ]
+    },
+    "family": {
+      "name": "家庭美满",
+      "desc": "结婚生子，亲情达 60 以上",
+      "award": "一屋两人三餐四季，人间值得",
+      "check": [
+        {
+          "flag": "married"
+        },
+        {
+          "flag": "hasChild"
+        },
+        {
+          "rel": {
+            "id": "family",
+            "min": 60
+          }
+        }
+      ]
+    },
+    "career": {
+      "name": "事业有成",
+      "desc": "事业达 80，金钱达 60",
+      "award": "站在自己亲手搭的高处，看见远方",
+      "check": [
+        {
+          "stat": {
+            "id": "career",
+            "min": 80
+          }
+        },
+        {
+          "stat": {
+            "id": "money",
+            "min": 60
+          }
+        }
+      ]
+    },
+    "longevity": {
+      "name": "长命百岁",
+      "desc": "稳稳活到 75 岁",
+      "award": "时间是最好的朋友，你赢了它一局",
+      "check": [
+        {
+          "age": {
+            "min": 75
+          }
+        }
+      ]
+    }
+  }
+}
