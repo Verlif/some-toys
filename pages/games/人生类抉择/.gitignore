@@ -1,0 +1,7 @@
+# 本项目零依赖，无 node_modules；以下为编辑器与系统残留
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

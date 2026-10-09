@@ -1,0 +1,88 @@
+/* =============================================================
+ * views.css —— 视图层
+ * 开始页 / 游戏页 / 结局页 / 遮罩弹层 / 启动错误提示
+ * ============================================================= */
+
+/* ===== 视图切换 ===== */
+.view { display: none; flex-direction: column; }
+.view.active { display: flex; }
+
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(59,51,38,.52);
+  backdrop-filter: blur(3px);
+  display: none; align-items: center; justify-content: center;
+  z-index: 90; padding: 12px; overflow-y: auto;
+}
+.overlay.active { display: flex; }
+
+.panel {
+  background: var(--c-panel); border: 2px solid var(--c-line);
+  border-radius: 26px; box-shadow: var(--sh-pop);
+  width: 100%; max-width: 520px; max-height: 96dvh;
+  overflow-y: auto; padding: 18px 22px 16px;
+  animation: cardIn .35s ease;
+}
+
+/* ===== 开始页 ===== */
+.hero { padding: 34px 4px 6px; text-align: center; }
+.hero .logo { font-size: 40px; color: var(--c-green); line-height: 1.2; }
+.hero .slogan { font-size: 13px; color: var(--c-muted); margin-top: 8px; line-height: 1.8; }
+
+.aspgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 8px; }
+.aspcard {
+  background: var(--c-card); border: 2px solid var(--c-line);
+  border-radius: 16px; padding: 12px; text-align: left;
+  transition: border-color .15s, background .15s, transform .12s;
+}
+.aspcard:active { transform: scale(.97); }
+.aspcard.sel { border-color: var(--c-green); background: #F0F7F1; }
+.aspcard .an { font-size: 15px; font-weight: 900; margin-bottom: 4px; }
+.aspcard .ad { font-size: 11.5px; color: var(--c-muted); line-height: 1.6; }
+
+.traitshow { background: var(--c-card); border: 1px solid var(--c-line); border-radius: 16px; padding: 12px 14px; margin: 10px 0; }
+.traitshow .tl { font-size: 12px; color: var(--c-muted); margin-bottom: 8px; font-weight: 700; }
+
+.rules { background: var(--c-card); border: 1px solid var(--c-line); border-radius: 16px; padding: 12px 14px; margin: 10px 0; font-size: 12.5px; color: var(--c-ink-mid); line-height: 2; }
+.rules b { color: var(--c-green); }
+
+.footnote { text-align: center; font-size: 11px; color: var(--c-faint); margin-top: 14px; }
+
+/* ===== 结局页 ===== */
+.endkind { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 8px; }
+.endkind .badge { width: 44px; height: 44px; border-radius: 15px; display: grid; place-items: center; margin-bottom: 6px; }
+.endkind .badge svg { width: 24px; height: 24px; }
+.endkind .tt { font-size: 24px; }
+.endkind .sub { font-size: 12px; color: var(--c-muted); margin-top: 3px; }
+
+.endtext { background: var(--c-card); border-radius: 16px; padding: 11px 13px; font-size: 13.5px; line-height: 1.8; color: var(--c-ink-soft); margin-bottom: 10px; }
+
+.endstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 10px; }
+.endstat { background: var(--c-card); border: 1px solid var(--c-line); border-radius: 12px; padding: 6px; text-align: center; }
+.endstat .nm { font-size: 11px; color: var(--c-muted); font-weight: 700; }
+.endstat .vl { font-size: 19px; font-weight: 900; margin-top: 2px; }
+
+.scoreline { display: flex; align-items: center; justify-content: space-between; background: var(--c-card); border: 1px solid var(--c-line); border-radius: 16px; padding: 9px 12px; margin-bottom: 10px; }
+.scoreline .sc { font-size: 22px; font-weight: 900; color: var(--c-gold); }
+.scoreline .gr { font-size: 13px; font-weight: 800; color: var(--c-ink-mid); }
+
+.endbtns { display: flex; gap: 10px; }
+.endbtns .btn { flex: 1; padding: 12px; font-size: 14px; }
+
+/* ===== file:// 启动提示 ===== */
+.boot-error {
+  display: none;
+  position: fixed; inset: 0; z-index: 999;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  background: linear-gradient(180deg, #F8F2E3 0%, #EBDFC2 100%);
+}
+.boot-error.show { display: flex; }
+.boot-error h2 { font-size: 22px; color: var(--c-red); margin-bottom: 12px; }
+.boot-error p { font-size: 13.5px; line-height: 1.9; color: var(--c-ink-soft); }
+.boot-error pre {
+  margin: 10px 0; padding: 10px 12px;
+  background: var(--c-ink); color: var(--c-card);
+  border-radius: 10px; font-size: 13px; overflow-x: auto;
+}
+.boot-error code { background: var(--c-fill); padding: 1px 5px; border-radius: 5px; }

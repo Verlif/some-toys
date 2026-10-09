@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3ECDC">
+<meta name="description" content="人生模拟 · 左右抉择 —— 一张卡牌一个人生岔路口，平衡六项属性，活到八十岁。">
+<title>人生模拟 · 左右抉择</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F3ECDC'/%3E%3Cpath d='M32 52 C20 42 10 34 10 22 A9 9 0 0 1 32 18 A9 9 0 0 1 54 22 C54 34 44 42 32 52 Z' fill='%234E9A6F'/%3E%3Cpath d='M32 44 L26 38 M32 44 L38 38' stroke='%23FFF9EC' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+
+<!-- 字体 -->
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+
+<!-- 样式：按「基础 → 布局 → 组件 → 视图 → 响应式」分层 -->
+<link rel="stylesheet" href="./src/styles/base.css">
+<link rel="stylesheet" href="./src/styles/layout.css">
+<link rel="stylesheet" href="./src/styles/components.css">
+<link rel="stylesheet" href="./src/styles/views.css">
+<link rel="stylesheet" href="./src/styles/responsive.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== 开始页 ===== -->
+  <section id="view-start" class="view active">
+    <div class="hero">
+      <div class="logo font-d">人生模拟</div>
+      <div class="slogan">左右滑动，做一生的决定。<br>每一项都别太满，也别见底。</div>
+    </div>
+
+    <div class="aspgrid" id="aspGrid"></div>
+
+    <div class="traitshow">
+      <div class="tl">你的出厂设置（每局随机两项）</div>
+      <div class="chips" id="traitChips"></div>
+    </div>
+
+    <div class="rules">
+      <b>怎么玩：</b>每张卡牌是一个人生抉择，左滑或右滑作出选择，也可点下方按钮 / 按键盘 ← →。<br>
+      <b>代价：</b>每个选择消耗一年人生；每年心情与精力都会自然下滑一点，记得经营它们。六项属性（健康·心情·金钱·精力·社交·事业）任一跌到 0 或顶到 100，人生就此落幕。<br>
+      <b>目标：</b>平衡好一切，活到 80 岁，收获圆满结局。
+    </div>
+
+    <div class="bigbtns">
+      <button class="btn primary" id="btnNew">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l1.9 5.1L19 11l-5.1 1.9L12 18l-1.9-5.1L5 11l5.1-1.9z"/></svg>开始新人生
+      </button>
+      <button class="btn ghost" id="btnContinue" style="display:none">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>继续上次的人生
+      </button>
+    </div>
+
+    <div class="footnote">参考《王权》卡牌抉择 × 《模拟人生》底层数值</div>
+  </section>
+
+  <!-- ===== 游戏页 ===== -->
+  <section id="view-game" class="view">
+    <header class="topbar">
+      <div class="agecard">
+        <div class="big font-d" id="ageNum">6</div>
+        <div class="sub">岁<br><span id="yearText">第1年</span></div>
+      </div>
+      <div class="stagechip" id="stageChip">童年</div>
+      <div class="icons">
+        <button class="iconbtn" id="btnSound" title="声音" aria-label="声音">
+          <svg id="icSound" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
+        </button>
+        <button class="iconbtn" id="btnArch" title="人生档案" aria-label="人生档案">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </button>
+        <button class="iconbtn" id="btnLog" title="抉择履历" aria-label="抉择履历">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+        </button>
+        <button class="iconbtn" id="btnRestart" title="重新开始" aria-label="重新开始">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 属性条 -->
+    <div class="meters" id="meters"></div>
+
+    <!-- 常驻旁白条：开局 / 选择结果 / 里程碑 / 告警都在这里播报。
+         高度固定，避免出现与消失时把下方卡片顶上顶下 -->
+    <div class="narrate" id="narrate">
+      <div class="nb-head">
+        <span class="nb-tag" id="nbTag">旁白</span>
+        <span class="nb-text" id="nbText">你出生了。</span>
+      </div>
+      <div class="nb-chips" id="nbChips"></div>
+    </div>
+
+    <!-- 操作提示放在卡片上方，让卡片始终贴着屏幕底部（便于单手操作） -->
+    <div class="hintrow">
+      <span>左右滑动卡片 · 或点击两侧按钮 · 键盘</span><kbd>←</kbd><span>/</span><kbd>→</kbd>
+    </div>
+
+    <div class="cardzone">
+      <div class="card" id="card">
+        <div class="cardhead">
+          <div class="avatar" id="cardAvatar"></div>
+          <div class="who" id="cardSpeaker"></div>
+        </div>
+        <div class="statement" id="cardText"></div>
+        <div class="choices">
+          <button class="choice l" id="btnL">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg><span class="lbl" id="lblL"></span>
+          </button>
+          <button class="choice r" id="btnR">
+            <span class="lbl" id="lblR"></span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 滑动浮窗：跟着手指距离渐显，到阈值时整块高亮 -->
+      <div class="peek left" id="peekL" aria-hidden="true">
+        <span class="pk-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></span>
+        <span class="pk-lbl" id="peekLblL"></span>
+        <span class="pk-go">松手即选</span>
+      </div>
+      <div class="peek right" id="peekR" aria-hidden="true">
+        <span class="pk-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg></span>
+        <span class="pk-lbl" id="peekLblR"></span>
+        <span class="pk-go">松手即选</span>
+      </div>
+
+      <aside class="sideinfo">
+        <div class="sidecard">
+          <h4>人生大事记</h4>
+          <div id="miniMilestones"></div>
+        </div>
+        <div class="sidecard">
+          <h4>当前心愿</h4>
+          <div id="aspMini" class="flagline"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===== 结局页 ===== -->
+  <div id="view-end" class="overlay">
+    <div class="panel">
+      <div class="endkind">
+        <div class="badge" id="endBadge"></div>
+        <div class="tt font-d" id="endTitle"></div>
+        <div class="sub" id="endSub"></div>
+      </div>
+      <div class="endtext" id="endText"></div>
+      <div class="endstats" id="endStats"></div>
+      <div class="tl" id="endTimeline"></div>
+      <div class="scoreline">
+        <div class="sc font-d" id="endScore"></div>
+        <div class="gr" id="endGrade"></div>
+      </div>
+      <div class="endbtns">
+        <button class="btn primary" id="btnAgain">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>再活一次
+        </button>
+        <button class="btn ghost" id="btnHome">回到首页</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 抽屉：抉择履历 / 人生档案 ===== -->
+<div class="backdrop" id="backdrop"></div>
+
+<div class="drawer" id="drawerLog" role="dialog" aria-label="抉择履历">
+  <div class="head">
+    <h3 class="font-d">抉择履历</h3>
+    <button class="close" id="closeLog" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+  </div>
+  <div class="body" id="logBody"></div>
+</div>
+
+<div class="drawer" id="drawerArch" role="dialog" aria-label="人生档案">
+  <div class="head">
+    <h3 class="font-d">人生档案</h3>
+    <button class="close" id="closeArch" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+  </div>
+  <div class="body" id="archBody"></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- 加载失败 / file:// 直接打开时的引导（ES Modules 受浏览器安全策略限制） -->
+<div id="bootError" class="boot-error">
+  <div class="panel">
+    <h2 class="font-d">请用本地服务器打开</h2>
+    <div class="detail">
+      <p>本项目使用原生 ES Modules，浏览器禁止 <code>file://</code> 协议加载模块。</p>
+      <p>在项目根目录执行下面任意一条命令，再访问 <b>http://localhost:5173</b> ：</p>
+      <pre>npm run dev</pre>
+      <pre>python -m http.server 5173</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 该脚本为传统脚本，file:// 下依然会执行，用于给出明确提示
+  if (location.protocol === 'file:') {
+    document.getElementById('bootError').classList.add('show');
+    document.getElementById('app').style.display = 'none';
+  }
+</script>
+
+<script type="module" src="./src/js/main.js"></script>
+</body>
+</html>

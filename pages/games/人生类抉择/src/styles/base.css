@@ -1,0 +1,83 @@
+/* =============================================================
+ * base.css —— 基础层
+ * 设计令牌（CSS 变量）、全局重置、字体与页面底色
+ * 所有颜色请优先引用变量，不要在组件里写死色值
+ * ============================================================= */
+
+:root {
+  /* 品牌 / 语义色 */
+  --c-green: #4E9A6F;   /* 正向 · 生命 */
+  --c-blue:  #5E9CC4;   /* 左滑 · 冷静 */
+  --c-red:   #C4553F;   /* 负向 · 危险 */
+  --c-gold:  #C9A227;   /* 成就 · 评分 */
+  --c-amber: #E8A94B;   /* 警告 */
+  --c-pink:  #C77DB8;   /* 羁绊 */
+  --c-purple:#8B7FBE;   /* 事业 */
+
+  /* 中性色 */
+  --c-ink:      #3B3326; /* 主文字 */
+  --c-ink-soft: #5B4E38; /* 正文 */
+  --c-ink-mid:  #6B5D45; /* 次级文字 */
+  --c-muted:    #8A7C63; /* 弱文字 */
+  --c-faint:    #A99C82; /* 脚注 */
+
+  /* 面与线 */
+  --c-panel: #FFFBF1;  /* 卡片 / 弹层 */
+  --c-card:  #FFF9EC;  /* 内嵌块 */
+  --c-fill:  #F6EDD8;  /* 按钮底 */
+  --c-track: #EDE3C9;  /* 进度槽 */
+  --c-line:  #E4D7B8;  /* 描边 */
+  --c-line-soft: #EFE6CE;
+
+  /* 进度条警戒刻度（具体位置由 JS 从 tuning 写入，这里只做兜底） */
+  --warn-low: 25%;  --warn-high: 75%;
+  --danger-low: 14%; --danger-high: 86%;
+  --c-tick:     rgba(139,124,99,.34);
+  --c-tick-red: rgba(196,85,63,.45);
+
+  /* 字体 */
+  --font-body: 'Noto Sans SC', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif;
+
+  /* 圆角 / 阴影 */
+  --r-sm: 8px;
+  --r-md: 13px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --sh-card: 0 12px 28px rgba(90,70,40,.16), 0 3px 8px rgba(90,70,40,.08);
+  --sh-pop:  0 20px 50px rgba(60,45,25,.30);
+  --sh-soft: 0 2px 8px rgba(90,70,40,.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--c-ink);
+  background:
+    radial-gradient(rgba(140,110,60,.07) 1px, transparent 1.4px),
+    linear-gradient(180deg, #F8F2E3 0%, #F1E8D2 55%, #EBDFC2 100%);
+  background-size: 22px 22px, 100% 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 标题 / 数字用的展示字体 */
+.font-d { font-family: var(--font-display); }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+img { display: block; }
+::selection { background: var(--c-line); }
+
+/* ---- 无障碍：尊重系统的「减少动态效果」 ---- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .card.out-left, .card.out-right { transition: none; }
+}

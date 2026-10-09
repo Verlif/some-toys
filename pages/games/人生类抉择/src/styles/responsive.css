@@ -1,0 +1,97 @@
+/* =============================================================
+ * responsive.css —— 响应式层
+ *
+ * 三档断点（所有媒体查询集中在此文件，避免分散在各组件里难以维护）：
+ *   窄屏   < 720px        手机竖屏：单栏，卡片贴底
+ *   中屏   720px ~ 1023px 平板：卡片 + 侧栏双栏
+ *   宽屏   ≥ 1024px       PC：更宽容器 + 更舒展的侧栏
+ * ============================================================= */
+
+/* ---------- 基础（移动优先）：侧栏不占空间 ---------- */
+.sideinfo { display: none; }
+
+/* 卡片在窄屏要留出足够的正文空间 */
+.card .statement { min-height: 104px; }
+
+/* =============================================================
+ * 中屏：平板 / 手机横屏 —— 卡片与侧栏并排
+ * ============================================================= */
+@media (min-width: 720px) {
+  #app { max-width: 900px; padding: 18px 20px 24px; }
+
+  /* 属性条六项铺成一行 */
+  .meters { grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .mwrap { padding: 9px 10px 10px; }
+  .mwrap .nm { font-size: 12px; }
+  .mwrap .val { font-size: 16px; }
+
+  /* 卡片与侧栏并排 */
+  .cardzone { flex-direction: row; gap: 14px; align-items: stretch; }
+  .card { flex: 1.55; }
+  .card .statement { min-height: 120px; }
+
+  .sideinfo { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+}
+
+/* =============================================================
+ * 宽屏：PC 浏览器
+ * ============================================================= */
+@media (min-width: 1024px) {
+  #app { max-width: 1080px; padding: 22px 24px 28px; }
+
+  .topbar { margin-bottom: 16px; }
+  .agecard .big { font-size: 34px; }
+
+  .meters { gap: 12px; margin-bottom: 14px; }
+  .mwrap { padding: 10px 12px 11px; border-radius: 15px; }
+  .mwrap .ic { width: 17px; height: 17px; }
+  .mwrap .nm { font-size: 12.5px; }
+  .mwrap .val { font-size: 17px; }
+  .pbar { height: 14px; }
+
+  /* 旁白条：文字更大，chips 排得更松 */
+  .narrate { min-height: 80px; padding: 11px 15px 12px; margin-bottom: 12px; }
+  .narrate .nb-text { font-size: 14.5px; }
+  .narrate .chip { font-size: 12.5px; padding: 3px 10px; }
+
+  /* 卡片更宽，正文更舒展 */
+  .cardzone { gap: 18px; }
+  .card { flex: 1.6; }
+  .cardhead { height: clamp(140px, 15vw, 176px); }
+  .card .statement { font-size: 17px; min-height: 140px; padding: 20px 22px 14px; }
+  .choices { padding: 0 22px 20px; gap: 12px; }
+  .choice { font-size: 14.5px; padding: 12px; border-radius: 17px; }
+
+  .sideinfo { gap: 14px; }
+  .sidecard { padding: 18px; }
+
+  /* 鼠标用户：按钮悬停即高亮 */
+  .choice.l:hover { background: #EAF2F7; border-color: var(--c-blue);  color: #3F6E8C; }
+  .choice.r:hover { background: #EAF4EE; border-color: var(--c-green); color: #3A7B57; }
+
+  /* 浮窗更大更清晰 */
+  .peek { padding: 11px 16px; border-radius: 18px; max-width: 40%; }
+  .peek .pk-lbl { font-size: 17px; }
+  .peek .pk-arrow svg { width: 24px; height: 24px; }
+}
+
+/* =============================================================
+ * 超宽屏：限制阅读宽度，别让卡片被拉成一条
+ * ============================================================= */
+@media (min-width: 1440px) {
+  #app { max-width: 1180px; }
+}
+
+/* =============================================================
+ * 矮屏（手机横屏 / 小高度窗口）：压缩纵向留白，保证卡片可见
+ * ============================================================= */
+@media (max-height: 620px) and (max-width: 900px) {
+  .hero { padding: 10px 4px 4px; }
+  .hero .logo { font-size: 30px; }
+  .cardhead { height: 96px; }
+  .cardhead .avatar { width: 42px; height: 42px; }
+  .card .statement { min-height: 72px; padding: 12px 14px 8px; }
+  .hintrow { display: none; }
+  .narrate { min-height: 58px; }
+  .narrate .nb-chips { display: none; }
+}

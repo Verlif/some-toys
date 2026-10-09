@@ -1,0 +1,14 @@
+{
+  "name": "life-sim-swipe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "人生模拟 · 左右抉择 —— 卡牌式人生模拟小游戏，纯前端零依赖",
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "start": "node tools/serve.mjs",
+    "check": "node tools/check.mjs"
+  },
+  "keywords": ["game", "life-sim", "reigns-like", "vanilla-js"],
+  "license": "MIT"
+}

@@ -1,0 +1,200 @@
+/* =============================================================
+ * layout.css —— 布局层
+ * 页面骨架、顶栏、属性条、常驻旁白条、卡片区、底部提示
+ * ============================================================= */
+
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ===== 顶栏 ===== */
+.topbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+
+.agecard {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--c-card); border: 1px solid var(--c-line);
+  border-radius: 18px; padding: 7px 14px;
+  box-shadow: var(--sh-soft);
+}
+.agecard .big { font-size: 30px; line-height: 1; color: var(--c-green); font-variant-numeric: tabular-nums; }
+.agecard .sub { font-size: 11px; color: var(--c-muted); line-height: 1.3; }
+
+.stagechip {
+  background: var(--c-card); border: 1px solid var(--c-line);
+  border-radius: 999px; padding: 6px 12px;
+  font-size: 12.5px; font-weight: 700; color: var(--c-ink-mid);
+}
+
+.icons { display: flex; gap: 6px; margin-left: auto; }
+
+/* =============================================================
+ * 属性条 / 迷你条（游戏页与人生档案共用同一套 .mwrap + .pbar）
+ * 颜色一律走容器上的 --mc，不要在 JS 里拼色值
+ * ============================================================= */
+.meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+
+.mwrap {
+  --mc: var(--c-green);
+  position: relative;
+  background: var(--c-card);
+  border: 1.5px solid var(--c-line);
+  border-radius: var(--r-md);
+  padding: 8px 9px 9px;
+  box-shadow: var(--sh-soft);
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.mwrap .m-top { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; }
+.mwrap .ic  { width: 15px; height: 15px; flex: none; color: var(--mc); }
+.mwrap .ic svg { width: 100%; height: 100%; display: block; }
+.mwrap .nm  { font-size: 11.5px; font-weight: 800; color: var(--c-ink-mid); white-space: nowrap; }
+.mwrap .val {
+  margin-left: auto; font-size: 14.5px; font-weight: 900;
+  color: var(--mc); font-variant-numeric: tabular-nums; line-height: 1;
+}
+
+/* 进度条本体：加高到 13px，带内阴影与高光，远处也能看清 */
+.pbar {
+  position: relative; height: 13px; border-radius: 999px;
+  background: var(--c-track);
+  box-shadow: inset 0 1.5px 3px rgba(90,70,40,.22);
+  overflow: hidden;
+}
+.pbar .fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 999px; background: var(--mc);
+  transition: width .55s cubic-bezier(.3,1.2,.4,1);
+}
+.pbar .fill::after {
+  content: ''; position: absolute; inset: 0; border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,.48), rgba(255,255,255,0) 52%, rgba(0,0,0,.14));
+}
+
+/* 警戒刻度：在条上画出 warn / danger 阈值，让玩家一眼看出还剩多少余量 */
+.pbar.ticked::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent calc(var(--warn-low) - .5px),   var(--c-tick) calc(var(--warn-low) - .5px),   var(--c-tick) calc(var(--warn-low) + .5px),   transparent calc(var(--warn-low) + .5px)),
+    linear-gradient(90deg, transparent calc(var(--warn-high) - .5px),  var(--c-tick) calc(var(--warn-high) - .5px),  var(--c-tick) calc(var(--warn-high) + .5px),  transparent calc(var(--warn-high) + .5px)),
+    linear-gradient(90deg, transparent calc(var(--danger-low) - .5px), var(--c-tick-red) calc(var(--danger-low) - .5px), var(--c-tick-red) calc(var(--danger-low) + .5px), transparent calc(var(--danger-low) + .5px)),
+    linear-gradient(90deg, transparent calc(var(--danger-high) - .5px),var(--c-tick-red) calc(var(--danger-high) - .5px),var(--c-tick-red) calc(var(--danger-high) + .5px),transparent calc(var(--danger-high) + .5px));
+}
+
+/* 警告 / 危险态：描边 + 数值变色，危险再叠加脉冲 */
+.mwrap.warn   { border-color: var(--c-amber); box-shadow: 0 0 0 2px rgba(232,169,75,.30); }
+.mwrap.warn .val { color: var(--c-amber); }
+.mwrap.danger { border-color: var(--c-red); animation: dangerPulse 1.15s ease-in-out infinite; }
+.mwrap.danger .val { color: var(--c-red); }
+@keyframes dangerPulse {
+  0%,100% { box-shadow: 0 0 0 2px rgba(196,85,63,.45); }
+  50%     { box-shadow: 0 0 0 5px rgba(196,85,63,.18); }
+}
+
+/* 危险徽标 */
+.mwrap .mflag {
+  position: absolute; right: -3px; top: -8px;
+  font-size: 10px; font-weight: 900; color: #FFF;
+  background: var(--c-red); border-radius: 6px; padding: 1px 5px;
+  box-shadow: 0 2px 5px rgba(196,85,63,.4);
+}
+
+/* 属性变化气泡 */
+.mwrap .delta {
+  position: absolute; right: 6px; top: -10px;
+  font-size: 11.5px; font-weight: 900;
+  padding: 1px 6px; border-radius: 8px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .3s;
+  z-index: 3;
+}
+.mwrap .delta.up   { color: #FFF; background: var(--c-green); transform: translateY(4px); }
+.mwrap .delta.down { color: #FFF; background: var(--c-red);   transform: translateY(4px); }
+.mwrap .delta.show { opacity: 1; transform: none; }
+
+/* 人生档案里的条：两列铺开，更疏朗 */
+.drawer .sec .mwrap { margin-bottom: 9px; }
+@media (min-width: 480px) {
+  .drawer .sec.bars { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+}
+
+/* =============================================================
+ * 常驻旁白条
+ * 固定最小高度，避免「出现 / 消失」把下方卡片顶上顶下
+ * ============================================================= */
+.narrate {
+  --nc: var(--c-green);
+  position: relative;
+  display: flex; flex-direction: column; gap: 6px; justify-content: center;
+  min-height: 74px;
+  padding: 9px 12px 10px;
+  margin-bottom: 10px;
+  background: linear-gradient(180deg, #FFFDF7 0%, #FFF8EA 100%);
+  border: 1.6px solid var(--c-line);
+  border-left: 5px solid var(--nc);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-soft);
+  transition: border-left-color .25s;
+}
+
+.narrate .nb-head { display: flex; align-items: flex-start; gap: 8px; }
+.narrate .nb-tag {
+  flex: none; margin-top: 1px;
+  font-size: 10.5px; font-weight: 900; letter-spacing: .3px;
+  color: #FFF; background: var(--nc);
+  border-radius: 6px; padding: 2px 7px;
+}
+.narrate .nb-text {
+  font-size: 13.5px; font-weight: 700; line-height: 1.65;
+  color: var(--c-ink-soft);
+}
+.narrate .nb-chips {
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  min-height: 22px;   /* 没有变化时也占位，保证高度恒定 */
+}
+
+/* 配色变体 */
+.narrate.k-choice    { --nc: var(--c-blue); }
+.narrate.k-milestone { --nc: var(--c-gold); }
+.narrate.k-warn      { --nc: var(--c-amber); }
+.narrate.k-danger    { --nc: var(--c-red); }
+.narrate.k-birth     { --nc: var(--c-purple); }
+.narrate.k-danger .nb-text { color: var(--c-red); }
+
+/* ===== 底部操作提示 ===== */
+.hintrow {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 10px; color: var(--c-muted); font-size: 11.5px;
+}
+.hintrow kbd {
+  background: var(--c-card); border: 1px solid var(--c-line);
+  border-radius: 5px; padding: 1px 6px;
+  font-size: 10.5px; font-family: inherit;
+}
+
+/* =============================================================
+ * 卡片区
+ * 窄屏：卡片贴着屏幕底部（便于单手操作），上方是信息区
+ * ============================================================= */
+.cardzone {
+  position: relative;
+  flex: 1;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  min-height: 0;
+}
+
+.card { width: 100%; }
+
+.sidecard { background: var(--c-panel); border: 2px solid var(--c-line); border-radius: 20px; padding: 16px; }
+.sidecard h4 { font-size: 13px; color: var(--c-muted); margin-bottom: 10px; }
+
+.milestone-mini { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; font-size: 12px; color: var(--c-ink-soft); }
+.milestone-mini .ma { flex: none; font-weight: 800; color: var(--c-green); }
+
+.flagline { font-size: 12.5px; color: var(--c-ink-mid); line-height: 1.9; }
