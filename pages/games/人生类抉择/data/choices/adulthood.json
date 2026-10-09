@@ -1,0 +1,1936 @@
+{
+  "title": "青年 18-29",
+  "events": [
+    {
+      "id": "e20",
+      "name": "高考",
+      "min": 18,
+      "max": 22,
+      "text": "高考出分了，志愿表摆在面前。",
+      "left": {
+        "label": "报兴趣专业",
+        "fx": {
+          "mood": 6,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "报热门专业",
+        "fx": {
+          "career": 6,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e21",
+      "name": "求职",
+      "min": 19,
+      "max": 26,
+      "text": "毕业求职，两份 offer：大厂 996 高薪 vs 小厂清闲低薪。",
+      "left": {
+        "label": "进大厂拼",
+        "fx": {
+          "money": 10,
+          "career": 8,
+          "energy": -6,
+          "health": -4,
+          "mood": -4
+        }
+      },
+      "right": {
+        "label": "进小厂",
+        "fx": {
+          "career": 3,
+          "money": 2,
+          "energy": 5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e22",
+      "name": "同事",
+      "min": 18,
+      "max": 29,
+      "text": "公司团建聚餐 AA 制，人均三百。",
+      "left": {
+        "label": "参加",
+        "fx": {
+          "social": 6,
+          "mood": 3,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "借口不去",
+        "fx": {
+          "money": 2,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e23",
+      "name": "房东",
+      "min": 19,
+      "max": 29,
+      "text": "租房二选一：市中心小单间 vs 郊区大两居。",
+      "left": {
+        "label": "市中心小单间",
+        "fx": {
+          "energy": 3,
+          "mood": 1,
+          "money": -6
+        }
+      },
+      "right": {
+        "label": "郊区大两居",
+        "fx": {
+          "money": 3,
+          "energy": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e24",
+      "name": "心动",
+      "min": 18,
+      "max": 29,
+      "once": true,
+      "text": "聚会上，你遇到了一个让你心跳漏拍的人。",
+      "left": {
+        "label": "主动要联系方式",
+        "fx": {
+          "mood": 4,
+          "social": 2,
+          "rel": {
+            "love": 12
+          }
+        },
+        "flags": {
+          "metLove": true
+        },
+        "milestone": "遇见心动的人"
+      },
+      "right": {
+        "label": "擦肩而过",
+        "fx": {
+          "mood": -2,
+          "rel": {
+            "love": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "e25",
+      "name": "健身房",
+      "min": 18,
+      "max": 29,
+      "text": "健身房疯狂推销年卡，办不办？",
+      "left": {
+        "label": "办卡",
+        "fx": {
+          "money": -6,
+          "health": 5,
+          "energy": -2,
+          "skills": {
+            "fitness": 8
+          }
+        }
+      },
+      "right": {
+        "label": "不办",
+        "fx": {
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e26",
+      "name": "体检",
+      "min": 20,
+      "max": 29,
+      "text": "连续加班三个月，体检亮起黄灯。",
+      "left": {
+        "label": "请假调理",
+        "fx": {
+          "health": 7,
+          "career": -4,
+          "money": -2
+        }
+      },
+      "right": {
+        "label": "继续肝",
+        "fx": {
+          "career": 5,
+          "health": -8,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e27",
+      "name": "老板",
+      "min": 19,
+      "max": 29,
+      "text": "老板画了个饼，让你冲一个「必成」的项目。",
+      "left": {
+        "label": "接受加班",
+        "fx": {
+          "career": 7,
+          "money": 4,
+          "energy": -7,
+          "mood": -3,
+          "health": -3
+        }
+      },
+      "right": {
+        "label": "拒绝内卷",
+        "fx": {
+          "energy": 5,
+          "mood": 3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e28",
+      "name": "算命先生",
+      "min": 18,
+      "max": 40,
+      "text": "路边大师说你有财缘，改运只要 88 块。",
+      "left": {
+        "label": "花钱改运",
+        "fx": {
+          "money": -5,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "不信这套",
+        "fx": {
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e29",
+      "name": "同学会",
+      "min": 22,
+      "max": 40,
+      "text": "同学会上，大家都在不动声色地比收入。",
+      "left": {
+        "label": "吹牛撑场面",
+        "fx": {
+          "social": 4,
+          "mood": 2,
+          "money": -2
+        }
+      },
+      "right": {
+        "label": "低调装穷",
+        "fx": {
+          "mood": 1,
+          "social": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e30",
+      "name": "房东",
+      "min": 20,
+      "max": 35,
+      "text": "房东通知：下月起房租涨 20%。",
+      "left": {
+        "label": "认了，续租",
+        "fx": {
+          "money": -5,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "搬家换房",
+        "fx": {
+          "energy": -5,
+          "money": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e31",
+      "name": "恋人",
+      "min": 19,
+      "max": 29,
+      "cond": {
+        "flag": "metLove"
+      },
+      "text": "恋爱一年，对方提出要见家长。",
+      "left": {
+        "label": "勇敢见面",
+        "fx": {
+          "rel": {
+            "family": 4,
+            "love": 10
+          },
+          "mood": 3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "再缓缓",
+        "fx": {
+          "mood": 1,
+          "rel": {
+            "love": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e32",
+      "name": "同事",
+      "min": 20,
+      "max": 35,
+      "text": "同事拉你下班后一起摆摊卖小吃。",
+      "left": {
+        "label": "一起干",
+        "fx": {
+          "money": 8,
+          "energy": -6,
+          "mood": 2,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "money": 1,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a1",
+      "name": "租房",
+      "min": 18,
+      "max": 29,
+      "text": "第一份工作定了，接下来是住哪儿的问题。",
+      "left": {
+        "label": "独自整租",
+        "fx": {
+          "money": -8,
+          "mood": 5,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "找人合租",
+        "fx": {
+          "money": 4,
+          "mood": -3,
+          "social": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a2",
+      "name": "第一份工资",
+      "min": 18,
+      "max": 29,
+      "text": "工资到账那天，手机提示音响了很久。",
+      "left": {
+        "label": "给父母买礼物",
+        "fx": {
+          "money": -6,
+          "mood": 4
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "先存起来",
+        "fx": {
+          "money": 7,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a3",
+      "name": "凌晨的办公室",
+      "min": 20,
+      "max": 29,
+      "text": "整层楼只剩你的工位还亮着。",
+      "left": {
+        "label": "咬牙做完",
+        "fx": {
+          "career": 7,
+          "health": -4,
+          "energy": -6,
+          "money": 4
+        }
+      },
+      "right": {
+        "label": "明天再说",
+        "fx": {
+          "career": -3,
+          "energy": 4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a4",
+      "name": "健身年卡",
+      "min": 18,
+      "max": 29,
+      "text": "健身房说今天办卡送体测。",
+      "left": {
+        "label": "办一张",
+        "fx": {
+          "money": -6,
+          "health": 5
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "再想想",
+        "fx": {
+          "money": 2,
+          "health": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a5",
+      "name": "借钱",
+      "min": 20,
+      "max": 29,
+      "text": "老朋友半夜发来消息，说周转不开。",
+      "left": {
+        "label": "借",
+        "fx": {
+          "money": -8,
+          "mood": 3
+        },
+        "rel": {
+          "friends": 8
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "money": 2,
+          "mood": -2
+        },
+        "rel": {
+          "friends": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a6",
+      "name": "异地",
+      "min": 19,
+      "max": 29,
+      "text": "列车时刻表你都能背下来了。",
+      "cond": {
+        "flag": "metLove"
+      },
+      "left": {
+        "label": "继续跑",
+        "fx": {
+          "mood": -3,
+          "energy": -4
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "到此为止",
+        "fx": {
+          "mood": 3
+        },
+        "rel": {
+          "love": -10
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a7",
+      "name": "考研还是工作",
+      "min": 20,
+      "max": 27,
+      "text": "宿舍熄灯后，这个问题又爬了上来。",
+      "left": {
+        "label": "考研",
+        "fx": {
+          "career": 5,
+          "money": -7,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 10
+        }
+      },
+      "right": {
+        "label": "直接工作",
+        "fx": {
+          "money": 6,
+          "career": 2,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_a8",
+      "name": "体检报告",
+      "min": 22,
+      "max": 29,
+      "text": "报告上有个箭头朝上，你看不懂那串英文。",
+      "left": {
+        "label": "去复查",
+        "fx": {
+          "money": -5,
+          "health": 4,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "先拖着",
+        "fx": {
+          "health": -5,
+          "mood": 2,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b1",
+      "name": "宿舍",
+      "min": 18,
+      "max": 22,
+      "text": "大学报到，六个床位六个人，谁都没说话。",
+      "left": {
+        "label": "先开口打招呼",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "energy": -3
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "整理自己的柜子",
+        "fx": {
+          "mood": 2,
+          "energy": -2,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b2",
+      "name": "社团",
+      "min": 18,
+      "max": 23,
+      "text": "社团招新摆了一整条路，传单塞了满怀。",
+      "left": {
+        "label": "报两个",
+        "fx": {
+          "social": 6,
+          "mood": 5,
+          "energy": -6,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "只报一个",
+        "fx": {
+          "social": 3,
+          "mood": 2,
+          "career": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b3",
+      "name": "教务系统",
+      "min": 18,
+      "max": 24,
+      "text": "成绩出来了，有一门挂了。",
+      "left": {
+        "label": "暑假重修",
+        "fx": {
+          "career": 5,
+          "mood": -5,
+          "energy": -5,
+          "money": -4
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "当没发生",
+        "fx": {
+          "mood": 4,
+          "career": -6,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b4",
+      "name": "通宵",
+      "min": 19,
+      "max": 25,
+      "text": "论文明天交，现在一个字没写。",
+      "left": {
+        "label": "通宵赶完",
+        "fx": {
+          "career": 7,
+          "health": -6,
+          "energy": -8,
+          "mood": -4
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "申请延期",
+        "fx": {
+          "mood": 3,
+          "health": 2,
+          "career": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b5",
+      "name": "岔路口",
+      "min": 21,
+      "max": 25,
+      "text": "考研还是实习，两条路只能选一条。",
+      "left": {
+        "label": "考研",
+        "fx": {
+          "career": 6,
+          "money": -8,
+          "energy": -6
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "去实习",
+        "fx": {
+          "money": 7,
+          "career": 5,
+          "social": 4,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b6",
+      "name": "中介",
+      "min": 20,
+      "max": 29,
+      "text": "租房要押一付三，卡里刚好够。",
+      "left": {
+        "label": "签",
+        "fx": {
+          "money": -12,
+          "mood": 5,
+          "social": 3
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "right": {
+        "label": "找个合租的",
+        "fx": {
+          "money": -6,
+          "mood": -3,
+          "social": 5
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b7",
+      "name": "合租",
+      "min": 20,
+      "max": 29,
+      "text": "室友半夜打游戏，键盘声穿过薄墙。",
+      "left": {
+        "label": "敲墙提醒",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "energy": 4
+        }
+      },
+      "right": {
+        "label": "买副耳塞",
+        "fx": {
+          "money": -3,
+          "energy": 4,
+          "mood": 2,
+          "social": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b8",
+      "name": "银行卡",
+      "min": 20,
+      "max": 27,
+      "text": "第一笔工资到账，数字不大，是你的。",
+      "left": {
+        "label": "请爸妈吃饭",
+        "fx": {
+          "money": -8,
+          "mood": 7,
+          "social": 5
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "存起来",
+        "fx": {
+          "money": 9,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b9",
+      "name": "末班车",
+      "min": 22,
+      "max": 29,
+      "text": "加班到十一点半，末班车还有八分钟。",
+      "left": {
+        "label": "冲",
+        "fx": {
+          "health": -3,
+          "energy": -4,
+          "mood": 3,
+          "career": 4
+        }
+      },
+      "right": {
+        "label": "打车",
+        "fx": {
+          "money": -7,
+          "energy": 3,
+          "career": 4,
+          "mood": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b10",
+      "name": "饭局",
+      "min": 22,
+      "max": 29,
+      "text": "同事聚餐，结账时大家的手机都慢了一秒。",
+      "left": {
+        "label": "抢着买",
+        "fx": {
+          "money": -9,
+          "social": 7,
+          "mood": 4,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "AA",
+        "fx": {
+          "money": -3,
+          "social": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b11",
+      "name": "会议室",
+      "min": 22,
+      "max": 29,
+      "text": "领导当着全组人把你的方案否了。",
+      "left": {
+        "label": "当场争辩",
+        "fx": {
+          "career": 4,
+          "mood": -5,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "会后私下问",
+        "fx": {
+          "career": 6,
+          "mood": -2,
+          "social": 3
+        },
+        "skills": {
+          "charm": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b12",
+      "name": "猎头",
+      "min": 24,
+      "max": 29,
+      "text": "猎头发来消息，工资高三十个点。",
+      "left": {
+        "label": "去聊聊",
+        "fx": {
+          "career": 6,
+          "money": 8,
+          "social": -3,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "留在原地",
+        "fx": {
+          "career": -2,
+          "mood": 4,
+          "social": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b13",
+      "name": "电话",
+      "min": 24,
+      "max": 29,
+      "text": "妈妈又打来，开头是「有个事想跟你商量」。",
+      "left": {
+        "label": "好好听",
+        "fx": {
+          "mood": -3,
+          "social": 4
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "说在开会",
+        "fx": {
+          "mood": -5,
+          "career": 3
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b14",
+      "name": "咖啡厅",
+      "min": 24,
+      "max": 29,
+      "text": "亲戚安排的相亲，对方先到了。",
+      "left": {
+        "label": "认真聊",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "money": -4,
+          "energy": -3
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "坐十分钟就走",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "married"
+      }
+    },
+    {
+      "id": "ad_b15",
+      "name": "火车站",
+      "min": 22,
+      "max": 29,
+      "text": "恋人去了另一座城市，车票很贵。",
+      "left": {
+        "label": "每月去一次",
+        "fx": {
+          "money": -8,
+          "mood": 6,
+          "energy": -4
+        },
+        "rel": {
+          "love": 8
+        }
+      },
+      "right": {
+        "label": "攒着等长假",
+        "fx": {
+          "money": 4,
+          "mood": -4
+        },
+        "rel": {
+          "love": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "dating"
+      }
+    },
+    {
+      "id": "ad_b16",
+      "name": "深夜",
+      "min": 22,
+      "max": 29,
+      "text": "对方说「我们不合适」，语气很轻。",
+      "left": {
+        "label": "挽留",
+        "fx": {
+          "mood": -6,
+          "social": -3
+        },
+        "rel": {
+          "love": -5
+        }
+      },
+      "right": {
+        "label": "说再见",
+        "fx": {
+          "mood": -4,
+          "career": 4,
+          "social": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "dating"
+      }
+    },
+    {
+      "id": "ad_b17",
+      "name": "酒店",
+      "min": 24,
+      "max": 29,
+      "text": "婚宴三十桌，司仪在台上念词。",
+      "left": {
+        "label": "照流程走",
+        "fx": {
+          "money": -14,
+          "mood": 6,
+          "social": 6
+        },
+        "flags": {
+          "married": true
+        },
+        "rel": {
+          "love": 8
+        }
+      },
+      "right": {
+        "label": "一切从简",
+        "fx": {
+          "money": -5,
+          "mood": 5,
+          "social": -3
+        },
+        "flags": {
+          "married": true
+        },
+        "rel": {
+          "love": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "married"
+      }
+    },
+    {
+      "id": "ad_b18",
+      "name": "售楼处",
+      "min": 25,
+      "max": 29,
+      "text": "首付差一点，爸妈说可以帮你。",
+      "left": {
+        "label": "借",
+        "fx": {
+          "money": 12,
+          "mood": -5,
+          "career": 3
+        },
+        "flags": {
+          "house": true
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "right": {
+        "label": "再攒两年",
+        "fx": {
+          "money": 6,
+          "mood": -4,
+          "career": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b19",
+      "name": "驾校",
+      "min": 20,
+      "max": 29,
+      "text": "科目二挂了两次，教练不说话了。",
+      "left": {
+        "label": "继续练",
+        "fx": {
+          "money": -6,
+          "mood": -4,
+          "energy": -5,
+          "career": 4
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "算了不学了",
+        "fx": {
+          "money": 3,
+          "mood": 3,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b20",
+      "name": "4S店",
+      "min": 24,
+      "max": 29,
+      "text": "攒够了一辆车，销售说可以分期。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": -14,
+          "mood": 7,
+          "social": 5,
+          "career": 2
+        },
+        "flags": {
+          "car": true
+        }
+      },
+      "right": {
+        "label": "先不买",
+        "fx": {
+          "money": 8,
+          "mood": -4,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b21",
+      "name": "搬家",
+      "min": 22,
+      "max": 29,
+      "text": "房东涨租八百，合同下月到期。",
+      "left": {
+        "label": "搬",
+        "fx": {
+          "money": -6,
+          "energy": -6,
+          "mood": -3
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "right": {
+        "label": "接受",
+        "fx": {
+          "money": -7,
+          "mood": -4,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b22",
+      "name": "健身房",
+      "min": 20,
+      "max": 29,
+      "text": "年卡三千八，销售说今天办送两节私教。",
+      "left": {
+        "label": "办",
+        "fx": {
+          "money": -7,
+          "health": 6,
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "回家跳操",
+        "fx": {
+          "money": 1,
+          "health": 3,
+          "mood": 2
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b23",
+      "name": "深夜",
+      "min": 20,
+      "max": 29,
+      "text": "队友喊你上线，明天还有早会。",
+      "left": {
+        "label": "再来一把",
+        "fx": {
+          "mood": 6,
+          "health": -5,
+          "energy": -6,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "睡",
+        "fx": {
+          "health": 4,
+          "energy": 6,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b24",
+      "name": "账单",
+      "min": 22,
+      "max": 29,
+      "text": "信用卡可以分十二期，利息藏在角落里。",
+      "left": {
+        "label": "分期",
+        "fx": {
+          "money": 6,
+          "mood": 4,
+          "career": -3
+        },
+        "flags": {
+          "debt": true
+        }
+      },
+      "right": {
+        "label": "一次性付清",
+        "fx": {
+          "money": -8,
+          "mood": -3,
+          "career": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b25",
+      "name": "微信",
+      "min": 22,
+      "max": 29,
+      "text": "老同学开口借两万，说三个月还。",
+      "left": {
+        "label": "借",
+        "fx": {
+          "money": -10,
+          "social": 6,
+          "mood": 3
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "说最近也紧",
+        "fx": {
+          "money": 2,
+          "social": -5,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b26",
+      "name": "体检中心",
+      "min": 24,
+      "max": 29,
+      "text": "体检报告上有一个向上的小箭头。",
+      "left": {
+        "label": "挂专家号",
+        "fx": {
+          "health": 6,
+          "money": -8,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "网上查一查",
+        "fx": {
+          "health": -4,
+          "mood": -4,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b27",
+      "name": "急诊",
+      "min": 22,
+      "max": 29,
+      "text": "凌晨两点肚子疼，你一个人去了医院。",
+      "left": {
+        "label": "叫醒室友陪",
+        "fx": {
+          "health": 6,
+          "mood": 4,
+          "social": 4,
+          "energy": -4
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "right": {
+        "label": "自己打车去",
+        "fx": {
+          "health": 4,
+          "money": -6,
+          "mood": -5,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b28",
+      "name": "网课",
+      "min": 20,
+      "max": 29,
+      "text": "有人靠写代码转了行，课程卖九百九。",
+      "left": {
+        "label": "买课学",
+        "fx": {
+          "money": -7,
+          "career": 7,
+          "energy": -6,
+          "mood": 3
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "找免费资料",
+        "fx": {
+          "money": 1,
+          "career": 4,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b29",
+      "name": "夜市",
+      "min": 20,
+      "max": 29,
+      "text": "下班后摆摊，城管来了就得跑。",
+      "left": {
+        "label": "试试",
+        "fx": {
+          "money": 7,
+          "energy": -6,
+          "social": 4,
+          "career": -3,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "先算了",
+        "fx": {
+          "money": 1,
+          "energy": 3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b30",
+      "name": "报名表",
+      "min": 22,
+      "max": 29,
+      "text": "行业考证，报名费够吃一个月。",
+      "left": {
+        "label": "报",
+        "fx": {
+          "money": -8,
+          "career": 7,
+          "energy": -6,
+          "mood": -2
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "不报",
+        "fx": {
+          "money": 3,
+          "mood": 3,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b31",
+      "name": "包间",
+      "min": 24,
+      "max": 29,
+      "text": "毕业五年同学会，有人已经开上新车。",
+      "left": {
+        "label": "大方赴约",
+        "fx": {
+          "social": 6,
+          "mood": 3,
+          "money": -6,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "找个借口",
+        "fx": {
+          "money": 3,
+          "mood": -3,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b32",
+      "name": "家门口",
+      "min": 24,
+      "max": 29,
+      "text": "带恋人回家吃饭，爸妈在厨房忙。",
+      "left": {
+        "label": "让Ta一起进厨房",
+        "fx": {
+          "mood": 5,
+          "social": 6
+        },
+        "rel": {
+          "family": 6,
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "两人在客厅坐着",
+        "fx": {
+          "mood": 3,
+          "social": 2
+        },
+        "rel": {
+          "love": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "dating"
+      }
+    },
+    {
+      "id": "ad_b33",
+      "name": "地铁",
+      "min": 22,
+      "max": 29,
+      "text": "通勤一小时四十分钟，每天来回。",
+      "left": {
+        "label": "搬到公司附近",
+        "fx": {
+          "money": -8,
+          "energy": 6,
+          "health": 3
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "right": {
+        "label": "忍着",
+        "fx": {
+          "energy": -6,
+          "health": -3,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b34",
+      "name": "会议室",
+      "min": 25,
+      "max": 29,
+      "text": "公司要优化，名单上有你的名字。",
+      "left": {
+        "label": "争取转岗",
+        "fx": {
+          "career": 5,
+          "mood": -5,
+          "energy": -6,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "拿补偿走人",
+        "fx": {
+          "money": 10,
+          "career": -5,
+          "mood": -3,
+          "social": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b35",
+      "name": "图书馆",
+      "min": 23,
+      "max": 27,
+      "text": "考研差了六分，要不要再来一年。",
+      "left": {
+        "label": "二战",
+        "fx": {
+          "career": 7,
+          "money": -9,
+          "energy": -7,
+          "mood": -5
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "去工作",
+        "fx": {
+          "money": 8,
+          "career": 4,
+          "mood": 3,
+          "social": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b36",
+      "name": "邮箱",
+      "min": 21,
+      "max": 27,
+      "text": "国外学校的录取通知躺在收件箱里。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": -16,
+          "career": 8,
+          "mood": 5,
+          "social": -4
+        },
+        "flags": {
+          "study": true
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "留下",
+        "fx": {
+          "money": 6,
+          "career": 3,
+          "mood": -4
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b37",
+      "name": "异国",
+      "min": 22,
+      "max": 29,
+      "text": "留学第一年，超市的价签要换算两次。",
+      "left": {
+        "label": "打零工补贴",
+        "fx": {
+          "money": 7,
+          "energy": -7,
+          "health": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "专心读书",
+        "fx": {
+          "career": 7,
+          "money": -8,
+          "mood": -3
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "study"
+      }
+    },
+    {
+      "id": "ad_b38",
+      "name": "视频通话",
+      "min": 22,
+      "max": 29,
+      "text": "隔着七个时区，家里的晚饭刚上桌。",
+      "left": {
+        "label": "每天打",
+        "fx": {
+          "mood": 4,
+          "energy": -4,
+          "social": 3
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "一周一次",
+        "fx": {
+          "mood": -3,
+          "energy": 2,
+          "career": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "study"
+      }
+    },
+    {
+      "id": "ad_b39",
+      "name": "回国",
+      "min": 25,
+      "max": 29,
+      "text": "毕业了，留还是回。",
+      "left": {
+        "label": "留下攒经验",
+        "fx": {
+          "career": 8,
+          "money": 8,
+          "social": -5,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "回国",
+        "fx": {
+          "mood": 6,
+          "social": 5,
+          "career": -2
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "study"
+      }
+    },
+    {
+      "id": "ad_b40",
+      "name": "家里",
+      "min": 20,
+      "max": 29,
+      "text": "弟弟要交学费，家里开口了。",
+      "left": {
+        "label": "全包",
+        "fx": {
+          "money": -12,
+          "mood": 4
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "出一半",
+        "fx": {
+          "money": -6,
+          "mood": -2
+        },
+        "rel": {
+          "family": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b41",
+      "name": "快递柜",
+      "min": 22,
+      "max": 29,
+      "text": "取件码显示已取，柜子空了。",
+      "left": {
+        "label": "查监控",
+        "fx": {
+          "mood": -3,
+          "energy": -4,
+          "money": 3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "自认倒霉",
+        "fx": {
+          "mood": -5,
+          "money": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b42",
+      "name": "地铁口",
+      "min": 22,
+      "max": 29,
+      "text": "手机不见了，最后一条朋友圈是三分钟前。",
+      "left": {
+        "label": "立刻挂失补卡",
+        "fx": {
+          "money": -6,
+          "mood": -4,
+          "energy": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "先买个便宜的",
+        "fx": {
+          "money": -8,
+          "mood": -3,
+          "social": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b43",
+      "name": "阳台",
+      "min": 20,
+      "max": 29,
+      "text": "阳台朝东，早上能晒到两小时太阳。",
+      "left": {
+        "label": "种点什么",
+        "fx": {
+          "mood": 6,
+          "money": -4,
+          "energy": -3
+        },
+        "flags": {
+          "garden": true
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "摆张椅子",
+        "fx": {
+          "mood": 3,
+          "money": -3,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b44",
+      "name": "社区",
+      "min": 20,
+      "max": 29,
+      "text": "社区招募周末志愿者，管午饭。",
+      "left": {
+        "label": "报名",
+        "fx": {
+          "social": 6,
+          "mood": 5,
+          "energy": -5,
+          "money": -2
+        },
+        "flags": {
+          "volunteer": true
+        }
+      },
+      "right": {
+        "label": "睡个懒觉",
+        "fx": {
+          "energy": 5,
+          "mood": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b45",
+      "name": "请帖",
+      "min": 26,
+      "max": 29,
+      "text": "初恋的结婚请帖，烫金的。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "mood": -4,
+          "social": 5,
+          "money": -6,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "mood": -2,
+          "money": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b46",
+      "name": "厨房",
+      "min": 20,
+      "max": 29,
+      "text": "冰箱里剩半个洋葱和两个蛋。",
+      "left": {
+        "label": "认真做一顿",
+        "fx": {
+          "mood": 5,
+          "health": 3,
+          "energy": -3
+        },
+        "skills": {
+          "cooking": 6
+        }
+      },
+      "right": {
+        "label": "外卖",
+        "fx": {
+          "money": -4,
+          "health": -3,
+          "mood": 3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b47",
+      "name": "记账本",
+      "min": 20,
+      "max": 29,
+      "text": "钱不知道花哪了，你决定记一个月。",
+      "left": {
+        "label": "坚持记",
+        "fx": {
+          "money": 8,
+          "mood": -3,
+          "career": 4
+        }
+      },
+      "right": {
+        "label": "记三天就算了",
+        "fx": {
+          "money": 2,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b48",
+      "name": "书架",
+      "min": 20,
+      "max": 29,
+      "text": "有人推了本很难啃的书，说值得。",
+      "left": {
+        "label": "啃完",
+        "fx": {
+          "mood": 4,
+          "career": 5,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "翻两章放下",
+        "fx": {
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b49",
+      "name": "出租屋",
+      "min": 22,
+      "max": 29,
+      "text": "室友养了猫，你开始打喷嚏。",
+      "left": {
+        "label": "忍着吃药",
+        "fx": {
+          "health": -4,
+          "mood": -3,
+          "social": 4,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "搬走",
+        "fx": {
+          "money": -7,
+          "energy": -6,
+          "health": 4
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_b50",
+      "name": "深夜",
+      "min": 22,
+      "max": 29,
+      "text": "凌晨一点，工作群还在响。",
+      "left": {
+        "label": "回",
+        "fx": {
+          "career": 6,
+          "health": -4,
+          "energy": -5,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "静音",
+        "fx": {
+          "health": 4,
+          "energy": 5,
+          "career": -4,
+          "mood": 3
+        }
+      },
+      "once": true
+    }
+  ]
+}

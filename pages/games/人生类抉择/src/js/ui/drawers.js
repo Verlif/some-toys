@@ -1,5 +1,8 @@
 /**
- * 侧边抽屉：抉择履历 / 人生档案
+ * 底部上浮浮窗：抉择履历 / 人生档案
+ *
+ * 浮窗从屏幕底部升起（CSS 里定义 transform），顶部有一条抓手，
+ * 按住抓手往下拖超过阈值即可关闭，符合移动端底部弹层的直觉。
  */
 
 import { $ } from './dom.js';
@@ -8,6 +11,9 @@ import { barHTML } from './statusBar.js';
 
 const DRAWER_IDS = ['drawerLog', 'drawerArch'];
 
+/** 下拉多少像素算「确认关闭」 */
+const CLOSE_DISTANCE = 64;
+
 export function openDrawer(id) {
   $('backdrop').classList.add('show');
   $(id).classList.add('open');
@@ -15,11 +21,53 @@ export function openDrawer(id) {
 
 export function closeDrawers() {
   $('backdrop').classList.remove('show');
-  DRAWER_IDS.forEach(d => $(d).classList.remove('open'));
+  DRAWER_IDS.forEach(d => {
+    const el = $(d);
+    el.classList.remove('open', 'dragging');
+    el.style.transform = '';   // 清掉拖拽过程中写入的位移
+  });
 }
 
 export function isAnyOpen() {
   return DRAWER_IDS.some(d => $(d).classList.contains('open'));
+}
+
+/**
+ * 给浮窗抓手绑定下拉关闭手势
+ * 只需在 boot() 里调用一次，容器是常驻 DOM，内容重绘不影响监听
+ */
+export function initSheets() {
+  DRAWER_IDS.forEach(id => {
+    const el = $(id);
+    const grab = el.querySelector('.grab');
+    if (!grab) return;
+
+    let startY = null;
+
+    const onMove = e => {
+      if (startY === null) return;
+      const dy = Math.max(0, e.clientY - startY);
+      el.style.transform = `translateY(${dy}px)`;
+    };
+
+    const onEnd = e => {
+      if (startY === null) return;
+      const dy = Math.max(0, e.clientY - startY);
+      startY = null;
+      el.classList.remove('dragging');
+      el.style.transform = '';
+      if (dy >= CLOSE_DISTANCE) closeDrawers();
+    };
+
+    grab.addEventListener('pointerdown', e => {
+      startY = e.clientY;
+      el.classList.add('dragging');
+      grab.setPointerCapture(e.pointerId);
+    });
+    grab.addEventListener('pointermove', onMove);
+    grab.addEventListener('pointerup', onEnd);
+    grab.addEventListener('pointercancel', onEnd);
+  });
 }
 
 /** 抉择履历：倒序展示 */

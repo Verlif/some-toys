@@ -175,6 +175,44 @@ for (const id of Object.keys(aspCases)) {
 }
 if (T.winAge > 0 && T.winAge <= 120) ok(`胜利年龄配置为 ${T.winAge} 岁`);
 
+/* ---------- 7. 事件规模与单局去重 ----------
+ * 所有事件默认 once，同一局内不应出现重复卡牌。
+ * 这里跑若干局不同种子，逐局核对，顺便统计年龄段的池子是否够深。 */
+console.log('\n[7] 事件规模与单局去重');
+
+// 每个人生阶段在当前年龄区间内的可抽事件数（不含 cond 限制）
+const bands = [[6, 11, '童年'], [12, 17, '少年'], [18, 29, '青年'], [30, 49, '中年'], [50, 64, '知命'], [65, 79, '晚年']];
+let thin = 0;
+for (const [lo, hi, label] of bands) {
+  const n = db.events.filter(e => e.min <= hi && e.max >= lo).length;
+  const years = hi - lo + 1;
+  if (n < years * 3) { bad(`${label}（${lo}-${hi}）事件偏少：${n} 条 / ${years} 年`); thin++; }
+  else ok(`${label}（${lo}-${hi}）${n} 条可抽事件，覆盖 ${years} 年`);
+}
+if (!thin) console.log('  ✓ 各阶段事件池深度足够');
+
+let dupGames = 0, maxDup = 0;
+const touched = new Set();
+for (let g = 0; g < 40; g++) {
+  setSeed(1000 + g * 977);
+  const S = newGame(db.aspirationIds[g % db.aspirationIds.length]);
+  const seen = new Set();
+  let dup = 0, turns = 0;
+  while (!S.ended && turns < 300) {
+    const ev = pickEvent(S);
+    if (!ev) { bad(`seed=${1000 + g * 977} 第 ${turns} 回合抽不到事件（年龄 ${S.age}）`); break; }
+    if (seen.has(ev.id)) dup++;
+    seen.add(ev.id);
+    touched.add(ev.id);
+    choose(S, ev, turns % 2 ? 'left' : 'right');
+    turns++;
+  }
+  if (dup) { dupGames++; maxDup = Math.max(maxDup, dup); }
+}
+if (dupGames) bad(`40 局中有 ${dupGames} 局出现了重复事件（单局最多重复 ${maxDup} 次）`);
+else ok('40 局随机试玩：单局内零重复事件');
+ok(`40 局共触达 ${touched.size} / ${db.events.length} 条不同事件`);
+
 /* ---------- 汇总 ---------- */
 console.log(failed === 0 ? '\n全部检查通过 ✅\n' : `\n有 ${failed} 项检查未通过 ❌\n`);
 process.exit(failed === 0 ? 0 : 1);

@@ -1,0 +1,1780 @@
+{
+  "title": "晚年 65-79",
+  "events": [
+    {
+      "id": "e57",
+      "name": "住院",
+      "min": 65,
+      "max": 79,
+      "text": "老毛病复发，你又住进了医院。",
+      "left": {
+        "label": "积极配合治疗",
+        "fx": {
+          "health": 6,
+          "energy": -6,
+          "money": -6
+        }
+      },
+      "right": {
+        "label": "顺其自然",
+        "fx": {
+          "health": -5,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e58",
+      "name": "子女",
+      "min": 65,
+      "max": 79,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "子女工作忙，一年也回不来几次。",
+      "left": {
+        "label": "搬去子女的城市",
+        "fx": {
+          "rel": {
+            "family": 6
+          },
+          "money": -4,
+          "energy": -4,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "守着老窝",
+        "fx": {
+          "energy": 4,
+          "mood": 2,
+          "rel": {
+            "family": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e59",
+      "name": "社区",
+      "min": 65,
+      "max": 79,
+      "text": "社区组织老年活动：跳舞、下棋、种花。",
+      "left": {
+        "label": "去凑热闹",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "health": 2
+        }
+      },
+      "right": {
+        "label": "独处清静",
+        "fx": {
+          "energy": 4,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e60",
+      "name": "老伴",
+      "min": 65,
+      "max": 79,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "老伴身体每况愈下，需要人照顾。",
+      "left": {
+        "label": "日夜陪伴",
+        "fx": {
+          "energy": -6,
+          "mood": 2,
+          "health": -2,
+          "rel": {
+            "love": 8
+          }
+        }
+      },
+      "right": {
+        "label": "请保姆分担",
+        "fx": {
+          "money": -6,
+          "rel": {
+            "love": 3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e61",
+      "name": "回忆录",
+      "min": 65,
+      "max": 79,
+      "text": "你想把这一生写下来。",
+      "left": {
+        "label": "动笔写回忆录",
+        "fx": {
+          "mood": 5,
+          "skills": {
+            "craft": 4
+          }
+        }
+      },
+      "right": {
+        "label": "日子过好就行",
+        "fx": {
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e62",
+      "name": "孙辈",
+      "min": 65,
+      "max": 79,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "孙子孙女缠着你要讲年轻时的故事。",
+      "left": {
+        "label": "讲给他们听",
+        "fx": {
+          "rel": {
+            "family": 7
+          },
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "嫌吵躲清静",
+        "fx": {
+          "mood": -2,
+          "rel": {
+            "family": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a1",
+      "name": "晨练",
+      "min": 65,
+      "max": 85,
+      "text": "公园里那群人六点就到了。",
+      "left": {
+        "label": "每天都去",
+        "fx": {
+          "health": 5,
+          "energy": -4,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "睡到自然醒",
+        "fx": {
+          "energy": 4,
+          "health": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a2",
+      "name": "智能手机",
+      "min": 65,
+      "max": 85,
+      "text": "屏幕上的字，怎么看都像在躲你。",
+      "left": {
+        "label": "自己琢磨会",
+        "fx": {
+          "mood": 5,
+          "social": 4,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "让孙辈教",
+        "fx": {
+          "mood": 2,
+          "energy": 2
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a3",
+      "name": "空房间",
+      "min": 68,
+      "max": 85,
+      "text": "老伴的东西还挂在原处，你不太敢动。",
+      "cond": {
+        "flag": "married"
+      },
+      "left": {
+        "label": "慢慢收拾",
+        "fx": {
+          "mood": -6,
+          "health": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "原样留着",
+        "fx": {
+          "mood": -8,
+          "social": -5,
+          "health": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a4",
+      "name": "养老院",
+      "min": 70,
+      "max": 85,
+      "text": "孩子提了一嘴养老院，说环境很好。",
+      "left": {
+        "label": "去看看",
+        "fx": {
+          "money": -10,
+          "social": 5,
+          "mood": 3
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "right": {
+        "label": "就待在家里",
+        "fx": {
+          "money": 4,
+          "energy": -5
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a5",
+      "name": "遗产",
+      "min": 68,
+      "max": 85,
+      "text": "律师说，趁清醒的时候立好最省事。",
+      "left": {
+        "label": "早早立好",
+        "fx": {
+          "mood": 4,
+          "money": -2
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "走一步看一步",
+        "fx": {
+          "mood": -4
+        },
+        "rel": {
+          "family": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a6",
+      "name": "讣告",
+      "min": 66,
+      "max": 85,
+      "text": "通讯录里又一个名字，永远打不通了。",
+      "left": {
+        "label": "去送一程",
+        "fx": {
+          "social": 3,
+          "mood": -6,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "在家默哀",
+        "fx": {
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a7",
+      "name": "回忆录",
+      "min": 68,
+      "max": 85,
+      "text": "孙女说，爷爷你那些事该写下来。",
+      "left": {
+        "label": "写下来",
+        "fx": {
+          "mood": 6,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "算了吧",
+        "fx": {
+          "mood": -2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a8",
+      "name": "孙辈的婚礼",
+      "min": 74,
+      "max": 85,
+      "text": "请柬是烫金的，字比你想的大。",
+      "cond": {
+        "flag": "grandchild"
+      },
+      "left": {
+        "label": "一定要去",
+        "fx": {
+          "mood": 7,
+          "energy": -5
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "视频参加",
+        "fx": {
+          "mood": 3,
+          "energy": 2
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a9",
+      "name": "最后一次远行",
+      "min": 70,
+      "max": 85,
+      "text": "旅行社的小伙子说，这个团年纪最大的八十六。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": -10,
+          "mood": 8,
+          "health": -4,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "看看旧照片就好",
+        "fx": {
+          "mood": 3,
+          "money": 4,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a10",
+      "name": "药断了",
+      "min": 70,
+      "max": 85,
+      "text": "药盒空了，外面下着雨。",
+      "cond": {
+        "flag": "chronic"
+      },
+      "left": {
+        "label": "托邻居代买",
+        "fx": {
+          "health": 4,
+          "social": 3,
+          "money": -2
+        }
+      },
+      "right": {
+        "label": "停几天再说",
+        "fx": {
+          "health": -7,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a11",
+      "name": "旧照片",
+      "min": 66,
+      "max": 85,
+      "text": "铁盒里塞满了照片，背面都没写字。",
+      "left": {
+        "label": "整理成册",
+        "fx": {
+          "mood": 5,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 5
+        }
+      },
+      "right": {
+        "label": "塞回去",
+        "fx": {
+          "mood": -1,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a12",
+      "name": "分歧",
+      "min": 66,
+      "max": 85,
+      "text": "孩子说的那套，你一句也听不进去。",
+      "cond": {
+        "flag": "hasChild"
+      },
+      "left": {
+        "label": "让一步",
+        "fx": {
+          "mood": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "坚持己见",
+        "fx": {
+          "mood": 3
+        },
+        "rel": {
+          "family": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a13",
+      "name": "长期用药",
+      "min": 66,
+      "max": 85,
+      "text": "药已经吃了好几年，盒子攒了一抽屉。",
+      "cond": {
+        "flag": "chronic"
+      },
+      "left": {
+        "label": "按时续方",
+        "fx": {
+          "health": 5,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "吃吃停停",
+        "fx": {
+          "health": -7,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_a14",
+      "name": "自驾游",
+      "min": 65,
+      "max": 78,
+      "text": "车在楼下停了半年，钥匙还挂着。",
+      "cond": {
+        "flag": "car"
+      },
+      "left": {
+        "label": "再开一次",
+        "fx": {
+          "mood": 7,
+          "energy": -5,
+          "money": -6,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "卖掉算了",
+        "fx": {
+          "money": 8,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b1",
+      "name": "公园",
+      "min": 65,
+      "max": 79,
+      "text": "六点的公园，比你起得早的人不少。",
+      "left": {
+        "label": "每天去",
+        "fx": {
+          "health": 6,
+          "social": 6,
+          "mood": 5,
+          "energy": -4
+        },
+        "skills": {
+          "fitness": 5
+        }
+      },
+      "right": {
+        "label": "在家活动",
+        "fx": {
+          "health": 2,
+          "energy": 2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b2",
+      "name": "复查",
+      "min": 65,
+      "max": 79,
+      "text": "复查单上要空腹，早上不能喝水。",
+      "left": {
+        "label": "准时去",
+        "fx": {
+          "health": 6,
+          "money": -6,
+          "mood": -2,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "拖到下个月",
+        "fx": {
+          "health": -6,
+          "money": 3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b3",
+      "name": "药盒",
+      "min": 65,
+      "max": 79,
+      "text": "一周七格，早晚各一次，容易弄混。",
+      "left": {
+        "label": "让孩子帮忙分",
+        "fx": {
+          "health": 5,
+          "mood": 3,
+          "social": 4,
+          "energy": -2
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "自己分",
+        "fx": {
+          "health": 3,
+          "mood": -2,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b4",
+      "name": "卫生间",
+      "min": 65,
+      "max": 79,
+      "text": "地上有水，你滑了一下。",
+      "left": {
+        "label": "去医院拍片",
+        "fx": {
+          "health": 5,
+          "money": -8,
+          "mood": -4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "躺会儿再说",
+        "fx": {
+          "health": -8,
+          "mood": -3,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b5",
+      "name": "骨密度",
+      "min": 66,
+      "max": 79,
+      "text": "报告写着「骨量减少」。",
+      "left": {
+        "label": "补钙加晒太阳",
+        "fx": {
+          "health": 6,
+          "money": -4,
+          "mood": 3,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "不当回事",
+        "fx": {
+          "health": -6,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b6",
+      "name": "眼科",
+      "min": 66,
+      "max": 79,
+      "text": "白内障手术，二十分钟一只眼。",
+      "left": {
+        "label": "做",
+        "fx": {
+          "health": 7,
+          "money": -10,
+          "mood": 4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "等看不见再说",
+        "fx": {
+          "health": -6,
+          "money": 3,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b7",
+      "name": "助听器",
+      "min": 68,
+      "max": 79,
+      "text": "电视声音开到四十，还是听不清。",
+      "left": {
+        "label": "配一个",
+        "fx": {
+          "money": -11,
+          "health": 4,
+          "mood": 5,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "让他们大声点",
+        "fx": {
+          "money": 2,
+          "mood": -4,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b8",
+      "name": "牙科",
+      "min": 66,
+      "max": 79,
+      "text": "假牙磨得疼，吃饭成了任务。",
+      "left": {
+        "label": "重新配",
+        "fx": {
+          "money": -9,
+          "health": 5,
+          "mood": 4,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "凑合",
+        "fx": {
+          "health": -5,
+          "mood": -4,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b9",
+      "name": "路口",
+      "min": 68,
+      "max": 79,
+      "text": "绿灯只剩十五秒，你走到一半。",
+      "left": {
+        "label": "慢慢走完",
+        "fx": {
+          "health": -3,
+          "mood": 4,
+          "energy": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "退回等下一个",
+        "fx": {
+          "health": 3,
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b10",
+      "name": "教室",
+      "min": 65,
+      "max": 79,
+      "text": "老年大学开了书法班，墨汁管够。",
+      "left": {
+        "label": "报名",
+        "fx": {
+          "mood": 6,
+          "social": 6,
+          "money": -4,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 6
+        }
+      },
+      "right": {
+        "label": "在家临帖",
+        "fx": {
+          "mood": 4,
+          "money": -2,
+          "social": -3
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b11",
+      "name": "电话",
+      "min": 68,
+      "max": 79,
+      "text": "孙子考上了，第一个打给你。",
+      "left": {
+        "label": "包个红包",
+        "fx": {
+          "money": -9,
+          "mood": 8,
+          "social": 6
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "说句好听的",
+        "fx": {
+          "mood": 6,
+          "social": 5,
+          "money": 1
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "grandchild"
+      }
+    },
+    {
+      "id": "el_b12",
+      "name": "床边",
+      "min": 70,
+      "max": 79,
+      "text": "老伴早上没醒，呼吸很轻。",
+      "left": {
+        "label": "守着",
+        "fx": {
+          "mood": -9,
+          "health": -5,
+          "energy": -7,
+          "social": 5
+        },
+        "rel": {
+          "love": 9
+        }
+      },
+      "right": {
+        "label": "叫孩子回来",
+        "fx": {
+          "mood": -8,
+          "money": -5,
+          "social": 6
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "el_b13",
+      "name": "屋子",
+      "min": 68,
+      "max": 79,
+      "text": "现在屋里只剩你一个人的脚步声。",
+      "left": {
+        "label": "养只猫作伴",
+        "fx": {
+          "mood": 6,
+          "money": -7,
+          "energy": -4,
+          "health": 2,
+          "social": 3
+        },
+        "flags": {
+          "pet": true,
+          "petCat": true
+        }
+      },
+      "right": {
+        "label": "把电视开着",
+        "fx": {
+          "mood": -3,
+          "energy": -2,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b14",
+      "name": "中介",
+      "min": 70,
+      "max": 79,
+      "text": "家政公司介绍了一个住家阿姨。",
+      "left": {
+        "label": "请",
+        "fx": {
+          "money": -12,
+          "health": 5,
+          "mood": 4,
+          "energy": 5,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "自己来",
+        "fx": {
+          "money": 5,
+          "health": -5,
+          "energy": -6,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b15",
+      "name": "养老院",
+      "min": 70,
+      "max": 79,
+      "text": "孩子带你去看了一家养老院，很干净。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": -14,
+          "health": 6,
+          "mood": -5,
+          "social": -5,
+          "energy": 5
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "money": 5,
+          "mood": 4,
+          "health": -4,
+          "energy": -5
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b16",
+      "name": "律师",
+      "min": 70,
+      "max": 79,
+      "text": "律师问得很细，房子、存款、谁先谁后。",
+      "left": {
+        "label": "办清楚",
+        "fx": {
+          "money": -7,
+          "mood": 4,
+          "career": 4,
+          "social": 5
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "口头说说就行",
+        "fx": {
+          "money": 3,
+          "mood": -4,
+          "social": -5
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "divorced"
+      }
+    },
+    {
+      "id": "el_b17",
+      "name": "老屋",
+      "min": 68,
+      "max": 79,
+      "text": "老屋挂出去半年了，只有一个报价。",
+      "left": {
+        "label": "卖",
+        "fx": {
+          "money": 12,
+          "mood": -5,
+          "social": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "留着",
+        "fx": {
+          "money": -5,
+          "mood": 5,
+          "energy": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b18",
+      "name": "隔壁",
+      "min": 66,
+      "max": 79,
+      "text": "隔壁搬走了，门口的鞋架空了。",
+      "left": {
+        "label": "去问问",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "energy": -2
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "right": {
+        "label": "当作没注意",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b19",
+      "name": "饭馆",
+      "min": 68,
+      "max": 79,
+      "text": "每年一次的老友饭局，今年订了小包间。",
+      "left": {
+        "label": "还是去",
+        "fx": {
+          "social": 7,
+          "mood": 6,
+          "money": -6,
+          "energy": -4
+        },
+        "rel": {
+          "friends": 7
+        }
+      },
+      "right": {
+        "label": "身体吃不消",
+        "fx": {
+          "health": 4,
+          "mood": -5,
+          "social": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b20",
+      "name": "病房",
+      "min": 68,
+      "max": 79,
+      "text": "这次住了十天，邻床换了三个人。",
+      "left": {
+        "label": "跟每个人都聊",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "health": 3,
+          "energy": -4
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "right": {
+        "label": "闭眼养神",
+        "fx": {
+          "health": 5,
+          "mood": -3,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b21",
+      "name": "屏幕",
+      "min": 66,
+      "max": 79,
+      "text": "孩子教了六次视频通话，你还是会按错。",
+      "left": {
+        "label": "再学一遍",
+        "fx": {
+          "mood": 4,
+          "social": 6,
+          "energy": -3,
+          "career": 2
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "算了打电话",
+        "fx": {
+          "mood": -3,
+          "social": 3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b22",
+      "name": "信箱",
+      "min": 68,
+      "max": 79,
+      "text": "孙女寄来一张画，画里的人有三个圈。",
+      "left": {
+        "label": "贴在墙上",
+        "fx": {
+          "mood": 8,
+          "social": 6,
+          "energy": -1
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "收进抽屉",
+        "fx": {
+          "mood": 4,
+          "career": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "grandchild"
+      }
+    },
+    {
+      "id": "el_b23",
+      "name": "棋盘",
+      "min": 65,
+      "max": 79,
+      "text": "你想教孙子下棋，他一直看手机。",
+      "left": {
+        "label": "慢慢教",
+        "fx": {
+          "mood": 5,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "收起来",
+        "fx": {
+          "mood": -4,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "grandchild"
+      }
+    },
+    {
+      "id": "el_b24",
+      "name": "菜地",
+      "min": 65,
+      "max": 79,
+      "text": "阳台上种的小葱，掐了一茬又一茬。",
+      "left": {
+        "label": "继续种",
+        "fx": {
+          "mood": 5,
+          "health": 3,
+          "energy": -3
+        },
+        "skills": {
+          "craft": 3
+        }
+      },
+      "right": {
+        "label": "种点花",
+        "fx": {
+          "mood": 6,
+          "social": 4,
+          "energy": -3
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "garden"
+      }
+    },
+    {
+      "id": "el_b25",
+      "name": "账本",
+      "min": 65,
+      "max": 79,
+      "text": "你把每个月的开销记在挂历背面。",
+      "left": {
+        "label": "继续记",
+        "fx": {
+          "money": 6,
+          "mood": 2,
+          "career": 3,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "不记了",
+        "fx": {
+          "money": -3,
+          "mood": 3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b26",
+      "name": "窗边",
+      "min": 66,
+      "max": 79,
+      "text": "下午的光斜进来，你想起六岁那年的院子。",
+      "left": {
+        "label": "写下来",
+        "fx": {
+          "mood": 6,
+          "career": 4,
+          "energy": -3
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "就这么坐着",
+        "fx": {
+          "mood": 4,
+          "health": 2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b27",
+      "name": "车站",
+      "min": 66,
+      "max": 79,
+      "text": "你想回一趟出生的地方，路很远。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "mood": 7,
+          "money": -9,
+          "health": -4,
+          "energy": -6,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "在地图上看看",
+        "fx": {
+          "mood": -4,
+          "money": 2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b28",
+      "name": "山坡",
+      "min": 65,
+      "max": 79,
+      "text": "扫墓的路比去年难走。",
+      "left": {
+        "label": "坚持上去",
+        "fx": {
+          "mood": 5,
+          "health": -4,
+          "energy": -5,
+          "social": 4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "在下面等",
+        "fx": {
+          "health": 3,
+          "mood": -4,
+          "energy": 2
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b29",
+      "name": "信封",
+      "min": 66,
+      "max": 79,
+      "text": "收到一封手写的信，落款是老同学。",
+      "left": {
+        "label": "回一封",
+        "fx": {
+          "mood": 7,
+          "social": 6,
+          "energy": -3
+        },
+        "rel": {
+          "friends": 7
+        }
+      },
+      "right": {
+        "label": "打个电话",
+        "fx": {
+          "mood": 5,
+          "social": 5,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b30",
+      "name": "书柜",
+      "min": 66,
+      "max": 79,
+      "text": "一整柜书，孩子说没人要。",
+      "left": {
+        "label": "捐出去",
+        "fx": {
+          "mood": 5,
+          "social": 6,
+          "energy": -5,
+          "money": -2
+        }
+      },
+      "right": {
+        "label": "留着",
+        "fx": {
+          "mood": 3,
+          "energy": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b31",
+      "name": "鞋盒",
+      "min": 66,
+      "max": 79,
+      "text": "一鞋盒照片，日期全混在一起。",
+      "left": {
+        "label": "按年份排",
+        "fx": {
+          "mood": 6,
+          "energy": -6,
+          "career": 4
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "装上就好",
+        "fx": {
+          "mood": 3,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b32",
+      "name": "厨房",
+      "min": 65,
+      "max": 79,
+      "text": "有人问你那道菜怎么做。",
+      "left": {
+        "label": "手把手教",
+        "fx": {
+          "mood": 7,
+          "social": 6,
+          "energy": -4
+        },
+        "skills": {
+          "cooking": 6
+        }
+      },
+      "right": {
+        "label": "写个方子",
+        "fx": {
+          "mood": 5,
+          "career": 4,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b33",
+      "name": "血压计",
+      "min": 65,
+      "max": 79,
+      "text": "早上量的数和晚上不一样。",
+      "left": {
+        "label": "每天记下来",
+        "fx": {
+          "health": 6,
+          "mood": -2,
+          "energy": -2,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "凭感觉",
+        "fx": {
+          "health": -5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b34",
+      "name": "夜里",
+      "min": 68,
+      "max": 79,
+      "text": "半夜喘不上气，坐起来才好些。",
+      "left": {
+        "label": "叫孩子送医",
+        "fx": {
+          "health": 6,
+          "money": -8,
+          "mood": -5,
+          "energy": -4
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "坐着等天亮",
+        "fx": {
+          "health": -8,
+          "mood": -5,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b35",
+      "name": "医生办公室",
+      "min": 70,
+      "max": 79,
+      "text": "医生说还有个方案，但风险不小。",
+      "left": {
+        "label": "试",
+        "fx": {
+          "health": 7,
+          "money": -13,
+          "mood": -5,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "不试",
+        "fx": {
+          "health": -6,
+          "money": 4,
+          "mood": 3,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b36",
+      "name": "病房",
+      "min": 74,
+      "max": 79,
+      "text": "有人提了「安宁疗护」四个字。",
+      "left": {
+        "label": "接受",
+        "fx": {
+          "mood": 5,
+          "health": 4,
+          "money": -6,
+          "energy": 4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "继续治",
+        "fx": {
+          "health": -7,
+          "money": -12,
+          "mood": -4,
+          "energy": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b37",
+      "name": "床头",
+      "min": 72,
+      "max": 79,
+      "text": "你想给每个人留一句话，纸只有一张。",
+      "left": {
+        "label": "写",
+        "fx": {
+          "mood": 6,
+          "social": 7,
+          "energy": -4,
+          "career": 4
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "见面再说",
+        "fx": {
+          "mood": 4,
+          "social": 5,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b38",
+      "name": "蛋糕",
+      "min": 75,
+      "max": 79,
+      "text": "蛋糕上的数字插不下了。",
+      "left": {
+        "label": "请所有人来",
+        "fx": {
+          "mood": 8,
+          "social": 8,
+          "money": -9,
+          "energy": -6
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "两个人吃",
+        "fx": {
+          "mood": 5,
+          "health": 3,
+          "energy": 3,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b39",
+      "name": "抽屉",
+      "min": 70,
+      "max": 79,
+      "text": "你翻到老伴的一张购物清单，字很小。",
+      "left": {
+        "label": "留着",
+        "fx": {
+          "mood": 5,
+          "social": 4,
+          "energy": -2
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "放回原处",
+        "fx": {
+          "mood": -2,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b40",
+      "name": "客厅",
+      "min": 68,
+      "max": 79,
+      "text": "有件事，你们二十年前就该说开。",
+      "left": {
+        "label": "说",
+        "fx": {
+          "mood": 6,
+          "social": 7,
+          "energy": -4
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "mood": -5,
+          "social": -4,
+          "career": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "el_b41",
+      "name": "小路",
+      "min": 70,
+      "max": 79,
+      "text": "傍晚的这条路，你走了一辈子。",
+      "left": {
+        "label": "再走一趟",
+        "fx": {
+          "mood": 6,
+          "health": 3,
+          "energy": -4,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "在门口坐坐",
+        "fx": {
+          "mood": 4,
+          "energy": 3,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b42",
+      "name": "收音机",
+      "min": 66,
+      "max": 79,
+      "text": "收音机里的戏，还是你年轻时那出。",
+      "left": {
+        "label": "跟着哼",
+        "fx": {
+          "mood": 6,
+          "social": 3,
+          "energy": -2
+        },
+        "skills": {
+          "craft": 3
+        }
+      },
+      "right": {
+        "label": "关掉",
+        "fx": {
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b43",
+      "name": "衣柜",
+      "min": 66,
+      "max": 79,
+      "text": "有几件衣服十年没穿，你舍不得。",
+      "left": {
+        "label": "捐了",
+        "fx": {
+          "mood": 4,
+          "social": 5,
+          "energy": -4,
+          "money": 2
+        }
+      },
+      "right": {
+        "label": "留着",
+        "fx": {
+          "mood": 3,
+          "energy": -1,
+          "money": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b44",
+      "name": "厨房",
+      "min": 66,
+      "max": 79,
+      "text": "你想做一顿全家饭，站久了腰疼。",
+      "left": {
+        "label": "坚持做完",
+        "fx": {
+          "mood": 7,
+          "health": -4,
+          "energy": -7,
+          "social": 7
+        },
+        "skills": {
+          "cooking": 6
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "让大家一起做",
+        "fx": {
+          "mood": 5,
+          "health": 2,
+          "energy": -2,
+          "social": 6
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_b45",
+      "name": "日历",
+      "min": 72,
+      "max": 79,
+      "text": "你在日历上圈了一个日子，没说是什么。",
+      "left": {
+        "label": "等那天",
+        "fx": {
+          "mood": 5,
+          "career": 3,
+          "energy": -2,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "划掉",
+        "fx": {
+          "mood": -4,
+          "energy": 3,
+          "career": 3
+        }
+      },
+      "once": true
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "meters": [
+    {
+      "id": "health",
+      "label": "健康",
+      "color": "#D96C5F",
+      "icon": "heart"
+    },
+    {
+      "id": "mood",
+      "label": "心情",
+      "color": "#E8A94B",
+      "icon": "smile"
+    },
+    {
+      "id": "money",
+      "label": "金钱",
+      "color": "#4E9A6F",
+      "icon": "coin"
+    },
+    {
+      "id": "energy",
+      "label": "精力",
+      "color": "#5E9CC4",
+      "icon": "bolt"
+    },
+    {
+      "id": "social",
+      "label": "社交",
+      "color": "#C77DB8",
+      "icon": "people"
+    },
+    {
+      "id": "career",
+      "label": "事业",
+      "color": "#8B7FBE",
+      "icon": "case"
+    }
+  ],
+  "stages": [
+    {
+      "max": 11,
+      "label": "童年"
+    },
+    {
+      "max": 17,
+      "label": "少年"
+    },
+    {
+      "max": 29,
+      "label": "青年"
+    },
+    {
+      "max": 49,
+      "label": "中年"
+    },
+    {
+      "max": 64,
+      "label": "知命"
+    },
+    {
+      "max": 120,
+      "label": "晚年"
+    }
+  ],
+  "skills": [
+    {
+      "id": "knowledge",
+      "label": "学识"
+    },
+    {
+      "id": "cooking",
+      "label": "厨艺"
+    },
+    {
+      "id": "fitness",
+      "label": "运动"
+    },
+    {
+      "id": "charm",
+      "label": "魅力"
+    },
+    {
+      "id": "craft",
+      "label": "手巧"
+    }
+  ],
+  "relations": [
+    {
+      "id": "family",
+      "label": "亲情",
+      "color": "#C77DB8"
+    },
+    {
+      "id": "friends",
+      "label": "友情",
+      "color": "#C77DB8"
+    },
+    {
+      "id": "love",
+      "label": "爱情",
+      "color": "#C77DB8"
+    }
+  ]
+}

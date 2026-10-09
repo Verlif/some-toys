@@ -1,0 +1,36 @@
+{
+  "traits": {
+    "optimist": {
+      "name": "乐天派",
+      "desc": "心情正向变化 +20%"
+    },
+    "workaholic": {
+      "name": "工作狂",
+      "desc": "事业正向变化再 +2"
+    },
+    "introvert": {
+      "name": "社恐",
+      "desc": "社交收益减半，独处更自在"
+    },
+    "thrifty": {
+      "name": "节俭",
+      "desc": "金钱消耗 -20%"
+    },
+    "gymrat": {
+      "name": "健身狂",
+      "desc": "健康正向变化 +20%"
+    },
+    "foodie": {
+      "name": "吃货",
+      "desc": "解锁美食事件，美食更快乐"
+    },
+    "scholar": {
+      "name": "学霸",
+      "desc": "学识成长更快，解锁学术事件"
+    },
+    "adventurer": {
+      "name": "冒险家",
+      "desc": "解锁冒险事件，大胆去闯"
+    }
+  }
+}

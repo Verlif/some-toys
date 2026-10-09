@@ -1,0 +1,903 @@
+{
+  "title": "生活支线（车 / 房 / 搬家 / 园艺 / 债务 / 名声 / 志愿 / 留学）",
+  "events": [
+    {
+      "id": "lf_a1",
+      "name": "4S店",
+      "min": 22,
+      "max": 70,
+      "text": "车该保养了，报价单有五项可选。",
+      "left": {
+        "label": "全做",
+        "fx": {
+          "money": -9,
+          "health": 2,
+          "mood": 3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "只做必要的",
+        "fx": {
+          "money": -4,
+          "health": -3,
+          "mood": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "car"
+      }
+    },
+    {
+      "id": "lf_a2",
+      "name": "罚单",
+      "min": 22,
+      "max": 70,
+      "text": "挡风玻璃上夹了张单子。",
+      "left": {
+        "label": "认罚",
+        "fx": {
+          "money": -6,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "找人问问能不能消",
+        "fx": {
+          "money": -3,
+          "social": -4,
+          "mood": -2,
+          "career": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "car"
+      }
+    },
+    {
+      "id": "lf_a3",
+      "name": "高速",
+      "min": 24,
+      "max": 68,
+      "text": "假期高速免费，堵八个小时。",
+      "left": {
+        "label": "出发",
+        "fx": {
+          "mood": 6,
+          "health": -3,
+          "energy": -6,
+          "social": 5,
+          "money": -6
+        }
+      },
+      "right": {
+        "label": "改坐高铁",
+        "fx": {
+          "money": -8,
+          "mood": 3,
+          "energy": -2,
+          "health": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "car"
+      }
+    },
+    {
+      "id": "lf_a4",
+      "name": "二手车",
+      "min": 30,
+      "max": 75,
+      "text": "车一年开不了几次，卖还是留。",
+      "left": {
+        "label": "卖",
+        "fx": {
+          "money": 10,
+          "mood": -4,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "留着",
+        "fx": {
+          "money": -5,
+          "mood": 3,
+          "career": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "car"
+      }
+    },
+    {
+      "id": "lf_a5",
+      "name": "雨夜",
+      "min": 24,
+      "max": 70,
+      "text": "雨夜里车抛锚在环线上。",
+      "left": {
+        "label": "等救援",
+        "fx": {
+          "money": -6,
+          "health": -3,
+          "mood": -4,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "自己试着修",
+        "fx": {
+          "money": 2,
+          "health": -4,
+          "energy": -5,
+          "career": 3
+        },
+        "skills": {
+          "craft": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "car"
+      }
+    },
+    {
+      "id": "lf_a6",
+      "name": "物业",
+      "min": 28,
+      "max": 75,
+      "text": "物业费要涨，业主群里吵翻了。",
+      "left": {
+        "label": "参与维权",
+        "fx": {
+          "social": 6,
+          "mood": -4,
+          "energy": -5,
+          "career": -2,
+          "money": 4
+        }
+      },
+      "right": {
+        "label": "照交",
+        "fx": {
+          "money": -6,
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "house"
+      }
+    },
+    {
+      "id": "lf_a7",
+      "name": "楼上装修",
+      "min": 28,
+      "max": 75,
+      "text": "楼上装修，电钻从早上八点开始。",
+      "left": {
+        "label": "上去商量",
+        "fx": {
+          "social": 5,
+          "mood": -2,
+          "energy": -2,
+          "health": 2
+        }
+      },
+      "right": {
+        "label": "戴耳塞忍",
+        "fx": {
+          "health": -3,
+          "mood": -4,
+          "energy": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "house"
+      }
+    },
+    {
+      "id": "lf_a8",
+      "name": "天花板",
+      "min": 30,
+      "max": 78,
+      "text": "天花板上出现一片水渍，还在扩大。",
+      "left": {
+        "label": "立刻修",
+        "fx": {
+          "money": -11,
+          "mood": -3,
+          "health": 3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "摆个盆接着",
+        "fx": {
+          "money": 2,
+          "mood": -5,
+          "health": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "house"
+      }
+    },
+    {
+      "id": "lf_a9",
+      "name": "家具",
+      "min": 30,
+      "max": 75,
+      "text": "客厅那套家具，跟了你十五年。",
+      "left": {
+        "label": "换",
+        "fx": {
+          "money": -10,
+          "mood": 6,
+          "social": 4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "修一修继续用",
+        "fx": {
+          "money": -3,
+          "mood": 3,
+          "energy": -3
+        },
+        "skills": {
+          "craft": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "house"
+      }
+    },
+    {
+      "id": "lf_a10",
+      "name": "月供",
+      "min": 30,
+      "max": 65,
+      "text": "这个月的月供有点吃紧。",
+      "left": {
+        "label": "找家里周转",
+        "fx": {
+          "money": 9,
+          "mood": -5,
+          "social": -3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "先刷信用卡",
+        "fx": {
+          "money": 6,
+          "mood": -4,
+          "career": -3
+        },
+        "flags": {
+          "debt": true
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "house"
+      }
+    },
+    {
+      "id": "lf_a11",
+      "name": "新城市",
+      "min": 20,
+      "max": 60,
+      "text": "搬到新城市的第一个月，谁也不认识。",
+      "left": {
+        "label": "主动出去认识人",
+        "fx": {
+          "social": 7,
+          "mood": 5,
+          "energy": -4,
+          "money": -4
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "先熟悉工作",
+        "fx": {
+          "career": 6,
+          "mood": -3,
+          "energy": -3,
+          "social": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "moved"
+      }
+    },
+    {
+      "id": "lf_a12",
+      "name": "旧邻居",
+      "min": 24,
+      "max": 75,
+      "text": "老邻居发消息，说那边拆了。",
+      "left": {
+        "label": "回去看看",
+        "fx": {
+          "mood": 4,
+          "money": -5,
+          "energy": -4,
+          "social": 5
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "回个消息",
+        "fx": {
+          "mood": -2,
+          "career": 3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "moved"
+      }
+    },
+    {
+      "id": "lf_a13",
+      "name": "纸箱",
+      "min": 22,
+      "max": 75,
+      "text": "搬完家还剩七个纸箱没拆。",
+      "left": {
+        "label": "一周内拆完",
+        "fx": {
+          "mood": 5,
+          "energy": -5,
+          "career": 4
+        },
+        "skills": {
+          "craft": 3
+        }
+      },
+      "right": {
+        "label": "先放着",
+        "fx": {
+          "mood": -3,
+          "energy": 2,
+          "social": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "moved"
+      }
+    },
+    {
+      "id": "lf_a14",
+      "name": "投诉",
+      "min": 30,
+      "max": 78,
+      "text": "物业说你的菜地占了公共区域。",
+      "left": {
+        "label": "拔掉",
+        "fx": {
+          "mood": -5,
+          "social": 4,
+          "energy": -3,
+          "health": -1
+        }
+      },
+      "right": {
+        "label": "改成盆栽",
+        "fx": {
+          "mood": 3,
+          "money": -5,
+          "energy": -4,
+          "social": 3
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "garden"
+      }
+    },
+    {
+      "id": "lf_a15",
+      "name": "丰收",
+      "min": 30,
+      "max": 78,
+      "text": "今年结得太多，一家吃不完。",
+      "left": {
+        "label": "分给邻居",
+        "fx": {
+          "social": 7,
+          "mood": 7,
+          "energy": -4
+        },
+        "rel": {
+          "friends": 6
+        }
+      },
+      "right": {
+        "label": "做成腌菜",
+        "fx": {
+          "mood": 5,
+          "health": 3,
+          "energy": -4,
+          "money": 2
+        },
+        "skills": {
+          "cooking": 6
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "garden"
+      }
+    },
+    {
+      "id": "lf_a16",
+      "name": "暴雨",
+      "min": 30,
+      "max": 78,
+      "text": "一场暴雨，把一年的心血打趴了。",
+      "left": {
+        "label": "重新种",
+        "fx": {
+          "mood": -4,
+          "energy": -6,
+          "health": -2,
+          "career": 4
+        },
+        "skills": {
+          "craft": 5
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "mood": -5,
+          "energy": 4,
+          "social": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "garden"
+      }
+    },
+    {
+      "id": "lf_a17",
+      "name": "催收",
+      "min": 24,
+      "max": 70,
+      "text": "催收电话一天打了四个。",
+      "left": {
+        "label": "分期还清",
+        "fx": {
+          "money": -10,
+          "mood": -4,
+          "career": 4,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "先躲一躲",
+        "fx": {
+          "money": 3,
+          "mood": -6,
+          "social": -5,
+          "health": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "debt"
+      }
+    },
+    {
+      "id": "lf_a18",
+      "name": "清单",
+      "min": 24,
+      "max": 70,
+      "text": "你把欠的钱列成一张表，数字比想象的小。",
+      "left": {
+        "label": "按月还",
+        "fx": {
+          "money": -8,
+          "mood": 4,
+          "career": 5,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "找份兼职",
+        "fx": {
+          "money": 7,
+          "health": -5,
+          "energy": -7,
+          "career": 3,
+          "mood": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "debt"
+      }
+    },
+    {
+      "id": "lf_a19",
+      "name": "结清",
+      "min": 26,
+      "max": 75,
+      "text": "最后一笔还完了，收据你留着。",
+      "left": {
+        "label": "奖励自己一顿",
+        "fx": {
+          "money": -7,
+          "mood": 9,
+          "social": 5,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "存起来",
+        "fx": {
+          "money": 8,
+          "mood": 5,
+          "career": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "debt"
+      }
+    },
+    {
+      "id": "lf_a20",
+      "name": "街上",
+      "min": 26,
+      "max": 70,
+      "text": "有人在街上认出了你，要合影。",
+      "left": {
+        "label": "合",
+        "fx": {
+          "mood": 6,
+          "social": 6,
+          "energy": -2,
+          "career": 4
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "fame"
+      }
+    },
+    {
+      "id": "lf_a21",
+      "name": "私信箱",
+      "min": 26,
+      "max": 70,
+      "text": "私信里有几条很难听的话。",
+      "left": {
+        "label": "删掉不看",
+        "fx": {
+          "mood": 4,
+          "energy": 3,
+          "career": 3,
+          "social": -2
+        }
+      },
+      "right": {
+        "label": "认真回",
+        "fx": {
+          "mood": -6,
+          "energy": -5,
+          "social": 3,
+          "career": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "fame"
+      }
+    },
+    {
+      "id": "lf_a22",
+      "name": "广告",
+      "min": 26,
+      "max": 70,
+      "text": "一个你不了解的产品想让你代言。",
+      "left": {
+        "label": "接",
+        "fx": {
+          "money": 12,
+          "career": 4,
+          "mood": -4,
+          "social": -5
+        }
+      },
+      "right": {
+        "label": "要求先看资料",
+        "fx": {
+          "money": 3,
+          "career": 5,
+          "mood": 3,
+          "energy": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "fame"
+      }
+    },
+    {
+      "id": "lf_a23",
+      "name": "固定对象",
+      "min": 26,
+      "max": 78,
+      "text": "你一直帮的那位，开始等你来。",
+      "left": {
+        "label": "每周都去",
+        "fx": {
+          "social": 7,
+          "mood": 7,
+          "energy": -5,
+          "career": -3
+        },
+        "rel": {
+          "friends": 6
+        }
+      },
+      "right": {
+        "label": "改成两周一次",
+        "fx": {
+          "mood": -3,
+          "energy": 3,
+          "career": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "volunteer"
+      }
+    },
+    {
+      "id": "lf_a24",
+      "name": "误会",
+      "min": 26,
+      "max": 78,
+      "text": "有人以为你另有所图，话说得很难听。",
+      "left": {
+        "label": "解释",
+        "fx": {
+          "mood": -4,
+          "social": 5,
+          "energy": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "不再去了",
+        "fx": {
+          "mood": -6,
+          "social": -5,
+          "energy": 4,
+          "career": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "volunteer"
+      }
+    },
+    {
+      "id": "lf_a25",
+      "name": "感谢信",
+      "min": 28,
+      "max": 78,
+      "text": "社区给你发了一张很朴素的纸。",
+      "left": {
+        "label": "贴在墙上",
+        "fx": {
+          "mood": 7,
+          "social": 6,
+          "career": 4,
+          "energy": -1
+        }
+      },
+      "right": {
+        "label": "收起来",
+        "fx": {
+          "mood": 4,
+          "career": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "volunteer"
+      }
+    },
+    {
+      "id": "lf_a26",
+      "name": "论文",
+      "min": 23,
+      "max": 32,
+      "text": "论文被退回，评审意见写了三页。",
+      "left": {
+        "label": "熬夜改",
+        "fx": {
+          "career": 7,
+          "mood": -6,
+          "energy": -8,
+          "health": -4
+        },
+        "skills": {
+          "knowledge": 9
+        }
+      },
+      "right": {
+        "label": "换个题目",
+        "fx": {
+          "career": -5,
+          "mood": 3,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "study"
+      }
+    },
+    {
+      "id": "lf_a27",
+      "name": "假期",
+      "min": 22,
+      "max": 30,
+      "text": "同学都去旅行了，你在图书馆。",
+      "left": {
+        "label": "继续待着",
+        "fx": {
+          "career": 7,
+          "mood": -5,
+          "energy": -6,
+          "social": -4
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "也出去走走",
+        "fx": {
+          "mood": 7,
+          "money": -8,
+          "social": 6,
+          "career": -4,
+          "energy": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "study"
+      }
+    },
+    {
+      "id": "lf_a28",
+      "name": "答辩",
+      "min": 24,
+      "max": 33,
+      "text": "答辩通过了，你给家里打了电话。",
+      "left": {
+        "label": "好好庆祝",
+        "fx": {
+          "money": -9,
+          "mood": 9,
+          "social": 6,
+          "energy": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "睡一整天",
+        "fx": {
+          "health": 5,
+          "energy": 8,
+          "mood": 5,
+          "money": 1
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "study"
+      }
+    },
+    {
+      "id": "lf_a29",
+      "name": "户口",
+      "min": 25,
+      "max": 40,
+      "text": "留下了，户口和签证还是两回事。",
+      "left": {
+        "label": "继续等",
+        "fx": {
+          "career": 6,
+          "mood": -5,
+          "money": -6,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "换个国家试试",
+        "fx": {
+          "career": 5,
+          "money": -9,
+          "social": -4,
+          "mood": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "study"
+      }
+    },
+    {
+      "id": "lf_a30",
+      "name": "同学录",
+      "min": 30,
+      "max": 79,
+      "text": "你翻到一页，上面每个人都写了「勿忘我」。",
+      "left": {
+        "label": "挨个联系",
+        "fx": {
+          "social": 7,
+          "mood": 6,
+          "energy": -5,
+          "career": -3
+        },
+        "rel": {
+          "friends": 7
+        }
+      },
+      "right": {
+        "label": "放回书架",
+        "fx": {
+          "mood": -3,
+          "career": 4,
+          "energy": 2
+        }
+      },
+      "once": true
+    }
+  ]
+}

@@ -1,0 +1,1347 @@
+{
+  "title": "童年 6-11",
+  "events": [
+    {
+      "id": "e1",
+      "name": "妈妈",
+      "min": 6,
+      "max": 11,
+      "text": "妈妈端出你最爱的红烧肉，可作业还没写。",
+      "left": {
+        "label": "先吃再赶",
+        "fx": {
+          "mood": 6,
+          "energy": 2,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "写完再吃",
+        "fx": {
+          "career": 4,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e2",
+      "name": "爸爸",
+      "min": 6,
+      "max": 11,
+      "text": "爸爸塞给你十块钱，考验你的人生观。",
+      "left": {
+        "label": "买零食爽一把",
+        "fx": {
+          "mood": 5,
+          "money": -4,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "存进储蓄罐",
+        "fx": {
+          "money": 5,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e3",
+      "name": "老师",
+      "min": 6,
+      "max": 11,
+      "text": "老师问你要不要报名区里的数学竞赛。",
+      "left": {
+        "label": "报名拼一把",
+        "fx": {
+          "career": 6,
+          "energy": -4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "不凑热闹",
+        "fx": {
+          "mood": 3,
+          "energy": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e4",
+      "name": "发小",
+      "min": 6,
+      "max": 11,
+      "text": "放学后，发小拉着你去河边捉蝌蚪。",
+      "left": {
+        "label": "一起去",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "回家写作业",
+        "fx": {
+          "career": 4,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e5",
+      "name": "医生",
+      "min": 6,
+      "max": 11,
+      "text": "你感冒了，妈妈劝你吃药休息，你偏想上学。",
+      "left": {
+        "label": "吃药休息",
+        "fx": {
+          "health": 8,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "硬扛上学",
+        "fx": {
+          "career": 3,
+          "health": -6,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e6",
+      "name": "流浪猫",
+      "min": 6,
+      "max": 11,
+      "text": "小区门口来了只流浪猫，一路跟着你回了家。",
+      "left": {
+        "label": "偷偷抱回家",
+        "fx": {
+          "mood": 5,
+          "health": -2,
+          "rel": {
+            "family": -2
+          }
+        },
+        "flags": {
+          "pet": true
+        },
+        "milestone": "有了第一个小伙伴"
+      },
+      "right": {
+        "label": "只喂不养",
+        "fx": {
+          "mood": 3,
+          "money": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e7",
+      "name": "期末",
+      "min": 6,
+      "max": 11,
+      "text": "期末考试前夜，台灯下的你在想什么？",
+      "left": {
+        "label": "通宵复习",
+        "fx": {
+          "career": 7,
+          "energy": -7,
+          "health": -3
+        }
+      },
+      "right": {
+        "label": "早睡早起",
+        "fx": {
+          "energy": 5,
+          "health": 2,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e8",
+      "name": "同学",
+      "min": 6,
+      "max": 11,
+      "text": "同学嘲笑你新配的眼镜，你……",
+      "left": {
+        "label": "当场反击",
+        "fx": {
+          "mood": 4,
+          "social": -4
+        }
+      },
+      "right": {
+        "label": "一笑而过",
+        "fx": {
+          "social": 3,
+          "mood": 1,
+          "skills": {
+            "charm": 3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e9",
+      "name": "爸爸",
+      "min": 6,
+      "max": 11,
+      "text": "爸爸带你去爬山，爬到一半你就累了。",
+      "left": {
+        "label": "咬牙登顶",
+        "fx": {
+          "health": 4,
+          "energy": -5,
+          "skills": {
+            "fitness": 6
+          }
+        }
+      },
+      "right": {
+        "label": "半路休息",
+        "fx": {
+          "energy": 2,
+          "health": 1,
+          "skills": {
+            "fitness": 1
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e10",
+      "name": "妈妈",
+      "min": 6,
+      "max": 11,
+      "text": "妈妈想给你报兴趣班：美术班还是奥数班？",
+      "left": {
+        "label": "美术班",
+        "fx": {
+          "mood": 5,
+          "money": -4,
+          "skills": {
+            "craft": 6
+          }
+        }
+      },
+      "right": {
+        "label": "奥数班",
+        "fx": {
+          "career": 5,
+          "money": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_a1",
+      "name": "同桌",
+      "min": 6,
+      "max": 11,
+      "text": "同桌把你的橡皮藏进了铅笔盒，还冲你笑。",
+      "rel": {
+        "friends": 2
+      },
+      "left": {
+        "label": "抢回来",
+        "fx": {
+          "mood": 4,
+          "social": -2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "当作没看见",
+        "fx": {
+          "mood": -2,
+          "social": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_a2",
+      "name": "体育课",
+      "min": 7,
+      "max": 11,
+      "text": "八百米，跑道长得不像话。",
+      "left": {
+        "label": "咬牙跑完",
+        "fx": {
+          "health": 4,
+          "energy": -5,
+          "mood": 2
+        },
+        "skills": {
+          "fitness": 4
+        }
+      },
+      "right": {
+        "label": "装肚子疼",
+        "fx": {
+          "energy": 3,
+          "health": -2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_a3",
+      "name": "动画片",
+      "min": 6,
+      "max": 11,
+      "text": "晚饭前，动画片正好演到大结局。",
+      "left": {
+        "label": "看完再吃",
+        "fx": {
+          "mood": 5,
+          "health": -2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "先写作业",
+        "fx": {
+          "career": 3,
+          "mood": -2,
+          "energy": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_a4",
+      "name": "零花钱",
+      "min": 6,
+      "max": 11,
+      "text": "一周的零花钱到手了，小卖部在招手。",
+      "left": {
+        "label": "全买卡片",
+        "fx": {
+          "mood": 4,
+          "money": -4,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "攒进储蓄罐",
+        "fx": {
+          "money": 5,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_a5",
+      "name": "家长会",
+      "min": 7,
+      "max": 11,
+      "text": "老师说要请家长，你攥着卷子不敢吭声。",
+      "left": {
+        "label": "主动坦白",
+        "fx": {
+          "mood": -3,
+          "social": 3
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "把卷子藏起来",
+        "fx": {
+          "mood": 2
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_a6",
+      "name": "学自行车",
+      "min": 6,
+      "max": 11,
+      "text": "爸爸扶着后座，说这次真的会松手。",
+      "left": {
+        "label": "大胆骑",
+        "fx": {
+          "health": 3,
+          "energy": -4,
+          "mood": 3
+        },
+        "skills": {
+          "fitness": 5
+        }
+      },
+      "right": {
+        "label": "等长大再说",
+        "fx": {
+          "energy": 2
+        },
+        "skills": {
+          "fitness": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b1",
+      "name": "妈妈",
+      "min": 6,
+      "max": 9,
+      "text": "天冷了，妈妈把秋裤摆在你床上，态度不容商量。",
+      "left": {
+        "label": "乖乖穿上",
+        "fx": {
+          "health": 5,
+          "mood": -2,
+          "social": -2
+        }
+      },
+      "right": {
+        "label": "偷偷脱掉",
+        "fx": {
+          "mood": 4,
+          "social": 4,
+          "health": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b2",
+      "name": "同桌",
+      "min": 7,
+      "max": 11,
+      "text": "你忘带橡皮，同桌掰了半块给你，掰得一点也不齐。",
+      "left": {
+        "label": "收下说谢谢",
+        "fx": {
+          "social": 5,
+          "mood": 3
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "right": {
+        "label": "我不需要",
+        "fx": {
+          "mood": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b3",
+      "name": "爸爸",
+      "min": 6,
+      "max": 9,
+      "text": "爸爸说你该一个人睡了，小房间的灯有点暗。",
+      "left": {
+        "label": "勇敢点头",
+        "fx": {
+          "mood": -3,
+          "energy": 3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "再赖一年",
+        "fx": {
+          "mood": 4,
+          "energy": -2,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b4",
+      "name": "膝盖",
+      "min": 7,
+      "max": 11,
+      "text": "你摔在水泥地上，膝盖火辣辣地疼。",
+      "left": {
+        "label": "放声大哭",
+        "fx": {
+          "mood": 4,
+          "social": -2,
+          "health": -1
+        }
+      },
+      "right": {
+        "label": "咬牙爬起来",
+        "fx": {
+          "health": -4,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b5",
+      "name": "爷爷",
+      "min": 6,
+      "max": 11,
+      "text": "爷爷把你叫到墙角，从口袋里摸出皱巴巴的五块钱。",
+      "left": {
+        "label": "收下",
+        "fx": {
+          "money": 5,
+          "mood": 5
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "还给奶奶",
+        "fx": {
+          "mood": -2,
+          "money": -1
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b6",
+      "name": "班主任",
+      "min": 8,
+      "max": 11,
+      "text": "班里选班长，老师念到了你的名字。",
+      "left": {
+        "label": "上台竞选",
+        "fx": {
+          "social": 6,
+          "mood": 3,
+          "energy": -4,
+          "career": 4
+        },
+        "skills": {
+          "charm": 5
+        }
+      },
+      "right": {
+        "label": "摆手拒绝",
+        "fx": {
+          "mood": 2,
+          "energy": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b7",
+      "name": "妈妈",
+      "min": 6,
+      "max": 11,
+      "text": "明天春游，妈妈让你自己决定带多少钱。",
+      "left": {
+        "label": "多带点",
+        "fx": {
+          "mood": 6,
+          "money": -6,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "只带够用的",
+        "fx": {
+          "money": 3,
+          "mood": -2,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b8",
+      "name": "电视",
+      "min": 7,
+      "max": 11,
+      "text": "动画片还剩最后十分钟，已经过了睡觉时间。",
+      "left": {
+        "label": "看完再睡",
+        "fx": {
+          "mood": 5,
+          "energy": -5,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "关掉上床",
+        "fx": {
+          "energy": 5,
+          "health": 3,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b9",
+      "name": "爸爸",
+      "min": 6,
+      "max": 10,
+      "text": "爸爸拆掉自行车的辅助轮，说今天要学会。",
+      "left": {
+        "label": "摔了也继续",
+        "fx": {
+          "health": -4,
+          "mood": 4,
+          "career": 5
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "明天再学",
+        "fx": {
+          "health": 2,
+          "mood": -3,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b10",
+      "name": "同学",
+      "min": 7,
+      "max": 11,
+      "text": "全班都在养蚕，纸盒里沙沙响。",
+      "left": {
+        "label": "也要一盒",
+        "fx": {
+          "mood": 6,
+          "energy": -4,
+          "money": -2
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "看看就好",
+        "fx": {
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b11",
+      "name": "语文老师",
+      "min": 8,
+      "max": 11,
+      "text": "作文题是《我的理想》，格子有四百个。",
+      "left": {
+        "label": "写想当科学家",
+        "fx": {
+          "career": 5,
+          "mood": 2
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "写想当厨师",
+        "fx": {
+          "mood": 5,
+          "career": 1
+        },
+        "skills": {
+          "cooking": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b12",
+      "name": "同学",
+      "min": 8,
+      "max": 11,
+      "text": "有人给你起了个难听的外号，全班都在笑。",
+      "left": {
+        "label": "笑着认下",
+        "fx": {
+          "social": 4,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "当场翻脸",
+        "fx": {
+          "mood": -5,
+          "social": -4,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b13",
+      "name": "妈妈",
+      "min": 6,
+      "max": 11,
+      "text": "妈妈发烧躺在床上，晚饭还没做。",
+      "left": {
+        "label": "煮一碗粥",
+        "fx": {
+          "mood": 3,
+          "energy": -4
+        },
+        "skills": {
+          "cooking": 6
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "叫爸爸回来",
+        "fx": {
+          "mood": -2,
+          "money": -3
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b14",
+      "name": "校门口",
+      "min": 6,
+      "max": 11,
+      "text": "放学下大雨，别的孩子都被接走了。",
+      "left": {
+        "label": "冲进雨里跑回家",
+        "fx": {
+          "health": -5,
+          "mood": -2,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "等到雨小些",
+        "fx": {
+          "health": 2,
+          "mood": -4,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b15",
+      "name": "表弟",
+      "min": 6,
+      "max": 10,
+      "text": "表弟来家里，一眼看中你最宝贝的玩具。",
+      "left": {
+        "label": "送给他",
+        "fx": {
+          "mood": -4,
+          "social": 6
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "藏起来",
+        "fx": {
+          "mood": 3,
+          "social": -4,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b16",
+      "name": "妈妈",
+      "min": 7,
+      "max": 11,
+      "text": "花瓶碎在地上，妈妈问是谁干的。",
+      "left": {
+        "label": "承认",
+        "fx": {
+          "mood": -3,
+          "social": 4,
+          "career": 3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "说是猫",
+        "fx": {
+          "mood": 2,
+          "social": -3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b17",
+      "name": "牙医",
+      "min": 6,
+      "max": 10,
+      "text": "乳牙松动了，医生说要拔。",
+      "left": {
+        "label": "张嘴",
+        "fx": {
+          "health": 4,
+          "mood": -4,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "逃回家",
+        "fx": {
+          "health": -3,
+          "mood": 3,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b18",
+      "name": "新同学",
+      "min": 8,
+      "max": 11,
+      "text": "班里转来一个谁都不认识的小孩，一个人坐着。",
+      "left": {
+        "label": "过去搭话",
+        "fx": {
+          "social": 6,
+          "mood": 3,
+          "energy": -2
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "先观察两天",
+        "fx": {
+          "mood": -1,
+          "social": -2,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b19",
+      "name": "体育老师",
+      "min": 8,
+      "max": 11,
+      "text": "运动会还差一个六十米的名额。",
+      "left": {
+        "label": "我来",
+        "fx": {
+          "health": 5,
+          "social": 4,
+          "energy": -6
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "当观众",
+        "fx": {
+          "energy": 3,
+          "mood": 2,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b20",
+      "name": "奶奶",
+      "min": 6,
+      "max": 11,
+      "text": "奶奶在厨房择菜，招手让你过去。",
+      "left": {
+        "label": "蹲下来帮忙",
+        "fx": {
+          "mood": 4,
+          "energy": -3
+        },
+        "skills": {
+          "cooking": 4
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "去看电视",
+        "fx": {
+          "mood": 2,
+          "energy": 2
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b21",
+      "name": "舅舅",
+      "min": 7,
+      "max": 11,
+      "text": "过年了，舅舅把红包往你兜里塞。",
+      "left": {
+        "label": "上交妈妈",
+        "fx": {
+          "money": 2,
+          "mood": -3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "偷偷留着",
+        "fx": {
+          "money": 8,
+          "mood": 5,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b22",
+      "name": "少年宫",
+      "min": 7,
+      "max": 11,
+      "text": "少年宫招生，画画班和足球班都在同一天。",
+      "left": {
+        "label": "报画画",
+        "fx": {
+          "mood": 4,
+          "money": -5
+        },
+        "skills": {
+          "craft": 7
+        }
+      },
+      "right": {
+        "label": "报足球",
+        "fx": {
+          "health": 5,
+          "mood": 4,
+          "money": -5
+        },
+        "skills": {
+          "fitness": 7
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b23",
+      "name": "爸爸",
+      "min": 7,
+      "max": 11,
+      "text": "家里搬回一台旧电脑，开机要等很久。",
+      "left": {
+        "label": "整夜研究",
+        "fx": {
+          "mood": 5,
+          "energy": -6,
+          "health": -3
+        },
+        "skills": {
+          "knowledge": 8
+        }
+      },
+      "right": {
+        "label": "只在周末玩",
+        "fx": {
+          "mood": 2,
+          "energy": -2
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b24",
+      "name": "巷口",
+      "min": 7,
+      "max": 11,
+      "text": "巷口的纸箱里有一只淋湿的小猫。",
+      "left": {
+        "label": "抱回家",
+        "fx": {
+          "mood": 7,
+          "money": -4,
+          "energy": -4
+        },
+        "rel": {
+          "family": -2
+        }
+      },
+      "right": {
+        "label": "放点吃的就走",
+        "fx": {
+          "mood": -3,
+          "money": -1,
+          "social": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b25",
+      "name": "好朋友",
+      "min": 8,
+      "max": 11,
+      "text": "为了一句谁先耍赖，你俩三天没说话。",
+      "left": {
+        "label": "先开口",
+        "fx": {
+          "social": 6,
+          "mood": 4
+        },
+        "rel": {
+          "friends": 6
+        }
+      },
+      "right": {
+        "label": "等他来",
+        "fx": {
+          "mood": -4,
+          "social": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b26",
+      "name": "站台",
+      "min": 6,
+      "max": 11,
+      "text": "第一次坐火车，窗外的树往后跑。",
+      "left": {
+        "label": "一路盯着窗外",
+        "fx": {
+          "mood": 6,
+          "energy": -3
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "right": {
+        "label": "躺下睡觉",
+        "fx": {
+          "energy": 5,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b27",
+      "name": "自然课",
+      "min": 7,
+      "max": 11,
+      "text": "老师发了三颗种子，说种下去要天天浇水。",
+      "left": {
+        "label": "认真养",
+        "fx": {
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 4,
+          "knowledge": 3
+        }
+      },
+      "right": {
+        "label": "忘了浇水",
+        "fx": {
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b28",
+      "name": "爸爸",
+      "min": 7,
+      "max": 11,
+      "text": "爸爸让你背《滕王阁序》，背完有奖励。",
+      "left": {
+        "label": "熬夜背",
+        "fx": {
+          "career": 5,
+          "mood": -3,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "背两句就跑",
+        "fx": {
+          "mood": 4,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b29",
+      "name": "书包",
+      "min": 9,
+      "max": 11,
+      "text": "试卷只考了六十二分，家长要签字。",
+      "left": {
+        "label": "老实交出去",
+        "fx": {
+          "mood": -5,
+          "career": 3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "自己签",
+        "fx": {
+          "mood": 2,
+          "career": -4,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b30",
+      "name": "爸爸",
+      "min": 8,
+      "max": 11,
+      "text": "爸爸在洗车，泡沫溅了你一身。",
+      "left": {
+        "label": "抢过抹布",
+        "fx": {
+          "mood": 5,
+          "energy": -4,
+          "health": 2
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "躲远点",
+        "fx": {
+          "mood": 1,
+          "energy": 2
+        },
+        "rel": {
+          "family": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b31",
+      "name": "礼堂",
+      "min": 9,
+      "max": 11,
+      "text": "朗诵比赛，话筒比你还高。",
+      "left": {
+        "label": "上台",
+        "fx": {
+          "social": 6,
+          "career": 4,
+          "mood": -3,
+          "energy": -4
+        },
+        "skills": {
+          "charm": 6
+        }
+      },
+      "right": {
+        "label": "在台下鼓掌",
+        "fx": {
+          "mood": 2,
+          "social": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b32",
+      "name": "妈妈",
+      "min": 6,
+      "max": 11,
+      "text": "妈妈说家里不宽裕，让你别跟同学比。",
+      "left": {
+        "label": "点点头",
+        "fx": {
+          "mood": -3,
+          "money": 4,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "闹一场",
+        "fx": {
+          "mood": 3,
+          "money": -5,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b33",
+      "name": "校医",
+      "min": 7,
+      "max": 11,
+      "text": "打预防针的队伍排到了走廊外。",
+      "left": {
+        "label": "闭眼伸胳膊",
+        "fx": {
+          "health": 5,
+          "mood": -4
+        }
+      },
+      "right": {
+        "label": "躲在最后",
+        "fx": {
+          "health": -2,
+          "mood": 2,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b34",
+      "name": "邻居",
+      "min": 8,
+      "max": 11,
+      "text": "邻居家的枣树伸到你家墙上，红了一片。",
+      "left": {
+        "label": "摘一兜",
+        "fx": {
+          "mood": 5,
+          "health": 2,
+          "social": -2
+        }
+      },
+      "right": {
+        "label": "敲门的去说一声",
+        "fx": {
+          "social": 5,
+          "mood": 2,
+          "health": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b35",
+      "name": "书店",
+      "min": 8,
+      "max": 11,
+      "text": "书店老板允许你站着看，但天快黑了。",
+      "left": {
+        "label": "买下那本",
+        "fx": {
+          "money": -6,
+          "mood": 6
+        },
+        "skills": {
+          "knowledge": 6
+        }
+      },
+      "right": {
+        "label": "明天再来",
+        "fx": {
+          "money": 2,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_b36",
+      "name": "操场",
+      "min": 9,
+      "max": 11,
+      "text": "有人在操场边摆摊抽卡片，五毛一次。",
+      "left": {
+        "label": "抽十次",
+        "fx": {
+          "money": -6,
+          "mood": 6,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "攒钱买整包",
+        "fx": {
+          "money": -2,
+          "mood": 3,
+          "career": 3
+        }
+      },
+      "once": true
+    }
+  ]
+}

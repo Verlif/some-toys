@@ -13,7 +13,7 @@ import * as audio from './ui/audio.js';
 import { toast } from './ui/toast.js';
 import { renderHeader, renderMeters, showDeltas, narrate, narrateChoice, narrateIdle, narrateBirth } from './ui/statusBar.js';
 import { renderCard, flyOut, resetCard, initSwipe, previewPeek } from './ui/card.js';
-import { openDrawer, closeDrawers, isAnyOpen, renderLog, renderArch } from './ui/drawers.js';
+import { openDrawer, closeDrawers, isAnyOpen, initSheets, renderLog, renderArch } from './ui/drawers.js';
 import { showView, showEndOverlay, isEndOverlayOpen, renderStart, bindAspirationGrid, renderSideInfo } from './ui/views.js';
 import { renderEnding } from './ui/ending.js';
 
@@ -190,12 +190,17 @@ function bindEvents() {
   on('closeArch', 'click', closeDrawers);
   on('backdrop', 'click', closeDrawers);
 
-  // 声音开关
+  // 声音开关：图标与底部标签的文字一起切换
   on('btnSound', 'click', () => {
     const muted = audio.toggleMute();
-    $('btnSound').classList.toggle('on', muted);
+    $('btnSound').classList.toggle('off', muted);
+    $('btnSound').setAttribute('aria-pressed', String(muted));
     $('icSound').innerHTML = muted ? ICON_MUTED : ICON_SOUND_ON;
+    $('txSound').textContent = muted ? '静音' : '声音';
   });
+
+  // 底部上浮浮窗的下拉关闭手势
+  initSheets();
 
   // 滑动手势
   initSwipe({ canDrag: isPlaying, onSwipe: resolve });

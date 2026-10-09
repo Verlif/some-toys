@@ -1,0 +1,1023 @@
+{
+  "title": "事业链（打工 → 管理 → 创业 → 成败）",
+  "events": [
+    {
+      "id": "cr_1",
+      "name": "加班",
+      "min": 22,
+      "max": 58,
+      "text": "这个月的第 12 个通宵，你已经不记得周末长什么样。",
+      "cond": {
+        "flag": "degree"
+      },
+      "left": {
+        "label": "继续拼",
+        "fx": {
+          "career": 7,
+          "money": 5,
+          "health": -5,
+          "energy": -7
+        }
+      },
+      "right": {
+        "label": "准点走人",
+        "fx": {
+          "career": -4,
+          "health": 3,
+          "energy": 5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_2",
+      "name": "猎头",
+      "min": 24,
+      "max": 58,
+      "text": "陌生号码，开口就报了一个你没想过的数字。",
+      "cond": {
+        "flag": "degree"
+      },
+      "left": {
+        "label": "跳",
+        "fx": {
+          "career": 8,
+          "money": 8,
+          "energy": -4
+        },
+        "rel": {
+          "friends": -3
+        }
+      },
+      "right": {
+        "label": "留下",
+        "fx": {
+          "career": -2,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_3",
+      "name": "带团队",
+      "min": 26,
+      "max": 58,
+      "text": "领导说你来带小组，人不多，事不少。",
+      "cond": {
+        "flag": "degree"
+      },
+      "left": {
+        "label": "接",
+        "fx": {
+          "career": 6,
+          "energy": -6,
+          "social": 4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "只做专业",
+        "fx": {
+          "career": 2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_4",
+      "name": "站队",
+      "min": 26,
+      "max": 58,
+      "text": "会议室里两拨人，都在等你表态。",
+      "cond": {
+        "flag": "degree"
+      },
+      "left": {
+        "label": "站过去",
+        "fx": {
+          "career": 5,
+          "mood": -4,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "独善其身",
+        "fx": {
+          "career": -3,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_5",
+      "name": "创业",
+      "min": 24,
+      "max": 55,
+      "text": "那个想法在你脑子里转了半年了。",
+      "cond": {
+        "noFlag": "biz"
+      },
+      "once": true,
+      "left": {
+        "label": "辞职干",
+        "fx": {
+          "money": -15,
+          "career": 6,
+          "energy": -8,
+          "mood": 6
+        },
+        "flags": {
+          "biz": true
+        },
+        "milestone": "下海创业"
+      },
+      "right": {
+        "label": "安稳上班",
+        "fx": {
+          "money": 6,
+          "career": 2,
+          "mood": -2
+        }
+      }
+    },
+    {
+      "id": "cr_6",
+      "name": "合伙人",
+      "min": 24,
+      "max": 58,
+      "text": "一个人扛太累，要不要拉个熟人？",
+      "cond": {
+        "flag": "biz"
+      },
+      "left": {
+        "label": "拉朋友入伙",
+        "fx": {
+          "career": 6,
+          "money": 8
+        },
+        "rel": {
+          "friends": -5
+        }
+      },
+      "right": {
+        "label": "单干",
+        "fx": {
+          "career": 2,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_7",
+      "name": "天使轮",
+      "min": 25,
+      "max": 58,
+      "text": "投资人说，钱不是问题，问题是你要多少。",
+      "cond": {
+        "flag": "biz"
+      },
+      "left": {
+        "label": "拿钱",
+        "fx": {
+          "money": 20,
+          "career": 8,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "少拿点，保住股份",
+        "fx": {
+          "money": 5,
+          "career": 3,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_8",
+      "name": "上线",
+      "min": 25,
+      "max": 58,
+      "text": "产品定在下周一上线，还有一堆没改完。",
+      "cond": {
+        "flag": "biz"
+      },
+      "left": {
+        "label": "熬夜冲",
+        "fx": {
+          "career": 8,
+          "mood": 4,
+          "health": -6,
+          "energy": -8
+        }
+      },
+      "right": {
+        "label": "按节奏来",
+        "fx": {
+          "career": 3,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_9",
+      "name": "第一次盈利",
+      "min": 26,
+      "max": 60,
+      "text": "账上第一次是正数了。",
+      "cond": {
+        "flag": "biz"
+      },
+      "left": {
+        "label": "全投回去",
+        "fx": {
+          "money": -10,
+          "career": 9,
+          "energy": -6
+        },
+        "flags": {
+          "bizSuccess": true
+        }
+      },
+      "right": {
+        "label": "先分了",
+        "fx": {
+          "money": 15,
+          "career": 3,
+          "mood": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_10",
+      "name": "撑不住",
+      "min": 26,
+      "max": 62,
+      "text": "再有三个月，账上就见底了。",
+      "cond": {
+        "flag": "biz"
+      },
+      "left": {
+        "label": "再撑半年",
+        "fx": {
+          "money": -15,
+          "health": -5,
+          "mood": -6
+        },
+        "flags": {
+          "biz": false,
+          "bizFail": true
+        }
+      },
+      "right": {
+        "label": "及时止损",
+        "fx": {
+          "money": 5,
+          "career": -6,
+          "mood": 2
+        },
+        "flags": {
+          "biz": false,
+          "bizFail": true
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_11",
+      "name": "东山再起",
+      "min": 28,
+      "max": 64,
+      "text": "上一次没成，这次你更清楚坑在哪。",
+      "cond": {
+        "flag": "bizFail"
+      },
+      "left": {
+        "label": "再来一次",
+        "fx": {
+          "money": -12,
+          "career": 7,
+          "energy": -8
+        },
+        "flags": {
+          "biz": true,
+          "bizFail": false
+        }
+      },
+      "right": {
+        "label": "找个班上",
+        "fx": {
+          "career": 3,
+          "money": 6,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_12",
+      "name": "上市",
+      "min": 32,
+      "max": 65,
+      "text": "投行的人坐在对面，说的话你半懂不懂。",
+      "cond": {
+        "flag": "bizSuccess"
+      },
+      "left": {
+        "label": "冲",
+        "fx": {
+          "career": 10,
+          "money": 15,
+          "health": -6,
+          "energy": -8
+        }
+      },
+      "right": {
+        "label": "见好就收",
+        "fx": {
+          "money": 12,
+          "career": 4,
+          "mood": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_13",
+      "name": "过劳",
+      "min": 28,
+      "max": 60,
+      "text": "体检医生说，你这身体像四十往下的人。",
+      "cond": {
+        "stat": {
+          "id": "career",
+          "min": 55
+        }
+      },
+      "left": {
+        "label": "休个长假",
+        "fx": {
+          "health": 6,
+          "energy": 7,
+          "mood": 5,
+          "career": -6
+        }
+      },
+      "right": {
+        "label": "再撑撑",
+        "fx": {
+          "career": 5,
+          "health": -7,
+          "energy": -7
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_14",
+      "name": "副业",
+      "min": 22,
+      "max": 60,
+      "text": "下班后还有四个小时，刷掉也是刷掉。",
+      "left": {
+        "label": "搞起来",
+        "fx": {
+          "money": 6,
+          "energy": -6,
+          "career": 3
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "energy": 3,
+          "money": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_15",
+      "name": "返聘",
+      "min": 60,
+      "max": 78,
+      "text": "原来的单位问你要不要回来带带新人。",
+      "cond": {
+        "flag": "retired"
+      },
+      "left": {
+        "label": "回去",
+        "fx": {
+          "money": 8,
+          "career": 4,
+          "energy": -5,
+          "health": -3
+        }
+      },
+      "right": {
+        "label": "享清闲",
+        "fx": {
+          "mood": 5,
+          "energy": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_b1",
+      "name": "转正",
+      "min": 22,
+      "max": 40,
+      "text": "试用期最后一周，主管找你谈话。",
+      "left": {
+        "label": "主动汇报",
+        "fx": {
+          "career": 6,
+          "money": 5,
+          "mood": -2,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "等通知",
+        "fx": {
+          "career": -3,
+          "mood": -4,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b2",
+      "name": "汇报",
+      "min": 22,
+      "max": 55,
+      "text": "第一次给高层汇报，PPT 有四十页。",
+      "left": {
+        "label": "砍到十页",
+        "fx": {
+          "career": 7,
+          "mood": 3,
+          "energy": -5
+        },
+        "skills": {
+          "charm": 5
+        }
+      },
+      "right": {
+        "label": "照着念",
+        "fx": {
+          "career": -4,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b3",
+      "name": "年终",
+      "min": 24,
+      "max": 58,
+      "text": "年会让你上台讲三分钟。",
+      "left": {
+        "label": "认真准备",
+        "fx": {
+          "career": 6,
+          "social": 6,
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "charm": 6
+        }
+      },
+      "right": {
+        "label": "随便说两句",
+        "fx": {
+          "career": -3,
+          "social": -3,
+          "mood": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b4",
+      "name": "抢项目",
+      "min": 26,
+      "max": 58,
+      "text": "有个好项目，另外一个组也在盯。",
+      "left": {
+        "label": "主动请缨",
+        "fx": {
+          "career": 8,
+          "energy": -7,
+          "mood": 3,
+          "social": -4
+        }
+      },
+      "right": {
+        "label": "让出去",
+        "fx": {
+          "career": -4,
+          "mood": -3,
+          "social": 5,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b5",
+      "name": "事故",
+      "min": 26,
+      "max": 58,
+      "text": "线上出了事故，需要有人担。",
+      "left": {
+        "label": "站出来",
+        "fx": {
+          "career": 4,
+          "mood": -6,
+          "social": 6,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "推给流程",
+        "fx": {
+          "career": -5,
+          "mood": -3,
+          "social": -5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b6",
+      "name": "谈判",
+      "min": 26,
+      "max": 58,
+      "text": "涨薪的机会一年只有一次。",
+      "left": {
+        "label": "开口要",
+        "fx": {
+          "money": 9,
+          "career": 5,
+          "mood": -4,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "等公司主动",
+        "fx": {
+          "money": -3,
+          "career": -2,
+          "mood": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b7",
+      "name": "跨部门",
+      "min": 24,
+      "max": 58,
+      "text": "跨部门协作，别的组不太配合。",
+      "left": {
+        "label": "一个个去谈",
+        "fx": {
+          "career": 6,
+          "social": 6,
+          "energy": -6,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "走流程发邮件",
+        "fx": {
+          "career": -3,
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b8",
+      "name": "报销",
+      "min": 24,
+      "max": 55,
+      "text": "公司能报一半学费，前提是要签两年。",
+      "left": {
+        "label": "签",
+        "fx": {
+          "career": 7,
+          "money": -4,
+          "mood": -3
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "不签",
+        "fx": {
+          "money": 3,
+          "career": -3,
+          "mood": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b9",
+      "name": "机场",
+      "min": 24,
+      "max": 58,
+      "text": "出差一周，航班在凌晨。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "career": 7,
+          "money": 6,
+          "health": -5,
+          "energy": -6,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "申请线上",
+        "fx": {
+          "career": -4,
+          "mood": 4,
+          "health": 3,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b10",
+      "name": "离职",
+      "min": 26,
+      "max": 58,
+      "text": "组里最能干的人要走了。",
+      "left": {
+        "label": "留他",
+        "fx": {
+          "career": 5,
+          "social": 5,
+          "money": -6,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "送他",
+        "fx": {
+          "social": 6,
+          "mood": -3,
+          "career": -3,
+          "energy": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b11",
+      "name": "面试",
+      "min": 28,
+      "max": 58,
+      "text": "你要招一个人，两份简历都不完美。",
+      "left": {
+        "label": "选有潜力的",
+        "fx": {
+          "career": 6,
+          "social": 5,
+          "energy": -5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "选有经验的",
+        "fx": {
+          "career": 4,
+          "money": -5,
+          "energy": -2,
+          "mood": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b12",
+      "name": "绩效",
+      "min": 26,
+      "max": 58,
+      "text": "绩效结果出来了，不是你想要的那个档。",
+      "left": {
+        "label": "申诉",
+        "fx": {
+          "career": 5,
+          "mood": -5,
+          "social": -3,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "认下",
+        "fx": {
+          "career": -3,
+          "mood": -4,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b13",
+      "name": "转岗",
+      "min": 28,
+      "max": 58,
+      "text": "内部有个完全不同的岗位，招人。",
+      "left": {
+        "label": "申请",
+        "fx": {
+          "career": 5,
+          "money": -3,
+          "mood": 4,
+          "energy": -5,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "不动",
+        "fx": {
+          "career": -2,
+          "mood": -3,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b14",
+      "name": "外包",
+      "min": 22,
+      "max": 58,
+      "text": "有人私下找你接个私活，两周交付。",
+      "left": {
+        "label": "接",
+        "fx": {
+          "money": 10,
+          "career": 3,
+          "health": -5,
+          "energy": -7,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "不接",
+        "fx": {
+          "money": 2,
+          "health": 3,
+          "mood": 3,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_b15",
+      "name": "投诉",
+      "min": 26,
+      "max": 58,
+      "text": "客户把你投诉到了老板那里。",
+      "left": {
+        "label": "当面去道歉",
+        "fx": {
+          "career": 5,
+          "money": -4,
+          "mood": -5,
+          "social": 5,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "写邮件解释",
+        "fx": {
+          "career": -3,
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b16",
+      "name": "文章",
+      "min": 26,
+      "max": 60,
+      "text": "你写了篇行业文章，被大号转载了。",
+      "left": {
+        "label": "接着写",
+        "fx": {
+          "career": 7,
+          "social": 6,
+          "mood": 5,
+          "energy": -5
+        },
+        "flags": {
+          "fame": true
+        }
+      },
+      "right": {
+        "label": "到此为止",
+        "fx": {
+          "career": 3,
+          "mood": -2,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "degree"
+      }
+    },
+    {
+      "id": "cr_b17",
+      "name": "合伙邀请",
+      "min": 30,
+      "max": 60,
+      "text": "有人请你去当合伙人，不带薪，给股份。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": -9,
+          "career": 8,
+          "mood": 5,
+          "energy": -7,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "money": 5,
+          "career": -3,
+          "mood": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "stat": {
+          "id": "career",
+          "min": 55
+        }
+      }
+    },
+    {
+      "id": "cr_b18",
+      "name": "招人",
+      "min": 26,
+      "max": 60,
+      "text": "公司要扩张，你一个人扛不住了。",
+      "left": {
+        "label": "招",
+        "fx": {
+          "career": 6,
+          "money": -9,
+          "energy": -4,
+          "social": 5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "继续一个人",
+        "fx": {
+          "career": -4,
+          "health": -5,
+          "energy": -6,
+          "money": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "biz"
+      }
+    },
+    {
+      "id": "cr_b19",
+      "name": "股权",
+      "min": 26,
+      "max": 60,
+      "text": "两个合伙人出了分歧，股份要重划。",
+      "left": {
+        "label": "谈",
+        "fx": {
+          "career": 6,
+          "mood": -5,
+          "social": 4,
+          "energy": -5,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "各退一步",
+        "fx": {
+          "career": -3,
+          "money": -6,
+          "mood": 3,
+          "social": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "biz"
+      }
+    },
+    {
+      "id": "cr_b20",
+      "name": "收购",
+      "min": 30,
+      "max": 65,
+      "text": "有人出价要买你的公司。",
+      "left": {
+        "label": "卖",
+        "fx": {
+          "money": 18,
+          "career": 6,
+          "mood": -4,
+          "social": -4
+        }
+      },
+      "right": {
+        "label": "不卖",
+        "fx": {
+          "career": 8,
+          "money": -8,
+          "mood": 5,
+          "energy": -6
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "bizSuccess"
+      }
+    }
+  ]
+}

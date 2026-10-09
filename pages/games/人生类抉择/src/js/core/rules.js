@@ -22,7 +22,7 @@ export const clamp = v => Math.max(0, Math.min(100, v));
  * 单个条件对象支持的键：
  *   trait        拥有某特质
  *   flag / noFlag   拥有 / 必须没有某标记
- *   skill / stat / rel   { id, min }，门槛默认值分别 50 / 40 / 30
+ *   skill / stat / rel   { id, min, max }，门槛默认值 min 分别 50 / 40 / 30，max 缺省不限
  *   age          { min, max }，按当前年龄判定
  */
 export function condPass(cond, S) {
@@ -31,13 +31,16 @@ export function condPass(cond, S) {
   return list.every(group => groupPass(group, S));
 }
 
+const between = (v, min, max, defMin) =>
+  v >= (min ?? defMin) && (max === undefined || v <= max);
+
 function groupPass(c, S) {
   if (c.trait && !S.traits.includes(c.trait)) return false;
   if (c.flag && !S.flags[c.flag]) return false;
   if (c.noFlag && S.flags[c.noFlag]) return false;
-  if (c.skill && S.skills[c.skill.id] < (c.skill.min ?? 50)) return false;
-  if (c.stat && S.stats[c.stat.id] < (c.stat.min ?? 40)) return false;
-  if (c.rel && S.rel[c.rel.id] < (c.rel.min ?? 30)) return false;
+  if (c.skill && !between(S.skills[c.skill.id], c.skill.min, c.skill.max, 50)) return false;
+  if (c.stat  && !between(S.stats[c.stat.id],   c.stat.min,  c.stat.max,  40)) return false;
+  if (c.rel   && !between(S.rel[c.rel.id],      c.rel.min,   c.rel.max,   30)) return false;
   if (c.age) {
     if (c.age.min !== undefined && S.age < c.age.min) return false;
     if (c.age.max !== undefined && S.age > c.age.max) return false;
@@ -64,9 +67,18 @@ export function candidateEvents(S) {
  * 抽取下一条事件
  * 优先级：带概率的候选 → 去掉概率限制的候选 → 全池
  * 并尽量避免与上一条事件重复
+ *
+ * 所有事件默认 once（单局只出现一次），若当前年龄段的可抽事件已全部用过，
+ * 则自动放宽 once 限制回退到全池，保证任何年龄都不会抽不到卡。
  */
 export function pickEvent(S) {
-  const pool = candidateEvents(S);
+  let pool = candidateEvents(S);
+  if (!pool.length) {
+    // 兜底：忽略 once，只按年龄与条件筛选
+    pool = db.events.filter(e =>
+      S.age >= e.min && S.age <= e.max && eventCondPass(e, S)
+    );
+  }
   if (!pool.length) return null;
 
   let cand = pool.filter(e => !e.chance || random() < e.chance);

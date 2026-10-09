@@ -1,0 +1,1748 @@
+{
+  "title": "知命 50-64",
+  "events": [
+    {
+      "id": "e50",
+      "name": "医生",
+      "min": 50,
+      "max": 64,
+      "text": "医生说你的老毛病需要手术，风险不小。",
+      "left": {
+        "label": "听医生的",
+        "fx": {
+          "health": 8,
+          "money": -10,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "保守治疗",
+        "fx": {
+          "health": -4,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e51",
+      "name": "孩子",
+      "min": 50,
+      "max": 64,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "孩子考上大学，要离家去远方了。",
+      "left": {
+        "label": "送他/她上车",
+        "fx": {
+          "rel": {
+            "family": 6
+          },
+          "mood": 3,
+          "money": -6
+        }
+      },
+      "right": {
+        "label": "让他/她自立",
+        "fx": {
+          "mood": 1,
+          "rel": {
+            "family": 3
+          },
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e52",
+      "name": "退休",
+      "min": 55,
+      "max": 64,
+      "text": "公司给了提前退休的名额，还带 N+1 补偿。",
+      "left": {
+        "label": "提前退休",
+        "fx": {
+          "money": 10,
+          "mood": 4,
+          "career": -6
+        },
+        "flags": {
+          "retired": true
+        },
+        "milestone": "光荣退休"
+      },
+      "right": {
+        "label": "再干几年",
+        "fx": {
+          "career": 4,
+          "money": 4,
+          "energy": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e53",
+      "name": "太极班",
+      "min": 50,
+      "max": 79,
+      "text": "老年大学开了太极班，邻居拉你一起报名。",
+      "left": {
+        "label": "报名",
+        "fx": {
+          "social": 5,
+          "mood": 5,
+          "health": 2,
+          "money": -3,
+          "skills": {
+            "fitness": 6
+          }
+        }
+      },
+      "right": {
+        "label": "在家看电视",
+        "fx": {
+          "mood": 1,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e54",
+      "name": "老同学",
+      "min": 50,
+      "max": 79,
+      "text": "老同学聚会，发现有人已经先走一步。",
+      "left": {
+        "label": "珍惜眼前人",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "感伤一整晚",
+        "fx": {
+          "mood": -4,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e55",
+      "name": "老伴",
+      "min": 50,
+      "max": 79,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "老伴想办一场金婚纪念仪式。",
+      "left": {
+        "label": "办一场",
+        "fx": {
+          "money": -6,
+          "mood": 4,
+          "rel": {
+            "love": 10
+          }
+        }
+      },
+      "right": {
+        "label": "简单吃顿饭",
+        "fx": {
+          "money": 2,
+          "mood": 2,
+          "rel": {
+            "love": 3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e56",
+      "name": "算命先生",
+      "min": 50,
+      "max": 79,
+      "text": "算命的说你晚年有个坎，破财能消灾。",
+      "left": {
+        "label": "花钱买心安",
+        "fx": {
+          "money": -4,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "哈哈一笑",
+        "fx": {
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a1",
+      "name": "体检",
+      "min": 50,
+      "max": 70,
+      "text": "今年的体检报告比去年厚了两页。",
+      "left": {
+        "label": "认真调理",
+        "fx": {
+          "health": 6,
+          "money": -5,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "不当回事",
+        "fx": {
+          "health": -6,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a2",
+      "name": "新人",
+      "min": 50,
+      "max": 64,
+      "text": "部门来了个年轻人，张口就叫您老师。",
+      "left": {
+        "label": "倾囊相授",
+        "fx": {
+          "career": -3,
+          "social": 5,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "各扫门前雪",
+        "fx": {
+          "career": 3,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a3",
+      "name": "老花镜",
+      "min": 50,
+      "max": 70,
+      "text": "菜单上的小字开始重影了。",
+      "left": {
+        "label": "配一副",
+        "fx": {
+          "money": -3,
+          "health": 2,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "硬扛着",
+        "fx": {
+          "health": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a4",
+      "name": "陪床",
+      "min": 52,
+      "max": 70,
+      "text": "医院走廊的椅子，你坐了整整一周。",
+      "left": {
+        "label": "守在床边",
+        "fx": {
+          "energy": -6,
+          "money": -5,
+          "mood": -4
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "请护工",
+        "fx": {
+          "money": -9,
+          "mood": -2
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a5",
+      "name": "老同学住院",
+      "min": 50,
+      "max": 72,
+      "text": "群里发了张病房照片，配文「没事别来」。",
+      "left": {
+        "label": "还是去看看",
+        "fx": {
+          "social": 4,
+          "mood": -2,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "发条消息",
+        "fx": {
+          "mood": 1,
+          "social": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a6",
+      "name": "换小房子",
+      "min": 52,
+      "max": 72,
+      "text": "孩子走了，房子突然显得很大。",
+      "cond": {
+        "flag": "house"
+      },
+      "left": {
+        "label": "换",
+        "fx": {
+          "money": 12,
+          "mood": -3
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "right": {
+        "label": "不换",
+        "fx": {
+          "money": -2,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a7",
+      "name": "最后一搏",
+      "min": 55,
+      "max": 63,
+      "text": "退休前还有个项目，接不接？",
+      "left": {
+        "label": "冲一把",
+        "fx": {
+          "career": 8,
+          "health": -5,
+          "energy": -7,
+          "money": 6
+        }
+      },
+      "right": {
+        "label": "平稳落地",
+        "fx": {
+          "career": -3,
+          "health": 3,
+          "energy": 4,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a8",
+      "name": "药",
+      "min": 55,
+      "max": 75,
+      "text": "医生说这个药得长期吃，不能停。",
+      "left": {
+        "label": "按时吃",
+        "fx": {
+          "health": 5,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "想起来才吃",
+        "fx": {
+          "health": -6,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a9",
+      "name": "组局",
+      "min": 50,
+      "max": 75,
+      "text": "聚会的群，上一次响还是半年前。",
+      "left": {
+        "label": "主动组一局",
+        "fx": {
+          "social": 6,
+          "energy": -4,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "习惯安静",
+        "fx": {
+          "social": -4,
+          "mood": -1,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a10",
+      "name": "带娃",
+      "min": 52,
+      "max": 70,
+      "text": "孩子问能不能帮忙带几个月。",
+      "cond": {
+        "flag": "hasChild"
+      },
+      "left": {
+        "label": "接手",
+        "fx": {
+          "energy": -6,
+          "mood": 3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": -2,
+          "energy": 4
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_a11",
+      "name": "确诊",
+      "min": 50,
+      "max": 72,
+      "text": "医生把「慢性」两个字说得很轻。",
+      "once": true,
+      "left": {
+        "label": "建档管理",
+        "fx": {
+          "money": -6,
+          "health": 4,
+          "mood": -3
+        },
+        "flags": {
+          "chronic": true
+        }
+      },
+      "right": {
+        "label": "不就是老了",
+        "fx": {
+          "health": -6,
+          "mood": 2
+        }
+      }
+    },
+    {
+      "id": "sn_b1",
+      "name": "夜里",
+      "min": 50,
+      "max": 58,
+      "text": "半夜忽然热醒，被子湿了一角。",
+      "left": {
+        "label": "去医院看看",
+        "fx": {
+          "health": 5,
+          "money": -6,
+          "mood": -2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "忍过去",
+        "fx": {
+          "health": -4,
+          "mood": -4,
+          "energy": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b2",
+      "name": "手机",
+      "min": 50,
+      "max": 64,
+      "text": "菜单上的字要拿远一点才看得清。",
+      "left": {
+        "label": "配老花镜",
+        "fx": {
+          "money": -5,
+          "health": 3,
+          "mood": 4,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "眯着眼看",
+        "fx": {
+          "health": -3,
+          "mood": -3,
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b3",
+      "name": "家门口",
+      "min": 50,
+      "max": 58,
+      "text": "孩子拖着箱子出门，屋子一下空了。",
+      "left": {
+        "label": "送上车",
+        "fx": {
+          "mood": -5,
+          "social": 4,
+          "energy": -3
+        },
+        "flags": {
+          "childGrown": true
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "躲在屋里",
+        "fx": {
+          "mood": -6,
+          "social": -3,
+          "career": 3
+        },
+        "flags": {
+          "childGrown": true
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "sn_b4",
+      "name": "录取通知",
+      "min": 50,
+      "max": 58,
+      "text": "孩子的录取通知来了，城市很远。",
+      "left": {
+        "label": "一起去报到",
+        "fx": {
+          "money": -8,
+          "mood": 6,
+          "energy": -5
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "让他自己去",
+        "fx": {
+          "money": 4,
+          "mood": -4,
+          "career": 4
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "sn_b5",
+      "name": "会议室",
+      "min": 55,
+      "max": 64,
+      "text": "离退休还有几年，你开始被安排「顾问岗」。",
+      "left": {
+        "label": "接下",
+        "fx": {
+          "career": 5,
+          "mood": -4,
+          "energy": -4,
+          "money": 5
+        }
+      },
+      "right": {
+        "label": "推掉",
+        "fx": {
+          "career": -4,
+          "mood": 4,
+          "energy": 4,
+          "social": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b6",
+      "name": "人事",
+      "min": 58,
+      "max": 64,
+      "text": "退休那天，工位收拾了三个纸箱。",
+      "left": {
+        "label": "返聘留下",
+        "fx": {
+          "career": 6,
+          "money": 8,
+          "health": -4,
+          "energy": -5,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "彻底走人",
+        "fx": {
+          "career": -6,
+          "mood": 6,
+          "health": 5,
+          "energy": 5,
+          "social": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "retired"
+      }
+    },
+    {
+      "id": "sn_b7",
+      "name": "婴儿床",
+      "min": 52,
+      "max": 64,
+      "text": "孩子说要送娃过来带两年。",
+      "left": {
+        "label": "带",
+        "fx": {
+          "mood": 6,
+          "energy": -7,
+          "health": -4,
+          "career": -4
+        },
+        "flags": {
+          "grandchild": true
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": -5,
+          "energy": 4,
+          "career": 4,
+          "money": -4
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "childGrown"
+      }
+    },
+    {
+      "id": "sn_b8",
+      "name": "电话",
+      "min": 50,
+      "max": 64,
+      "text": "凌晨的电话，那头只说了两个字。",
+      "left": {
+        "label": "连夜赶回",
+        "fx": {
+          "mood": -8,
+          "energy": -7,
+          "money": -8,
+          "health": -4
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "第二天再回",
+        "fx": {
+          "mood": -9,
+          "career": 3,
+          "money": 3
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b9",
+      "name": "葬礼",
+      "min": 52,
+      "max": 64,
+      "text": "你站在队伍最前面，别人跟你握手。",
+      "left": {
+        "label": "撑完全程",
+        "fx": {
+          "mood": -7,
+          "energy": -6,
+          "social": 6
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "找个地方坐会儿",
+        "fx": {
+          "mood": -5,
+          "health": 3,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b10",
+      "name": "同学群",
+      "min": 52,
+      "max": 64,
+      "text": "同学群里有人发了讣告，头像还是彩色的。",
+      "left": {
+        "label": "去送",
+        "fx": {
+          "mood": -6,
+          "social": 5,
+          "money": -5,
+          "energy": -4
+        },
+        "rel": {
+          "friends": 6
+        }
+      },
+      "right": {
+        "label": "只发个红包",
+        "fx": {
+          "mood": -4,
+          "money": -3,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b11",
+      "name": "体检中心",
+      "min": 50,
+      "max": 64,
+      "text": "今年你选了最全的那个套餐。",
+      "left": {
+        "label": "做",
+        "fx": {
+          "health": 7,
+          "money": -10,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "做基础的",
+        "fx": {
+          "health": -4,
+          "money": 4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b12",
+      "name": "药盒",
+      "min": 52,
+      "max": 64,
+      "text": "每天早上三种药，顺序不能错。",
+      "left": {
+        "label": "认真分好",
+        "fx": {
+          "health": 6,
+          "mood": -2,
+          "energy": -2
+        },
+        "flags": {
+          "chronic": true
+        }
+      },
+      "right": {
+        "label": "随手抓一把",
+        "fx": {
+          "health": -6,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b13",
+      "name": "楼梯",
+      "min": 52,
+      "max": 64,
+      "text": "上到三楼要停一次了。",
+      "left": {
+        "label": "每天爬楼练",
+        "fx": {
+          "health": 5,
+          "energy": -5,
+          "mood": 3
+        },
+        "skills": {
+          "fitness": 5
+        }
+      },
+      "right": {
+        "label": "改坐电梯",
+        "fx": {
+          "health": -3,
+          "energy": 4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b14",
+      "name": "凌晨四点",
+      "min": 50,
+      "max": 64,
+      "text": "四点醒来，再也没睡着。",
+      "left": {
+        "label": "起来走走",
+        "fx": {
+          "mood": -3,
+          "health": 2,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "躺着等天亮",
+        "fx": {
+          "mood": -5,
+          "energy": -3,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b15",
+      "name": "饭馆",
+      "min": 50,
+      "max": 64,
+      "text": "老同事组了个局，来了七个。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 7,
+          "mood": 6,
+          "money": -6,
+          "energy": -4
+        },
+        "rel": {
+          "friends": 6
+        }
+      },
+      "right": {
+        "label": "推了",
+        "fx": {
+          "money": 3,
+          "mood": -4,
+          "social": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b16",
+      "name": "旅行社",
+      "min": 52,
+      "max": 64,
+      "text": "低价团五天四夜，含购物。",
+      "left": {
+        "label": "报",
+        "fx": {
+          "mood": 5,
+          "money": -8,
+          "social": 4,
+          "health": -4,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "自己规划",
+        "fx": {
+          "mood": 6,
+          "money": -11,
+          "energy": -4,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b17",
+      "name": "相机",
+      "min": 50,
+      "max": 64,
+      "text": "你想学摄影，镜头价格让人皱眉。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": -12,
+          "mood": 7,
+          "social": 4,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 7
+        }
+      },
+      "right": {
+        "label": "先用手机拍",
+        "fx": {
+          "money": 1,
+          "mood": 4
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b18",
+      "name": "报名处",
+      "min": 52,
+      "max": 64,
+      "text": "老年大学开课了，书法班还有名额。",
+      "left": {
+        "label": "报名",
+        "fx": {
+          "mood": 6,
+          "social": 6,
+          "money": -4,
+          "energy": -3
+        },
+        "skills": {
+          "craft": 6
+        }
+      },
+      "right": {
+        "label": "在家练",
+        "fx": {
+          "mood": 3,
+          "money": 1,
+          "social": -3
+        },
+        "skills": {
+          "craft": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b19",
+      "name": "广场",
+      "min": 52,
+      "max": 64,
+      "text": "晚上七点，广场的音乐准时响起。",
+      "left": {
+        "label": "加入",
+        "fx": {
+          "health": 5,
+          "social": 7,
+          "mood": 6,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "绕着走",
+        "fx": {
+          "mood": -2,
+          "energy": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b20",
+      "name": "手机店",
+      "min": 50,
+      "max": 64,
+      "text": "店员教你装软件，讲了三遍。",
+      "left": {
+        "label": "认真学",
+        "fx": {
+          "mood": 4,
+          "social": 5,
+          "energy": -3,
+          "career": 3
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "让孩子弄",
+        "fx": {
+          "mood": -3,
+          "energy": 3
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b21",
+      "name": "会销",
+      "min": 52,
+      "max": 64,
+      "text": "免费体检送鸡蛋，听完是两万八的床垫。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": -14,
+          "health": 2,
+          "mood": -5,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "走人",
+        "fx": {
+          "money": 3,
+          "mood": 4,
+          "health": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b22",
+      "name": "理财",
+      "min": 52,
+      "max": 64,
+      "text": "年化十二，合同写得很厚。",
+      "left": {
+        "label": "投",
+        "fx": {
+          "money": -13,
+          "mood": -5,
+          "career": -3
+        },
+        "flags": {
+          "debt": true
+        }
+      },
+      "right": {
+        "label": "不投",
+        "fx": {
+          "money": 4,
+          "mood": 4,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b23",
+      "name": "中介",
+      "min": 54,
+      "max": 64,
+      "text": "房子太大了，孩子不住这儿。",
+      "left": {
+        "label": "换小的",
+        "fx": {
+          "money": 13,
+          "mood": -4,
+          "energy": -6,
+          "social": -3
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "right": {
+        "label": "留着",
+        "fx": {
+          "money": -4,
+          "mood": 4,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b24",
+      "name": "郊区",
+      "min": 54,
+      "max": 64,
+      "text": "郊区的房子便宜一半，就是远。",
+      "left": {
+        "label": "搬",
+        "fx": {
+          "money": 11,
+          "health": 4,
+          "social": -6,
+          "energy": -6
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "right": {
+        "label": "不搬",
+        "fx": {
+          "money": -5,
+          "mood": 3,
+          "social": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b25",
+      "name": "菜地",
+      "min": 52,
+      "max": 64,
+      "text": "小区边上有人开了一小块荒地。",
+      "left": {
+        "label": "也开一块",
+        "fx": {
+          "health": 5,
+          "mood": 6,
+          "energy": -5,
+          "money": -3
+        },
+        "flags": {
+          "garden": true
+        }
+      },
+      "right": {
+        "label": "看看就好",
+        "fx": {
+          "mood": 2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b26",
+      "name": "宠物店",
+      "min": 52,
+      "max": 64,
+      "text": "孩子不在家，屋里太安静了。",
+      "left": {
+        "label": "养一只",
+        "fx": {
+          "mood": 8,
+          "money": -9,
+          "energy": -5
+        },
+        "flags": {
+          "pet": true,
+          "petDog": true
+        }
+      },
+      "right": {
+        "label": "养盆花就行",
+        "fx": {
+          "mood": 3,
+          "money": -3,
+          "energy": -1
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "pet"
+      }
+    },
+    {
+      "id": "sn_b27",
+      "name": "病房",
+      "min": 54,
+      "max": 64,
+      "text": "老伴住院，陪护床很窄。",
+      "left": {
+        "label": "全程守着",
+        "fx": {
+          "mood": -7,
+          "energy": -8,
+          "health": -5,
+          "career": -6
+        },
+        "rel": {
+          "love": 9
+        }
+      },
+      "right": {
+        "label": "请护工轮班",
+        "fx": {
+          "money": -11,
+          "mood": -4,
+          "energy": -3,
+          "career": -2
+        },
+        "rel": {
+          "love": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "sn_b28",
+      "name": "床边",
+      "min": 55,
+      "max": 64,
+      "text": "要翻身、要擦洗、要按时吃药，一天分六次。",
+      "left": {
+        "label": "自己扛",
+        "fx": {
+          "health": -6,
+          "energy": -8,
+          "mood": -6
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "找兄弟姐妹排班",
+        "fx": {
+          "mood": -3,
+          "social": 4,
+          "energy": -4,
+          "money": -5
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b29",
+      "name": "公证处",
+      "min": 56,
+      "max": 64,
+      "text": "孩子提议把房子先过户，税能少点。",
+      "left": {
+        "label": "办",
+        "fx": {
+          "money": 6,
+          "mood": -4,
+          "social": 3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "再想想",
+        "fx": {
+          "money": -3,
+          "mood": -3,
+          "career": 3
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b30",
+      "name": "阁楼",
+      "min": 52,
+      "max": 64,
+      "text": "阁楼上三十年的东西，一箱一箱搬下来。",
+      "left": {
+        "label": "都留着",
+        "fx": {
+          "mood": 4,
+          "energy": -5,
+          "money": -2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "该扔就扔",
+        "fx": {
+          "mood": -3,
+          "energy": -6,
+          "social": 4,
+          "career": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b31",
+      "name": "书桌",
+      "min": 54,
+      "max": 64,
+      "text": "你想把这些年写下来，哪怕没人看。",
+      "left": {
+        "label": "动笔",
+        "fx": {
+          "mood": 6,
+          "career": 5,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 6
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "mood": -3,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b32",
+      "name": "酒柜",
+      "min": 52,
+      "max": 64,
+      "text": "医生说了三次，你还是想喝一口。",
+      "left": {
+        "label": "戒",
+        "fx": {
+          "health": 7,
+          "mood": -5,
+          "social": -3,
+          "career": 4
+        }
+      },
+      "right": {
+        "label": "少喝点",
+        "fx": {
+          "health": 2,
+          "mood": 4,
+          "social": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b33",
+      "name": "胸口",
+      "min": 52,
+      "max": 64,
+      "text": "爬楼时胸口闷了一下，只闷了两秒。",
+      "left": {
+        "label": "当天去查",
+        "fx": {
+          "health": 8,
+          "money": -9,
+          "mood": -4,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "歇会儿就好",
+        "fx": {
+          "health": -8,
+          "mood": 2,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b34",
+      "name": "手术室",
+      "min": 52,
+      "max": 64,
+      "text": "医生说做，也可以不做，让你自己选。",
+      "left": {
+        "label": "做",
+        "fx": {
+          "health": 9,
+          "money": -14,
+          "energy": -7,
+          "mood": -4
+        }
+      },
+      "right": {
+        "label": "保守治疗",
+        "fx": {
+          "health": -6,
+          "money": -5,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b35",
+      "name": "康复科",
+      "min": 53,
+      "max": 64,
+      "text": "术后康复要每天来，连着两个月。",
+      "left": {
+        "label": "坚持",
+        "fx": {
+          "health": 7,
+          "energy": -6,
+          "money": -8,
+          "career": -3
+        },
+        "skills": {
+          "fitness": 5
+        }
+      },
+      "right": {
+        "label": "在家随便动动",
+        "fx": {
+          "health": -4,
+          "money": 2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b36",
+      "name": "微信",
+      "min": 50,
+      "max": 64,
+      "text": "多年不联系的人，突然问你最近好吗。",
+      "left": {
+        "label": "热情回",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "money": -6,
+          "career": -2
+        },
+        "rel": {
+          "friends": 4
+        }
+      },
+      "right": {
+        "label": "回个表情",
+        "fx": {
+          "social": -2,
+          "mood": -2,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b37",
+      "name": "客厅",
+      "min": 52,
+      "max": 64,
+      "text": "孩子三十岁了，还在问你要钱。",
+      "left": {
+        "label": "给",
+        "fx": {
+          "money": -11,
+          "mood": -4,
+          "social": 3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "不给",
+        "fx": {
+          "money": 6,
+          "mood": -6,
+          "social": -5
+        },
+        "rel": {
+          "family": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b38",
+      "name": "饭桌",
+      "min": 52,
+      "max": 64,
+      "text": "孩子的对象第一次上门，你不太满意。",
+      "left": {
+        "label": "说清楚",
+        "fx": {
+          "mood": -4,
+          "social": -4,
+          "career": 3
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "right": {
+        "label": "笑着招待",
+        "fx": {
+          "mood": 3,
+          "social": 6,
+          "energy": -4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b39",
+      "name": "电话",
+      "min": 52,
+      "max": 64,
+      "text": "为孩子的事，你们在电话里吵起来了。",
+      "left": {
+        "label": "先挂断",
+        "fx": {
+          "mood": -6,
+          "social": -5,
+          "career": 3
+        },
+        "rel": {
+          "family": -5
+        }
+      },
+      "right": {
+        "label": "把话说完",
+        "fx": {
+          "mood": -4,
+          "social": 4,
+          "energy": -3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b40",
+      "name": "老家",
+      "min": 54,
+      "max": 64,
+      "text": "老家要拆了，院子里的树不算钱。",
+      "left": {
+        "label": "回去看一眼",
+        "fx": {
+          "mood": 4,
+          "money": -6,
+          "energy": -4,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "不去了",
+        "fx": {
+          "money": 4,
+          "mood": -4,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b41",
+      "name": "追思会",
+      "min": 52,
+      "max": 64,
+      "text": "今年第三场了，流程你都熟了。",
+      "left": {
+        "label": "都去",
+        "fx": {
+          "mood": -6,
+          "social": 5,
+          "energy": -5,
+          "money": -5
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "只去最近的",
+        "fx": {
+          "mood": -3,
+          "social": -4,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b42",
+      "name": "同学会",
+      "min": 58,
+      "max": 64,
+      "text": "入学四十年，来的人比上次少了九位。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 7,
+          "mood": 5,
+          "money": -7,
+          "energy": -5
+        },
+        "rel": {
+          "friends": 7
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "money": 4,
+          "mood": -4,
+          "social": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b43",
+      "name": "阳台",
+      "min": 52,
+      "max": 64,
+      "text": "阳台那几盆，今年长得最好。",
+      "left": {
+        "label": "分给邻居",
+        "fx": {
+          "social": 7,
+          "mood": 6,
+          "energy": -3
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "自己慢慢看",
+        "fx": {
+          "mood": 5,
+          "health": 3,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "garden"
+      }
+    },
+    {
+      "id": "sn_b44",
+      "name": "晨跑",
+      "min": 50,
+      "max": 62,
+      "text": "你想重新开始跑步，从两公里开始。",
+      "left": {
+        "label": "每天跑",
+        "fx": {
+          "health": 6,
+          "mood": 5,
+          "energy": -5
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "快走就行",
+        "fx": {
+          "health": 4,
+          "mood": 3,
+          "energy": -2
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_b45",
+      "name": "银行",
+      "min": 50,
+      "max": 64,
+      "text": "存折上第一次有了能留给别人的数字。",
+      "left": {
+        "label": "立个遗嘱",
+        "fx": {
+          "money": -5,
+          "mood": 4,
+          "career": 4,
+          "social": 3
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "先不立",
+        "fx": {
+          "money": 3,
+          "mood": -3,
+          "social": -4
+        }
+      },
+      "once": true
+    }
+  ]
+}

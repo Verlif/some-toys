@@ -1,0 +1,1044 @@
+{
+  "title": "门槛事件（技能 / 状态）",
+  "events": [
+    {
+      "id": "e75",
+      "name": "半马",
+      "min": 20,
+      "max": 60,
+      "cond": {
+        "skill": {
+          "id": "fitness",
+          "min": 50
+        }
+      },
+      "text": "你报名了半程马拉松。",
+      "left": {
+        "label": "完赛冲线",
+        "fx": {
+          "health": 5,
+          "mood": 4,
+          "energy": -7,
+          "skills": {
+            "fitness": 8
+          }
+        }
+      },
+      "right": {
+        "label": "弃赛保命",
+        "fx": {
+          "energy": 4,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e76",
+      "name": "晋升答辩",
+      "min": 24,
+      "max": 55,
+      "cond": {
+        "skill": {
+          "id": "knowledge",
+          "min": 50
+        }
+      },
+      "text": "公司内部晋升答辩，轮到你上场。",
+      "left": {
+        "label": "全力以赴",
+        "fx": {
+          "career": 9,
+          "energy": -6,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "随意发挥",
+        "fx": {
+          "career": 1,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e77",
+      "name": "融资",
+      "min": 30,
+      "max": 60,
+      "cond": {
+        "flag": "biz"
+      },
+      "text": "创业公司融资不顺，账面见紧。",
+      "left": {
+        "label": "追加投入",
+        "fx": {
+          "money": -10,
+          "career": 8,
+          "energy": -6,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "收缩业务",
+        "fx": {
+          "money": 4,
+          "career": -5,
+          "energy": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e78",
+      "name": "装修",
+      "min": 28,
+      "max": 60,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "新房到手，装修风格全家吵起来了。",
+      "left": {
+        "label": "豪装",
+        "fx": {
+          "money": -10,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "简装",
+        "fx": {
+          "money": 5,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_a1",
+      "name": "全马",
+      "min": 22,
+      "max": 58,
+      "text": "半马跑完了，有人劝你试试全马。",
+      "cond": {
+        "skill": {
+          "id": "fitness",
+          "min": 70
+        }
+      },
+      "left": {
+        "label": "报全马",
+        "fx": {
+          "health": 6,
+          "mood": 5,
+          "energy": -9
+        },
+        "skills": {
+          "fitness": 10
+        }
+      },
+      "right": {
+        "label": "见好就收",
+        "fx": {
+          "energy": 4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_a2",
+      "name": "出书",
+      "min": 30,
+      "max": 70,
+      "text": "出版社编辑说，你这些东西能成一本书。",
+      "cond": {
+        "skill": {
+          "id": "knowledge",
+          "min": 70
+        }
+      },
+      "left": {
+        "label": "写",
+        "fx": {
+          "career": 8,
+          "money": 6,
+          "energy": -7,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "mood": -2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_a3",
+      "name": "个人展",
+      "min": 26,
+      "max": 70,
+      "text": "社区活动中心腾出一面墙，问你借作品。",
+      "cond": {
+        "skill": {
+          "id": "craft",
+          "min": 65
+        }
+      },
+      "left": {
+        "label": "办",
+        "fx": {
+          "mood": 7,
+          "social": 6,
+          "money": -4,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_a4",
+      "name": "相亲局",
+      "min": 26,
+      "max": 45,
+      "text": "朋友非要给你安排一场，照片都发来了。",
+      "cond": [
+        {
+          "noFlag": "married"
+        },
+        {
+          "stat": {
+            "id": "social",
+            "min": 60
+          }
+        }
+      ],
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 4,
+          "mood": 3,
+          "energy": -3,
+          "money": -4
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "mood": -2,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_a5",
+      "name": "挖角",
+      "min": 28,
+      "max": 58,
+      "text": "同行开出两倍价钱，就等你点头。",
+      "cond": {
+        "stat": {
+          "id": "career",
+          "min": 60
+        }
+      },
+      "left": {
+        "label": "跳",
+        "fx": {
+          "career": 8,
+          "money": 12,
+          "energy": -5,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "留下",
+        "fx": {
+          "career": -3,
+          "mood": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_a6",
+      "name": "理财",
+      "min": 28,
+      "max": 70,
+      "text": "账上第一次有了能「钱生钱」的数目。",
+      "cond": {
+        "stat": {
+          "id": "money",
+          "min": 70
+        }
+      },
+      "left": {
+        "label": "交给市场",
+        "fx": {
+          "money": 8,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "存定期",
+        "fx": {
+          "money": 3,
+          "mood": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_b1",
+      "name": "讲台",
+      "min": 28,
+      "max": 70,
+      "text": "有人请你去做一场两百人的分享。",
+      "left": {
+        "label": "答应",
+        "fx": {
+          "career": 8,
+          "social": 7,
+          "mood": 5,
+          "energy": -6
+        },
+        "skills": {
+          "charm": 6
+        }
+      },
+      "right": {
+        "label": "推掉",
+        "fx": {
+          "career": -3,
+          "mood": -2,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "skill": {
+          "id": "knowledge",
+          "min": 80
+        }
+      }
+    },
+    {
+      "id": "gt_b2",
+      "name": "家宴",
+      "min": 26,
+      "max": 70,
+      "text": "朋友说要请一桌人，问能不能借你的手艺。",
+      "left": {
+        "label": "接下",
+        "fx": {
+          "money": 7,
+          "mood": 6,
+          "social": 6,
+          "energy": -7
+        },
+        "skills": {
+          "cooking": 7
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": -3,
+          "energy": 3,
+          "social": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "skill": {
+          "id": "cooking",
+          "min": 70
+        }
+      }
+    },
+    {
+      "id": "gt_b3",
+      "name": "越野",
+      "min": 24,
+      "max": 62,
+      "text": "有人拉你报名五十公里越野。",
+      "left": {
+        "label": "冲",
+        "fx": {
+          "health": 7,
+          "mood": 7,
+          "energy": -9,
+          "social": 5
+        },
+        "skills": {
+          "fitness": 9
+        }
+      },
+      "right": {
+        "label": "当志愿者",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "energy": -4,
+          "health": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "skill": {
+          "id": "fitness",
+          "min": 80
+        }
+      }
+    },
+    {
+      "id": "gt_b4",
+      "name": "年会",
+      "min": 24,
+      "max": 65,
+      "text": "年会缺主持人，行政把你名字报上去了。",
+      "left": {
+        "label": "上",
+        "fx": {
+          "social": 7,
+          "career": 6,
+          "mood": 4,
+          "energy": -5
+        },
+        "skills": {
+          "charm": 7
+        }
+      },
+      "right": {
+        "label": "换人",
+        "fx": {
+          "social": -3,
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "skill": {
+          "id": "charm",
+          "min": 70
+        }
+      }
+    },
+    {
+      "id": "gt_b5",
+      "name": "市集",
+      "min": 24,
+      "max": 70,
+      "text": "手作市集给你留了个摊位，一整天。",
+      "left": {
+        "label": "摆",
+        "fx": {
+          "money": 8,
+          "social": 6,
+          "mood": 6,
+          "energy": -7
+        },
+        "skills": {
+          "craft": 7
+        }
+      },
+      "right": {
+        "label": "只去看看",
+        "fx": {
+          "mood": 3,
+          "money": -3,
+          "energy": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "skill": {
+          "id": "craft",
+          "min": 80
+        }
+      }
+    },
+    {
+      "id": "gt_b6",
+      "name": "投资课",
+      "min": 30,
+      "max": 70,
+      "text": "有人开了一门很贵的投资课，只收二十人。",
+      "left": {
+        "label": "报",
+        "fx": {
+          "money": -12,
+          "career": 7,
+          "mood": 3,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 6
+        }
+      },
+      "right": {
+        "label": "自学",
+        "fx": {
+          "money": 2,
+          "career": 4,
+          "energy": -3
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "stat": {
+          "id": "money",
+          "min": 85
+        }
+      }
+    },
+    {
+      "id": "gt_b7",
+      "name": "月底",
+      "min": 20,
+      "max": 70,
+      "text": "离发工资还有七天，钱包只剩几十块。",
+      "left": {
+        "label": "省着过",
+        "fx": {
+          "money": 6,
+          "mood": -5,
+          "health": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "找人借",
+        "fx": {
+          "money": 8,
+          "mood": -4,
+          "social": -4
+        },
+        "flags": {
+          "debt": true
+        }
+      },
+      "once": true,
+      "cond": {
+        "stat": {
+          "id": "money",
+          "max": 22
+        }
+      }
+    },
+    {
+      "id": "gt_b8",
+      "name": "病床",
+      "min": 20,
+      "max": 79,
+      "text": "身体已经很虚了，医生建议你停下所有的安排。",
+      "left": {
+        "label": "彻底休息",
+        "fx": {
+          "health": 7,
+          "energy": 6,
+          "career": -8,
+          "money": -5,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "还要再撑一下",
+        "fx": {
+          "career": 6,
+          "money": 5,
+          "health": -8,
+          "energy": -7
+        }
+      },
+      "once": true,
+      "cond": {
+        "stat": {
+          "id": "health",
+          "max": 24
+        }
+      }
+    },
+    {
+      "id": "gt_b9",
+      "name": "行业大会",
+      "min": 30,
+      "max": 65,
+      "text": "行业大会邀请你做圆桌嘉宾。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "career": 9,
+          "social": 7,
+          "money": 5,
+          "energy": -6,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "推掉",
+        "fx": {
+          "career": -4,
+          "mood": -3,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "stat": {
+          "id": "career",
+          "min": 80
+        }
+      }
+    },
+    {
+      "id": "gt_b10",
+      "name": "派对",
+      "min": 20,
+      "max": 70,
+      "text": "你说要办个聚会，报名的人超了三倍。",
+      "left": {
+        "label": "照办",
+        "fx": {
+          "social": 8,
+          "mood": 7,
+          "money": -10,
+          "energy": -7
+        }
+      },
+      "right": {
+        "label": "缩小规模",
+        "fx": {
+          "social": 4,
+          "mood": 4,
+          "money": -4,
+          "energy": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "stat": {
+          "id": "social",
+          "min": 80
+        }
+      }
+    },
+    {
+      "id": "gt_b11",
+      "name": "纪念日",
+      "min": 26,
+      "max": 75,
+      "text": "结婚纪念日，你想做点不一样的事。",
+      "left": {
+        "label": "准备一整天",
+        "fx": {
+          "mood": 8,
+          "social": 6,
+          "money": -9,
+          "energy": -6
+        },
+        "rel": {
+          "love": 9
+        }
+      },
+      "right": {
+        "label": "吃顿好的",
+        "fx": {
+          "mood": 5,
+          "money": -5,
+          "social": 3
+        },
+        "rel": {
+          "love": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "rel": {
+          "id": "love",
+          "min": 80
+        }
+      }
+    },
+    {
+      "id": "gt_b12",
+      "name": "老屋",
+      "min": 30,
+      "max": 79,
+      "text": "全家族要聚一次，你被推去张罗。",
+      "left": {
+        "label": "张罗",
+        "fx": {
+          "social": 7,
+          "mood": 5,
+          "money": -8,
+          "energy": -7
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "只出钱",
+        "fx": {
+          "money": -6,
+          "social": -2,
+          "mood": 2
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "rel": {
+          "id": "family",
+          "min": 85
+        }
+      }
+    },
+    {
+      "id": "gt_b13",
+      "name": "老友局",
+      "min": 22,
+      "max": 79,
+      "text": "你想把散在各地的老友凑到一起。",
+      "left": {
+        "label": "组",
+        "fx": {
+          "social": 8,
+          "mood": 7,
+          "money": -8,
+          "energy": -6
+        },
+        "rel": {
+          "friends": 9
+        }
+      },
+      "right": {
+        "label": "线上聊聊",
+        "fx": {
+          "social": 4,
+          "mood": 4,
+          "energy": -2
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "rel": {
+          "id": "friends",
+          "min": 80
+        }
+      }
+    },
+    {
+      "id": "gt_b14",
+      "name": "半程",
+      "min": 40,
+      "max": 60,
+      "text": "四十岁那天，你对着镜子站了一会儿。",
+      "left": {
+        "label": "列个清单",
+        "fx": {
+          "career": 6,
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "不去想",
+        "fx": {
+          "mood": -3,
+          "energy": 3,
+          "career": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "age": {
+          "min": 40
+        }
+      }
+    },
+    {
+      "id": "gt_b15",
+      "name": "顾问",
+      "min": 34,
+      "max": 70,
+      "text": "有公司请你当顾问，一个月两天。",
+      "left": {
+        "label": "接",
+        "fx": {
+          "money": 9,
+          "career": 7,
+          "energy": -4,
+          "social": 4,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "不接",
+        "fx": {
+          "money": -2,
+          "mood": -2,
+          "energy": 3
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "stat": {
+            "id": "career",
+            "min": 60
+          }
+        },
+        {
+          "skill": {
+            "id": "knowledge",
+            "min": 60
+          }
+        }
+      ]
+    },
+    {
+      "id": "gt_b16",
+      "name": "山野",
+      "min": 26,
+      "max": 68,
+      "text": "朋友有一整套露营装备，说走就走。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "health": 6,
+          "mood": 7,
+          "social": 6,
+          "energy": -7
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "下次",
+        "fx": {
+          "mood": -4,
+          "energy": 3,
+          "social": -3
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "skill": {
+            "id": "fitness",
+            "min": 60
+          }
+        },
+        {
+          "stat": {
+            "id": "health",
+            "min": 60
+          }
+        }
+      ]
+    },
+    {
+      "id": "gt_b17",
+      "name": "小店",
+      "min": 30,
+      "max": 65,
+      "text": "有人愿意出钱，让你开一家小馆子。",
+      "left": {
+        "label": "开",
+        "fx": {
+          "money": -14,
+          "career": 7,
+          "mood": 7,
+          "energy": -8,
+          "social": 6
+        },
+        "skills": {
+          "cooking": 6
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "money": 4,
+          "mood": -5,
+          "career": -3
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "skill": {
+            "id": "cooking",
+            "min": 60
+          }
+        },
+        {
+          "stat": {
+            "id": "social",
+            "min": 60
+          }
+        }
+      ]
+    },
+    {
+      "id": "gt_b18",
+      "name": "工坊",
+      "min": 28,
+      "max": 70,
+      "text": "有个铺面空着，你想做点手工。",
+      "left": {
+        "label": "租下",
+        "fx": {
+          "money": -13,
+          "mood": 7,
+          "career": 5,
+          "energy": -7,
+          "social": 5
+        },
+        "skills": {
+          "craft": 7
+        }
+      },
+      "right": {
+        "label": "在家做",
+        "fx": {
+          "money": -3,
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "skill": {
+            "id": "craft",
+            "min": 70
+          }
+        },
+        {
+          "stat": {
+            "id": "money",
+            "min": 60
+          }
+        }
+      ]
+    },
+    {
+      "id": "gt_b19",
+      "name": "独居",
+      "min": 40,
+      "max": 70,
+      "text": "一个人住久了，你开始享受这件事。",
+      "left": {
+        "label": "就这样挺好",
+        "fx": {
+          "mood": 7,
+          "energy": 5,
+          "career": 4,
+          "social": -5
+        }
+      },
+      "right": {
+        "label": "试着认识人",
+        "fx": {
+          "social": 7,
+          "mood": 4,
+          "energy": -4,
+          "money": -5
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "noFlag": "married"
+        },
+        {
+          "age": {
+            "min": 40
+          }
+        }
+      ]
+    },
+    {
+      "id": "gt_b20",
+      "name": "全家旅行",
+      "min": 32,
+      "max": 70,
+      "text": "你攒了很久，想带全家出一趟远门。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": -12,
+          "mood": 8,
+          "social": 7,
+          "energy": -7,
+          "health": 3
+        },
+        "rel": {
+          "family": 9
+        }
+      },
+      "right": {
+        "label": "改近郊",
+        "fx": {
+          "money": -5,
+          "mood": 5,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "once": true,
+      "cond": [
+        {
+          "flag": "hasChild"
+        },
+        {
+          "rel": {
+            "id": "family",
+            "min": 70
+          }
+        }
+      ]
+    }
+  ]
+}

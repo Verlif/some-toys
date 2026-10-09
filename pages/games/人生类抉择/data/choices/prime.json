@@ -1,0 +1,2599 @@
+{
+  "title": "中年 30-49",
+  "events": [
+    {
+      "id": "e33",
+      "name": "求婚",
+      "min": 22,
+      "max": 49,
+      "once": true,
+      "cond": {
+        "flag": "metLove",
+        "rel": {
+          "id": "love",
+          "min": 35
+        }
+      },
+      "text": "你准备好了戒指，要跟那个陪你多年的人求婚。",
+      "left": {
+        "label": "单膝跪地",
+        "fx": {
+          "mood": 6,
+          "money": -6,
+          "rel": {
+            "family": 4,
+            "love": 12
+          }
+        },
+        "flags": {
+          "married": true
+        },
+        "milestone": "步入婚姻"
+      },
+      "right": {
+        "label": "再等等",
+        "fx": {
+          "mood": -2,
+          "rel": {
+            "love": -5
+          }
+        }
+      }
+    },
+    {
+      "id": "e34",
+      "name": "婚礼",
+      "min": 24,
+      "max": 49,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "婚礼办大办小？父母和爱人意见不合。",
+      "left": {
+        "label": "大操大办",
+        "fx": {
+          "mood": 6,
+          "rel": {
+            "family": 5
+          },
+          "money": -10
+        }
+      },
+      "right": {
+        "label": "简简单单",
+        "fx": {
+          "money": 6,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e35",
+      "name": "竞聘",
+      "min": 30,
+      "max": 49,
+      "text": "公司竞聘部门主管，你资历刚好够格。",
+      "left": {
+        "label": "全力争取",
+        "fx": {
+          "career": 10,
+          "energy": -8,
+          "social": -4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "让贤给老同事",
+        "fx": {
+          "career": -4,
+          "social": 4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e36",
+      "name": "体检",
+      "min": 30,
+      "max": 49,
+      "text": "体检报告：血压血脂血糖，集体超标。",
+      "left": {
+        "label": "认真养生",
+        "fx": {
+          "health": 7,
+          "money": -3,
+          "energy": -2,
+          "mood": 1
+        }
+      },
+      "right": {
+        "label": "该吃吃该喝喝",
+        "fx": {
+          "mood": 3,
+          "health": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e37",
+      "name": "父母",
+      "min": 32,
+      "max": 55,
+      "text": "父亲/母亲病倒了，需要人照顾。",
+      "left": {
+        "label": "亲自照顾",
+        "fx": {
+          "rel": {
+            "family": 8
+          },
+          "energy": -7,
+          "career": -4,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "请护工",
+        "fx": {
+          "money": -8,
+          "rel": {
+            "family": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e38",
+      "name": "爱人",
+      "min": 28,
+      "max": 49,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "夫妻俩为家务和带娃的事吵了起来。",
+      "left": {
+        "label": "主动沟通",
+        "fx": {
+          "rel": {
+            "family": 4,
+            "love": 6
+          },
+          "energy": -4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "冷战",
+        "fx": {
+          "rel": {
+            "family": -3,
+            "love": -6
+          },
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e39",
+      "name": "孩子",
+      "min": 28,
+      "max": 49,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "孩子闹着想学钢琴，学费可不便宜。",
+      "left": {
+        "label": "咬牙报班",
+        "fx": {
+          "money": -8,
+          "rel": {
+            "family": 3
+          },
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "先缓缓",
+        "fx": {
+          "money": 4,
+          "rel": {
+            "family": -2
+          },
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e40",
+      "name": "教练",
+      "min": 25,
+      "max": 49,
+      "text": "健身计划中断三个月，教练约你复训。",
+      "left": {
+        "label": "重新开始",
+        "fx": {
+          "health": 4,
+          "energy": -4,
+          "mood": 2,
+          "skills": {
+            "fitness": 7
+          }
+        }
+      },
+      "right": {
+        "label": "放弃治疗",
+        "fx": {
+          "health": -3,
+          "mood": 1,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e41",
+      "name": "办公室",
+      "min": 25,
+      "max": 49,
+      "text": "办公室开始疯狂内卷，你……",
+      "left": {
+        "label": "加入卷王行列",
+        "fx": {
+          "career": 8,
+          "energy": -8,
+          "health": -3,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "保持自己的节奏",
+        "fx": {
+          "career": -2,
+          "energy": 5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e42",
+      "name": "投资",
+      "min": 26,
+      "max": 55,
+      "text": "朋友的朋友拉你投一个「稳赚不赔」的项目。",
+      "left": {
+        "label": "梭哈一把",
+        "fx": {
+          "money": 12,
+          "mood": 4,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "存银行",
+        "fx": {
+          "money": 3,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e43",
+      "name": "纪念日",
+      "min": 30,
+      "max": 49,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "结婚纪念日，你忙到彻底忘了。",
+      "left": {
+        "label": "临时补惊喜",
+        "fx": {
+          "money": -5,
+          "mood": 4,
+          "rel": {
+            "love": 8
+          }
+        }
+      },
+      "right": {
+        "label": "敷衍两句",
+        "fx": {
+          "mood": -3,
+          "rel": {
+            "love": -5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e44",
+      "name": "创业",
+      "min": 28,
+      "max": 45,
+      "text": "老同学挖你去创业公司当合伙人。",
+      "left": {
+        "label": "跳出去闯",
+        "fx": {
+          "career": 12,
+          "money": 6,
+          "energy": -8,
+          "health": -4,
+          "mood": 4
+        },
+        "flags": {
+          "biz": true
+        },
+        "milestone": "下海创业"
+      },
+      "right": {
+        "label": "留在原公司",
+        "fx": {
+          "career": 3,
+          "energy": 4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e45",
+      "name": "发小",
+      "min": 26,
+      "max": 55,
+      "text": "发小生意失败，开口找你借钱救急。",
+      "left": {
+        "label": "慷慨解囊",
+        "fx": {
+          "money": -8,
+          "rel": {
+            "friends": 6
+          },
+          "mood": 1
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "money": 2,
+          "rel": {
+            "friends": -6
+          },
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e46",
+      "name": "爸妈",
+      "min": 28,
+      "max": 45,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "爸妈开始催生/催二胎。",
+      "left": {
+        "label": "顺其自然",
+        "fx": {
+          "rel": {
+            "family": 5
+          },
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "坚持自己的节奏",
+        "fx": {
+          "mood": 3,
+          "rel": {
+            "family": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e47",
+      "name": "体检",
+      "min": 32,
+      "max": 55,
+      "text": "中年发福，体检单又厚了一页。",
+      "left": {
+        "label": "下决心减肥",
+        "fx": {
+          "health": 6,
+          "energy": -5,
+          "mood": -2,
+          "skills": {
+            "fitness": 6
+          }
+        }
+      },
+      "right": {
+        "label": "破罐破摔",
+        "fx": {
+          "health": -6,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "e48",
+      "name": "新生命",
+      "min": 28,
+      "max": 49,
+      "once": true,
+      "cond": {
+        "flag": "married",
+        "noFlag": "hasChild"
+      },
+      "text": "家里要迎来新生命了！",
+      "left": {
+        "label": "亲自带娃",
+        "fx": {
+          "rel": {
+            "family": 8
+          },
+          "energy": -7,
+          "mood": 3,
+          "money": -5
+        },
+        "flags": {
+          "hasChild": true
+        },
+        "milestone": "为人父母"
+      },
+      "right": {
+        "label": "请父母帮忙",
+        "fx": {
+          "rel": {
+            "family": 4
+          },
+          "energy": -3,
+          "mood": 3,
+          "money": -3
+        },
+        "flags": {
+          "hasChild": true
+        },
+        "milestone": "为人父母"
+      }
+    },
+    {
+      "id": "e49",
+      "name": "买房",
+      "min": 28,
+      "max": 55,
+      "once": true,
+      "cond": {
+        "noFlag": "house",
+        "stat": {
+          "id": "money",
+          "min": 45
+        }
+      },
+      "text": "手里的钱够付首付了，买不买房？",
+      "left": {
+        "label": "咬牙买房",
+        "fx": {
+          "money": -14,
+          "mood": 4,
+          "rel": {
+            "family": 5
+          }
+        },
+        "flags": {
+          "house": true
+        },
+        "milestone": "有了自己的房子"
+      },
+      "right": {
+        "label": "继续租房",
+        "fx": {
+          "money": 5,
+          "energy": -2,
+          "mood": -2
+        }
+      }
+    },
+    {
+      "id": "pr_a1",
+      "name": "三高",
+      "min": 34,
+      "max": 55,
+      "text": "体检单上三个箭头，医生让你控制饮食。",
+      "left": {
+        "label": "认真忌口",
+        "fx": {
+          "health": 5,
+          "mood": -3
+        },
+        "skills": {
+          "cooking": 4
+        }
+      },
+      "right": {
+        "label": "该吃吃该喝喝",
+        "fx": {
+          "health": -5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a2",
+      "name": "父母的体检",
+      "min": 38,
+      "max": 60,
+      "text": "妈说没事，可体检单是半年前的。",
+      "left": {
+        "label": "请假陪去",
+        "fx": {
+          "money": -4,
+          "mood": 2,
+          "energy": -3
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "打钱就够了",
+        "fx": {
+          "money": -5,
+          "mood": -2
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a3",
+      "name": "同学会",
+      "min": 32,
+      "max": 55,
+      "text": "二十年同学会，群里已经吵翻了。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "money": -5,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "money": 2,
+          "mood": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a4",
+      "name": "转岗",
+      "min": 30,
+      "max": 50,
+      "text": "领导问你要不要去新部门，从头开始。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "career": 5,
+          "energy": -5,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "守着老位置",
+        "fx": {
+          "career": -2,
+          "energy": 3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a5",
+      "name": "孩子发烧",
+      "min": 30,
+      "max": 48,
+      "text": "凌晨三点，额头烫得吓人。",
+      "cond": {
+        "flag": "hasChild"
+      },
+      "left": {
+        "label": "请假陪着",
+        "fx": {
+          "career": -5,
+          "energy": -4,
+          "mood": 2
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "让伴侣带去",
+        "fx": {
+          "career": 3,
+          "mood": -2
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a6",
+      "name": "理财亏损",
+      "min": 30,
+      "max": 60,
+      "text": "账户绿了，群里都在说「长期主义」。",
+      "left": {
+        "label": "补仓摊平",
+        "fx": {
+          "money": -10,
+          "mood": -3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "割肉离场",
+        "fx": {
+          "money": -5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a7",
+      "name": "深夜",
+      "min": 30,
+      "max": 58,
+      "text": "睡不着，手机通讯录翻到底又翻回来。",
+      "left": {
+        "label": "找人聊聊",
+        "fx": {
+          "mood": 5,
+          "energy": -3
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "自己扛",
+        "fx": {
+          "mood": -5,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a8",
+      "name": "二胎",
+      "min": 32,
+      "max": 46,
+      "text": "双方父母都开始旁敲侧击了。",
+      "cond": {
+        "flag": "hasChild"
+      },
+      "left": {
+        "label": "生",
+        "fx": {
+          "money": -10,
+          "energy": -8,
+          "mood": 4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "不生了",
+        "fx": {
+          "money": 5,
+          "energy": 4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_a9",
+      "name": "买车",
+      "min": 28,
+      "max": 55,
+      "text": "摇到号了，销售说今天下定送脚垫。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": -12,
+          "mood": 5,
+          "social": 3
+        },
+        "flags": {
+          "car": true
+        }
+      },
+      "right": {
+        "label": "继续挤地铁",
+        "fx": {
+          "money": 4,
+          "energy": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b1",
+      "name": "产房外",
+      "min": 30,
+      "max": 42,
+      "text": "产房外的走廊很长，墙上的钟走得很慢。",
+      "left": {
+        "label": "一直等",
+        "fx": {
+          "mood": 6,
+          "energy": -6,
+          "career": -4
+        },
+        "flags": {
+          "hasChild": true
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "回去处理工作",
+        "fx": {
+          "career": 6,
+          "mood": -5,
+          "money": 4
+        },
+        "flags": {
+          "hasChild": true
+        },
+        "rel": {
+          "family": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b2",
+      "name": "夜里三点",
+      "min": 30,
+      "max": 45,
+      "text": "孩子发烧三十九度，你抱着在客厅走。",
+      "left": {
+        "label": "连夜去医院",
+        "fx": {
+          "health": -3,
+          "energy": -7,
+          "mood": -4,
+          "money": -6
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "先物理降温",
+        "fx": {
+          "energy": -5,
+          "health": 2,
+          "mood": -3,
+          "career": -2
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b3",
+      "name": "学区",
+      "min": 32,
+      "max": 45,
+      "text": "学区房比隔壁贵三十万，就隔一条马路。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": -18,
+          "career": 4,
+          "mood": 5,
+          "energy": -4
+        },
+        "flags": {
+          "moved": true
+        }
+      },
+      "right": {
+        "label": "不买",
+        "fx": {
+          "money": 8,
+          "mood": -5,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b4",
+      "name": "幼儿园",
+      "min": 32,
+      "max": 44,
+      "text": "幼儿园报名要在门口排一整夜。",
+      "left": {
+        "label": "带上折叠椅",
+        "fx": {
+          "energy": -6,
+          "mood": -3,
+          "career": 4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "找个普通园",
+        "fx": {
+          "energy": 3,
+          "mood": -4,
+          "career": -3,
+          "money": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b5",
+      "name": "客厅",
+      "min": 38,
+      "max": 49,
+      "text": "父母年纪大了，要不要接来一起住。",
+      "left": {
+        "label": "接来",
+        "fx": {
+          "money": -8,
+          "mood": 4,
+          "energy": -5,
+          "social": -3
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "请个阿姨",
+        "fx": {
+          "money": -12,
+          "mood": 2,
+          "energy": 2
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b6",
+      "name": "饭桌",
+      "min": 34,
+      "max": 49,
+      "text": "一顿饭吃到一半，两个长辈话里有话。",
+      "left": {
+        "label": "打圆场",
+        "fx": {
+          "mood": -3,
+          "social": 6
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "说清楚",
+        "fx": {
+          "mood": -5,
+          "social": -3,
+          "career": 3
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b7",
+      "name": "茶水间",
+      "min": 32,
+      "max": 49,
+      "text": "两个领导不对付，两边都在拉人。",
+      "left": {
+        "label": "选一边",
+        "fx": {
+          "career": 7,
+          "mood": -4,
+          "social": -4
+        }
+      },
+      "right": {
+        "label": "谁也不靠",
+        "fx": {
+          "career": -3,
+          "mood": 3,
+          "social": 4,
+          "energy": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b8",
+      "name": "工位",
+      "min": 32,
+      "max": 49,
+      "text": "你开始带团队了，多出六个下属。",
+      "left": {
+        "label": "手把手带",
+        "fx": {
+          "career": 7,
+          "energy": -7,
+          "social": 5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "只管结果",
+        "fx": {
+          "career": 4,
+          "energy": 3,
+          "social": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b9",
+      "name": "酒桌",
+      "min": 32,
+      "max": 49,
+      "text": "客户举杯，说这杯不喝就是不给面子。",
+      "left": {
+        "label": "喝",
+        "fx": {
+          "career": 6,
+          "money": 6,
+          "health": -7,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "以茶代酒",
+        "fx": {
+          "health": 4,
+          "career": -4,
+          "mood": -2,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b10",
+      "name": "体检报告",
+      "min": 35,
+      "max": 49,
+      "text": "三项指标飘红，医生说先别吃药。",
+      "left": {
+        "label": "认真调作息",
+        "fx": {
+          "health": 7,
+          "mood": -4,
+          "energy": -3
+        },
+        "skills": {
+          "fitness": 5
+        }
+      },
+      "right": {
+        "label": "先不管",
+        "fx": {
+          "health": -6,
+          "mood": 3,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b11",
+      "name": "枕头",
+      "min": 34,
+      "max": 49,
+      "text": "早上起来，枕头上头发比昨天多。",
+      "left": {
+        "label": "买生发液",
+        "fx": {
+          "money": -6,
+          "mood": 3,
+          "social": 3,
+          "health": -1
+        }
+      },
+      "right": {
+        "label": "剃短",
+        "fx": {
+          "mood": 4,
+          "social": 4,
+          "money": 1,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b12",
+      "name": "腰",
+      "min": 35,
+      "max": 49,
+      "text": "弯腰捡个东西，直不起来了。",
+      "left": {
+        "label": "去做康复",
+        "fx": {
+          "health": 6,
+          "money": -8,
+          "energy": -4,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "贴膏药扛着",
+        "fx": {
+          "health": -5,
+          "money": -2,
+          "career": 3,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b13",
+      "name": "晚上八点",
+      "min": 34,
+      "max": 49,
+      "text": "健身还是加班，只有一小时。",
+      "left": {
+        "label": "健身",
+        "fx": {
+          "health": 6,
+          "mood": 5,
+          "energy": -5,
+          "career": -3
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "加班",
+        "fx": {
+          "career": 6,
+          "money": 5,
+          "health": -4,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b14",
+      "name": "电话",
+      "min": 35,
+      "max": 49,
+      "text": "十年没联系的同学，开口就是借钱。",
+      "left": {
+        "label": "借",
+        "fx": {
+          "money": -10,
+          "social": 4,
+          "mood": -2
+        },
+        "rel": {
+          "friends": 3
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "money": 2,
+          "social": -4,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b15",
+      "name": "行情",
+      "min": 32,
+      "max": 49,
+      "text": "同事说某只票稳赚，你有点心动。",
+      "left": {
+        "label": "投一笔",
+        "fx": {
+          "money": -9,
+          "mood": -4,
+          "career": 3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "不碰",
+        "fx": {
+          "money": 3,
+          "mood": 3,
+          "career": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b16",
+      "name": "银行",
+      "min": 34,
+      "max": 49,
+      "text": "理财经理推荐一笔五年期的产品。",
+      "left": {
+        "label": "买",
+        "fx": {
+          "money": 7,
+          "mood": -2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "放活期",
+        "fx": {
+          "money": 2,
+          "mood": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b17",
+      "name": "超市",
+      "min": 34,
+      "max": 49,
+      "text": "牛奶涨了两块，你想起十年前的价。",
+      "left": {
+        "label": "少买点",
+        "fx": {
+          "money": 5,
+          "mood": -3,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "照常买",
+        "fx": {
+          "money": -4,
+          "mood": 3,
+          "health": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b18",
+      "name": "车行",
+      "min": 34,
+      "max": 49,
+      "text": "开了八年的车，修还是换。",
+      "left": {
+        "label": "换",
+        "fx": {
+          "money": -15,
+          "mood": 6,
+          "social": 5
+        },
+        "flags": {
+          "car": true
+        }
+      },
+      "right": {
+        "label": "修",
+        "fx": {
+          "money": -5,
+          "mood": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b19",
+      "name": "楼上",
+      "min": 34,
+      "max": 49,
+      "text": "楼上晚上十一点还在拖桌子。",
+      "left": {
+        "label": "上去敲门",
+        "fx": {
+          "mood": -4,
+          "social": -3,
+          "energy": 3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "送盒耳塞上去",
+        "fx": {
+          "mood": 3,
+          "social": 5,
+          "money": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b20",
+      "name": "辅导班",
+      "min": 34,
+      "max": 46,
+      "text": "孩子的成绩排在中间，爱人想报班。",
+      "left": {
+        "label": "报",
+        "fx": {
+          "money": -11,
+          "career": 3,
+          "mood": 3,
+          "energy": -3
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "right": {
+        "label": "自己辅导",
+        "fx": {
+          "energy": -6,
+          "mood": -4,
+          "career": -3
+        },
+        "rel": {
+          "family": 5
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b21",
+      "name": "卧室",
+      "min": 33,
+      "max": 44,
+      "text": "有人提了「要不要再生一个」。",
+      "left": {
+        "label": "要",
+        "fx": {
+          "mood": 6,
+          "money": -12,
+          "energy": -7,
+          "health": -4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "不要",
+        "fx": {
+          "money": 6,
+          "mood": -3,
+          "energy": 3
+        },
+        "rel": {
+          "family": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b22",
+      "name": "书桌前",
+      "min": 34,
+      "max": 46,
+      "text": "一道数学题讲了四遍，孩子还是不会。",
+      "left": {
+        "label": "压住火再讲",
+        "fx": {
+          "mood": -4,
+          "energy": -4,
+          "career": 3
+        },
+        "rel": {
+          "family": 5
+        }
+      },
+      "right": {
+        "label": "拍桌子",
+        "fx": {
+          "mood": -6,
+          "social": -4,
+          "energy": 2
+        },
+        "rel": {
+          "family": -5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b23",
+      "name": "会议室",
+      "min": 36,
+      "max": 48,
+      "text": "公司要降本，你的名字在讨论名单上。",
+      "left": {
+        "label": "主动谈新岗位",
+        "fx": {
+          "career": 5,
+          "mood": -5,
+          "energy": -5,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "等结果",
+        "fx": {
+          "mood": -6,
+          "career": -5,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b24",
+      "name": "深夜",
+      "min": 36,
+      "max": 48,
+      "text": "三十七岁，你想换个行业从头开始。",
+      "left": {
+        "label": "转",
+        "fx": {
+          "career": -8,
+          "money": -8,
+          "mood": 5,
+          "energy": -6,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "继续熬",
+        "fx": {
+          "career": 3,
+          "money": 4,
+          "mood": -5,
+          "health": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b25",
+      "name": "讲台",
+      "min": 36,
+      "max": 49,
+      "text": "培训机构请你周末去讲两小时课。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": 8,
+          "career": 5,
+          "energy": -5,
+          "social": 4
+        },
+        "skills": {
+          "charm": 5
+        }
+      },
+      "right": {
+        "label": "休息",
+        "fx": {
+          "energy": 5,
+          "mood": 3,
+          "money": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b26",
+      "name": "记者",
+      "min": 36,
+      "max": 49,
+      "text": "行业媒体想采访你，问得挺细。",
+      "left": {
+        "label": "接受",
+        "fx": {
+          "career": 7,
+          "social": 6,
+          "mood": 4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "推掉",
+        "fx": {
+          "career": -2,
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b27",
+      "name": "手机",
+      "min": 32,
+      "max": 49,
+      "text": "你随手发的视频，一夜之间十万播放。",
+      "left": {
+        "label": "接着拍",
+        "fx": {
+          "mood": 7,
+          "social": 7,
+          "career": 5,
+          "energy": -6
+        },
+        "flags": {
+          "fame": true
+        }
+      },
+      "right": {
+        "label": "删掉",
+        "fx": {
+          "mood": -3,
+          "social": -2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b28",
+      "name": "评论区",
+      "min": 33,
+      "max": 49,
+      "text": "评论区炸了，一半夸一半骂。",
+      "left": {
+        "label": "一条条回",
+        "fx": {
+          "mood": -6,
+          "social": 4,
+          "energy": -6,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "关掉评论",
+        "fx": {
+          "mood": 3,
+          "energy": 4,
+          "social": -3,
+          "career": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "fame"
+      }
+    },
+    {
+      "id": "pr_b29",
+      "name": "私信",
+      "min": 33,
+      "max": 49,
+      "text": "有品牌找上门，报价不低。",
+      "left": {
+        "label": "接",
+        "fx": {
+          "money": 10,
+          "career": 4,
+          "mood": 3,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "不接",
+        "fx": {
+          "money": -2,
+          "mood": -3,
+          "social": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "fame"
+      }
+    },
+    {
+      "id": "pr_b30",
+      "name": "半年后",
+      "min": 34,
+      "max": 49,
+      "text": "热度掉得很快，新面孔已经上来。",
+      "left": {
+        "label": "继续追热度",
+        "fx": {
+          "mood": -5,
+          "career": -4,
+          "energy": -6,
+          "money": 4
+        }
+      },
+      "right": {
+        "label": "关掉账号",
+        "fx": {
+          "mood": 5,
+          "energy": 5,
+          "career": 3,
+          "social": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "fame"
+      }
+    },
+    {
+      "id": "pr_b31",
+      "name": "包间",
+      "min": 38,
+      "max": 49,
+      "text": "毕业二十年同学会，有人没来。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "money": -6,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "money": 3,
+          "mood": -3,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b32",
+      "name": "凌晨",
+      "min": 38,
+      "max": 49,
+      "text": "凌晨三点醒着，脑子里全是清单。",
+      "left": {
+        "label": "起来写下来",
+        "fx": {
+          "mood": 3,
+          "career": 5,
+          "energy": -4,
+          "health": -3
+        }
+      },
+      "right": {
+        "label": "翻个身继续躺",
+        "fx": {
+          "health": 3,
+          "energy": -3,
+          "mood": -4,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b33",
+      "name": "复查",
+      "min": 38,
+      "max": 49,
+      "text": "医生让你半年后回来复查。",
+      "left": {
+        "label": "准时去",
+        "fx": {
+          "health": 6,
+          "money": -6,
+          "mood": -2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "拖着",
+        "fx": {
+          "health": -6,
+          "money": 3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b34",
+      "name": "病房",
+      "min": 38,
+      "max": 49,
+      "text": "父亲住院了，医生说要做好准备。",
+      "left": {
+        "label": "请长假陪",
+        "fx": {
+          "mood": -7,
+          "energy": -7,
+          "career": -7,
+          "money": -8
+        },
+        "rel": {
+          "family": 9
+        }
+      },
+      "right": {
+        "label": "轮班陪",
+        "fx": {
+          "mood": -4,
+          "energy": -4,
+          "career": -3,
+          "money": -4
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b35",
+      "name": "客厅",
+      "min": 42,
+      "max": 49,
+      "text": "母亲忘了你的名字，只记得你爱吃鱼。",
+      "left": {
+        "label": "每周回去",
+        "fx": {
+          "mood": -5,
+          "energy": -5,
+          "money": -5
+        },
+        "rel": {
+          "family": 8
+        }
+      },
+      "right": {
+        "label": "送养老院",
+        "fx": {
+          "money": -13,
+          "mood": -6,
+          "energy": 3,
+          "career": 3
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b36",
+      "name": "老屋",
+      "min": 40,
+      "max": 49,
+      "text": "老房子要分了，兄弟姐妹各有各的算法。",
+      "left": {
+        "label": "让",
+        "fx": {
+          "money": -10,
+          "mood": 4,
+          "social": 5
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "争",
+        "fx": {
+          "money": 10,
+          "mood": -5,
+          "social": -6
+        },
+        "rel": {
+          "family": -7
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b37",
+      "name": "推销电话",
+      "min": 34,
+      "max": 49,
+      "text": "保险推销打到第三个了。",
+      "left": {
+        "label": "买一份",
+        "fx": {
+          "money": -8,
+          "mood": 3,
+          "health": 3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "挂掉",
+        "fx": {
+          "money": 3,
+          "mood": -2,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b38",
+      "name": "贷款",
+      "min": 34,
+      "max": 49,
+      "text": "手里有笔闲钱，提前还贷还是留着。",
+      "left": {
+        "label": "提前还",
+        "fx": {
+          "money": -12,
+          "mood": 6,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "留着",
+        "fx": {
+          "money": 6,
+          "mood": -3,
+          "career": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b39",
+      "name": "街角",
+      "min": 38,
+      "max": 49,
+      "text": "二十年没见的老友，在街角撞上了。",
+      "left": {
+        "label": "坐下聊两小时",
+        "fx": {
+          "mood": 7,
+          "social": 7,
+          "career": -3,
+          "energy": -3
+        },
+        "rel": {
+          "friends": 7
+        }
+      },
+      "right": {
+        "label": "加个微信改天",
+        "fx": {
+          "mood": -2,
+          "social": -3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b40",
+      "name": "工位",
+      "min": 34,
+      "max": 49,
+      "text": "隔壁工位空了，人来人往。",
+      "left": {
+        "label": "送一送",
+        "fx": {
+          "social": 5,
+          "mood": -2,
+          "energy": -2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "当作没发生",
+        "fx": {
+          "mood": -3,
+          "social": -4,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b41",
+      "name": "新人",
+      "min": 36,
+      "max": 49,
+      "text": "来了个年轻人，什么都要学，也什么都快。",
+      "left": {
+        "label": "倾囊相授",
+        "fx": {
+          "career": 5,
+          "social": 6,
+          "mood": 4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "留一手",
+        "fx": {
+          "career": 3,
+          "mood": -3,
+          "social": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b42",
+      "name": "电梯",
+      "min": 38,
+      "max": 49,
+      "text": "新来的同事叫你「叔」。",
+      "left": {
+        "label": "笑着应",
+        "fx": {
+          "mood": 4,
+          "social": 4,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "纠正一下",
+        "fx": {
+          "mood": -3,
+          "social": -2,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b43",
+      "name": "餐桌",
+      "min": 34,
+      "max": 49,
+      "text": "结婚第十年，两个人可以一整晚不说话。",
+      "left": {
+        "label": "主动开口",
+        "fx": {
+          "mood": 4,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "继续沉默",
+        "fx": {
+          "mood": -5,
+          "social": -4,
+          "career": 3
+        },
+        "rel": {
+          "love": -4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "pr_b44",
+      "name": "日历",
+      "min": 34,
+      "max": 49,
+      "text": "纪念日过了三天你才想起来。",
+      "left": {
+        "label": "补一顿",
+        "fx": {
+          "money": -7,
+          "mood": 5,
+          "social": 4
+        },
+        "rel": {
+          "love": 6
+        }
+      },
+      "right": {
+        "label": "装作不知道",
+        "fx": {
+          "mood": -4,
+          "social": -3,
+          "money": 3
+        },
+        "rel": {
+          "love": -5
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "pr_b45",
+      "name": "咨询室",
+      "min": 36,
+      "max": 49,
+      "text": "有人建议你们去做婚姻咨询。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "money": -8,
+          "mood": 4,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "love": 7
+        }
+      },
+      "right": {
+        "label": "不用",
+        "fx": {
+          "money": 3,
+          "mood": -4,
+          "social": -3
+        },
+        "rel": {
+          "love": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "pr_b46",
+      "name": "酒吧",
+      "min": 36,
+      "max": 49,
+      "text": "出差认识的人，说只想聊聊天。",
+      "left": {
+        "label": "留下",
+        "fx": {
+          "mood": 6,
+          "social": 5,
+          "career": -4
+        },
+        "rel": {
+          "love": -8
+        }
+      },
+      "right": {
+        "label": "回房间",
+        "fx": {
+          "mood": -3,
+          "career": 4,
+          "health": 2
+        },
+        "rel": {
+          "love": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "married"
+      }
+    },
+    {
+      "id": "pr_b47",
+      "name": "房门",
+      "min": 36,
+      "max": 47,
+      "text": "孩子把门反锁了，说你们不懂。",
+      "left": {
+        "label": "敲门谈",
+        "fx": {
+          "mood": -4,
+          "social": 5,
+          "energy": -3
+        },
+        "rel": {
+          "family": 6
+        }
+      },
+      "right": {
+        "label": "等他自己出来",
+        "fx": {
+          "mood": -5,
+          "social": -3,
+          "career": 3
+        },
+        "rel": {
+          "family": 3
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b48",
+      "name": "志愿表",
+      "min": 40,
+      "max": 49,
+      "text": "孩子高考志愿，你们意见不一致。",
+      "left": {
+        "label": "听孩子的",
+        "fx": {
+          "mood": 4,
+          "social": 5
+        },
+        "rel": {
+          "family": 7
+        }
+      },
+      "right": {
+        "label": "坚持己见",
+        "fx": {
+          "mood": -5,
+          "career": 4,
+          "social": -4
+        },
+        "rel": {
+          "family": -6
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b49",
+      "name": "兴趣班",
+      "min": 34,
+      "max": 46,
+      "text": "钢琴课一学期八千，孩子弹了两次就不想了。",
+      "left": {
+        "label": "逼着练",
+        "fx": {
+          "money": -8,
+          "mood": -5,
+          "career": 3
+        },
+        "rel": {
+          "family": -3
+        }
+      },
+      "right": {
+        "label": "停掉",
+        "fx": {
+          "money": 6,
+          "mood": 4,
+          "career": -2
+        },
+        "rel": {
+          "family": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "hasChild"
+      }
+    },
+    {
+      "id": "pr_b50",
+      "name": "阳台",
+      "min": 34,
+      "max": 49,
+      "text": "阳台上那盆薄荷疯了，长出一大片。",
+      "left": {
+        "label": "分盆送人",
+        "fx": {
+          "mood": 6,
+          "social": 6,
+          "energy": -3,
+          "money": -2
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "自己泡茶喝",
+        "fx": {
+          "mood": 5,
+          "health": 3,
+          "energy": -2
+        },
+        "skills": {
+          "cooking": 4
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "garden"
+      }
+    },
+    {
+      "id": "pr_b51",
+      "name": "山路",
+      "min": 34,
+      "max": 49,
+      "text": "朋友约周末去徒步，来回两天。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "health": 6,
+          "mood": 7,
+          "social": 5,
+          "energy": -7
+        },
+        "skills": {
+          "fitness": 6
+        }
+      },
+      "right": {
+        "label": "在家歇着",
+        "fx": {
+          "energy": 6,
+          "health": -2,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b52",
+      "name": "会议室",
+      "min": 34,
+      "max": 49,
+      "text": "又一个不太合理的要求落到你头上。",
+      "left": {
+        "label": "说不行",
+        "fx": {
+          "mood": 4,
+          "career": -3,
+          "social": -2,
+          "energy": 3
+        }
+      },
+      "right": {
+        "label": "接下来",
+        "fx": {
+          "career": 5,
+          "health": -4,
+          "mood": -5,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b53",
+      "name": "社区",
+      "min": 34,
+      "max": 49,
+      "text": "社区敬老活动缺人，每周两小时。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "social": 6,
+          "mood": 6,
+          "energy": -4,
+          "career": -2
+        },
+        "flags": {
+          "volunteer": true
+        }
+      },
+      "right": {
+        "label": "下次吧",
+        "fx": {
+          "energy": 3,
+          "mood": -2,
+          "social": -3
+        }
+      },
+      "once": true,
+      "cond": {
+        "noFlag": "volunteer"
+      }
+    },
+    {
+      "id": "pr_b54",
+      "name": "敬老院",
+      "min": 35,
+      "max": 49,
+      "text": "每次去，那位老人都问你吃了没。",
+      "left": {
+        "label": "带点吃的",
+        "fx": {
+          "money": -3,
+          "mood": 6,
+          "social": 6,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "坐一会儿",
+        "fx": {
+          "mood": 4,
+          "social": 4,
+          "energy": -2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "volunteer"
+      }
+    },
+    {
+      "id": "pr_b55",
+      "name": "拆迁",
+      "min": 36,
+      "max": 49,
+      "text": "老房子要拆了，补偿方案两种。",
+      "left": {
+        "label": "要钱",
+        "fx": {
+          "money": 16,
+          "mood": 3,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "要房",
+        "fx": {
+          "money": -6,
+          "mood": 5,
+          "career": 4
+        },
+        "flags": {
+          "house": true
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b56",
+      "name": "饭局",
+      "min": 36,
+      "max": 49,
+      "text": "老同学创业，拉你入五万块钱的股。",
+      "left": {
+        "label": "入",
+        "fx": {
+          "money": -11,
+          "career": 5,
+          "social": 5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "不入",
+        "fx": {
+          "money": 4,
+          "social": -4,
+          "mood": -2,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b57",
+      "name": "厨房",
+      "min": 34,
+      "max": 49,
+      "text": "医生说要少油少盐，你说那还吃什么。",
+      "left": {
+        "label": "照做",
+        "fx": {
+          "health": 7,
+          "mood": -4,
+          "money": -3
+        },
+        "skills": {
+          "cooking": 5
+        }
+      },
+      "right": {
+        "label": "照旧",
+        "fx": {
+          "mood": 5,
+          "health": -6,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b58",
+      "name": "酒柜",
+      "min": 36,
+      "max": 49,
+      "text": "家里还剩两瓶好酒，你决定什么时候开。",
+      "left": {
+        "label": "现在开",
+        "fx": {
+          "mood": 6,
+          "health": -3,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "留着",
+        "fx": {
+          "mood": -2,
+          "health": 3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b59",
+      "name": "日记本",
+      "min": 38,
+      "max": 49,
+      "text": "你买了本厚的，想写点什么。",
+      "left": {
+        "label": "每天写",
+        "fx": {
+          "mood": 6,
+          "career": 4,
+          "energy": -3
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "写三页就停",
+        "fx": {
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b60",
+      "name": "健身房",
+      "min": 34,
+      "max": 49,
+      "text": "跑步机上跑了二十分钟，膝盖有点响。",
+      "left": {
+        "label": "减量",
+        "fx": {
+          "health": 4,
+          "mood": 3,
+          "energy": -2
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "right": {
+        "label": "加量",
+        "fx": {
+          "health": -5,
+          "mood": 4,
+          "energy": -6
+        },
+        "skills": {
+          "fitness": 7
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b61",
+      "name": "医院",
+      "min": 36,
+      "max": 49,
+      "text": "医生说这个病要长期吃药，不能停。",
+      "left": {
+        "label": "按时吃",
+        "fx": {
+          "health": 6,
+          "money": -7,
+          "mood": -3
+        },
+        "flags": {
+          "chronic": true
+        }
+      },
+      "right": {
+        "label": "想起来才吃",
+        "fx": {
+          "health": -7,
+          "money": 3,
+          "mood": 2
+        },
+        "flags": {
+          "chronic": true
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b62",
+      "name": "药盒",
+      "min": 37,
+      "max": 49,
+      "text": "药吃完了，复查要抽半天。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "health": 5,
+          "money": -5,
+          "energy": -3,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "自己买同款",
+        "fx": {
+          "health": -4,
+          "money": -3,
+          "career": 2
+        }
+      },
+      "once": true,
+      "cond": {
+        "flag": "chronic"
+      }
+    },
+    {
+      "id": "pr_b63",
+      "name": "值班表",
+      "min": 34,
+      "max": 49,
+      "text": "部门要派人去外地驻场半年。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "career": 7,
+          "money": 8,
+          "social": -5,
+          "mood": -4,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "career": -3,
+          "mood": 4,
+          "social": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b64",
+      "name": "老照片",
+      "min": 38,
+      "max": 49,
+      "text": "翻出一张老照片，人都在，背景拆了。",
+      "left": {
+        "label": "发给当事人",
+        "fx": {
+          "mood": 6,
+          "social": 6,
+          "career": -2
+        },
+        "rel": {
+          "friends": 5
+        }
+      },
+      "right": {
+        "label": "放回抽屉",
+        "fx": {
+          "mood": -2,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_b65",
+      "name": "深夜厨房",
+      "min": 36,
+      "max": 49,
+      "text": "半夜饿了，冰箱灯是家里唯一亮着的。",
+      "left": {
+        "label": "煮碗面",
+        "fx": {
+          "mood": 5,
+          "health": -2,
+          "energy": -2
+        },
+        "skills": {
+          "cooking": 4
+        }
+      },
+      "right": {
+        "label": "忍着睡",
+        "fx": {
+          "health": 3,
+          "energy": 4,
+          "mood": -4
+        }
+      },
+      "once": true
+    }
+  ]
+}

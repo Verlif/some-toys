@@ -9,10 +9,12 @@ const VIEW_IDS = ['view-start', 'view-game'];
 
 /**
  * 显示某个视图（其余隐藏）
+ * body.in-game 同时控制底部标签栏的显示与 #app 的底部留白
  * @param {'start'|'game'} name
  */
 export function showView(name) {
   VIEW_IDS.forEach(id => $(id).classList.toggle('active', id === 'view-' + name));
+  document.body.classList.toggle('in-game', name === 'game');
 }
 
 /** 结局层是独立遮罩，单独控制 */
