@@ -1,0 +1,194 @@
+/* =============================================================
+ * components.css —— 组件层
+ * 卡牌、按钮、Toast、抽屉、Chip、迷你条、履历项
+ * ============================================================= */
+
+/* ===== 抉择卡牌 ===== */
+.card {
+  position: relative;
+  background: var(--c-panel); border: 2px solid var(--c-line);
+  border-radius: var(--r-xl); box-shadow: var(--sh-card);
+  overflow: hidden;
+  touch-action: none; user-select: none; cursor: grab;
+  display: flex; flex-direction: column;
+  transform-origin: 50% 60%;
+}
+.card.dragging { transition: none; cursor: grabbing; }
+.card.out-left  { transform: translateX(-130%) rotate(-16deg); opacity: 0; transition: transform .38s cubic-bezier(.5,0,.8,.4), opacity .3s; }
+.card.out-right { transform: translateX(130%)  rotate(16deg);  opacity: 0; transition: transform .38s cubic-bezier(.5,0,.8,.4), opacity .3s; }
+.card.enter { animation: cardIn .4s cubic-bezier(.2,.9,.3,1.1); }
+@keyframes cardIn { from { transform: translateY(30px) scale(.95); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* 卡头：纯 CSS + 内联 SVG 的人物标识，不依赖任何外部图片 */
+.cardhead {
+  height: clamp(118px, 26vw, 152px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(180deg, #F6EDD8 0%, #FFF9EC 100%);
+  border-bottom: 1.5px solid var(--c-line);
+}
+.cardhead .avatar {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--c-card); border: 2px solid var(--c-line);
+  display: grid; place-items: center; color: var(--c-green);
+  box-shadow: var(--sh-soft);
+}
+.cardhead .avatar svg { width: 28px; height: 28px; }
+.cardhead .who { font-size: 15px; font-weight: 900; color: var(--c-ink-soft); }
+
+.statement { padding: 16px 18px 12px; font-size: 15.5px; font-weight: 600; line-height: 1.75; flex: 1; min-height: 96px; }
+
+.choices { display: flex; gap: 10px; padding: 0 16px 16px; }
+.choice {
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  background: var(--c-fill); border: 1.5px solid var(--c-line);
+  border-radius: 15px; padding: 10px;
+  font-size: 13px; font-weight: 700; color: var(--c-ink-soft);
+  text-align: left;
+  transition: transform .12s, background .15s, border-color .15s;
+}
+.choice:active { transform: scale(.96); }
+.choice.l:hover, .choice.l.hot { background: #EAF2F7; border-color: var(--c-blue);  color: #3F6E8C; }
+.choice.r:hover, .choice.r.hot { background: #EAF4EE; border-color: var(--c-green); color: #3A7B57; }
+.choice svg { width: 16px; height: 16px; flex: none; }
+.choice .lbl { flex: 1; }
+
+/* ===== 滑动浮窗 peek =====
+ * 拖动时两侧浮出选项文本，透明度与缩放由 JS 按 |dx|/阈值 实时写入，
+ * 达到阈值时整体高亮反色并提示「松手即选」 */
+.peek {
+  position: absolute; top: 26%;
+  z-index: 20; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  width: max-content; max-width: 44%;
+  padding: 9px 13px;
+  border-radius: 16px;
+  background: rgba(255,251,241,.97);
+  border: 2px solid var(--c-line);
+  box-shadow: 0 10px 26px rgba(60,45,25,.24);
+  opacity: 0; transform: scale(.9);
+  transition: opacity .08s linear, transform .08s ease-out,
+              border-color .12s, background .12s, color .12s, box-shadow .12s;
+}
+.peek.left  { left: 10px;  color: var(--c-blue); }
+.peek.right { right: 10px; color: var(--c-green); }
+
+.peek .pk-arrow { display: flex; }
+.peek .pk-arrow svg { width: 20px; height: 20px; }
+.peek .pk-lbl {
+  font-size: 15px; font-weight: 900; line-height: 1.35;
+  text-align: center; color: var(--c-ink);
+  word-break: break-all;
+}
+.peek .pk-go {
+  display: none;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .5px;
+  padding: 1px 7px; border-radius: 999px;
+  background: rgba(255,255,255,.28);
+}
+
+/* 达到可触发距离：整块反色高亮 */
+.peek.hot {
+  background: currentColor;
+  border-color: currentColor;
+  box-shadow: 0 12px 30px rgba(60,45,25,.32);
+}
+.peek.hot .pk-lbl,
+.peek.hot .pk-arrow { color: #FFF; }
+.peek.hot .pk-go { display: block; color: #FFF; }
+
+/* ===== 图标按钮 ===== */
+.iconbtn {
+  width: 36px; height: 36px; border-radius: 12px;
+  background: var(--c-card); border: 1px solid var(--c-line);
+  display: grid; place-items: center; color: var(--c-ink-mid);
+  transition: transform .12s, background .15s;
+}
+.iconbtn:active { transform: scale(.92); }
+.iconbtn.on { background: var(--c-green); color: var(--c-card); border-color: var(--c-green); }
+.iconbtn svg { width: 18px; height: 18px; }
+
+/* ===== 通用按钮 ===== */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: var(--r-lg); padding: 14px;
+  font-size: 16px; font-weight: 900;
+  transition: transform .12s, filter .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--c-green); color: #FFF; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ghost { background: var(--c-card); border: 1.5px solid var(--c-line); color: var(--c-ink-mid); }
+.btn svg { width: 18px; height: 18px; }
+
+.bigbtns { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+
+/* ===== Chip / 徽标 ===== */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-block;
+  background: var(--c-fill); border: 1px solid var(--c-line);
+  border-radius: 999px; padding: 4px 10px;
+  font-size: 12px; font-weight: 700; color: var(--c-ink-mid);
+}
+
+/* 旁白条里的变化 chips：更小更醒目，涨跌配色 */
+.narrate .chip { font-size: 11.5px; font-weight: 800; padding: 2px 8px; border-radius: 8px; border: none; }
+.narrate .chip.up   { background: #E4F1E8; color: #33754F; box-shadow: inset 0 0 0 1px rgba(78,154,111,.35); }
+.narrate .chip.down { background: #F8E6E1; color: #A2402C; box-shadow: inset 0 0 0 1px rgba(196,85,63,.35); }
+.narrate .chip.zero { background: var(--c-fill); color: var(--c-muted); }
+
+/* ===== 抽屉 ===== */
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: min(340px, 88vw);
+  background: var(--c-panel);
+  box-shadow: -8px 0 30px rgba(60,45,25,.2);
+  transform: translateX(102%);
+  transition: transform .3s cubic-bezier(.3,.9,.3,1);
+  z-index: 60; display: flex; flex-direction: column;
+  border-left: 2px solid var(--c-line);
+}
+.drawer.open { transform: none; }
+.drawer .head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 10px; border-bottom: 1px solid var(--c-line-soft); }
+.drawer .head h3 { font-size: 17px; }
+.drawer .body { flex: 1; overflow-y: auto; padding: 14px 16px 30px; }
+.drawer .close { width: 38px; height: 38px; border-radius: 10px; background: var(--c-fill); display: grid; place-items: center; color: var(--c-ink-mid); }
+
+.backdrop {
+  position: fixed; inset: 0;
+  background: rgba(59,51,38,.35);
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s; z-index: 55;
+}
+.backdrop.show { opacity: 1; pointer-events: auto; }
+
+/* 档案 / 履历 */
+.sec { margin-bottom: 16px; }
+.sec h4 { font-size: 13px; color: var(--c-muted); margin-bottom: 8px; font-weight: 700; }
+
+.logitem { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px dashed var(--c-line-soft); }
+.logitem .age { flex: none; font-size: 11px; font-weight: 800; color: var(--c-green); padding-top: 2px; width: 44px; }
+.logitem .txt { font-size: 12.5px; line-height: 1.6; color: var(--c-ink-soft); }
+.logitem .side { font-size: 11px; font-weight: 700; color: var(--c-muted); }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; left: 50%; bottom: 28px;
+  transform: translate(-50%, 12px);
+  background: var(--c-ink); color: var(--c-card);
+  padding: 9px 18px; border-radius: 999px;
+  font-size: 13px; font-weight: 700;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  z-index: 80; max-width: 88vw; text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.22);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ===== 时间轴（大事记） ===== */
+.tl { position: relative; margin: 4px 0 2px; padding-left: 20px; }
+.tl::before { content: ''; position: absolute; left: 5px; top: 3px; bottom: 2px; width: 2px; background: var(--c-line); }
+.tlitem { position: relative; padding: 1px 0 2px; }
+.tlitem::before { content: ''; position: absolute; left: -17px; top: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--c-green); }
+.tlitem .ta { font-size: 11px; font-weight: 800; color: var(--c-green); }
+.tlitem .tt { font-size: 12.5px; font-weight: 700; }
