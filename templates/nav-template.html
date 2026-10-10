@@ -2,18 +2,21 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{siteTitle}} · {{ownerText}} 的作品导航</title>
-  <meta name="description" content="{{bio}}：单文件页面与项目文件夹的自动导航站。">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1120" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
+  <title data-i18n="nav.docTitle">{{siteTitle}} · {{ownerText}} 的作品导航</title>
+  <meta name="description" data-i18n-content="nav.metaDesc" content="{{bio}}：单文件页面与项目文件夹的自动导航站。">
   <link rel="stylesheet" href="assets/nav.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="assets/i18n.js"></script>
 
   <!-- 尽早应用主题，避免首屏闪烁 -->
   <script>
     (function () {
       try {
         var saved = localStorage.getItem('theme');
-        var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        var prefersLight = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)').matches : false;
         var theme = saved || (prefersLight ? 'light' : 'dark');
         document.documentElement.setAttribute('data-theme', theme);
       } catch (e) {}
@@ -22,46 +25,78 @@
 </head>
 <body id="top">
 
-  <!-- ===== 侧栏：作者信息 + 分组索引 ===== -->
-  <aside class="sidenav">
+<div class="app-shell">
+
+  <!-- ===== 侧栏：作者信息 + 分组索引（窄屏为抽屉） ===== -->
+  <aside class="sidenav" id="sidenav">
     <a href="https://github.com/{{owner}}" target="_blank" rel="noopener" class="brand" title="GitHub 主页">
       <img src="https://avatars.githubusercontent.com/{{owner}}" alt="{{ownerText}}" class="avatar">
       <span class="brand-text">
         <strong>{{ownerText}}</strong>
-        <small>{{bio}}</small>
+        <small data-i18n="nav.bio">{{bio}}</small>
       </span>
     </a>
 
-    <nav class="side-links" aria-label="分组索引">
+    <nav class="side-links" id="sideLinks" aria-label="分组索引">
       {{sideNav}}
     </nav>
 
     <div class="sidenav-foot">
       <div class="foot-stats">
-        <span><b>{{statProjects}}</b> 项目</span>
-        <span><b>{{statPages}}</b> 页面</span>
-        <span><b>{{statGroups}}</b> 分组</span>
+        <span><b>{{statProjects}}</b><i data-i18n="nav.statProjects">项目</i></span>
+        <span><b>{{statPages}}</b><i data-i18n="nav.statPages">页面</i></span>
+        <span><b>{{statGroups}}</b><i data-i18n="nav.statGroups">分组</i></span>
+      </div>
+      <div class="foot-docs">
+        <a href="{{introUrl}}" data-i18n="nav.introLink">项目介绍</a>
+        <a href="{{docUserUrl}}" target="_blank" rel="noopener" data-i18n="nav.userDocLink">使用文档</a>
+        <a href="{{docDevUrl}}" target="_blank" rel="noopener" data-i18n="nav.devDocLink">开发文档</a>
       </div>
       <a href="https://github.com/{{owner}}" target="_blank" rel="noopener" class="foot-link">
         <i class="fab fa-github"></i><span>GitHub</span>
       </a>
-      <p class="foot-note">生成于 {{generatedAt}}</p>
+      <p class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> {{generatedAt}}</p>
     </div>
   </aside>
+
+  <div class="scrim" id="scrim" aria-hidden="true"></div>
 
   <!-- ===== 主内容 ===== -->
   <div class="content">
     <header class="topbar" id="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button"
+              data-i18n-title="nav.openMenu" data-i18n-aria-label="nav.openMenu"
+              title="打开分组菜单" aria-label="打开分组菜单" aria-expanded="false" aria-controls="sidenav">
+        <i class="fas fa-bars"></i>
+      </button>
+
       <div class="search-wrapper">
         <i class="fas fa-search search-icon"></i>
-        <input type="text" id="searchInput" class="search-input" placeholder="搜索项目（按 / 聚焦）" autocomplete="off" spellcheck="false">
-        <button class="search-clear" id="searchClear" type="button" aria-label="清空搜索"><i class="fas fa-xmark"></i></button>
+        <input type="text" id="searchInput" class="search-input"
+               data-i18n-placeholder="nav.searchHint" data-i18n-aria-label="nav.search"
+               placeholder="搜索项目（按 / 聚焦）" aria-label="搜索项目"
+               autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="searchClear" type="button"
+                data-i18n-title="nav.clearSearch" data-i18n-aria-label="nav.clearSearch"
+                title="清空搜索" aria-label="清空搜索"><i class="fas fa-xmark"></i></button>
       </div>
+
       <div class="topbar-actions">
         <span class="search-count" id="searchCount"></span>
-        <button class="icon-btn" id="collapseAll" type="button" title="折叠全部分组"><i class="fas fa-compress"></i></button>
-        <button class="icon-btn" id="topBtn" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
-        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换主题" title="切换主题（D）">
+        <button class="icon-btn" id="collapseAll" type="button"
+                data-i18n-title="nav.collapseAll" data-i18n-aria-label="nav.collapseAll"
+                title="折叠全部分组" aria-label="折叠全部分组"><i class="fas fa-compress"></i></button>
+        <button class="icon-btn" id="topBtn" type="button"
+                data-i18n-title="nav.backToTop" data-i18n-aria-label="nav.backToTop"
+                title="回到顶部" aria-label="回到顶部"><i class="fas fa-arrow-up"></i></button>
+        <button class="icon-btn lang-btn" id="langToggle" type="button"
+                data-i18n-title="nav.toggleLang" data-i18n-aria-label="nav.toggleLang"
+                title="切换语言" aria-label="切换语言">
+          <i class="fas fa-globe"></i><em id="langLabel">EN</em>
+        </button>
+        <button class="icon-btn" id="themeToggle" type="button"
+                data-i18n-title="nav.tooltipTheme" data-i18n-aria-label="nav.tooltipTheme"
+                title="切换主题（D）" aria-label="切换主题（D）">
           <i class="fas fa-sun" data-theme="light"></i>
           <i class="fas fa-moon" data-theme="dark"></i>
         </button>
@@ -74,26 +109,48 @@
     </nav>
 
     <main id="content" class="content-inner">
+      <header class="page-head">
+        <div>
+          <p class="page-eyebrow"><i class="fas fa-bolt"></i><span data-i18n="nav.slogan">放文件 → 推送 → 自动上线</span></p>
+          <h1 class="page-title" data-i18n="nav.pageTitle">作品导航</h1>
+          <p class="page-sub" data-i18n="nav.pageSubtitle">所有收录的作品都在下面，搜索、折叠、打开，仅此而已。</p>
+        </div>
+        <div class="page-stats">
+          <span class="stat"><b>{{statProjects}}</b><i data-i18n="nav.statProjects">项目</i></span>
+          <span class="stat"><b>{{statPages}}</b><i data-i18n="nav.statPages">页面</i></span>
+          <span class="stat"><b>{{statGroups}}</b><i data-i18n="nav.statGroups">分组</i></span>
+        </div>
+      </header>
+
       {{content}}
     </main>
 
     <div class="no-result" id="noResult" style="display:none;">
       <i class="fas fa-inbox"></i>
-      <p>没有找到匹配的项目</p>
-      <span>试试其它关键词，或按 Esc 清空</span>
+      <p data-i18n="nav.noResult">没有找到匹配的项目</p>
+      <span data-i18n="nav.noResultHint">试试其它关键词，或按 Esc 清空</span>
     </div>
 
     <footer class="site-foot">
-      <span>{{siteTitle}} · 放文件 → 推送 → 自动上线</span>
-      <span class="foot-note">生成于 {{generatedAt}}</span>
+      <span>{{siteTitle}} · <span data-i18n="nav.slogan">放文件 → 推送 → 自动上线</span></span>
+      <nav class="site-foot-links">
+        <a href="{{introUrl}}" data-i18n="nav.introLink">项目介绍</a>
+        <a href="{{docUserUrl}}" target="_blank" rel="noopener" data-i18n="nav.userDocLink">使用文档</a>
+        <a href="{{docDevUrl}}" target="_blank" rel="noopener" data-i18n="nav.devDocLink">开发文档</a>
+        <a href="https://github.com/{{owner}}" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+      </nav>
+      <span class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> {{generatedAt}}</span>
     </footer>
   </div>
+</div>
 
   <!-- ===== 详情弹窗 ===== -->
   <div class="modal" id="modal" hidden>
     <div class="modal-mask" data-close="1"></div>
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <button class="modal-close" id="modalClose" type="button" aria-label="关闭"><i class="fas fa-xmark"></i></button>
+      <button class="modal-close" id="modalClose" type="button"
+              data-i18n-title="common.close" data-i18n-aria-label="common.close"
+              title="关闭" aria-label="关闭"><i class="fas fa-xmark"></i></button>
       <div class="modal-head">
         <span class="modal-icon" id="modalIcon"><i class="fas fa-cube"></i></span>
         <div>
@@ -104,10 +161,10 @@
       <p class="modal-desc" id="modalDesc"></p>
       <div class="modal-actions">
         <a class="btn btn-primary" id="modalOpen" href="#" target="_blank" rel="noopener">
-          <i class="fas fa-arrow-up-right-from-square"></i><span>打开页面</span>
+          <i class="fas fa-arrow-up-right-from-square"></i><span data-i18n="nav.openPage">打开页面</span>
         </a>
         <button class="btn" id="modalCopy" type="button">
-          <i class="fas fa-link"></i><span>复制链接</span>
+          <i class="fas fa-link"></i><span data-i18n="nav.copyLink">复制链接</span>
         </button>
       </div>
     </div>
@@ -117,13 +174,24 @@
     (function () {
       'use strict';
 
+      var I18N = window.I18N;
+      function t(key, vars) { return I18N ? I18N.t(key, vars) : key; }
+
+      // 先把静态文案落到当前语言，再跑逻辑
+      if (I18N) I18N.apply(document);
+
       var content = document.getElementById('content');
       var topbar = document.getElementById('topbar');
       var rail = document.getElementById('rail');
+      var sidenav = document.getElementById('sidenav');
+      var scrim = document.getElementById('scrim');
+      var menuBtn = document.getElementById('menuBtn');
       var searchInput = document.getElementById('searchInput');
       var searchClear = document.getElementById('searchClear');
       var searchCount = document.getElementById('searchCount');
       var noResult = document.getElementById('noResult');
+      var langToggle = document.getElementById('langToggle');
+      var langLabel = document.getElementById('langLabel');
       var cards = [].slice.call(content.querySelectorAll('.card'));
       var groups = [].slice.call(content.querySelectorAll('.group'));
 
@@ -147,7 +215,7 @@
         });
       }
 
-      /** 把命中的文字包进 <mark>，只动文本节点，不破坏结构 */
+      /** 把命中的文字包进 mark，只动文本节点，不破坏结构 */
       function highlight(root, keyword) {
         if (!keyword) return 0;
         var hits = 0;
@@ -158,10 +226,10 @@
         nodes.forEach(function (node) {
           var text = node.nodeValue;
           var lower = text.toLowerCase();
-          var from = 0;
-          var at = lower.indexOf(keyword, from);
+          var at = lower.indexOf(keyword);
           if (at < 0) return;
 
+          var from = 0;
           var frag = document.createDocumentFragment();
           while (at >= 0) {
             if (at > from) frag.appendChild(document.createTextNode(text.slice(from, at)));
@@ -186,6 +254,125 @@
         window.scrollTo({ top: window.pageYOffset + rect.top - offset, behavior: 'smooth' });
       }
 
+      // ---------- 分组折叠 ----------
+      // 自己驱动 max-height：展开态必须保持 overflow: visible，
+      // 否则卡片悬浮时的阴影会被父容器裁掉。
+
+      var ANIM = 380;
+
+      function groupBody(group) {
+        for (var i = 0; i < group.children.length; i++) {
+          if (group.children[i].classList.contains('group-body')) return group.children[i];
+        }
+        return null;
+      }
+
+      function ownToggle(group) {
+        var head = group.firstElementChild;
+        return head && head.classList.contains('group-head') ? head.querySelector('.group-toggle') : null;
+      }
+
+      function clearInline(body) {
+        body.style.maxHeight = '';
+        body.style.opacity = '';
+        body.style.overflow = '';
+        body.style.transition = '';
+      }
+
+      function scheduleClear(body, delay) {
+        if (body._tm) clearTimeout(body._tm);
+        body._tm = setTimeout(function () {
+          clearInline(body);
+          body._tm = null;
+        }, delay);
+      }
+
+      function collapse(group) {
+        var body = groupBody(group);
+        if (!body) return;
+        group.classList.add('is-collapsed');
+        setToggleState(group, false);
+        var start = body.scrollHeight;
+        body.style.overflow = 'hidden';
+        body.style.maxHeight = start + 'px';
+        body.style.opacity = '1';
+        void body.offsetHeight; // 强制回流，让下面的 0 有过渡起点
+        body.style.maxHeight = '0px';
+        body.style.opacity = '0';
+        scheduleClear(body, ANIM); // 结束后交回 CSS（折叠态）
+      }
+
+      function expand(group) {
+        var body = groupBody(group);
+        if (!body) return;
+        group.classList.remove('is-collapsed');
+        setToggleState(group, true);
+        body.style.transition = 'none';
+        body.style.overflow = 'hidden';
+        body.style.maxHeight = '0px';
+        body.style.opacity = '0';
+        void body.offsetHeight;
+        body.style.maxHeight = ''; // 量一次自然高度
+        var target = body.scrollHeight;
+        body.style.maxHeight = '0px';
+        void body.offsetHeight;
+        body.style.transition = '';
+        body.style.maxHeight = target + 'px';
+        body.style.opacity = '1';
+        scheduleClear(body, ANIM); // 结束后恢复 overflow: visible，阴影不再被裁
+      }
+
+      /** 不带动效地设置初始状态（页面加载时恢复用户选择） */
+      function setInstant(group, collapsed) {
+        group.classList.toggle('is-collapsed', collapsed);
+        setToggleState(group, !collapsed);
+        var body = groupBody(group);
+        if (body) clearInline(body);
+      }
+
+      function setToggleState(group, expanded) {
+        var toggle = ownToggle(group);
+        if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      }
+
+      function persistCollapsed() {
+        var ids = groups
+          .filter(function (g) { return g.classList.contains('is-collapsed'); })
+          .map(function (g) { return g.getAttribute('data-group'); });
+        store('collapsed', ids.join(','));
+      }
+
+      groups.forEach(function (group) {
+        var toggle = ownToggle(group);
+        if (!toggle) return;
+        toggle.addEventListener('click', function () {
+          if (group.classList.contains('is-collapsed')) expand(group);
+          else collapse(group);
+          persistCollapsed();
+          syncCollapseAll();
+        });
+      });
+
+      var savedCollapsed = (store('collapsed') || '').split(',').filter(Boolean);
+      groups.forEach(function (group) {
+        setInstant(group, savedCollapsed.indexOf(group.getAttribute('data-group')) >= 0);
+      });
+
+      var collapseAllBtn = document.getElementById('collapseAll');
+      function syncCollapseAll() {
+        var anyOpen = groups.some(function (group) { return !group.classList.contains('is-collapsed'); });
+        collapseAllBtn.classList.toggle('is-active', !anyOpen);
+        var label = anyOpen ? t('nav.collapseAll') : t('nav.expandAll');
+        collapseAllBtn.title = label;
+        collapseAllBtn.setAttribute('aria-label', label);
+      }
+      collapseAllBtn.addEventListener('click', function () {
+        var anyOpen = groups.some(function (group) { return !group.classList.contains('is-collapsed'); });
+        groups.forEach(function (group) { if (anyOpen) collapse(group); else expand(group); });
+        persistCollapsed();
+        syncCollapseAll();
+      });
+
       // ---------- 主题 ----------
 
       document.getElementById('themeToggle').addEventListener('click', function () {
@@ -195,70 +382,51 @@
         store('theme', next);
       });
 
-      // ---------- 页面元信息 / 相对时间 ----------
+      // ---------- 相对时间 ----------
 
       function relTime(iso) {
         if (!iso || !/^\d{4}-\d{2}/.test(iso)) return iso || '';
         var date = new Date(iso.length <= 10 ? iso + 'T00:00:00' : iso);
         if (isNaN(date.getTime())) return iso;
         var days = Math.floor((Date.now() - date.getTime()) / 86400000);
-        if (days <= 0) return '今天';
-        if (days === 1) return '昨天';
-        if (days < 30) return days + ' 天前';
-        if (days < 365) return Math.floor(days / 30) + ' 个月前';
-        if (days < 730) return '1 年前';
-        return Math.floor(days / 365) + ' 年前';
+        if (days <= 0) return t('time.today');
+        if (days === 1) return t('time.yesterday');
+        if (days < 30) return t('time.daysAgo', { n: days });
+        if (days < 365) return t('time.monthsAgo', { n: Math.floor(days / 30) });
+        if (days < 730) return t('time.yearAgo');
+        return t('time.yearsAgo', { n: Math.floor(days / 365) });
       }
 
-      [].forEach.call(content.querySelectorAll('.meta-date'), function (el) {
-        var iso = el.getAttribute('data-iso');
-        if (!iso) return;
-        el.setAttribute('title', el.textContent.trim());
-        var rel = relTime(iso);
-        if (rel) el.innerHTML = '<i class="fas fa-clock"></i>' + rel;
-      });
+      function refreshDates() {
+        [].forEach.call(content.querySelectorAll('.meta-date'), function (el) {
+          var iso = el.getAttribute('data-iso');
+          if (!iso) return;
+          el.setAttribute('title', iso);
+          el.innerHTML = '<i class="fas fa-clock"></i>' + relTime(iso);
+        });
+      }
+      refreshDates();
 
-      // ---------- 分组折叠 ----------
+      // ---------- 窄屏抽屉 ----------
 
-      function setCollapsed(group, collapsed, persist) {
-        group.classList.toggle('is-collapsed', collapsed);
-        var toggle = group.querySelector('.group-toggle');
-        if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-        if (persist) {
-          var saved = (store('collapsed') || '').split(',').filter(Boolean);
-          var id = group.getAttribute('data-group');
-          var at = saved.indexOf(id);
-          if (collapsed && at < 0) saved.push(id);
-          if (!collapsed && at >= 0) saved.splice(at, 1);
-          store('collapsed', saved.join(','));
-        }
+      function isDrawerMode() {
+        return !!window.matchMedia && window.matchMedia('(max-width: 1199px)').matches;
       }
 
-      groups.forEach(function (group) {
-        var toggle = group.querySelector('.group-toggle');
-        if (toggle) {
-          toggle.addEventListener('click', function () {
-            setCollapsed(group, !group.classList.contains('is-collapsed'), true);
-            syncCollapseAll();
-          });
-        }
-      });
-
-      var savedCollapsed = (store('collapsed') || '').split(',').filter(Boolean);
-      var collapseAllBtn = document.getElementById('collapseAll');
-      groups.forEach(function (group) {
-        if (savedCollapsed.indexOf(group.getAttribute('data-group')) >= 0) setCollapsed(group, true, false);
-      });
-      function syncCollapseAll() {
-        var anyOpen = groups.some(function (group) { return !group.classList.contains('is-collapsed'); });
-        collapseAllBtn.classList.toggle('is-active', !anyOpen);
-        collapseAllBtn.title = anyOpen ? '折叠全部分组' : '展开全部分组';
+      function setDrawer(open) {
+        document.body.classList.toggle('drawer-open', open);
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        var label = open ? t('nav.closeMenu') : t('nav.openMenu');
+        menuBtn.title = label;
+        menuBtn.setAttribute('aria-label', label);
       }
-      syncCollapseAll();
-      collapseAllBtn.addEventListener('click', function () {
-        var anyOpen = groups.some(function (group) { return !group.classList.contains('is-collapsed'); });
-        groups.forEach(function (group) { setCollapsed(group, anyOpen, true); });
-        syncCollapseAll();
+
+      menuBtn.addEventListener('click', function () {
+        setDrawer(!document.body.classList.contains('drawer-open'));
+      });
+      scrim.addEventListener('click', function () { setDrawer(false); });
+      window.addEventListener('resize', function () {
+        if (!isDrawerMode() && document.body.classList.contains('drawer-open')) setDrawer(false);
       });
 
       // ---------- 搜索过滤 ----------
@@ -266,8 +434,8 @@
       var filterTimer = null;
       var observer = null;
 
-      /** 只观察当前可见的分组，用于侧栏高亮 */
       function syncObserver() {
+        if (!observer) return;
         groups.forEach(function (group) {
           if (group.classList.contains('group-hidden')) observer.unobserve(group);
           else observer.observe(group);
@@ -300,9 +468,9 @@
             }
           }
 
-          var toggle = group.querySelector('.group-toggle');
+          var toggle = ownToggle(group);
           if (toggle) toggle.disabled = !hasVisible;
-          if (keyword && hasVisible) setCollapsed(group, false, false);
+          if (keyword && hasVisible && group.classList.contains('is-collapsed')) expand(group);
         });
 
         var visibleCount = cards.filter(function (card) {
@@ -311,9 +479,11 @@
 
         noResult.style.display = visibleCount === 0 ? 'flex' : 'none';
         searchClear.classList.toggle('is-visible', !!searchInput.value);
-        searchCount.textContent = keyword ? visibleCount + ' / ' + cards.length : cards.length + ' 个页面';
+        searchCount.textContent = keyword
+          ? t('nav.hits', { visible: visibleCount, total: cards.length })
+          : t('nav.countPages', { n: cards.length });
 
-        if (observer) syncObserver();
+        syncObserver();
       }
 
       searchInput.addEventListener('input', function () {
@@ -333,6 +503,10 @@
         var typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
 
         if (event.key === 'Escape') {
+          if (document.body.classList.contains('drawer-open')) {
+            setDrawer(false);
+            return;
+          }
           if (!document.getElementById('modal').hidden) {
             closeModal();
             return;
@@ -354,10 +528,12 @@
           searchInput.select();
         } else if (event.key.toLowerCase() === 'd') {
           document.getElementById('themeToggle').click();
+        } else if (event.key.toLowerCase() === 'l') {
+          if (I18N) I18N.toggle();
         }
       });
 
-      /** 联动展开：目标分组本身、它所有已折叠的祖先分组，必要时先清空搜索 */
+      /** 目标分组被搜索隐藏时先清空搜索，再逐层展开祖先 */
       function revealGroup(group) {
         if (!group) return;
         if (group.classList.contains('group-hidden')) {
@@ -367,29 +543,31 @@
         var node = group;
         while (node && node !== content) {
           if (node.classList && node.classList.contains('group') && node.classList.contains('is-collapsed')) {
-            setCollapsed(node, false, true);
+            expand(node);
+            persistCollapsed();
           }
           node = node.parentElement;
         }
         syncCollapseAll();
       }
 
-      function bindJump(container) {
+      function bindJump(container, closeAfter) {
         if (!container) return;
         container.addEventListener('click', function (event) {
-          var link = event.target.closest('a[data-target]');
+          var link = event.target.closest ? event.target.closest('a[data-target]') : null;
           if (!link) return;
           var id = link.getAttribute('data-target');
           if (id !== 'top') revealGroup(document.getElementById(id));
           var el = id === 'top' ? document.body : document.getElementById(id);
           if (!el) return;
           event.preventDefault();
+          if (closeAfter) setDrawer(false);
           scrollToEl(el);
           history.replaceState(null, '', id === 'top' ? location.pathname : '#' + id);
         });
       }
-      bindJump(rail);
-      bindJump(document.querySelector('.side-links'));
+      bindJump(rail, false);
+      bindJump(sidenav, true);
 
       // 滚动时高亮当前分组
       var jumpLinks = [].slice.call(document.querySelectorAll('a[data-target]'));
@@ -411,7 +589,7 @@
             if (!best || visible[key] < visible[best]) best = key;
           });
           if (best) setActive(best);
-        }, { rootMargin: '-96px 0px -70% 0px', threshold: 0 });
+        }, { rootMargin: '-110px 0px -68% 0px', threshold: 0 });
         syncObserver();
       }
 
@@ -438,8 +616,10 @@
       var modalDesc = document.getElementById('modalDesc');
       var modalOpen = document.getElementById('modalOpen');
       var modalCopy = document.getElementById('modalCopy');
+      var lastCard = null;
 
       function openModal(card) {
+        lastCard = card;
         var link = card.querySelector('.card-link');
         var title = card.querySelector('.card-title');
         var desc = card.querySelector('.card-desc');
@@ -449,12 +629,12 @@
         modalIcon.innerHTML = icon ? icon.outerHTML : '';
         modalTitle.textContent = title ? title.textContent : '';
         modalMeta.textContent = [
-          tag ? '项目文件夹' : '单文件页面',
+          tag ? t('nav.kindProject') : t('nav.kindPage'),
           card.querySelector('.meta-size') ? card.querySelector('.meta-size').textContent.trim() : '',
           card.querySelector('.meta-date') ? card.querySelector('.meta-date').textContent.trim() : '',
-          desc ? desc.textContent.length + ' 字描述' : '暂无描述',
+          desc ? t('nav.chars', { n: desc.textContent.length }) : '',
         ].filter(Boolean).join(' · ');
-        modalDesc.textContent = desc ? desc.textContent : '这个页面还没有写 description，可以在 <head> 里补一条。';
+        modalDesc.textContent = desc ? desc.textContent : t('nav.noDesc');
         modalOpen.href = link ? link.getAttribute('href') : '#';
         modal.hidden = false;
         document.body.classList.add('modal-open');
@@ -467,7 +647,7 @@
       }
 
       content.addEventListener('click', function (event) {
-        var more = event.target.closest('.card-more');
+        var more = event.target.closest ? event.target.closest('.card-more') : null;
         var card = more ? more.closest('.card') : null;
         if (card) {
           event.preventDefault();
@@ -481,24 +661,49 @@
         var url = modalOpen.href;
         function done() {
           modalCopy.classList.add('is-done');
-          modalCopy.querySelector('span').textContent = '已复制';
+          modalCopy.querySelector('span').textContent = t('nav.copied');
           setTimeout(function () {
             modalCopy.classList.remove('is-done');
-            modalCopy.querySelector('span').textContent = '复制链接';
+            modalCopy.querySelector('span').textContent = t('nav.copyLink');
           }, 1600);
         }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(url).then(done, function () {
-            window.prompt('复制这个链接：', url);
+            window.prompt(t('nav.copyPrompt'), url);
           });
         } else {
-          window.prompt('复制这个链接：', url);
+          window.prompt(t('nav.copyPrompt'), url);
         }
       });
 
+      // ---------- 语言切换 ----------
+
+      function syncLang() {
+        if (!I18N) return;
+        langLabel.textContent = I18N.nextLabel;
+        var label = t('nav.toggleLang');
+        langToggle.title = label;
+        langToggle.setAttribute('aria-label', label);
+      }
+      langToggle.addEventListener('click', function () {
+        if (I18N) I18N.toggle();
+      });
+      if (I18N) {
+        I18N.onChange(function () {
+          syncLang();
+          refreshDates();
+          syncCollapseAll();
+          applyFilter();
+          if (!modal.hidden && lastCard) openModal(lastCard);
+        });
+      }
+      syncLang();
+
       // ---------- 初始化 ----------
 
+      syncCollapseAll();
       applyFilter();
+      setDrawer(false);
       onScroll();
     })();
   </script>
