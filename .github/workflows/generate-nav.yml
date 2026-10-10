@@ -6,6 +6,7 @@ on:
     paths:
       - 'pages/**'
       - 'templates/**'
+      - 'assets/**'
       - 'generate-index.js'
   workflow_dispatch:
 # 关键：给这个工作流写权限

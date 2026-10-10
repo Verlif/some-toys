@@ -28,7 +28,8 @@ const templatePath = 'templates/nav-template.html';
 const outputFile = 'index.html';
 
 const site = {
-  owner: 'Verlif',
+  owner: 'Verlif',              // GitHub 用户名，用于头像、链接与文档地址
+  repo: 'someToys',             // 仓库名
   siteTitle: 'someToys',
   bio: 'AI 单页面作品集',
 };
@@ -63,6 +64,21 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/**
+ * 把 HTML 源码里常见的实体还原成字符。
+ * 渲染时会统一走 escapeHtml，所以这里先还原，避免出现 &amp;amp; 二次转义。
+ * 注意：&amp; 必须最后处理。
+ */
+function decodeEntities(str) {
+  return String(str)
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&');
 }
 
 function pickIcon(name) {
@@ -103,7 +119,7 @@ function readMeta(content, names) {
       'i'
     );
     const m = content.match(re) || content.match(reAlt);
-    if (m && m[1].trim()) return m[1].trim();
+    if (m && m[1].trim()) return decodeEntities(m[1].trim());
   }
   return '';
 }
@@ -111,7 +127,7 @@ function readMeta(content, names) {
 function readTitle(content, fallback) {
   const m = content.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   const title = m ? m[1].replace(/\s+/g, ' ').trim() : '';
-  return title || fallback;
+  return title ? decodeEntities(title) : fallback;
 }
 
 /**
@@ -337,7 +353,7 @@ function renderCard(item) {
   );
   if (item.kind === 'project') {
     meta.push(
-      `<span class="meta-item meta-pages"><i class="fas fa-layer-group"></i>共 ${item.pages} 页</span>`
+      `<span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":${item.pages}}'>共 ${item.pages} 页</span></span>`
     );
   }
 
@@ -355,8 +371,8 @@ function renderCard(item) {
     ${item.description ? `<span class="card-desc">${escapeHtml(item.description)}</span>` : ''}
     <span class="card-meta">${meta.join('')}</span>
   </a>
-  ${item.kind === 'project' ? '<span class="card-tag">项目</span>' : ''}
-  ${item.description ? `<button class="card-more" type="button" title="查看完整介绍"><i class="fas fa-ellipsis"></i></button>` : ''}
+  ${item.kind === 'project' ? `<span class="card-tag" data-i18n="nav.projectTag">项目</span>` : ''}
+  ${item.description ? `<button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>` : ''}
 </div>`;
 }
 
@@ -430,7 +446,7 @@ const totalProjects = countItems(tree, a => a.kind === 'project');
 const totalPages = countItems(tree, () => true);
 
 const sideNav = [
-  `<a class="side-link" href="#top" data-target="top" data-depth="0"><i class="fas fa-house"></i><span>首页</span></a>`,
+  `<a class="side-link" href="#top" data-target="top" data-depth="0"><i class="fas fa-house"></i><span data-i18n="nav.home">首页</span></a>`,
 ]
   .concat(
     sideIndex.map(
@@ -443,7 +459,7 @@ const sideNav = [
   .join('\n');
 
 const railNav = [
-  `<a class="chip" href="#top" data-target="top"><i class="fas fa-house"></i><span>首页</span></a>`,
+  `<a class="chip" href="#top" data-target="top"><i class="fas fa-house"></i><span data-i18n="nav.home">首页</span></a>`,
 ]
   .concat(
     sideIndex.map(
@@ -455,6 +471,17 @@ const railNav = [
   )
   .join('\n');
 
+// ---------- 站点级链接 ----------
+
+/** 介绍页地址：优先用扫描出来的 pages/介绍.html，找不到就按约定路径兜底 */
+const introEntry = tree.items.find(item => item.rawName === '介绍');
+const introUrl = introEntry ? introEntry.url : encodeUrl(`${pagesDir}/介绍.html`);
+
+/** 文档地址：指向仓库里的 Markdown（GitHub 上可直接阅读） */
+const docsBase = `https://github.com/${site.owner}/${site.repo}/blob/main/docs/`;
+const docDevUrl = docsBase + encodeURIComponent('开发文档.md');
+const docUserUrl = docsBase + encodeURIComponent('使用文档.md');
+
 let template = fs.readFileSync(templatePath, 'utf8');
 template = template
   .replace(/\{\{siteTitle\}\}/g, escapeHtml(site.siteTitle))
@@ -464,6 +491,9 @@ template = template
   .replace(/\{\{sideNav\}\}/g, sideNav)
   .replace(/\{\{railNav\}\}/g, railNav)
   .replace(/\{\{content\}\}/g, content)
+  .replace(/\{\{introUrl\}\}/g, introUrl)
+  .replace(/\{\{docDevUrl\}\}/g, docDevUrl)
+  .replace(/\{\{docUserUrl\}\}/g, docUserUrl)
   .replace(/\{\{generatedAt\}\}/g, new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC')
   .replace(/\{\{statProjects\}\}/g, String(totalProjects))
   .replace(/\{\{statPages\}\}/g, String(totalPages))
