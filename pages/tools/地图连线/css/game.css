@@ -99,6 +99,7 @@
   justify-content: space-between;
   gap: 10px;
 }
+.rp-actions { display: flex; gap: 8px; }
 .rp-info { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
 .rp-label { font-size: 11px; color: var(--text-sub); letter-spacing: 1px; white-space: nowrap; }
 .rp-label b { color: #6b4ce0; font-size: 15px; font-weight: 800; margin: 0 2px; }
