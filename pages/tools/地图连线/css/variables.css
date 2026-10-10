@@ -1,0 +1,50 @@
+/* =========================================================
+   variables.css — 主题与全局设计变量
+   集中管理配色、字体、圆角与阴影，便于整体换肤与维护。
+   ========================================================= */
+:root {
+  /* 字体 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+
+  /* 背景与画布 */
+  --app-bg: #eef0f5;
+  --canvas-bg: #fbfcfe;
+
+  /* 文字 */
+  --text: #1a1a2e;
+  --text-soft: #5a5a72;
+  --text-sub: #8a8a9e;
+
+  /* 描边 */
+  --border: rgba(70, 80, 130, .10);
+  --border-strong: rgba(70, 80, 130, .14);
+
+  /* 主色（紫） */
+  --primary: #7a68ff;
+  --primary-2: #8b5bff;
+  --primary-grad: linear-gradient(135deg, #5b6cff, #8b5bff);
+  --primary-soft: rgba(122, 104, 255, .10);
+  --primary-line: rgba(122, 104, 255, .30);
+
+  /* 状态色 */
+  --danger: #e05252;
+  --danger-soft: rgba(255, 107, 107, .10);
+  --danger-line: rgba(224, 82, 82, .30);
+  --success: #34b55c;
+  --success-soft: rgba(52, 181, 92, .12);
+
+  /* 面板（半透明毛玻璃） */
+  --panel-bg: rgba(255, 255, 255, .97);
+  --panel-bg-blur: blur(18px);
+
+  /* 圆角 */
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 12px;
+  --radius-pill: 999px;
+
+  /* 阴影 */
+  --shadow-panel: 0 -6px 34px -12px rgba(70, 80, 130, .28), 0 2px 12px rgba(70, 80, 130, .06);
+  --shadow-float: 0 -12px 50px -14px rgba(70, 80, 130, .40), 0 4px 16px rgba(70, 80, 130, .10);
+}
