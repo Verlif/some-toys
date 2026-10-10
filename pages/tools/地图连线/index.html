@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>城市地图 · 编辑器 + 路线</title>
+
+  <!-- 样式：按职责拆分，顺序无关（均为独立选择器） -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 编辑器 ============ -->
+  <div class="screen active" id="editorScreen">
+    <svg id="editorSvg" class="map-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="editorGrid" width="60" height="60" patternUnits="userSpaceOnUse">
+          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(70,80,130,.05)" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="#fbfcfe"/>
+      <g id="editorWorld">
+        <rect x="-3000" y="-3000" width="8000" height="8000" fill="url(#editorGrid)"/>
+        <g id="editorRoads"></g>
+        <g id="editorPlaces"></g>
+      </g>
+    </svg>
+
+    <div class="editor-top">
+      <div class="et-row1">
+        <div class="et-title">地 图 编 辑 器</div>
+        <div class="et-count" id="edCount">0 地点 · 0 道路</div>
+      </div>
+      <div class="et-modes">
+        <button class="et-mode active" data-mode="place"><span class="ic">📍</span>放置</button>
+        <button class="et-mode" data-mode="road"><span class="ic">🔗</span>连线</button>
+        <button class="et-mode" data-mode="delete"><span class="ic">🗑️</span>删除</button>
+      </div>
+    </div>
+
+    <div class="editor-tip" id="edTip">点击空白处放置地点 · 双击编辑 · 长按拖动</div>
+
+    <div class="editor-bottom">
+      <div class="eb-row">
+        <button class="eb-btn" id="edUndo">↶ 撤回</button>
+        <button class="eb-btn" id="edClear">清空</button>
+        <button class="eb-btn primary" id="edSample">加载示例</button>
+      </div>
+      <div class="eb-row">
+        <button class="eb-btn" id="edExport">⬇ 导出 JSON</button>
+        <button class="eb-btn" id="edImport">⬆ 导入 JSON</button>
+      </div>
+      <button class="eb-start" id="edStart" disabled>开 始 游 戏</button>
+    </div>
+
+    <div class="drop-overlay" id="dropOverlay">
+      <div class="drop-overlay-inner">松 手 导 入 地 图</div>
+    </div>
+    <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+
+    <!-- 地点编辑弹框 -->
+    <div class="place-editor" id="placeEditor">
+      <div class="pe-head">
+        <div class="pe-title">编 辑 地 点</div>
+        <button class="pe-close" id="peClose">×</button>
+      </div>
+      <div class="pe-field">
+        <div class="label">图标 · 输入一个字符或 emoji</div>
+        <div class="pe-row">
+          <div class="pe-icon-box"><input type="text" id="peIcon" maxlength="4" autocomplete="off" placeholder="🏠"></div>
+          <div class="pe-name-box"><input type="text" id="peName" maxlength="12" autocomplete="off" placeholder="地点名称"></div>
+        </div>
+      </div>
+      <div class="pe-actions">
+        <button class="pe-btn danger" id="peDelete">删除</button>
+        <button class="pe-btn" id="peCancel">取消</button>
+        <button class="pe-btn primary" id="peSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 游戏 ============ -->
+  <div class="screen" id="gameScreen">
+    <svg id="gameSvg" class="map-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="gameGrid" width="60" height="60" patternUnits="userSpaceOnUse">
+          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(70,80,130,.05)" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="#fbfcfe"/>
+      <g id="gameWorld">
+        <rect x="-3000" y="-3000" width="8000" height="8000" fill="url(#gameGrid)"/>
+        <g id="gameRoads"></g>
+        <g id="gamePlaces"></g>
+      </g>
+    </svg>
+
+    <div class="game-top">
+      <div class="tb-title">城 市 路 线</div>
+      <div class="tb-sub">从起点出发 · 依次连接 · 绕回起点</div>
+    </div>
+
+    <div class="zoom-ctrl">
+      <button id="zoomIn">+</button>
+      <button id="zoomOut">−</button>
+      <button id="zoomReset" style="font-size:14px">⊙</button>
+      <div class="zoom-label" id="zoomLabel">100%</div>
+    </div>
+
+    <div class="route-panel">
+      <div class="rp-head">
+        <div class="rp-info">
+          <div class="rp-label">已走 <b id="rpCount">1</b> 步</div>
+          <div class="rp-status" id="rpStatus">进行中</div>
+        </div>
+        <button class="rp-clear" id="rpClear">清空重来</button>
+      </div>
+      <div class="rp-chain" id="rpChain"></div>
+      <div class="rp-hint" id="rpHint">点击与「家」相连的地点</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 脚本：按依赖顺序加载（经典脚本 + 全局 App 命名空间，可直接用 file:// 打开） -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/viewport.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

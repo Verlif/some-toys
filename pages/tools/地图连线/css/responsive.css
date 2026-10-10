@@ -1,0 +1,69 @@
+/* =========================================================
+   responsive.css — 多设备分辨率适配
+   手机：全屏沉浸；平板/桌面：居中卡片式；横屏：压缩面板。
+   原则：以相对单位 + 媒体查询适配，保证触控目标与字号合理。
+   ========================================================= */
+
+/* ---------- 平板及以上：让应用整体更舒展 ---------- */
+@media (min-width: 600px) {
+  .et-mode { font-size: 13px; padding: 11px 6px; }
+  .eb-btn { font-size: 12px; padding: 12px 6px; }
+  .eb-start { padding: 16px; font-size: 16px; }
+  .editor-tip { font-size: 12px; top: 116px; }
+  .zoom-ctrl button { width: 44px; height: 44px; }
+}
+
+/* ---------- 桌面大屏：居中“设备卡”形态 ---------- */
+@media (min-width: 900px) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #app {
+    width: 100%;
+    max-width: 720px;
+    height: 100%;
+    max-height: 920px;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 28px 90px -24px rgba(60, 70, 110, .4),
+                0 0 0 1px rgba(70, 80, 130, .06);
+  }
+  .et-title { font-size: 16px; }
+  .editor-bottom { left: 16px; right: 16px; bottom: 16px; padding: 14px; }
+  .place-editor { left: 16px; right: 16px; bottom: 16px; }
+  .route-panel { left: 16px; right: 16px; bottom: 16px; }
+  .zoom-ctrl { right: 18px; bottom: 140px; }
+}
+
+/* 超宽桌面：卡片更宽，留更多地图空间 */
+@media (min-width: 1400px) {
+  #app { max-width: 880px; }
+}
+
+/* ---------- 超窄 / 矮屏（小手机横屏等）：压缩面板高度 ---------- */
+@media (max-height: 560px) and (orientation: landscape) {
+  .editor-top { padding-bottom: 12px; }
+  .et-modes { margin-top: 8px; }
+  .editor-tip { top: 86px; }
+  .editor-bottom { padding: 9px; gap: 6px; bottom: 8px; }
+  .eb-row { gap: 6px; }
+  .eb-btn { padding: 8px 6px; }
+  .route-panel { padding: 10px 12px; bottom: 8px; }
+  .rp-chain { min-height: 26px; margin-bottom: 7px; }
+  .zoom-ctrl { bottom: 104px; }
+  .zoom-ctrl button { width: 34px; height: 34px; }
+}
+
+/* ---------- 较矮屏幕下略微收起底部面板 ---------- */
+@media (max-height: 640px) {
+  .editor-tip { top: 100px; }
+}
+
+/* ---------- 触摸精度：放大最小点击区域（粗指针设备） ---------- */
+@media (pointer: coarse) {
+  .et-mode { padding: 10px 6px; }
+  .eb-btn { padding: 12px 6px; }
+  .rp-clear { padding: 7px 13px; }
+}

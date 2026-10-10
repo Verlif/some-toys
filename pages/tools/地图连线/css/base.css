@@ -1,0 +1,221 @@
+/* =========================================================
+   base.css — 重置 / 应用外壳 / 共享的地图与地点样式
+   编辑器与游戏共用的道路、地点、画布、拖拽遮罩等样式放在这里。
+   ========================================================= */
+
+/* ---------- 重置 ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--app-bg);
+  color: var(--text);
+}
+
+/* ---------- 应用外壳 ---------- */
+#app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--canvas-bg);
+}
+
+/* 屏幕容器：编辑器 / 游戏 互斥显示 */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+.screen.active {
+  display: block;
+}
+
+/* ---------- 画布（SVG） ---------- */
+.map-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+.map-svg.dragging {
+  cursor: grabbing;
+}
+
+/* ---------- 道路 ---------- */
+.road-outer {
+  fill: none;
+  stroke: #e2e5ee;
+  stroke-width: 16;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke .3s;
+}
+.road-inner {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke .3s;
+}
+.road-dash {
+  fill: none;
+  stroke: rgba(120, 130, 170, .18);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 6 10;
+}
+.road.active .road-outer {
+  stroke: #d9d2ff;
+}
+.road.active .road-inner {
+  stroke: #7a68ff;
+  filter: drop-shadow(0 0 5px rgba(122, 104, 255, .55));
+}
+.road.active .road-dash {
+  stroke: rgba(255, 255, 255, .85);
+  animation: dashFlow 1.1s linear infinite;
+}
+@keyframes dashFlow {
+  to { stroke-dashoffset: -32; }
+}
+.road-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 26;
+  cursor: pointer;
+}
+.road.del-hover .road-outer { stroke: #ffcccc; }
+.road.del-hover .road-inner { stroke: #ff6b6b; }
+
+/* ---------- 地点（编辑器与游戏共用） ---------- */
+.place { cursor: pointer; }
+.place-halo {
+  fill: var(--c);
+  opacity: .06;
+  transition: opacity .25s;
+}
+.place-ring {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 2;
+  opacity: .7;
+  transition: all .25s;
+}
+.place-bg {
+  fill: #ffffff;
+  transition: fill .25s;
+}
+.place-icon {
+  font-size: 22px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.place-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-anchor: middle;
+  fill: #7a7a90;
+  paint-order: stroke;
+  stroke: #fbfcfe;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  transition: fill .25s;
+  pointer-events: none;
+}
+
+.place:hover .place-bg { fill: #f4f6fc; }
+.place:hover .place-name { fill: #3a3a55; }
+.place:hover .place-halo { opacity: .14; }
+
+/* 名称隐藏（地图缩得很小时） */
+.hide-labels .place-name { opacity: 0; }
+
+/* 当前所在地点（游戏） */
+.place.current .place-bg { fill: #e6dcff; }
+.place.current .place-ring {
+  stroke: #7a4dff;
+  stroke-width: 3;
+  opacity: 1;
+  filter: drop-shadow(0 0 7px rgba(122, 77, 255, .55));
+}
+.place.current .place-name { fill: #4a2bb8; }
+.place.current .place-halo { opacity: .22; animation: none; }
+
+/* 回到上一步的高亮（游戏） */
+.place.back .place-bg { fill: #fff4e8; }
+.place.back .place-ring { stroke: #e88b3a; stroke-width: 2.5; opacity: 1; }
+.place.back .place-name { fill: #c96a1a; }
+.place.back .place-halo { opacity: .16; }
+
+/* 可抵达的下一地点（游戏） */
+.place.available .place-halo { opacity: .16; animation: haloPulse 1.5s ease-in-out infinite; }
+.place.available .place-bg { fill: #eef6ff; }
+.place.available .place-ring { stroke: #4dabf7; opacity: 1; stroke-width: 2.2; }
+.place.available .place-name { fill: #2b7cc4; }
+
+/* 已在路径上的地点（游戏） */
+.place.on-path .place-bg { fill: #f0ecff; }
+.place.on-path .place-ring { stroke: #8b5bff; stroke-width: 2.5; opacity: 1; }
+.place.on-path .place-name { fill: #6b4ce0; }
+.place.on-path .place-halo { opacity: .1; }
+
+@keyframes haloPulse {
+  0%, 100% { opacity: .13; r: 34; }
+  50% { opacity: .26; r: 40; }
+}
+
+/* ---------- 游戏完成态（闭环成功） ---------- */
+#gameScreen.completed .road.active .road-outer { stroke: #c4e8ce; }
+#gameScreen.completed .road.active .road-inner {
+  stroke: #34b55c;
+  filter: drop-shadow(0 0 5px rgba(52, 181, 92, .55));
+}
+#gameScreen.completed .road.active .road-dash { stroke: rgba(255, 255, 255, .85); }
+#gameScreen.completed .place.on-path .place-ring { stroke: #34b55c; }
+#gameScreen.completed .place.on-path .place-bg { fill: #e6f7eb; }
+#gameScreen.completed .place.on-path .place-name { fill: #218c42; }
+#gameScreen.completed .place.current .place-ring {
+  stroke: #1f9a48;
+  filter: drop-shadow(0 0 7px rgba(52, 181, 92, .6));
+}
+#gameScreen.completed .place.current .place-bg { fill: #cdeed8; }
+
+/* ---------- 拖拽上传遮罩（编辑器与游戏共用） ---------- */
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(122, 104, 255, .15);
+  border: 3px dashed rgba(122, 104, 255, .6);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.drop-overlay.show { display: flex; }
+.drop-overlay-inner {
+  background: rgba(255, 255, 255, .95);
+  padding: 20px 28px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #5a3ad0;
+  letter-spacing: 2px;
+  box-shadow: 0 8px 32px rgba(122, 104, 255, .3);
+}

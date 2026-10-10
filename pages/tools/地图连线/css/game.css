@@ -1,0 +1,192 @@
+/* =========================================================
+   game.css — 路线游戏专属 UI 样式
+   顶部标题、缩放控件、底部路线面板、路径链与提示。
+   （视觉细节与单文件原版保持一致，仅拆分到独立文件）
+   ========================================================= */
+
+/* ---------- 顶部标题 ---------- */
+.game-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 18px 16px 26px;
+  background: linear-gradient(180deg,
+    rgba(251, 252, 254, .98),
+    rgba(251, 252, 254, .82) 55%,
+    rgba(251, 252, 254, 0));
+  z-index: 10;
+  pointer-events: none;
+  text-align: center;
+}
+.tb-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--text);
+}
+.tb-sub {
+  font-size: 11px;
+  color: var(--text-sub);
+  letter-spacing: 1.5px;
+  margin-top: 5px;
+}
+
+/* ---------- 缩放控件 ---------- */
+.zoom-ctrl {
+  position: absolute;
+  right: 14px;
+  bottom: 132px;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-bg-blur);
+  -webkit-backdrop-filter: var(--panel-bg-blur);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 30;
+  box-shadow: var(--shadow-panel);
+}
+.zoom-ctrl button {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, .9);
+  color: var(--text-soft);
+  font-size: 20px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: .15s;
+  line-height: 1;
+}
+.zoom-ctrl button:active { transform: scale(.92); background: #f0f2f8; }
+.zoom-label {
+  text-align: center;
+  font-size: 9px;
+  color: var(--text-sub);
+  letter-spacing: 1px;
+  padding: 5px 0;
+  background: rgba(255, 255, 255, .85);
+  border-radius: 8px;
+  border: 1px solid rgba(70, 80, 130, .08);
+  width: 40px;
+}
+
+/* ---------- 底部路线面板 ---------- */
+.route-panel {
+  position: absolute;
+  left: 12px; right: 12px; bottom: 12px;
+  background: rgba(255, 255, 255, .97);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 14px 14px 13px;
+  z-index: 20;
+  box-shadow: var(--shadow-panel);
+  transition: border-color .35s;
+}
+#gameScreen.completed .route-panel { border-color: rgba(52, 181, 92, .45); }
+
+.rp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rp-info { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.rp-label { font-size: 11px; color: var(--text-sub); letter-spacing: 1px; white-space: nowrap; }
+.rp-label b { color: #6b4ce0; font-size: 15px; font-weight: 800; margin: 0 2px; }
+.rp-status {
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(139, 91, 255, .11);
+  color: #6b4ce0;
+  border: 1px solid rgba(139, 91, 255, .28);
+  white-space: nowrap;
+}
+.rp-status.done {
+  background: rgba(52, 181, 92, .12);
+  color: #218c42;
+  border-color: rgba(52, 181, 92, .4);
+}
+.rp-clear {
+  font-size: 11px;
+  font-family: inherit;
+  padding: 7px 13px;
+  border-radius: 11px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, .9);
+  color: #6a6a80;
+  cursor: pointer;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  transition: .16s;
+  box-shadow: 0 1px 4px rgba(70, 80, 130, .06);
+}
+.rp-clear:active { transform: scale(.95); background: #f0f2f8; }
+
+/* 路径链（走过的地点） */
+.rp-chain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 3px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.rp-chain::-webkit-scrollbar { display: none; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px 6px 8px;
+  border-radius: 20px;
+  background: #f2f4f9;
+  border: 1px solid rgba(70, 80, 130, .08);
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: .25s;
+}
+.chip .num { font-size: 9px; color: #9a9aae; font-weight: 600; letter-spacing: .5px; }
+.chip .ico { font-size: 13px; }
+.chip .name { font-weight: 700; letter-spacing: .5px; color: #5a5a72; }
+.chip.home { background: rgba(244, 162, 97, .16); border-color: rgba(230, 140, 70, .42); }
+.chip.home .name { color: #c96a1a; }
+.chip.current {
+  background: rgba(139, 91, 255, .16);
+  border-color: rgba(139, 91, 255, .55);
+  box-shadow: 0 0 14px -3px rgba(139, 91, 255, .5);
+}
+.chip.current .name { color: #5a3ad0; }
+.chip.done { background: rgba(52, 181, 92, .14); border-color: rgba(52, 181, 92, .42); }
+.chip.done .name { color: #218c42; }
+.chip-arrow { font-size: 12px; color: #b8bccc; flex-shrink: 0; user-select: none; }
+
+/* 提示条 */
+.rp-hint {
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(70, 80, 130, .08);
+  font-size: 11px;
+  color: var(--text-sub);
+  letter-spacing: .5px;
+  line-height: 1.6;
+  transition: color .2s;
+  min-height: 18px;
+}
+.rp-hint.error { color: #e05252; }
+.rp-hint.done { color: #218c42; }
+.rp-hint b { color: #5a3ad0; }

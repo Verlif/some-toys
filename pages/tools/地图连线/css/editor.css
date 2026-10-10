@@ -1,0 +1,311 @@
+/* =========================================================
+   editor.css — 地图编辑器专属 UI 样式
+   顶部模式栏、提示条、底部操作区、地点编辑弹框等。
+   ========================================================= */
+
+/* ---------- 顶部栏 ---------- */
+.editor-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 14px 14px 20px;
+  background: linear-gradient(180deg,
+    rgba(251, 252, 254, .98),
+    rgba(251, 252, 254, .85) 60%,
+    rgba(251, 252, 254, 0));
+  z-index: 10;
+  pointer-events: none;
+}
+.editor-top > * { pointer-events: auto; }
+
+.et-row1 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.et-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.et-count {
+  font-size: 10px;
+  color: var(--text-sub);
+  letter-spacing: 1px;
+}
+
+.et-modes {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+.et-mode {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, .9);
+  color: var(--text-soft);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.et-mode .ic { font-size: 13px; }
+.et-mode:active { transform: scale(.96); }
+.et-mode.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px -4px rgba(122, 104, 255, .7);
+}
+
+/* ---------- 提示条 ---------- */
+.editor-tip {
+  position: absolute;
+  top: 108px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-soft);
+  letter-spacing: .5px;
+  background: rgba(255, 255, 255, .92);
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+  z-index: 9;
+  box-shadow: 0 2px 10px rgba(70, 80, 130, .08);
+  white-space: nowrap;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background .25s, color .25s;
+}
+.editor-tip.flash {
+  background: rgba(255, 232, 232, .96);
+  color: #c0392b;
+  border-color: rgba(224, 82, 82, .25);
+}
+
+/* ---------- 底部操作区 ---------- */
+.editor-bottom {
+  position: absolute;
+  left: 12px; right: 12px; bottom: 12px;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-bg-blur);
+  -webkit-backdrop-filter: var(--panel-bg-blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  z-index: 20;
+  box-shadow: var(--shadow-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eb-row { display: flex; gap: 8px; }
+.eb-btn {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, .9);
+  color: var(--text-soft);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.eb-btn:active { transform: scale(.96); background: #f0f2f8; }
+.eb-btn:disabled { opacity: .4; cursor: not-allowed; }
+.eb-btn.primary {
+  background: var(--primary-soft);
+  color: #5a3ad0;
+  border-color: var(--primary-line);
+}
+.eb-start {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--primary-grad);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: .18s;
+  box-shadow: 0 6px 20px -6px rgba(91, 108, 255, .6);
+}
+.eb-start:active { transform: scale(.98); }
+.eb-start:disabled { opacity: .35; box-shadow: none; cursor: not-allowed; }
+
+/* ---------- 地点编辑弹框 ---------- */
+.place-editor {
+  position: absolute;
+  left: 12px; right: 12px; bottom: 12px;
+  background: rgba(255, 255, 255, .98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(70, 80, 130, .12);
+  border-radius: 22px;
+  padding: 16px 16px 14px;
+  z-index: 60;
+  box-shadow: var(--shadow-float);
+  transform: translateY(calc(100% + 24px));
+  transition: transform .35s cubic-bezier(.2, .9, .3, 1);
+}
+.place-editor.show { transform: translateY(0); }
+
+.pe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.pe-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #3a3a55;
+}
+.pe-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, .9);
+  color: var(--text-sub);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  line-height: 1;
+}
+.pe-close:active { transform: scale(.9); }
+
+.pe-field { margin-bottom: 11px; }
+.pe-field .label {
+  font-size: 10px;
+  color: var(--text-sub);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.pe-row { display: flex; gap: 10px; }
+.pe-icon-box {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  border: 1.5px solid var(--primary-line);
+  background: #f6f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  position: relative;
+}
+.pe-icon-box input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 26px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  cursor: text;
+  padding: 0;
+}
+.pe-name-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-strong);
+  background: #ffffff;
+  padding: 0 14px;
+}
+.pe-name-box input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  outline: none;
+  padding: 15px 0;
+  letter-spacing: 1px;
+}
+.pe-name-box input::placeholder { color: #b8bccc; font-weight: 500; }
+
+.pe-actions { display: flex; gap: 8px; margin-top: 16px; }
+.pe-btn {
+  flex: 1;
+  padding: 12px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, .9);
+  color: var(--text-soft);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: .15s;
+}
+.pe-btn:active { transform: scale(.96); }
+.pe-btn.primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px -4px rgba(122, 104, 255, .65);
+}
+.pe-btn.danger {
+  background: var(--danger-soft);
+  color: #d64545;
+  border-color: var(--danger-line);
+  flex: 0 0 70px;
+}
+
+/* ---------- 编辑器内地点的交互态 ---------- */
+.edit-place .place-ring { stroke-width: 2.2; opacity: .8; }
+.edit-place:hover .place-halo { opacity: .16; }
+.edit-place:hover .place-bg { fill: #f4f6fc; }
+.edit-place.pending .place-ring {
+  stroke: #7a4dff;
+  stroke-width: 3;
+  opacity: 1;
+  filter: drop-shadow(0 0 7px rgba(122, 77, 255, .55));
+}
+.edit-place.pending .place-bg { fill: #e6dcff; }
+.edit-place.pending .place-halo { opacity: .2; }
+.edit-place.moving .place-ring {
+  stroke: #ff9f43;
+  stroke-width: 3.5;
+  opacity: 1;
+  filter: drop-shadow(0 0 9px rgba(255, 159, 67, .75));
+}
+.edit-place.moving .place-bg { fill: #fff1e0; }
+.edit-place.first .place-ring { stroke-dasharray: 4 3; }
