@@ -365,6 +365,35 @@
     $('#zoomOut').addEventListener('click', () => viewport.zoomCenter(1 / cfg.BTN_ZOOM));
     $('#zoomReset').addEventListener('click', resetView);
     $('#rpClear').addEventListener('click', clearRoute);
+    $('#gmExportImg').addEventListener('click', gmExportImage);
+  }
+
+  /** 导出当前画布为 PNG（所见即所得，导出当前视图） */
+  function gmExportImage() {
+    if (!game.placeMap || !Object.keys(game.placeMap).length) {
+      App.ExportImage.toast('还没有可导出的内容');
+      return;
+    }
+    const rect = gmSvg.getBoundingClientRect();
+    const W = rect.width, H = rect.height;
+    if (!W || !H) { App.ExportImage.toast('画布尺寸异常'); return; }
+    const world = gmWorld.cloneNode(true);
+    // 用页面真实计算样式内联（removeGrid 会去掉网格底图），所见即所得
+    const svg = App.ExportImage.buildInlineSvg({
+      width: W,
+      height: H,
+      viewBox: `0 0 ${W} ${H}`,
+      bg: App.ExportImage.BG,
+      srcLayers: [gmWorld],
+      layers: [world],
+      removeGrid: true
+    });
+    App.ExportImage.rasterize(svg, W, H)
+      .then((canvas) => {
+        App.ExportImage.download(canvas, `route-${Date.now()}.png`);
+        App.ExportImage.toast('已导出 PNG');
+      })
+      .catch(() => App.ExportImage.toast('导出失败'));
   }
 
   App.Game = {

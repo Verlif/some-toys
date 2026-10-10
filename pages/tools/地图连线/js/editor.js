@@ -482,6 +482,51 @@
     flashTip('已导出 JSON');
   }
 
+  /** 导出地图为 PNG（按所有地点包围盒裁剪，最边上地点留白） */
+  function edExportImage() {
+    if (!editor.places.length) { App.ExportImage.toast('还没有可导出的内容'); return; }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of editor.places) {
+      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+    }
+    const pad = 80; // 最边上地点的内边距留白
+    const vbX = minX - pad, vbY = minY - pad;
+    const vbW = (maxX - minX) + pad * 2;
+    const vbH = (maxY - minY) + pad * 2;
+    // 限制最长边，避免导出超大图
+    const maxSide = 2400;
+    const outScale = Math.min(1, maxSide / Math.max(vbW, vbH));
+    const outW = vbW * outScale, outH = vbH * outScale;
+
+    // 克隆道路层与地点层（不含网格底图）
+    const roads = edRoads.cloneNode(true);
+    const places = edPlaces.cloneNode(true);
+    // 归一化地点缩放为 1，导出尺寸统一
+    places.querySelectorAll('.edit-place').forEach((g) => {
+      const x = g.getAttribute('data-x');
+      const y = g.getAttribute('data-y');
+      if (x != null && y != null) g.setAttribute('transform', `translate(${x} ${y}) scale(1)`);
+    });
+
+    // 用页面真实计算样式内联，确保导出颜色与编辑器显示一致
+    const svg = App.ExportImage.buildInlineSvg({
+      width: outW,
+      height: outH,
+      viewBox: `${vbX} ${vbY} ${vbW} ${vbH}`,
+      bg: App.ExportImage.BG,
+      srcLayers: [edRoads, edPlaces],
+      layers: [roads, places]
+    });
+
+    App.ExportImage.rasterize(svg, outW, outH)
+      .then((canvas) => {
+        App.ExportImage.download(canvas, `map-${Date.now()}.png`);
+        App.ExportImage.toast('已导出 PNG');
+      })
+      .catch(() => App.ExportImage.toast('导出失败'));
+  }
+
   function importJSON(file) {
     App.storage.readFileText(file).then((text) => {
       let data;
@@ -562,6 +607,7 @@
     $('#edClear').addEventListener('click', edClearAll);
     $('#edSample').addEventListener('click', edLoadSample);
     $('#edExport').addEventListener('click', exportJSON);
+    $('#edExportImg').addEventListener('click', edExportImage);
     $('#edImport').addEventListener('click', () => $('#fileInput').click());
     $('#fileInput').addEventListener('change', (e) => {
       const f = e.target.files && e.target.files[0];

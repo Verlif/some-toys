@@ -54,6 +54,7 @@
       <div class="eb-row">
         <button class="eb-btn" id="edExport">⬇ 导出 JSON</button>
         <button class="eb-btn" id="edImport">⬆ 导入 JSON</button>
+        <button class="eb-btn" id="edExportImg">🖼 导出图片</button>
       </div>
       <button class="eb-start" id="edStart" disabled>开 始 游 戏</button>
     </div>
@@ -118,7 +119,10 @@
           <div class="rp-label">已走 <b id="rpCount">1</b> 步</div>
           <div class="rp-status" id="rpStatus">进行中</div>
         </div>
-        <button class="rp-clear" id="rpClear">清空重来</button>
+        <div class="rp-actions">
+          <button class="rp-clear" id="gmExportImg">导出图片</button>
+          <button class="rp-clear" id="rpClear">清空重来</button>
+        </div>
       </div>
       <div class="rp-chain" id="rpChain"></div>
       <div class="rp-hint" id="rpHint">点击与「家」相连的地点</div>
@@ -132,6 +136,7 @@
 <script src="js/utils.js"></script>
 <script src="js/viewport.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/export-image.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>
