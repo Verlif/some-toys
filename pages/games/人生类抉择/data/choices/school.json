@@ -1,0 +1,723 @@
+{
+  "title": "校园事件 + 辍学链（辍学后是另一条人生支线）",
+  "events": [
+    {
+      "id": "sc_1",
+      "name": "班长",
+      "min": 8,
+      "max": 12,
+      "text": "班主任把你叫到讲台边，问你愿不愿意当班长。",
+      "left": {
+        "label": "当",
+        "fx": {
+          "career": 4,
+          "energy": -3,
+          "rel": {
+            "friends": 4
+          }
+        },
+        "skills": {
+          "charm": 3
+        }
+      },
+      "right": {
+        "label": "不当",
+        "fx": {
+          "energy": 3,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_2",
+      "name": "报名表",
+      "min": 8,
+      "max": 14,
+      "text": "运动会报名表传到你手里，只剩 1500 米那一栏还空着。",
+      "left": {
+        "label": "把名字填上去",
+        "fx": {
+          "health": 4,
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "fitness": 4
+        }
+      },
+      "right": {
+        "label": "传给下一个人",
+        "fx": {
+          "energy": 2,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_3",
+      "name": "竞赛",
+      "min": 10,
+      "max": 16,
+      "text": "老师在班上问，谁想去试试数学竞赛。",
+      "left": {
+        "label": "举手",
+        "fx": {
+          "career": 4,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "不凑这个热闹",
+        "fx": {
+          "mood": 2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_4",
+      "name": "住宿",
+      "min": 12,
+      "max": 16,
+      "text": "高中要去县城读，得住校。",
+      "left": {
+        "label": "住校",
+        "fx": {
+          "social": 3,
+          "mood": -3,
+          "money": -3
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "每天通勤两小时",
+        "fx": {
+          "health": -3,
+          "energy": -4,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_5",
+      "name": "一地书",
+      "min": 11,
+      "max": 16,
+      "text": "课间回来，你桌上的书全被人推到了地上。",
+      "left": {
+        "label": "当场还回去",
+        "fx": {
+          "health": -4,
+          "mood": 3,
+          "career": -3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "告诉老师",
+        "fx": {
+          "career": 3,
+          "mood": 2,
+          "rel": {
+            "friends": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_6",
+      "name": "班会上",
+      "min": 14,
+      "max": 17,
+      "text": "老师在班会上不点名地敲打「有些同学」，全班都知道说的是谁。",
+      "left": {
+        "label": "该来往还来往",
+        "fx": {
+          "mood": 6,
+          "career": -4
+        }
+      },
+      "right": {
+        "label": "当着面断了",
+        "fx": {
+          "career": 4,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_7",
+      "name": "教练",
+      "min": 10,
+      "max": 16,
+      "text": "校队教练问你要不要进队，训练每天两小时。",
+      "left": {
+        "label": "进队",
+        "fx": {
+          "health": 5,
+          "social": 4,
+          "career": -3
+        },
+        "skills": {
+          "fitness": 5
+        }
+      },
+      "right": {
+        "label": "专心念书",
+        "fx": {
+          "career": 4
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_8",
+      "name": "办公室",
+      "min": 12,
+      "max": 17,
+      "text": "班主任把你叫去办公室，桌上摊着你的卷子。",
+      "left": {
+        "label": "认错，保证下次",
+        "fx": {
+          "career": 4,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "顶了两句",
+        "fx": {
+          "mood": 3,
+          "career": -3,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_9",
+      "name": "同桌的答案",
+      "min": 13,
+      "max": 17,
+      "text": "瞥见同桌的答案，和你的不一样。",
+      "left": {
+        "label": "改成他的",
+        "fx": {
+          "career": 3,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "相信自己",
+        "fx": {
+          "career": 2,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_10",
+      "name": "学姐",
+      "min": 13,
+      "max": 17,
+      "text": "社团招新，文学社的学姐在门口发传单。",
+      "left": {
+        "label": "加入文学社",
+        "fx": {
+          "mood": 4,
+          "rel": {
+            "friends": 4
+          }
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "不参加",
+        "fx": {
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_11",
+      "name": "差一分",
+      "min": 17,
+      "max": 19,
+      "text": "成绩出来了，离分数线差了一分。",
+      "left": {
+        "label": "复读一年",
+        "fx": {
+          "career": 6,
+          "energy": -6,
+          "mood": -3,
+          "money": -5
+        }
+      },
+      "right": {
+        "label": "走个普通学校",
+        "fx": {
+          "career": 2,
+          "mood": 2,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_12",
+      "name": "转学",
+      "min": 12,
+      "max": 16,
+      "text": "父母工作调动，你得转去新的学校。",
+      "left": {
+        "label": "跟着走",
+        "fx": {
+          "career": 3,
+          "mood": -3,
+          "rel": {
+            "friends": -4
+          }
+        }
+      },
+      "right": {
+        "label": "留下寄住亲戚家",
+        "fx": {
+          "social": 2,
+          "health": -2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_13",
+      "name": "校庆",
+      "min": 12,
+      "max": 17,
+      "text": "校庆要排节目，班里没人愿意上。",
+      "left": {
+        "label": "我来",
+        "fx": {
+          "social": 3,
+          "mood": 4,
+          "energy": -3
+        },
+        "skills": {
+          "charm": 4
+        }
+      },
+      "right": {
+        "label": "看热闹",
+        "fx": {
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_14",
+      "name": "考场外",
+      "min": 17,
+      "max": 19,
+      "text": "考场外站满了家长，你是一个人来的。",
+      "left": {
+        "label": "深呼吸走进去",
+        "fx": {
+          "career": 6,
+          "mood": 4,
+          "energy": -3
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "right": {
+        "label": "先去买瓶水静静",
+        "fx": {
+          "mood": 3,
+          "energy": 2,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_15",
+      "name": "军训",
+      "min": 15,
+      "max": 19,
+      "text": "军训第七天，太阳毒得睁不开眼。",
+      "left": {
+        "label": "站到最后",
+        "fx": {
+          "health": 3,
+          "mood": 3,
+          "energy": -5
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "right": {
+        "label": "打报告去医务室",
+        "fx": {
+          "health": 2,
+          "energy": 3,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_16",
+      "name": "熄灯后",
+      "min": 15,
+      "max": 19,
+      "text": "熄灯之后，上铺忽然问，你们以后想干什么。",
+      "left": {
+        "label": "认真聊到半夜",
+        "fx": {
+          "mood": 5,
+          "energy": -3,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "装睡",
+        "fx": {
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_17",
+      "name": "保送",
+      "min": 16,
+      "max": 18,
+      "cond": {
+        "skill": {
+          "id": "knowledge",
+          "min": 75
+        }
+      },
+      "text": "老师说，以你的成绩可以试试保送。",
+      "left": {
+        "label": "认真准备材料",
+        "fx": {
+          "career": 7,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "right": {
+        "label": "还是想自己考",
+        "fx": {
+          "mood": 3,
+          "career": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_18",
+      "name": "毕业照",
+      "min": 17,
+      "max": 19,
+      "text": "毕业照拍完，大家散得很快。",
+      "left": {
+        "label": "挨个抱一下",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "悄悄先走",
+        "fx": {
+          "mood": -2,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "sc_d1",
+      "name": "一张单子",
+      "min": 13,
+      "max": 18,
+      "cond": {
+        "stat": {
+          "id": "money",
+          "min": 0,
+          "max": 44
+        }
+      },
+      "text": "学费和书本费的单子压在桌角，家里这个月很难。",
+      "left": {
+        "label": "不念了，去找活干",
+        "fx": {
+          "money": 4,
+          "career": -3,
+          "mood": -3
+        },
+        "flags": {
+          "dropout": true
+        }
+      },
+      "right": {
+        "label": "咬牙再撑一学期",
+        "fx": {
+          "career": 5,
+          "mood": -2,
+          "energy": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_d2",
+      "name": "坐不住",
+      "min": 13,
+      "max": 18,
+      "cond": {
+        "stat": {
+          "id": "mood",
+          "min": 0,
+          "max": 42
+        }
+      },
+      "text": "连续几次垫底之后，你开始在教室里坐不住。",
+      "left": {
+        "label": "收拾书包走人",
+        "fx": {
+          "mood": 3,
+          "career": -4
+        },
+        "flags": {
+          "dropout": true
+        }
+      },
+      "right": {
+        "label": "再坐一年",
+        "fx": {
+          "career": 3,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_d0",
+      "name": "天书",
+      "min": 13,
+      "max": 18,
+      "cond": {
+        "skill": {
+          "id": "knowledge",
+          "min": 0,
+          "max": 32
+        }
+      },
+      "text": "课本上的字越来越像天书，老师讲的东西一句也接不住。",
+      "left": {
+        "label": "不念了，早点挣钱",
+        "fx": {
+          "money": 4,
+          "career": -4,
+          "mood": 3
+        },
+        "flags": {
+          "dropout": true
+        }
+      },
+      "right": {
+        "label": "硬着头皮念下去",
+        "fx": {
+          "career": 3,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_d3",
+      "name": "流水线",
+      "min": 15,
+      "max": 24,
+      "cond": {
+        "flag": "dropout"
+      },
+      "text": "流水线上的日子，一天十二个小时，重复一个动作。",
+      "left": {
+        "label": "先干着",
+        "fx": {
+          "money": 7,
+          "health": -5,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "换一份轻点的",
+        "fx": {
+          "money": 2,
+          "health": 2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_d4",
+      "name": "修理铺",
+      "min": 15,
+      "max": 26,
+      "cond": {
+        "flag": "dropout"
+      },
+      "text": "修理铺的师傅说，肯学就收你，头半年没工钱。",
+      "left": {
+        "label": "拜师学手艺",
+        "fx": {
+          "money": 5,
+          "career": 3,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 7
+        }
+      },
+      "right": {
+        "label": "去送外卖",
+        "fx": {
+          "money": 6,
+          "health": -3,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_d5",
+      "name": "自考",
+      "min": 16,
+      "max": 32,
+      "cond": {
+        "flag": "dropout"
+      },
+      "text": "有人告诉你，成人自考一样能拿学历。",
+      "left": {
+        "label": "报上",
+        "fx": {
+          "career": 5,
+          "money": -4,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 6
+        }
+      },
+      "right": {
+        "label": "觉得没什么用",
+        "fx": {
+          "money": 2,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_d6",
+      "name": "同桌的消息",
+      "min": 17,
+      "max": 20,
+      "cond": {
+        "flag": "dropout"
+      },
+      "text": "当年的同桌发来消息，说他考上了。",
+      "left": {
+        "label": "认真回一条",
+        "fx": {
+          "mood": 2,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "没有回",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "friends": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sc_d7",
+      "name": "回到教室",
+      "min": 17,
+      "max": 26,
+      "cond": {
+        "flag": "dropout"
+      },
+      "text": "有机会重新回到教室，只是你比同班的人大好几岁。",
+      "left": {
+        "label": "回去念",
+        "fx": {
+          "career": 6,
+          "money": -6,
+          "mood": 4
+        },
+        "flags": {
+          "dropout": false,
+          "study": true
+        },
+        "milestone": "重新回到教室"
+      },
+      "right": {
+        "label": "算了，就这样吧",
+        "fx": {
+          "money": 3,
+          "mood": -3
+        }
+      },
+      "once": true
+    }
+  ]
+}

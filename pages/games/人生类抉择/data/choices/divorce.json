@@ -1,0 +1,292 @@
+{
+  "title": "离婚之后（签字只是开始）",
+  "events": [
+    {
+      "id": "dv_1",
+      "name": "台阶",
+      "min": 30,
+      "max": 70,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "门口的台阶很短，走上去却像走了很久。",
+      "left": {
+        "label": "签字",
+        "fx": {
+          "money": -4,
+          "mood": -6,
+          "social": -3
+        },
+        "flags": {
+          "married": false,
+          "divorced": true
+        },
+        "milestone": "婚姻走到了尽头"
+      },
+      "right": {
+        "label": "转身回去",
+        "fx": {
+          "mood": 2,
+          "rel": {
+            "love": 4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_2",
+      "name": "探视日",
+      "min": 32,
+      "max": 72,
+      "cond": [
+        {
+          "flag": "divorced"
+        },
+        {
+          "flag": "hasChild"
+        }
+      ],
+      "text": "周末的下午，你按时来接孩子。",
+      "left": {
+        "label": "每一次都到",
+        "fx": {
+          "energy": -3,
+          "mood": 4,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "这周实在来不了",
+        "fx": {
+          "mood": -3,
+          "rel": {
+            "family": -5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_3",
+      "name": "清单",
+      "min": 32,
+      "max": 72,
+      "cond": {
+        "flag": "divorced"
+      },
+      "text": "要分的东西列了满满一页纸，从房子到一台咖啡机。",
+      "left": {
+        "label": "好聚好散",
+        "fx": {
+          "money": -6,
+          "mood": 2,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "争到底",
+        "fx": {
+          "money": 6,
+          "mood": -4,
+          "social": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_4",
+      "name": "暖气坏了",
+      "min": 32,
+      "max": 76,
+      "cond": {
+        "flag": "divorced"
+      },
+      "text": "一个人住的第一个冬天，暖气坏了。",
+      "left": {
+        "label": "学着自己修",
+        "fx": {
+          "energy": -3,
+          "mood": 3
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "打电话找人上门",
+        "fx": {
+          "money": -4,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_5",
+      "name": "背后的议论",
+      "min": 32,
+      "max": 72,
+      "cond": {
+        "flag": "divorced"
+      },
+      "text": "亲戚在背后议论，你到底是怎么「过不下去」的。",
+      "left": {
+        "label": "当面说清楚",
+        "fx": {
+          "mood": 2,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "从此不再来往",
+        "fx": {
+          "mood": -2,
+          "social": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_6",
+      "name": "除夕",
+      "min": 35,
+      "max": 76,
+      "cond": {
+        "flag": "divorced"
+      },
+      "text": "除夕夜，窗外烟花一阵一阵，屋里只有你一个人。",
+      "left": {
+        "label": "给老朋友打个电话",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "早早睡了",
+        "fx": {
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_7",
+      "name": "旧照片",
+      "min": 35,
+      "max": 76,
+      "cond": {
+        "flag": "divorced"
+      },
+      "text": "整理抽屉时，翻出一张两个人的旧照片。",
+      "left": {
+        "label": "看一会儿，收起来",
+        "fx": {
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "撕了",
+        "fx": {
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_8",
+      "name": "很长的消息",
+      "min": 38,
+      "max": 72,
+      "cond": {
+        "flag": "divorced"
+      },
+      "chance": 0.3,
+      "text": "他发来一条很长的消息，最后一句是「还能见一面吗」。",
+      "left": {
+        "label": "见一面",
+        "fx": {
+          "mood": 4,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "没有回复",
+        "fx": {
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_9",
+      "name": "介绍",
+      "min": 38,
+      "max": 72,
+      "cond": {
+        "flag": "divorced"
+      },
+      "text": "有人张罗着，要给你介绍一个对象。",
+      "left": {
+        "label": "认真相处看看",
+        "fx": {
+          "money": -4,
+          "mood": 6,
+          "social": 5
+        },
+        "flags": {
+          "married": true,
+          "divorced": false
+        },
+        "milestone": "重新走进婚姻"
+      },
+      "right": {
+        "label": "一个人也挺好",
+        "fx": {
+          "mood": 3,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "dv_10",
+      "name": "为什么",
+      "min": 35,
+      "max": 72,
+      "cond": [
+        {
+          "flag": "divorced"
+        },
+        {
+          "flag": "hasChild"
+        }
+      ],
+      "text": "孩子问，为什么别人家的爸爸妈妈住在一起。",
+      "left": {
+        "label": "认真解释给他听",
+        "fx": {
+          "mood": 3,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "敷衍过去",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "family": -3
+          }
+        }
+      },
+      "once": true
+    }
+  ]
+}

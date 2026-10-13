@@ -1076,6 +1076,9 @@
       "min": 24,
       "max": 29,
       "text": "攒够了一辆车，销售说可以分期。",
+      "cond": {
+        "flag": "license"
+      },
       "left": {
         "label": "买",
         "fx": {
@@ -1927,6 +1930,444 @@
           "health": 4,
           "energy": 5,
           "career": -4,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c1",
+      "name": "实习",
+      "min": 18,
+      "max": 23,
+      "text": "大厂实习 offer 到手，但通勤来回要三个小时。",
+      "left": {
+        "label": "接下来攒履历",
+        "fx": {
+          "career": 7,
+          "energy": -5,
+          "money": 3
+        }
+      },
+      "right": {
+        "label": "找份近的轻松点",
+        "fx": {
+          "energy": 3,
+          "mood": 3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c2",
+      "name": "租房",
+      "min": 18,
+      "max": 27,
+      "text": "中介带你看房，一套便宜但远，一套贵但近。",
+      "left": {
+        "label": "租远的省钱",
+        "fx": {
+          "money": 4,
+          "energy": -4,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "租近的省时间",
+        "fx": {
+          "career": 4,
+          "money": -5,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c3",
+      "name": "室友",
+      "min": 18,
+      "max": 27,
+      "text": "合租室友总在半夜打游戏，吵得你睡不好。",
+      "left": {
+        "label": "摊开谈一谈",
+        "fx": {
+          "social": 4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "忍到搬走",
+        "fx": {
+          "health": -3,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c4",
+      "name": "考证",
+      "min": 19,
+      "max": 29,
+      "text": "行业里那个含金量高的证书，报考费不便宜。",
+      "left": {
+        "label": "报名认真备考",
+        "fx": {
+          "career": 5,
+          "money": -6,
+          "energy": -4,
+          "skills": {
+            "knowledge": 8
+          }
+        }
+      },
+      "right": {
+        "label": "先攒钱再说",
+        "fx": {
+          "money": 3,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c5",
+      "name": "考研",
+      "min": 20,
+      "max": 26,
+      "text": "大四这年室友都在考研，你也在犹豫要不要跟上。",
+      "left": {
+        "label": "加入考研大军",
+        "fx": {
+          "career": 5,
+          "energy": -6,
+          "mood": -2,
+          "skills": {
+            "knowledge": 6
+          }
+        }
+      },
+      "right": {
+        "label": "直接工作",
+        "fx": {
+          "money": 5,
+          "career": 3,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c6",
+      "name": "第一份工作",
+      "min": 21,
+      "max": 26,
+      "text": "第一份工作，工资不高，好在氛围不错。",
+      "left": {
+        "label": "沉下来学本事",
+        "fx": {
+          "career": 5,
+          "money": 2,
+          "skills": {
+            "knowledge": 5
+          }
+        }
+      },
+      "right": {
+        "label": "嫌钱少跳来跳去",
+        "fx": {
+          "money": 6,
+          "career": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c7",
+      "name": "健身卡",
+      "min": 19,
+      "max": 29,
+      "text": "健身房推销年卡，说办卡的人都瘦下来了。",
+      "left": {
+        "label": "办年卡开始练",
+        "fx": {
+          "money": -7,
+          "health": 6,
+          "energy": -3,
+          "skills": {
+            "fitness": 4
+          }
+        }
+      },
+      "right": {
+        "label": "楼下跑步不花钱",
+        "fx": {
+          "health": 4,
+          "energy": -2,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c8",
+      "name": "饭局",
+      "min": 21,
+      "max": 29,
+      "text": "同事组了个饭局，说能认识几个关键的人。",
+      "left": {
+        "label": "去，酒桌上谈事",
+        "fx": {
+          "social": 6,
+          "career": 4,
+          "health": -4,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "回家休息",
+        "fx": {
+          "health": 3,
+          "energy": 4,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c9",
+      "name": "首付",
+      "min": 23,
+      "max": 29,
+      "text": "房价又涨了，你的存款离首付还差一半。",
+      "left": {
+        "label": "勒紧裤腰带省",
+        "fx": {
+          "money": 6,
+          "mood": -5,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "该吃吃该花花",
+        "fx": {
+          "mood": 5,
+          "money": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c10",
+      "name": "方案",
+      "min": 21,
+      "max": 29,
+      "text": "老板说明早要方案，而现在是晚上十点。",
+      "left": {
+        "label": "通宵赶出来",
+        "fx": {
+          "career": 6,
+          "energy": -7,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "交个半成品",
+        "fx": {
+          "energy": 2,
+          "career": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c11",
+      "name": "跳槽",
+      "min": 22,
+      "max": 29,
+      "text": "猎头说有个机会，薪资翻倍，但要重新起步。",
+      "left": {
+        "label": "跳，赌一把",
+        "fx": {
+          "career": 6,
+          "money": 7,
+          "social": -4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "留下稳一稳",
+        "fx": {
+          "mood": 4,
+          "career": 1,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c12",
+      "name": "副业",
+      "min": 22,
+      "max": 29,
+      "text": "朋友拉你一起做个小副业，下班后还得搭时间。",
+      "left": {
+        "label": "干，赚点外快",
+        "fx": {
+          "money": 6,
+          "energy": -5,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "不折腾",
+        "fx": {
+          "energy": 3,
+          "mood": 3,
+          "money": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c13",
+      "name": "相亲",
+      "min": 24,
+      "max": 29,
+      "text": "家里安排了一场相亲，对方条件不错，你却没感觉。",
+      "left": {
+        "label": "认真接触看看",
+        "fx": {
+          "social": 5,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "礼貌婉拒",
+        "fx": {
+          "mood": 3,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c14",
+      "name": "分手",
+      "min": 20,
+      "max": 29,
+      "text": "谈了两年，对方发来一句「我们算了吧」。",
+      "left": {
+        "label": "挽留，再努力一次",
+        "fx": {
+          "mood": -3,
+          "social": 2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "放手，各自安好",
+        "fx": {
+          "mood": -5,
+          "social": 1,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c15",
+      "name": "工资条",
+      "min": 22,
+      "max": 29,
+      "text": "这个月加班到爆，工资条上加班费那栏却是零。",
+      "left": {
+        "label": "找 HR 理论",
+        "fx": {
+          "money": 4,
+          "social": 2,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "忍了",
+        "fx": {
+          "mood": -4,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c16",
+      "name": "凌晨",
+      "min": 21,
+      "max": 29,
+      "text": "凌晨的出租屋里，你又一次刷手机刷到了三点。",
+      "left": {
+        "label": "继续刷",
+        "fx": {
+          "mood": 5,
+          "health": -5,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "定个闹钟早睡",
+        "fx": {
+          "health": 4,
+          "energy": 3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c17",
+      "name": "创业念头",
+      "min": 24,
+      "max": 29,
+      "text": "你脑子里冒出一个点子，越想越觉得能成。",
+      "left": {
+        "label": "裸辞去试",
+        "fx": {
+          "career": 5,
+          "money": -8,
+          "energy": -6,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "先把点子记下来",
+        "fx": {
+          "mood": 2,
+          "career": 2,
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ad_c18",
+      "name": "存款",
+      "min": 24,
+      "max": 29,
+      "text": "第一次攒到六位数，你盯着余额看了很久。",
+      "left": {
+        "label": "拿出一部分理财",
+        "fx": {
+          "money": 5,
+          "career": 2,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "全部存定期",
+        "fx": {
+          "money": 3,
           "mood": 3
         }
       },

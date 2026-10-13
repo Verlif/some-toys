@@ -100,6 +100,9 @@
           "mood": -4,
           "social": -3,
           "energy": 2
+        },
+        "flags": {
+          "car": false
         }
       },
       "right": {
@@ -895,6 +898,388 @@
           "mood": -3,
           "career": 4,
           "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c1",
+      "name": "追尾",
+      "min": 24,
+      "max": 70,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "路口被后车追了尾，对方态度还很蛮横。",
+      "left": {
+        "label": "报警走流程",
+        "fx": {
+          "money": 3,
+          "social": -2,
+          "mood": -3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "私了拿钱",
+        "fx": {
+          "money": 6,
+          "mood": -1,
+          "social": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c2",
+      "name": "搬家",
+      "min": 22,
+      "max": 70,
+      "text": "东西收拾出十几箱，每一箱都舍不得扔。",
+      "left": {
+        "label": "认真断舍离",
+        "fx": {
+          "mood": 5,
+          "energy": -4,
+          "money": 2,
+          "skills": {
+            "craft": 2
+          }
+        }
+      },
+      "right": {
+        "label": "全打包搬走",
+        "fx": {
+          "mood": 2,
+          "energy": -5,
+          "money": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c3",
+      "name": "家具",
+      "min": 24,
+      "max": 70,
+      "text": "看中一套家具，价格够你犹豫半个月。",
+      "left": {
+        "label": "刷卡买下",
+        "fx": {
+          "money": -9,
+          "mood": 7
+        }
+      },
+      "right": {
+        "label": "买个平替",
+        "fx": {
+          "money": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c4",
+      "name": "晾台",
+      "min": 22,
+      "max": 79,
+      "text": "空荡荡的阳台，种点什么好呢。",
+      "left": {
+        "label": "种上一排绿植",
+        "fx": {
+          "mood": 7,
+          "health": 2,
+          "money": -3,
+          "skills": {
+            "craft": 3
+          }
+        }
+      },
+      "right": {
+        "label": "改成晾衣区",
+        "fx": {
+          "money": 1,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c5",
+      "name": "旧账",
+      "min": 25,
+      "max": 70,
+      "text": "一笔几年前借出去的钱，对方一直没提过还。",
+      "left": {
+        "label": "开口要回来",
+        "fx": {
+          "money": 6,
+          "social": -3,
+          "mood": -1
+        }
+      },
+      "right": {
+        "label": "当没这回事",
+        "fx": {
+          "social": 2,
+          "money": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c6",
+      "name": "账单",
+      "min": 22,
+      "max": 70,
+      "text": "这个月的账单，比预想的多了一截。",
+      "left": {
+        "label": "分期慢慢还",
+        "fx": {
+          "money": -3,
+          "mood": 2,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "一次还清",
+        "fx": {
+          "money": -6,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c7",
+      "name": "重疾险",
+      "min": 24,
+      "max": 70,
+      "text": "保险顾问推荐了一份重疾险。",
+      "left": {
+        "label": "认真配置一份",
+        "fx": {
+          "money": -6,
+          "mood": 4,
+          "health": 2
+        }
+      },
+      "right": {
+        "label": "觉得是智商税",
+        "fx": {
+          "money": 3,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c8",
+      "name": "请柬",
+      "min": 22,
+      "max": 70,
+      "text": "老同学的婚礼请柬，寄到了你手里。",
+      "left": {
+        "label": "包个红包到场",
+        "fx": {
+          "money": -5,
+          "social": 6,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "随份子人不去了",
+        "fx": {
+          "money": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c9",
+      "name": "在职进修",
+      "min": 24,
+      "max": 70,
+      "text": "有个在职进修的机会，周末要上课。",
+      "left": {
+        "label": "报名读下来",
+        "fx": {
+          "career": 4,
+          "money": -6,
+          "energy": -5,
+          "skills": {
+            "knowledge": 7
+          }
+        }
+      },
+      "right": {
+        "label": "工作够用了",
+        "fx": {
+          "energy": 3,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c10",
+      "name": "漏水",
+      "min": 22,
+      "max": 79,
+      "text": "楼上水管漏了，水渗到了你家天花板。",
+      "left": {
+        "label": "和和气气协商",
+        "fx": {
+          "social": 5,
+          "mood": 1,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "直接找物业投诉",
+        "fx": {
+          "social": -2,
+          "mood": -2,
+          "money": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c11",
+      "name": "翻新",
+      "min": 28,
+      "max": 70,
+      "text": "老房子终于要翻新了，预算却一涨再涨。",
+      "left": {
+        "label": "咬咬牙做到底",
+        "fx": {
+          "money": -11,
+          "mood": 6,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "凑合着住",
+        "fx": {
+          "money": 3,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c12",
+      "name": "复查",
+      "min": 28,
+      "max": 79,
+      "text": "体检报告单上写着「建议复查」四个字。",
+      "left": {
+        "label": "立刻挂号复查",
+        "fx": {
+          "money": -4,
+          "health": 4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "拖到明年再说",
+        "fx": {
+          "mood": 1,
+          "health": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c13",
+      "name": "剪坏了",
+      "min": 16,
+      "max": 79,
+      "text": "头发剪坏了，镜子里的自己有点陌生。",
+      "left": {
+        "label": "干脆剃短重来",
+        "fx": {
+          "mood": 4,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "戴帽子等它长回来",
+        "fx": {
+          "mood": -2,
+          "money": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c14",
+      "name": "陪聊",
+      "min": 18,
+      "max": 79,
+      "text": "社区招募周末志愿者，去陪独居老人聊天。",
+      "left": {
+        "label": "报名参加",
+        "fx": {
+          "social": 6,
+          "mood": 6,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "周末想休息",
+        "fx": {
+          "energy": 3,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c15",
+      "name": "存钱罐",
+      "min": 14,
+      "max": 79,
+      "text": "你给自己定了个攒钱的小目标。",
+      "left": {
+        "label": "每天雷打不动存一点",
+        "fx": {
+          "money": 7,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "存了几天就放弃",
+        "fx": {
+          "mood": 1,
+          "money": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "lf_c16",
+      "name": "旅行基金",
+      "min": 22,
+      "max": 70,
+      "text": "有一笔攒了很久的钱，本来打算用来旅行。",
+      "left": {
+        "label": "立刻订票出发",
+        "fx": {
+          "money": -8,
+          "mood": 8,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "继续存着以备不时之需",
+        "fx": {
+          "money": 4,
+          "mood": -3
         }
       },
       "once": true

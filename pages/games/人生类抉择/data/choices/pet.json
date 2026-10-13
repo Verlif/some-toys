@@ -717,6 +717,267 @@
       "cond": {
         "flag": "pet"
       }
+    },
+    {
+      "id": "pt_c1",
+      "name": "疫苗",
+      "min": 8,
+      "max": 79,
+      "cond": {
+        "flag": "pet"
+      },
+      "text": "又到了打疫苗的日子，它一看到猫包就躲。",
+      "left": {
+        "label": "硬抱去打针",
+        "fx": {
+          "money": -5,
+          "health": 3,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "预约上门服务",
+        "fx": {
+          "money": -8,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c2",
+      "name": "没精神",
+      "min": 8,
+      "max": 79,
+      "cond": {
+        "flag": "pet"
+      },
+      "text": "它这两天没精神，连最爱吃的都不碰了。",
+      "left": {
+        "label": "连夜送医院",
+        "fx": {
+          "money": -9,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "先观察两天",
+        "fx": {
+          "money": 1,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c3",
+      "name": "走失",
+      "min": 8,
+      "max": 79,
+      "cond": {
+        "flag": "pet"
+      },
+      "text": "门没关严，它一转眼不见了。",
+      "left": {
+        "label": "贴满寻宠启事",
+        "fx": {
+          "money": -4,
+          "mood": -5,
+          "social": 4,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "在家等它自己回来",
+        "fx": {
+          "mood": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c4",
+      "name": "拆鞋",
+      "min": 8,
+      "max": 79,
+      "cond": {
+        "flag": "petDog"
+      },
+      "text": "它把你的新鞋咬成了碎布。",
+      "left": {
+        "label": "认真训练它",
+        "fx": {
+          "energy": -4,
+          "mood": -1,
+          "skills": {
+            "knowledge": 3
+          }
+        }
+      },
+      "right": {
+        "label": "关进笼子一天",
+        "fx": {
+          "mood": -2,
+          "social": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c5",
+      "name": "猫毛",
+      "min": 8,
+      "max": 79,
+      "cond": {
+        "flag": "petCat"
+      },
+      "text": "沙发、毛衣、连水杯里，全是猫毛。",
+      "left": {
+        "label": "买吸毛器勤打扫",
+        "fx": {
+          "money": -4,
+          "energy": -3,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "习惯了，随它去",
+        "fx": {
+          "mood": 1,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c6",
+      "name": "出差",
+      "min": 10,
+      "max": 79,
+      "cond": {
+        "flag": "pet"
+      },
+      "text": "要出差一周，它没人照顾。",
+      "left": {
+        "label": "送到宠物店寄养",
+        "fx": {
+          "money": -7,
+          "mood": 2,
+          "health": 1
+        }
+      },
+      "right": {
+        "label": "拜托邻居帮忙",
+        "fx": {
+          "social": 4,
+          "money": -2,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c7",
+      "name": "纪念日",
+      "min": 8,
+      "max": 79,
+      "cond": {
+        "flag": "pet"
+      },
+      "text": "翻日历才发现，今天是它来家里的纪念日。",
+      "left": {
+        "label": "买个蛋糕一起过",
+        "fx": {
+          "money": -4,
+          "mood": 9
+        }
+      },
+      "right": {
+        "label": "多喂两根火腿",
+        "fx": {
+          "money": -1,
+          "mood": 4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c8",
+      "name": "邻居敲门",
+      "min": 10,
+      "max": 79,
+      "cond": {
+        "flag": "petDog"
+      },
+      "text": "邻居敲门，说你家狗半夜总叫。",
+      "left": {
+        "label": "登门道歉并管好它",
+        "fx": {
+          "social": 5,
+          "mood": -1,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "觉得对方小题大做",
+        "fx": {
+          "social": -5,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c9",
+      "name": "它老了",
+      "min": 10,
+      "max": 79,
+      "cond": {
+        "flag": "pet"
+      },
+      "text": "它老了，走两步就喘，却还是坚持跟着你。",
+      "left": {
+        "label": "放慢脚步多陪它",
+        "fx": {
+          "mood": 8,
+          "energy": -3,
+          "health": 1
+        }
+      },
+      "right": {
+        "label": "抱它回家歇着",
+        "fx": {
+          "mood": 6,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pt_c10",
+      "name": "告别",
+      "min": 12,
+      "max": 79,
+      "cond": {
+        "flag": "pet"
+      },
+      "text": "兽医说，它可能撑不过这个冬天了。",
+      "left": {
+        "label": "陪它走完最后一段",
+        "fx": {
+          "money": -7,
+          "mood": -2,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "把日子尽量过得平常",
+        "fx": {
+          "mood": -6,
+          "energy": 2
+        }
+      },
+      "once": true
     }
   ]
 }

@@ -1,0 +1,469 @@
+{
+  "title": "事业的上下半场（创业成败之后 / 自己开一家店）",
+  "events": [
+    {
+      "id": "bz_1",
+      "name": "上市之后",
+      "min": 30,
+      "max": 62,
+      "cond": {
+        "flag": "bizSuccess"
+      },
+      "text": "上市之后，会议室里的人多了，敢说话的人反而少了。",
+      "left": {
+        "label": "亲自盯着核心业务",
+        "fx": {
+          "career": 7,
+          "energy": -6,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "交给职业经理人",
+        "fx": {
+          "money": 6,
+          "mood": 4,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_2",
+      "name": "合伙人",
+      "min": 30,
+      "max": 62,
+      "cond": {
+        "flag": "bizSuccess"
+      },
+      "text": "当年一起创业的合伙人问，股份能不能再谈谈。",
+      "left": {
+        "label": "让出一部分",
+        "fx": {
+          "money": -5,
+          "mood": 2,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "一分不让",
+        "fx": {
+          "money": 5,
+          "mood": -3,
+          "rel": {
+            "friends": -7
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_3",
+      "name": "专访",
+      "min": 32,
+      "max": 62,
+      "cond": {
+        "flag": "bizSuccess"
+      },
+      "text": "有记者想给你做一次专访。",
+      "left": {
+        "label": "接受",
+        "fx": {
+          "career": 5,
+          "mood": 4,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": 1,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_4",
+      "name": "集体离职",
+      "min": 30,
+      "max": 62,
+      "cond": {
+        "flag": "bizSuccess"
+      },
+      "text": "核心技术团队集体提了离职。",
+      "left": {
+        "label": "加薪挽留",
+        "fx": {
+          "money": -8,
+          "career": 3,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "让他们走",
+        "fx": {
+          "money": 2,
+          "career": -4,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_5",
+      "name": "接班",
+      "min": 50,
+      "max": 74,
+      "cond": {
+        "flag": "bizSuccess"
+      },
+      "text": "孩子说，他不想接你的班。",
+      "left": {
+        "label": "尊重他的选择",
+        "fx": {
+          "mood": 4,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "一定要他接",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "family": -5
+          }
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "bz_6",
+      "name": "还差一笔",
+      "min": 28,
+      "max": 66,
+      "cond": {
+        "flag": "bizFail"
+      },
+      "text": "清算之后，账上还差一笔钱。",
+      "left": {
+        "label": "卖房还债",
+        "fx": {
+          "money": -8,
+          "mood": -3
+        },
+        "flags": {
+          "house": false,
+          "debt": false
+        }
+      },
+      "right": {
+        "label": "借新钱填旧账",
+        "fx": {
+          "money": 4,
+          "mood": -4
+        },
+        "flags": {
+          "debt": true
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_7",
+      "name": "一天十几通",
+      "min": 28,
+      "max": 66,
+      "cond": [
+        {
+          "flag": "bizFail"
+        },
+        {
+          "flag": "debt"
+        }
+      ],
+      "text": "电话一天响十几次，都是同一批号码。",
+      "left": {
+        "label": "一家一家去谈",
+        "fx": {
+          "energy": -5,
+          "mood": -3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "换个号躲起来",
+        "fx": {
+          "mood": -4,
+          "social": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_8",
+      "name": "为什么失败",
+      "min": 28,
+      "max": 66,
+      "cond": {
+        "flag": "bizFail"
+      },
+      "text": "重新投简历，面试官问你怎么看待上一次的失败。",
+      "left": {
+        "label": "坦诚复盘",
+        "fx": {
+          "career": 5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "编个理由过去",
+        "fx": {
+          "career": 2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_9",
+      "name": "通讯录",
+      "min": 28,
+      "max": 66,
+      "cond": {
+        "flag": "bizFail"
+      },
+      "text": "落魄之后，一些名字再也没出现在通讯录里。",
+      "left": {
+        "label": "主动联系还留下的人",
+        "fx": {
+          "mood": 3,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "干脆把自己关起来",
+        "fx": {
+          "mood": -5,
+          "rel": {
+            "friends": -6
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_10",
+      "name": "养老钱",
+      "min": 28,
+      "max": 66,
+      "cond": {
+        "flag": "bizFail"
+      },
+      "text": "父母把养老钱取了出来，说要给你周转。",
+      "left": {
+        "label": "收下，记在心里",
+        "fx": {
+          "money": 7,
+          "mood": -2,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "坚决不要",
+        "fx": {
+          "money": -2,
+          "mood": 3,
+          "rel": {
+            "family": 4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_11",
+      "name": "再来一次",
+      "min": 32,
+      "max": 68,
+      "cond": {
+        "flag": "bizFail"
+      },
+      "text": "这一次，你把所有资料重新整理了一遍。",
+      "left": {
+        "label": "再来一次",
+        "fx": {
+          "money": -8,
+          "career": 5,
+          "energy": -6
+        },
+        "flags": {
+          "biz": true,
+          "bizFail": false
+        },
+        "milestone": "第二次创业"
+      },
+      "right": {
+        "label": "老老实实打工",
+        "fx": {
+          "money": 4,
+          "career": 4,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "bz_12",
+      "name": "招租",
+      "min": 26,
+      "max": 56,
+      "cond": {
+        "noFlag": "shop"
+      },
+      "text": "有个铺面在招租，位置不算好，租金便宜。",
+      "left": {
+        "label": "租下来开个店",
+        "fx": {
+          "money": -9,
+          "career": 5,
+          "energy": -5
+        },
+        "flags": {
+          "shop": true
+        },
+        "milestone": "有了自己的小店"
+      },
+      "right": {
+        "label": "再等等看",
+        "fx": {
+          "money": 3,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_13",
+      "name": "排起了队",
+      "min": 28,
+      "max": 62,
+      "cond": {
+        "flag": "shop"
+      },
+      "text": "某个周末，店门口忽然排起了队。",
+      "left": {
+        "label": "加班加点做",
+        "fx": {
+          "money": 9,
+          "energy": -7,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "限量供应，保住口碑",
+        "fx": {
+          "money": 4,
+          "mood": 4,
+          "social": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_14",
+      "name": "三个月",
+      "min": 28,
+      "max": 62,
+      "cond": {
+        "flag": "shop"
+      },
+      "text": "连着三个月，流水还不够付房租。",
+      "left": {
+        "label": "咬牙撑下去",
+        "fx": {
+          "money": -8,
+          "mood": -4
+        }
+      },
+      "right": {
+        "label": "关店止损",
+        "fx": {
+          "money": 3,
+          "mood": -5
+        },
+        "flags": {
+          "shop": false
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_15",
+      "name": "涨租",
+      "min": 30,
+      "max": 64,
+      "cond": {
+        "flag": "shop"
+      },
+      "text": "房东通知，明年的房租要涨三成。",
+      "left": {
+        "label": "接受",
+        "fx": {
+          "money": -6,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "换个地方",
+        "fx": {
+          "money": -5,
+          "energy": -5,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "bz_16",
+      "name": "分店",
+      "min": 32,
+      "max": 64,
+      "cond": {
+        "flag": "shop"
+      },
+      "text": "有人提议，在另一个区再开一家。",
+      "left": {
+        "label": "开",
+        "fx": {
+          "money": -9,
+          "career": 6,
+          "energy": -6,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "守住这一家",
+        "fx": {
+          "money": 4,
+          "mood": 3
+        }
+      },
+      "once": true
+    }
+  ]
+}

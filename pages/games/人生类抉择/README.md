@@ -83,7 +83,7 @@ npm run check
 
 ## 剧本即数据
 
-游戏里**没有任何硬编码的内容数据**。属性、特质、心愿、结局、618 条抉择全部是 `data/` 下的 JSON：
+游戏里**没有任何硬编码的内容数据**。属性、特质、心愿、结局、1026 条抉择全部是 `data/` 下的 JSON：
 
 ```
 data/
@@ -94,20 +94,30 @@ data/
 │   ├── traits.json      8 种性格特质
 │   ├── aspirations.json 4 种人生心愿
 │   └── endings.json     13 种结局文案
-└── choices/             618 条抉择，按阶段与主题分成 13 个文件
-    ├── childhood.json   童年 6-11     52 条
-    ├── youth.json       少年 12-17    56 条
-    ├── adulthood.json   青年 18-29    71 条
-    ├── prime.json       中年 30-49    91 条
-    ├── senior.json      知命 50-64    63 条
-    ├── elder.json       晚年 65-79    65 条
-    ├── common.json      全年龄通吃    40 条
-    ├── trait.json       特质专属      20 条
-    ├── gated.json       技能 / 状态门槛 30 条
-    ├── pet.json         宠物链        25 条  ← 组合卡牌
-    ├── family.json      家庭链        40 条  ← 组合卡牌
-    ├── career.json      事业链        35 条  ← 组合卡牌
-    └── life.json        生活支线      30 条  ← 组合卡牌
+└── choices/             1026 条抉择，按阶段与主题分成 23 个文件
+    ├── childhood.json   童年 6-11     66 条
+    ├── youth.json       少年 12-18    72 条
+    ├── adulthood.json   青年 18-40    89 条
+    ├── prime.json       中年 22-60    111 条
+    ├── senior.json      知命 50-79    79 条
+    ├── elder.json       晚年 65-85    81 条
+    ├── common.json      全年龄通吃    56 条
+    ├── trait.json       特质专属      36 条
+    ├── gated.json       技能 / 状态门槛 44 条
+    ├── pet.json         宠物链        35 条  ← 组合卡牌
+    ├── family.json      家庭链        54 条  ← 组合卡牌
+    ├── career.json      事业链        49 条  ← 组合卡牌
+    ├── life.json        生活支线      46 条  ← 组合卡牌
+    ├── friends.json     朋友类型链    30 条  ← 6 种朋友各有专属事件池
+    ├── school.json      校园 + 辍学   26 条  ← 辍学后是另一条支线
+    ├── jobs.json        职业时间线    39 条  ← 6 条职业线各有专属事件池
+    ├── car.json         汽车链        25 条  ← 驾照 → 买车 → 用车 → 事故 → 收束
+    ├── family-plus.json 家庭补充      24 条
+    ├── money-line.json  钱与房        16 条
+    ├── health-line.json 健康线        12 条
+    ├── divorce.json     离婚之后      10 条
+    ├── biz-line.json    事业上下半场  16 条
+    └── fame.json        名声线        10 条
 ```
 
 **所有事件默认 `once: true`**——同一局里每张卡只会出现一次，不会中途重复刷同一张脸。`npm run check` 会跑 40 局随机试玩来核对这一点，只有校验通过才算改对了。

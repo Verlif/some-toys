@@ -1,0 +1,908 @@
+{
+  "title": "朋友类型链（先结交，才有这个朋友专属的事件池）",
+  "events": [
+    {
+      "id": "fr_1",
+      "name": "野球场",
+      "min": 12,
+      "max": 22,
+      "text": "放学路过球场，一群人正缺个守门的，冲你招手。",
+      "left": {
+        "label": "把书包一扔就上",
+        "fx": {
+          "health": 3,
+          "mood": 5,
+          "energy": -3,
+          "rel": {
+            "friends": 6
+          }
+        },
+        "flags": {
+          "friendSport": true
+        }
+      },
+      "right": {
+        "label": "在旁边看一会儿",
+        "fx": {
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_2",
+      "name": "自习室",
+      "min": 12,
+      "max": 24,
+      "text": "对面的人把一本写满批注的题集推到你面前，说「一起」。",
+      "left": {
+        "label": "接过来一起刷",
+        "fx": {
+          "energy": -2,
+          "rel": {
+            "friends": 5
+          },
+          "skills": {
+            "knowledge": 4
+          }
+        },
+        "flags": {
+          "friendStudy": true
+        }
+      },
+      "right": {
+        "label": "摆摆手，自己看",
+        "fx": {
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_3",
+      "name": "同学家",
+      "min": 12,
+      "max": 20,
+      "text": "同学邀你去他家写作业，说他家有台新电脑，还有一整个书房的漫画。",
+      "left": {
+        "label": "去，认认门",
+        "fx": {
+          "mood": 4,
+          "energy": -2,
+          "rel": {
+            "friends": 6
+          }
+        },
+        "flags": {
+          "friendRich": true
+        }
+      },
+      "right": {
+        "label": "还是回家写",
+        "fx": {
+          "career": 3,
+          "money": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_4",
+      "name": "巷口",
+      "min": 14,
+      "max": 24,
+      "text": "巷口几个大人不在身边的孩子蹲在墙根，领头的递给你一支烟。",
+      "left": {
+        "label": "接过来点上",
+        "fx": {
+          "mood": 4,
+          "career": -4,
+          "health": -3,
+          "rel": {
+            "friends": 5
+          }
+        },
+        "flags": {
+          "friendTough": true
+        }
+      },
+      "right": {
+        "label": "转身走开",
+        "fx": {
+          "career": 4,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_5",
+      "name": "天台",
+      "min": 14,
+      "max": 26,
+      "text": "天台上有个人在弹一把走音的吉他，弹得很难听，却弹得很认真。",
+      "left": {
+        "label": "坐下来听完",
+        "fx": {
+          "mood": 5,
+          "energy": -2,
+          "rel": {
+            "friends": 6
+          }
+        },
+        "flags": {
+          "friendArtist": true
+        }
+      },
+      "right": {
+        "label": "下楼回教室",
+        "fx": {
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_6",
+      "name": "论坛",
+      "min": 13,
+      "max": 30,
+      "text": "游戏论坛上，一个 ID 和你从攻略聊到凌晨三点。",
+      "left": {
+        "label": "加个好友",
+        "fx": {
+          "mood": 4,
+          "energy": -2,
+          "rel": {
+            "friends": 5
+          }
+        },
+        "flags": {
+          "friendNet": true
+        }
+      },
+      "right": {
+        "label": "关掉电脑",
+        "fx": {
+          "energy": 3,
+          "health": 2
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "fr_s1",
+      "name": "三缺一",
+      "min": 13,
+      "max": 35,
+      "cond": {
+        "flag": "friendSport"
+      },
+      "text": "周六下午，球友打电话来，说场地订好了，就差你一个。",
+      "left": {
+        "label": "立刻出门",
+        "fx": {
+          "health": 4,
+          "mood": 4,
+          "energy": -4,
+          "rel": {
+            "friends": 4
+          }
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "right": {
+        "label": "在家躺着",
+        "fx": {
+          "energy": 3,
+          "health": -2,
+          "rel": {
+            "friends": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_s2",
+      "name": "拉伤",
+      "min": 13,
+      "max": 40,
+      "cond": {
+        "flag": "friendSport"
+      },
+      "text": "一次拼抢之后，小腿拉伤，疼得站不起来。",
+      "left": {
+        "label": "冰敷休息两周",
+        "fx": {
+          "health": 4,
+          "energy": -2
+        },
+        "skills": {
+          "fitness": 2
+        }
+      },
+      "right": {
+        "label": "贴个膏药接着打",
+        "fx": {
+          "health": -5,
+          "mood": 2
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_s3",
+      "name": "队长",
+      "min": 16,
+      "max": 40,
+      "cond": {
+        "flag": "friendSport"
+      },
+      "text": "业余联赛决赛前，球友把队长袖标塞到你手里。",
+      "left": {
+        "label": "戴上，带队上场",
+        "fx": {
+          "social": 3,
+          "mood": 6,
+          "energy": -5,
+          "health": 1,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "让给别人",
+        "fx": {
+          "energy": 2,
+          "social": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_s4",
+      "name": "周末班",
+      "min": 20,
+      "max": 48,
+      "cond": {
+        "flag": "friendSport"
+      },
+      "text": "球友开了个青少年培训班，想请你去带周末班。",
+      "left": {
+        "label": "去带课",
+        "fx": {
+          "money": 6,
+          "energy": -5,
+          "rel": {
+            "friends": 4
+          }
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "right": {
+        "label": "太累，不去了",
+        "fx": {
+          "energy": 3,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "fr_t1",
+      "name": "通宵",
+      "min": 13,
+      "max": 26,
+      "cond": {
+        "flag": "friendStudy"
+      },
+      "text": "期末前，学伴拉着你在自习室熬到了天亮。",
+      "left": {
+        "label": "陪他熬完",
+        "fx": {
+          "energy": -6,
+          "health": -3,
+          "rel": {
+            "friends": 4
+          }
+        },
+        "skills": {
+          "knowledge": 6
+        }
+      },
+      "right": {
+        "label": "先回去睡了",
+        "fx": {
+          "health": 2,
+          "energy": 3
+        },
+        "skills": {
+          "knowledge": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_t2",
+      "name": "名单",
+      "min": 18,
+      "max": 26,
+      "cond": {
+        "flag": "friendStudy"
+      },
+      "text": "保研名单贴出来，上面有他的名字，没有你的。",
+      "left": {
+        "label": "拍拍他肩膀祝贺",
+        "fx": {
+          "social": 3,
+          "mood": -2,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "一句话也没说",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "friends": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_t3",
+      "name": "笔记",
+      "min": 16,
+      "max": 30,
+      "cond": {
+        "flag": "friendStudy"
+      },
+      "text": "学伴把一摞整理得整整齐齐的笔记塞给你。",
+      "left": {
+        "label": "认真抄一遍",
+        "fx": {
+          "energy": -4,
+          "rel": {
+            "friends": 3
+          }
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "right": {
+        "label": "收下，没顾得上看",
+        "fx": {
+          "rel": {
+            "friends": 2
+          }
+        },
+        "skills": {
+          "knowledge": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_t4",
+      "name": "内推",
+      "min": 22,
+      "max": 42,
+      "cond": {
+        "flag": "friendStudy"
+      },
+      "text": "学伴进了大公司，说可以帮你内推。",
+      "left": {
+        "label": "把简历发过去",
+        "fx": {
+          "career": 6,
+          "money": 4,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "想自己试试",
+        "fx": {
+          "career": 2,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "fr_r1",
+      "name": "他家",
+      "min": 13,
+      "max": 26,
+      "cond": {
+        "flag": "friendRich"
+      },
+      "text": "阔朋友家的客厅，比你家整个屋子都大。",
+      "left": {
+        "label": "坦然坐下做客",
+        "fx": {
+          "social": 3,
+          "mood": 3,
+          "rel": {
+            "friends": 3
+          }
+        }
+      },
+      "right": {
+        "label": "找个借口早点走",
+        "fx": {
+          "mood": -3,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_r2",
+      "name": "买单",
+      "min": 15,
+      "max": 34,
+      "cond": {
+        "flag": "friendRich"
+      },
+      "text": "一桌子菜上齐，阔朋友习惯性地把卡递了出去。",
+      "left": {
+        "label": "由他付",
+        "fx": {
+          "money": 2,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "坚持各付各的",
+        "fx": {
+          "money": -4,
+          "mood": 3,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_r3",
+      "name": "资源",
+      "min": 20,
+      "max": 45,
+      "cond": {
+        "flag": "friendRich"
+      },
+      "text": "他说家里有点资源，问你愿不愿意一起做点什么。",
+      "left": {
+        "label": "借他的势",
+        "fx": {
+          "career": 7,
+          "money": 7,
+          "mood": -2,
+          "rel": {
+            "friends": 3
+          }
+        }
+      },
+      "right": {
+        "label": "还是想靠自己",
+        "fx": {
+          "career": 2,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_r4",
+      "name": "落难",
+      "min": 25,
+      "max": 55,
+      "cond": {
+        "flag": "friendRich"
+      },
+      "text": "阔朋友家里出了事，一夜之间什么都不是了。",
+      "left": {
+        "label": "陪他走一段",
+        "fx": {
+          "money": -4,
+          "mood": 3,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "慢慢断了联系",
+        "fx": {
+          "money": 2,
+          "mood": -3,
+          "rel": {
+            "friends": -5
+          }
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "fr_k1",
+      "name": "堵在巷口",
+      "min": 14,
+      "max": 28,
+      "cond": {
+        "flag": "friendTough"
+      },
+      "text": "江湖朋友被人堵在巷口，打电话让你过去。",
+      "left": {
+        "label": "赶过去",
+        "fx": {
+          "health": -5,
+          "career": -5,
+          "mood": 4,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "关机没接",
+        "fx": {
+          "health": 2,
+          "mood": -4,
+          "rel": {
+            "friends": -5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_k2",
+      "name": "开口",
+      "min": 16,
+      "max": 38,
+      "cond": {
+        "flag": "friendTough"
+      },
+      "text": "他开口借钱，数目刚好是你全部的积蓄。",
+      "left": {
+        "label": "借给他",
+        "fx": {
+          "money": -8,
+          "mood": 2,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "摇头拒绝",
+        "fx": {
+          "money": 2,
+          "mood": -3,
+          "rel": {
+            "friends": -5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_k3",
+      "name": "问话",
+      "min": 18,
+      "max": 42,
+      "cond": {
+        "flag": "friendTough"
+      },
+      "text": "他的事闹大了，有人来问过你话。",
+      "left": {
+        "label": "实话实说",
+        "fx": {
+          "mood": -3,
+          "career": 2,
+          "rel": {
+            "friends": -4
+          }
+        }
+      },
+      "right": {
+        "label": "替他兜着",
+        "fx": {
+          "career": -5,
+          "mood": -2,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_k4",
+      "name": "名片",
+      "min": 22,
+      "max": 48,
+      "cond": {
+        "flag": "friendTough"
+      },
+      "text": "多年以后再见面，他西装革履，递过来一张烫金名片。",
+      "left": {
+        "label": "坐下来喝一杯",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "客气两句就走",
+        "fx": {
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "fr_a1",
+      "name": "地下演出",
+      "min": 15,
+      "max": 32,
+      "cond": {
+        "flag": "friendArtist"
+      },
+      "text": "他拉你去看一场地下演出，台下的脸他全都认识。",
+      "left": {
+        "label": "跟着热闹一晚",
+        "fx": {
+          "mood": 6,
+          "money": -3,
+          "energy": -3,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "太吵，提前走了",
+        "fx": {
+          "energy": 2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_a2",
+      "name": "差一把琴",
+      "min": 16,
+      "max": 38,
+      "cond": {
+        "flag": "friendArtist"
+      },
+      "text": "他看中一把琴，差的钱刚好够你请一个月饭。",
+      "left": {
+        "label": "借给他",
+        "fx": {
+          "money": -6,
+          "mood": 4,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "量力而行",
+        "fx": {
+          "money": 2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_a3",
+      "name": "火了",
+      "min": 22,
+      "max": 52,
+      "cond": {
+        "flag": "friendArtist"
+      },
+      "text": "他写的一首歌突然火了，评论区全是陌生人的名字。",
+      "left": {
+        "label": "替他高兴",
+        "fx": {
+          "mood": 6,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "心里有点不是滋味",
+        "fx": {
+          "mood": -3,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_a4",
+      "name": "交不上房租",
+      "min": 25,
+      "max": 55,
+      "cond": {
+        "flag": "friendArtist"
+      },
+      "text": "他说这几年一首都没写出来，房租快交不上了。",
+      "left": {
+        "label": "收留他一段",
+        "fx": {
+          "money": -5,
+          "mood": 3,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "实在帮不上",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "fr_n1",
+      "name": "奔现",
+      "min": 16,
+      "max": 38,
+      "cond": {
+        "flag": "friendNet"
+      },
+      "text": "约好见面的那天，你在车站等了两个小时。",
+      "left": {
+        "label": "再等等",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "energy": -2,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "转身回去",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "friends": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_n2",
+      "name": "难得开口",
+      "min": 18,
+      "max": 48,
+      "cond": {
+        "flag": "friendNet"
+      },
+      "text": "他私信说遇到点难处，想借一笔钱。",
+      "left": {
+        "label": "转过去",
+        "fx": {
+          "money": -6,
+          "mood": -2,
+          "rel": {
+            "friends": 3
+          }
+        }
+      },
+      "right": {
+        "label": "没有回",
+        "fx": {
+          "mood": -3,
+          "rel": {
+            "friends": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_n3",
+      "name": "一起做",
+      "min": 18,
+      "max": 42,
+      "cond": {
+        "flag": "friendNet"
+      },
+      "text": "他说不如一起做个账号，赚了两个人分。",
+      "left": {
+        "label": "一起做",
+        "fx": {
+          "money": 6,
+          "career": 4,
+          "energy": -5,
+          "rel": {
+            "friends": 3
+          }
+        }
+      },
+      "right": {
+        "label": "各干各的",
+        "fx": {
+          "energy": 2,
+          "career": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fr_n4",
+      "name": "头像亮了",
+      "min": 20,
+      "max": 55,
+      "cond": {
+        "flag": "friendNet"
+      },
+      "text": "他的头像灰了三年，某天忽然又亮了起来。",
+      "left": {
+        "label": "聊一整晚",
+        "fx": {
+          "mood": 5,
+          "energy": -3,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "没有回",
+        "fx": {
+          "mood": -2
+        }
+      },
+      "once": true
+    }
+  ]
+}

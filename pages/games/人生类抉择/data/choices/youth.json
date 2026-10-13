@@ -1480,6 +1480,397 @@
         }
       },
       "once": true
+    },
+    {
+      "id": "yt_c1",
+      "name": "月考",
+      "min": 12,
+      "max": 17,
+      "text": "月考排名从班里前十掉到了倒数，成绩单被你藏在袖子里。",
+      "left": {
+        "label": "找老师问怎么补",
+        "fx": {
+          "career": 5,
+          "energy": -3,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "自己闷头刷题",
+        "fx": {
+          "career": 4,
+          "mood": -3,
+          "energy": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c2",
+      "name": "情书",
+      "min": 14,
+      "max": 17,
+      "text": "抽屉里多了一封没有署名的信，字迹很认真。",
+      "left": {
+        "label": "认真回一封",
+        "fx": {
+          "mood": 5,
+          "social": 3,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "交给老师",
+        "fx": {
+          "career": 3,
+          "social": -5,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c3",
+      "name": "八百米",
+      "min": 12,
+      "max": 17,
+      "text": "体育课测八百米，跑到一半腿就软了。",
+      "left": {
+        "label": "咬牙冲过终点",
+        "fx": {
+          "health": 3,
+          "energy": -5,
+          "mood": 4,
+          "skills": {
+            "fitness": 4
+          }
+        }
+      },
+      "right": {
+        "label": "走到终点不丢人",
+        "fx": {
+          "mood": -3,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c4",
+      "name": "小抄",
+      "min": 13,
+      "max": 17,
+      "text": "考场上前桌悄悄把一张纸条往后递。",
+      "left": {
+        "label": "收下抄两道",
+        "fx": {
+          "career": 3,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "举手报告老师",
+        "fx": {
+          "career": 2,
+          "social": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c5",
+      "name": "手机",
+      "min": 13,
+      "max": 17,
+      "text": "被窝里刷着视频，一抬头已经凌晨一点。",
+      "left": {
+        "label": "再刷十分钟就睡",
+        "fx": {
+          "mood": 4,
+          "energy": -5,
+          "health": -3
+        }
+      },
+      "right": {
+        "label": "关灯睡觉",
+        "fx": {
+          "health": 3,
+          "energy": 3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c6",
+      "name": "艺考",
+      "min": 15,
+      "max": 17,
+      "text": "美术老师说你有天赋，建议你走艺考这条路。",
+      "left": {
+        "label": "全力备考艺考",
+        "fx": {
+          "career": 4,
+          "money": -6,
+          "skills": {
+            "craft": 8
+          }
+        }
+      },
+      "right": {
+        "label": "老老实实走文化课",
+        "fx": {
+          "career": 5,
+          "energy": -2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c7",
+      "name": "决赛",
+      "min": 13,
+      "max": 17,
+      "text": "篮球赛最后一攻，球在你手里，队友在三分线外招手。",
+      "left": {
+        "label": "自己突破上篮",
+        "fx": {
+          "social": -3,
+          "mood": 5,
+          "health": 1
+        }
+      },
+      "right": {
+        "label": "传给空位的他",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "career": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c8",
+      "name": "分班",
+      "min": 14,
+      "max": 17,
+      "text": "学校要按成绩分班，重点班压力大，普通班松快些。",
+      "left": {
+        "label": "冲进重点班",
+        "fx": {
+          "career": 6,
+          "energy": -4,
+          "mood": -3,
+          "skills": {
+            "knowledge": 4
+          }
+        }
+      },
+      "right": {
+        "label": "留在普通班",
+        "fx": {
+          "mood": 4,
+          "social": 3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c9",
+      "name": "家长会",
+      "min": 12,
+      "max": 17,
+      "text": "家长会通知发下来，你没敢给爸妈签字。",
+      "left": {
+        "label": "如实交给爸妈",
+        "fx": {
+          "career": 3,
+          "mood": -3,
+          "social": 1
+        }
+      },
+      "right": {
+        "label": "自己模仿签名",
+        "fx": {
+          "mood": 2,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c10",
+      "name": "暑假工",
+      "min": 15,
+      "max": 17,
+      "text": "暑假在奶茶店打零工，一天要站十个小时。",
+      "left": {
+        "label": "干满一个月",
+        "fx": {
+          "money": 8,
+          "energy": -6,
+          "health": -3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "干三天就辞",
+        "fx": {
+          "mood": 3,
+          "money": 1,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c11",
+      "name": "社团",
+      "min": 12,
+      "max": 17,
+      "text": "社团招新，你被一个冷门的手工社吸引住了。",
+      "left": {
+        "label": "报名手工社",
+        "fx": {
+          "mood": 4,
+          "social": 2,
+          "skills": {
+            "craft": 6
+          }
+        }
+      },
+      "right": {
+        "label": "跟风报最热门的",
+        "fx": {
+          "social": 4,
+          "mood": 1,
+          "skills": {
+            "knowledge": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c12",
+      "name": "志愿",
+      "min": 17,
+      "max": 18,
+      "text": "志愿填报前两天，热门专业和喜欢的专业摆在面前。",
+      "left": {
+        "label": "选热门好就业",
+        "fx": {
+          "career": 7,
+          "mood": -4
+        }
+      },
+      "right": {
+        "label": "选真心喜欢的",
+        "fx": {
+          "mood": 6,
+          "career": -3,
+          "skills": {
+            "knowledge": 5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c13",
+      "name": "突击",
+      "min": 12,
+      "max": 17,
+      "text": "期末还剩三天，五门课一个字没背。",
+      "left": {
+        "label": "通宵突击背完",
+        "fx": {
+          "career": 6,
+          "energy": -7,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "挑重点背两门",
+        "fx": {
+          "career": 3,
+          "energy": -2,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c14",
+      "name": "好友",
+      "min": 12,
+      "max": 17,
+      "text": "最好的朋友说，他要转学去外地了。",
+      "left": {
+        "label": "攒钱去送他一程",
+        "fx": {
+          "money": -4,
+          "social": 6,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "说句再见就散了",
+        "fx": {
+          "mood": -4,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c15",
+      "name": "耳机",
+      "min": 12,
+      "max": 17,
+      "text": "攒了三个月的钱，终于够买那副心心念念的耳机。",
+      "left": {
+        "label": "咬牙买下",
+        "fx": {
+          "money": -8,
+          "mood": 7
+        }
+      },
+      "right": {
+        "label": "继续攒着",
+        "fx": {
+          "money": 3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "yt_c16",
+      "name": "毕业",
+      "min": 15,
+      "max": 17,
+      "text": "毕业典礼前一天，你决定跟暗恋两年的人说点什么。",
+      "left": {
+        "label": "鼓起勇气表白",
+        "fx": {
+          "mood": 6,
+          "social": 2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "把话咽回肚子",
+        "fx": {
+          "mood": -4,
+          "career": 2
+        }
+      },
+      "once": true
     }
   ]
 }

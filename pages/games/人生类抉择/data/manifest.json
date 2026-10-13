@@ -21,6 +21,16 @@
     "choices/pet.json",
     "choices/family.json",
     "choices/career.json",
-    "choices/life.json"
+    "choices/life.json",
+    "choices/friends.json",
+    "choices/school.json",
+    "choices/jobs.json",
+    "choices/car.json",
+    "choices/family-plus.json",
+    "choices/money-line.json",
+    "choices/health-line.json",
+    "choices/divorce.json",
+    "choices/biz-line.json",
+    "choices/fame.json"
   ]
 }

@@ -9,6 +9,9 @@
   <meta name="description" data-i18n-content="nav.metaDesc" content="{{bio}}：单文件页面与项目文件夹的自动导航站。">
   <link rel="stylesheet" href="assets/nav.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- 站点信息：由生成脚本从 site.config.json 注入，供 i18n 与页面脚本读取 -->
+  {{siteConfig}}
   <script src="assets/i18n.js"></script>
 
   <!-- 尽早应用主题，避免首屏闪烁 -->
@@ -29,8 +32,8 @@
 
   <!-- ===== 侧栏：作者信息 + 分组索引（窄屏为抽屉） ===== -->
   <aside class="sidenav" id="sidenav">
-    <a href="https://github.com/{{owner}}" target="_blank" rel="noopener" class="brand" title="GitHub 主页">
-      <img src="https://avatars.githubusercontent.com/{{owner}}" alt="{{ownerText}}" class="avatar">
+    <a href="{{githubUrl}}" target="_blank" rel="noopener" class="brand" title="GitHub 主页">
+      <img src="{{avatarUrl}}" alt="{{ownerText}}" class="avatar">
       <span class="brand-text">
         <strong>{{ownerText}}</strong>
         <small data-i18n="nav.bio">{{bio}}</small>
@@ -52,7 +55,7 @@
         <a href="{{docUserUrl}}" target="_blank" rel="noopener" data-i18n="nav.userDocLink">使用文档</a>
         <a href="{{docDevUrl}}" target="_blank" rel="noopener" data-i18n="nav.devDocLink">开发文档</a>
       </div>
-      <a href="https://github.com/{{owner}}" target="_blank" rel="noopener" class="foot-link">
+      <a href="{{githubUrl}}" target="_blank" rel="noopener" class="foot-link">
         <i class="fab fa-github"></i><span>GitHub</span>
       </a>
       <p class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> {{generatedAt}}</p>
@@ -137,7 +140,7 @@
         <a href="{{introUrl}}" data-i18n="nav.introLink">项目介绍</a>
         <a href="{{docUserUrl}}" target="_blank" rel="noopener" data-i18n="nav.userDocLink">使用文档</a>
         <a href="{{docDevUrl}}" target="_blank" rel="noopener" data-i18n="nav.devDocLink">开发文档</a>
-        <a href="https://github.com/{{owner}}" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+        <a href="{{githubUrl}}" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
       </nav>
       <span class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> {{generatedAt}}</span>
     </footer>

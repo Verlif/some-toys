@@ -1378,6 +1378,404 @@
       "cond": {
         "flag": "hasChild"
       }
+    },
+    {
+      "id": "fm_c1",
+      "name": "亲家",
+      "min": 19,
+      "max": 50,
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ],
+      "text": "两家家长第一次坐到一起吃饭。",
+      "left": {
+        "label": "主动张罗暖场",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "安静听着",
+        "fx": {
+          "mood": -2,
+          "social": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c2",
+      "name": "戒指",
+      "min": 22,
+      "max": 49,
+      "cond": [
+        {
+          "flag": "metLove"
+        },
+        {
+          "noFlag": "married"
+        }
+      ],
+      "text": "戒指在口袋里硌了你一路。",
+      "left": {
+        "label": "单膝跪地",
+        "fx": {
+          "mood": 8,
+          "money": -8,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "再等等",
+        "fx": {
+          "mood": -3,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c3",
+      "name": "彩礼",
+      "min": 22,
+      "max": 50,
+      "cond": {
+        "noFlag": "married"
+      },
+      "text": "谈婚论嫁，两家在彩礼上来回拉锯。",
+      "left": {
+        "label": "尽量满足",
+        "fx": {
+          "money": -10,
+          "social": 4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "坚持原则",
+        "fx": {
+          "money": 2,
+          "social": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c4",
+      "name": "婚礼",
+      "min": 22,
+      "max": 50,
+      "cond": {
+        "noFlag": "married"
+      },
+      "text": "婚礼是办得风风光光，还是简简单单？",
+      "left": {
+        "label": "办一场大的",
+        "fx": {
+          "money": -13,
+          "mood": 7,
+          "social": 6
+        }
+      },
+      "right": {
+        "label": "领证旅行结婚",
+        "fx": {
+          "money": -4,
+          "mood": 5,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c5",
+      "name": "磨合",
+      "min": 24,
+      "max": 55,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "结婚后才发现，两个人的生活习惯差得远。",
+      "left": {
+        "label": "慢慢磨合",
+        "fx": {
+          "social": 5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "各让一步，分房睡",
+        "fx": {
+          "health": 2,
+          "mood": -1,
+          "social": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c6",
+      "name": "备孕",
+      "min": 25,
+      "max": 45,
+      "cond": [
+        {
+          "flag": "married"
+        },
+        {
+          "noFlag": "hasChild"
+        }
+      ],
+      "text": "「要不要孩子」这个问题，你们谈了很久。",
+      "left": {
+        "label": "开始备孕",
+        "fx": {
+          "mood": 5,
+          "money": -5,
+          "health": 2
+        }
+      },
+      "right": {
+        "label": "再等等",
+        "fx": {
+          "money": 3,
+          "mood": -3,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c7",
+      "name": "产检",
+      "min": 25,
+      "max": 45,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "产检的日子又到了，走廊里坐满了人。",
+      "left": {
+        "label": "全程陪同",
+        "fx": {
+          "social": 5,
+          "mood": 5,
+          "energy": -3,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "让她自己去",
+        "fx": {
+          "social": -4,
+          "mood": -2,
+          "career": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c8",
+      "name": "夜奶",
+      "min": 26,
+      "max": 45,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "孩子半夜又哭了，这已经是今晚第三次。",
+      "left": {
+        "label": "起来哄他",
+        "fx": {
+          "social": 5,
+          "mood": 2,
+          "health": -4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "推给对方",
+        "fx": {
+          "energy": 3,
+          "social": -5,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c9",
+      "name": "择校",
+      "min": 30,
+      "max": 45,
+      "cond": [
+        {
+          "flag": "hasChild"
+        },
+        {
+          "noFlag": "childGrown"
+        }
+      ],
+      "text": "孩子要上小学了，公立和私立各有利弊。",
+      "left": {
+        "label": "选私立，多花钱",
+        "fx": {
+          "money": -9,
+          "mood": 3,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "选公立，就近",
+        "fx": {
+          "money": 3,
+          "mood": -2,
+          "social": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c10",
+      "name": "叛逆",
+      "min": 35,
+      "max": 50,
+      "cond": [
+        {
+          "flag": "hasChild"
+        },
+        {
+          "noFlag": "childGrown"
+        }
+      ],
+      "text": "孩子把房门摔上了，隔着一扇门，你们谁也没先开口。",
+      "left": {
+        "label": "耐心沟通",
+        "fx": {
+          "social": 5,
+          "mood": 2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "冷战到底",
+        "fx": {
+          "mood": -5,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c11",
+      "name": "二人世界",
+      "min": 35,
+      "max": 55,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "孩子去了夏令营，家里难得只剩你们两个。",
+      "left": {
+        "label": "安排一次约会",
+        "fx": {
+          "mood": 7,
+          "social": 5,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "各刷各的手机",
+        "fx": {
+          "mood": -2,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c12",
+      "name": "纪念日",
+      "min": 30,
+      "max": 60,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "结婚纪念日，你们都差点忘了。",
+      "left": {
+        "label": "补一份礼物",
+        "fx": {
+          "mood": 6,
+          "social": 4,
+          "money": -5
+        }
+      },
+      "right": {
+        "label": "老夫老妻不用了",
+        "fx": {
+          "mood": -2,
+          "social": -2,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c13",
+      "name": "空巢",
+      "min": 48,
+      "max": 62,
+      "cond": {
+        "flag": "childGrown"
+      },
+      "text": "孩子工作了，房间空着，你们开始重新学着自己的日子。",
+      "left": {
+        "label": "重新安排两个人的生活",
+        "fx": {
+          "social": 6,
+          "mood": 5,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "守着空房间",
+        "fx": {
+          "mood": -4,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fm_c14",
+      "name": "隔代亲",
+      "min": 55,
+      "max": 79,
+      "cond": {
+        "flag": "grandchild"
+      },
+      "text": "小孙子在你怀里睡着了，呼吸声很轻。",
+      "left": {
+        "label": "多抱一会儿",
+        "fx": {
+          "mood": 8,
+          "social": 4,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "抱给儿女去",
+        "fx": {
+          "energy": 2,
+          "mood": -3
+        }
+      },
+      "once": true
     }
   ]
 }

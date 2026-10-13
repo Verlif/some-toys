@@ -999,6 +999,370 @@
         }
       },
       "once": true
+    },
+    {
+      "id": "cm_c1",
+      "name": "新邻居",
+      "min": 6,
+      "max": 120,
+      "text": "对门搬来一户新邻居，正拎着大包小包在门口忙活。",
+      "left": {
+        "label": "上前搭把手",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "关上门过自己的",
+        "fx": {
+          "energy": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c2",
+      "name": "陌生来电",
+      "min": 10,
+      "max": 120,
+      "text": "手机响了，是一个不认识的号码。",
+      "left": {
+        "label": "接起来听听",
+        "fx": {
+          "social": 2,
+          "mood": -1
+        }
+      },
+      "right": {
+        "label": "直接挂掉",
+        "fx": {
+          "mood": 2,
+          "social": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c3",
+      "name": "钱包",
+      "min": 8,
+      "max": 120,
+      "text": "路边捡到一个钱包，里面有证件，也有现金。",
+      "left": {
+        "label": "交给警察",
+        "fx": {
+          "social": 5,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "揣进兜里",
+        "fx": {
+          "money": 5,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c4",
+      "name": "大促",
+      "min": 8,
+      "max": 120,
+      "text": "商场大促，那件你看了很久的东西终于降价了。",
+      "left": {
+        "label": "果断下单",
+        "fx": {
+          "money": -6,
+          "mood": 6
+        }
+      },
+      "right": {
+        "label": "再等等看",
+        "fx": {
+          "money": 3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c5",
+      "name": "募捐箱",
+      "min": 12,
+      "max": 120,
+      "text": "路边摆着募捐箱，为的是山区孩子的午饭。",
+      "left": {
+        "label": "投进一些钱",
+        "fx": {
+          "money": -4,
+          "mood": 6,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "快步走过",
+        "fx": {
+          "money": 2,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c6",
+      "name": "电梯",
+      "min": 10,
+      "max": 120,
+      "text": "电梯坏了，而你家住在六楼。",
+      "left": {
+        "label": "一层层爬上去",
+        "fx": {
+          "health": 4,
+          "energy": -4,
+          "mood": -1
+        }
+      },
+      "right": {
+        "label": "等维修来再说",
+        "fx": {
+          "energy": 3,
+          "mood": -2,
+          "health": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c7",
+      "name": "插队",
+      "min": 8,
+      "max": 120,
+      "text": "排队时，前面有人径直插了进来。",
+      "left": {
+        "label": "开口提醒",
+        "fx": {
+          "social": 2,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "忍了",
+        "fx": {
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c8",
+      "name": "博物馆",
+      "min": 10,
+      "max": 120,
+      "text": "周末博物馆免费开放，队伍排得很长。",
+      "left": {
+        "label": "排队进去看展",
+        "fx": {
+          "mood": 5,
+          "energy": -3,
+          "skills": {
+            "knowledge": 5
+          }
+        }
+      },
+      "right": {
+        "label": "改天再来",
+        "fx": {
+          "energy": 2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c9",
+      "name": "公园",
+      "min": 6,
+      "max": 120,
+      "text": "傍晚的公园，长椅上坐着形形色色的人。",
+      "left": {
+        "label": "坐下发会儿呆",
+        "fx": {
+          "mood": 6,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "沿小路快走一圈",
+        "fx": {
+          "health": 4,
+          "energy": -3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c10",
+      "name": "一壶茶",
+      "min": 14,
+      "max": 120,
+      "text": "泡上一壶茶，水汽慢慢升起来。",
+      "left": {
+        "label": "慢慢喝完这一壶",
+        "fx": {
+          "mood": 5,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "倒掉赶时间",
+        "fx": {
+          "energy": 1,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c11",
+      "name": "日出",
+      "min": 8,
+      "max": 120,
+      "text": "起得早，正好撞见天边第一缕光。",
+      "left": {
+        "label": "停下来看完整场日出",
+        "fx": {
+          "mood": 7,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "低头继续赶路",
+        "fx": {
+          "energy": 2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c12",
+      "name": "彩票",
+      "min": 18,
+      "max": 120,
+      "text": "便利店门口贴着最新一期的中奖号码。",
+      "left": {
+        "label": "顺手买一张",
+        "fx": {
+          "money": -2,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "路过",
+        "fx": {
+          "money": 1,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c13",
+      "name": "旧物",
+      "min": 10,
+      "max": 120,
+      "text": "收拾屋子，翻出一堆用不上的旧东西。",
+      "left": {
+        "label": "分类整理，能捐的捐",
+        "fx": {
+          "social": 4,
+          "mood": 3,
+          "skills": {
+            "craft": 2
+          }
+        }
+      },
+      "right": {
+        "label": "一股脑全扔了",
+        "fx": {
+          "energy": 3,
+          "mood": 1,
+          "money": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c14",
+      "name": "道歉",
+      "min": 10,
+      "max": 120,
+      "text": "你想起前几天，对一个人说了很重的话。",
+      "left": {
+        "label": "主动去道个歉",
+        "fx": {
+          "social": 5,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "装作没发生",
+        "fx": {
+          "mood": -4,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c15",
+      "name": "追剧",
+      "min": 14,
+      "max": 120,
+      "text": "新剧一口气放出了八集，你忍不住点开了第一集。",
+      "left": {
+        "label": "通宵看完",
+        "fx": {
+          "mood": 6,
+          "health": -5,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "看两集就睡",
+        "fx": {
+          "mood": 3,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cm_c16",
+      "name": "求助",
+      "min": 12,
+      "max": 120,
+      "text": "地铁口有人举着牌子，说钱包被偷，回不了家。",
+      "left": {
+        "label": "给点钱帮一把",
+        "fx": {
+          "money": -3,
+          "mood": 4,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "摆摆手走开",
+        "fx": {
+          "mood": -3
+        }
+      },
+      "once": true
     }
   ]
 }

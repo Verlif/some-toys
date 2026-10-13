@@ -1342,6 +1342,337 @@
         }
       },
       "once": true
+    },
+    {
+      "id": "ch_c1",
+      "name": "邻居爷爷",
+      "min": 6,
+      "max": 11,
+      "text": "楼下独居的爷爷招手让你过去，棋盘上摆好了一盘没下完的残局。",
+      "left": {
+        "label": "陪他杀两盘",
+        "fx": {
+          "social": 5,
+          "mood": 4,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "说作业没写完",
+        "fx": {
+          "career": 4,
+          "social": -3,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c2",
+      "name": "零花钱",
+      "min": 7,
+      "max": 11,
+      "text": "妈妈给你二十块，让你自己去菜市场买一天菜。",
+      "left": {
+        "label": "认真比价记账",
+        "fx": {
+          "money": 5,
+          "career": 3,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "顺手买了辣条",
+        "fx": {
+          "mood": 5,
+          "money": -4,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c3",
+      "name": "春游",
+      "min": 6,
+      "max": 11,
+      "text": "春游前夜，书包里塞满了零食，同桌在一旁眼巴巴看着。",
+      "left": {
+        "label": "分他一半",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "money": -2
+        }
+      },
+      "right": {
+        "label": "自己独享",
+        "fx": {
+          "mood": 3,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c4",
+      "name": "试卷",
+      "min": 8,
+      "max": 11,
+      "text": "数学考了 85 分，回家路上你反复想该怎么开口。",
+      "left": {
+        "label": "主动报分数",
+        "fx": {
+          "career": 4,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "藏进书包底",
+        "fx": {
+          "mood": 2,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c5",
+      "name": "雨伞",
+      "min": 6,
+      "max": 11,
+      "text": "放学突降暴雨，同桌没带伞，而你家就在校门口。",
+      "left": {
+        "label": "一路送他回家",
+        "fx": {
+          "social": 6,
+          "health": -3,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "自己先跑回去",
+        "fx": {
+          "health": 2,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c6",
+      "name": "外号",
+      "min": 8,
+      "max": 11,
+      "text": "班里有人被起了难听的外号，哄笑声里他低下了头。",
+      "left": {
+        "label": "站出来制止",
+        "fx": {
+          "social": 4,
+          "mood": 2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "假装没听见",
+        "fx": {
+          "mood": -2,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c7",
+      "name": "兴趣班",
+      "min": 6,
+      "max": 11,
+      "text": "妈妈只肯报一个班，钢琴还是足球，你自己选。",
+      "left": {
+        "label": "选钢琴",
+        "fx": {
+          "career": 3,
+          "mood": -2,
+          "energy": -2,
+          "skills": {
+            "knowledge": 4
+          }
+        }
+      },
+      "right": {
+        "label": "选足球",
+        "fx": {
+          "social": 4,
+          "health": 3,
+          "career": -2,
+          "skills": {
+            "fitness": 5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c8",
+      "name": "压岁钱",
+      "min": 6,
+      "max": 11,
+      "text": "过年收了一沓红包，妈妈伸手说「先替你存着」。",
+      "left": {
+        "label": "全交给她",
+        "fx": {
+          "money": 6,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "偷偷留一张",
+        "fx": {
+          "mood": 4,
+          "money": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c9",
+      "name": "动画片",
+      "min": 6,
+      "max": 11,
+      "text": "爸妈出门了，电视里正放着那部你追了一周的动画。",
+      "left": {
+        "label": "看到深夜",
+        "fx": {
+          "mood": 6,
+          "energy": -5,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "写完作业看重播",
+        "fx": {
+          "career": 4,
+          "mood": 2,
+          "energy": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c10",
+      "name": "寒假作业",
+      "min": 8,
+      "max": 11,
+      "text": "离开学还剩三天，寒假作业一个字没动。",
+      "left": {
+        "label": "熬夜两天补完",
+        "fx": {
+          "career": 5,
+          "energy": -5,
+          "health": -3
+        }
+      },
+      "right": {
+        "label": "抄同学的",
+        "fx": {
+          "mood": 3,
+          "career": -4,
+          "social": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c11",
+      "name": "蚂蚁",
+      "min": 6,
+      "max": 10,
+      "text": "墙角一队蚂蚁在搬家，你蹲下来看入了神。",
+      "left": {
+        "label": "看到太阳落山",
+        "fx": {
+          "mood": 6,
+          "energy": -2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "看一会儿就去写作业",
+        "fx": {
+          "career": 4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c12",
+      "name": "转学生",
+      "min": 7,
+      "max": 11,
+      "text": "新转来的同学一个人坐在角落，午饭也没人喊他。",
+      "left": {
+        "label": "拉他一起玩",
+        "fx": {
+          "social": 6,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "还是跟老伙伴玩",
+        "fx": {
+          "mood": 2,
+          "social": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c13",
+      "name": "集卡",
+      "min": 7,
+      "max": 11,
+      "text": "干脆面里的卡就差最后一张，老板说整箱里肯定有。",
+      "left": {
+        "label": "攒钱买一整箱",
+        "fx": {
+          "money": -6,
+          "mood": 5,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "见好就收",
+        "fx": {
+          "money": 3,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "ch_c14",
+      "name": "摔伤",
+      "min": 6,
+      "max": 11,
+      "text": "骑车冲下坡摔破了膝盖，血渗出来，离家还有两条街。",
+      "left": {
+        "label": "忍着疼推车回家",
+        "fx": {
+          "health": -3,
+          "mood": -2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "坐路边等大人来",
+        "fx": {
+          "social": 2,
+          "mood": 1,
+          "career": -3
+        }
+      },
+      "once": true
     }
   ]
 }

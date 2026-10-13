@@ -1775,6 +1775,386 @@
         }
       },
       "once": true
+    },
+    {
+      "id": "el_c1",
+      "name": "孙辈",
+      "min": 65,
+      "max": 79,
+      "text": "孙子放学到你这来，书包一扔就喊饿。",
+      "left": {
+        "label": "系上围裙进厨房",
+        "fx": {
+          "mood": 7,
+          "health": -2,
+          "skills": {
+            "cooking": 4
+          }
+        }
+      },
+      "right": {
+        "label": "带他下馆子",
+        "fx": {
+          "money": -5,
+          "mood": 5,
+          "health": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c2",
+      "name": "老友记",
+      "min": 65,
+      "max": 79,
+      "text": "老伙计们凑在一起，翻来覆去讲那几件年轻时的旧事。",
+      "left": {
+        "label": "讲一遍笑一遍",
+        "fx": {
+          "social": 6,
+          "mood": 6
+        }
+      },
+      "right": {
+        "label": "听得有些累了",
+        "fx": {
+          "energy": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c3",
+      "name": "手机课",
+      "min": 65,
+      "max": 79,
+      "text": "社区教老人用智能手机，你还不太会扫码。",
+      "left": {
+        "label": "认真学一学",
+        "fx": {
+          "mood": 4,
+          "social": 3,
+          "skills": {
+            "knowledge": 5
+          }
+        }
+      },
+      "right": {
+        "label": "让儿女帮忙",
+        "fx": {
+          "social": 3,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c4",
+      "name": "病房",
+      "min": 68,
+      "max": 79,
+      "text": "老邻居住院了，病房里就他一个人。",
+      "left": {
+        "label": "每天去陪一陪",
+        "fx": {
+          "social": 6,
+          "mood": 3,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "送点东西就走",
+        "fx": {
+          "social": 1,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c5",
+      "name": "晨练",
+      "min": 65,
+      "max": 79,
+      "text": "天刚亮，公园里已经有人在打太极。",
+      "left": {
+        "label": "跟着练一套",
+        "fx": {
+          "health": 6,
+          "energy": -2,
+          "mood": 4,
+          "skills": {
+            "fitness": 3
+          }
+        }
+      },
+      "right": {
+        "label": "再多睡会儿",
+        "fx": {
+          "energy": 4,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c6",
+      "name": "遗嘱",
+      "min": 70,
+      "max": 79,
+      "text": "律师问你，身后的事要不要早做安排。",
+      "left": {
+        "label": "立下遗嘱安排妥当",
+        "fx": {
+          "mood": 5,
+          "social": 3,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "不想谈这个",
+        "fx": {
+          "mood": -3,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c7",
+      "name": "旧宅",
+      "min": 66,
+      "max": 79,
+      "text": "住了一辈子的老房子要拆迁了。",
+      "left": {
+        "label": "拿补偿搬去新房",
+        "fx": {
+          "money": 9,
+          "mood": -3,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "争取原地安置",
+        "fx": {
+          "social": 4,
+          "mood": 4,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c8",
+      "name": "藤椅",
+      "min": 65,
+      "max": 79,
+      "text": "你坐在门口的藤椅上，看晚霞把半边天染红。",
+      "left": {
+        "label": "就这么坐着看完",
+        "fx": {
+          "mood": 7,
+          "energy": 2
+        }
+      },
+      "right": {
+        "label": "起身去给花浇水",
+        "fx": {
+          "health": 3,
+          "mood": 3,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c9",
+      "name": "拐杖",
+      "min": 72,
+      "max": 79,
+      "text": "腿脚越来越不听使唤，儿女给你买了根拐杖。",
+      "left": {
+        "label": "坦然用上",
+        "fx": {
+          "health": 4,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "逞强不用",
+        "fx": {
+          "mood": 3,
+          "health": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c10",
+      "name": "全家福",
+      "min": 65,
+      "max": 79,
+      "text": "过年，难得全家人都到齐了。",
+      "left": {
+        "label": "拍张全家福",
+        "fx": {
+          "social": 7,
+          "mood": 7,
+          "money": -2
+        }
+      },
+      "right": {
+        "label": "人多太吵早点散",
+        "fx": {
+          "social": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c11",
+      "name": "回忆录",
+      "min": 70,
+      "max": 79,
+      "text": "有人建议你，把这一辈子写下来。",
+      "left": {
+        "label": "一笔一笔地写",
+        "fx": {
+          "mood": 8,
+          "energy": -4,
+          "skills": {
+            "knowledge": 5
+          }
+        }
+      },
+      "right": {
+        "label": "记在脑子里就够了",
+        "fx": {
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c12",
+      "name": "志愿",
+      "min": 65,
+      "max": 79,
+      "text": "社区在招能讲故事的老志愿者。",
+      "left": {
+        "label": "报名去讲",
+        "fx": {
+          "social": 7,
+          "mood": 6,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "待在家更自在",
+        "fx": {
+          "energy": 3,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c13",
+      "name": "保健品",
+      "min": 68,
+      "max": 79,
+      "text": "推销员上门，说这瓶药能让你返老还童。",
+      "left": {
+        "label": "半信半疑买一箱",
+        "fx": {
+          "money": -7,
+          "mood": 3,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "关上门不理会",
+        "fx": {
+          "money": 3,
+          "mood": 2,
+          "health": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c14",
+      "name": "讣告",
+      "min": 70,
+      "max": 79,
+      "text": "又一个同龄的老朋友传来了不好的消息。",
+      "left": {
+        "label": "去参加追思",
+        "fx": {
+          "social": 5,
+          "mood": -4
+        }
+      },
+      "right": {
+        "label": "独自在屋里待了一天",
+        "fx": {
+          "mood": -6,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c15",
+      "name": "隔代",
+      "min": 65,
+      "max": 79,
+      "text": "孙女的作业不会做，怯生生地来问你。",
+      "left": {
+        "label": "戴老花镜慢慢讲",
+        "fx": {
+          "mood": 7,
+          "social": 5,
+          "energy": -3,
+          "skills": {
+            "knowledge": 3
+          }
+        }
+      },
+      "right": {
+        "label": "让她去问爸妈",
+        "fx": {
+          "mood": -2,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "el_c16",
+      "name": "长寿面",
+      "min": 70,
+      "max": 79,
+      "text": "翻着日历，你忽然想起今天是自己生日。",
+      "left": {
+        "label": "给自己煮碗长寿面",
+        "fx": {
+          "mood": 8,
+          "health": 2,
+          "skills": {
+            "cooking": 3
+          }
+        }
+      },
+      "right": {
+        "label": "忘了就忘了吧",
+        "fx": {
+          "mood": -3
+        }
+      },
+      "once": true
     }
   ]
 }

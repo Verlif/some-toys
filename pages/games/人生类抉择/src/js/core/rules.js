@@ -64,12 +64,29 @@ export function candidateEvents(S) {
 }
 
 /**
+ * 是否是「事件线」上的卡
+ *
+ * 判据：cond 里引用了 flag。这类条件只有在玩家已经置真该 flag 时才会通过，
+ * 所以抽到它就等于「这条线又往前走了一步」。入口卡用的是 noFlag，不算在内，
+ * 否则会反复刷到「要不要养宠物」这种已经做过的决定。
+ */
+function isChainCard(ev) {
+  const groups = ev.cond ? (Array.isArray(ev.cond) ? ev.cond : [ev.cond]) : [];
+  return groups.some(g => g.flag);
+}
+
+/**
  * 抽取下一条事件
  * 优先级：带概率的候选 → 去掉概率限制的候选 → 全池
  * 并尽量避免与上一条事件重复
  *
  * 所有事件默认 once（单局只出现一次），若当前年龄段的可抽事件已全部用过，
  * 则自动放宽 once 限制回退到全池，保证任何年龄都不会抽不到卡。
+ *
+ * 事件线优先：池子里有近千张卡，纯等概率抽的话，玩家一旦走上某条线，
+ * 后续卡也容易被淹没，「事件线」就只剩入口那一下。所以对这些卡加权。
+ * 权重由 tuning.chainWeight 控制，1 = 关闭（等于原来的等概率），2 = 提一级。
+ * 加权只改变「抽谁」，不改变「能不能抽」——事件线依然可能中途断掉。
  */
 export function pickEvent(S) {
   let pool = candidateEvents(S);
@@ -88,7 +105,19 @@ export function pickEvent(S) {
 
   const others = cand.filter(e => e.id !== S.lastId);
   const pickFrom = others.length ? others : cand;
-  return pickFrom[Math.floor(random() * pickFrom.length)];
+
+  const w = tuning().chainWeight || 1;
+  if (w <= 1) return pickFrom[Math.floor(random() * pickFrom.length)];
+
+  let total = 0;
+  for (const e of pickFrom) total += isChainCard(e) ? w : 1;
+
+  let r = random() * total;
+  for (const e of pickFrom) {
+    r -= isChainCard(e) ? w : 1;
+    if (r < 0) return e;
+  }
+  return pickFrom[pickFrom.length - 1];
 }
 
 /**

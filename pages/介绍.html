@@ -89,6 +89,10 @@
 
     html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
+    /* 去掉根滚动条：展开 / 收起 FAQ 等改变页面高度时不再造成内容横向位移 */
+    html, body { scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
     body {
       margin: 0;
       font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;

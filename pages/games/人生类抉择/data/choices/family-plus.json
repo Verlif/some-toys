@@ -1,0 +1,709 @@
+{
+  "title": "家庭补充（育儿 / 夫妻 / 双方父母 / 二胎 / 亲家）",
+  "events": [
+    {
+      "id": "fp_1",
+      "name": "没睡整过",
+      "min": 26,
+      "max": 42,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "孩子出生之后，家里的觉就没睡整过。",
+      "left": {
+        "label": "主动揽下夜里那几趟",
+        "fx": {
+          "health": -4,
+          "energy": -4,
+          "mood": 3,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "说我明天还要上班",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "family": -6
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_2",
+      "name": "偷偷塞糖",
+      "min": 30,
+      "max": 50,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "老人总趁你不注意给孩子塞糖，你说过好几次了。",
+      "left": {
+        "label": "认真和老人谈一次",
+        "fx": {
+          "energy": -2,
+          "mood": 2,
+          "rel": {
+            "family": 4
+          }
+        }
+      },
+      "right": {
+        "label": "忍着不说",
+        "fx": {
+          "mood": -3,
+          "health": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_3",
+      "name": "三天没说话",
+      "min": 30,
+      "max": 55,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "同一个屋檐下，你们已经三天没说过一句话。",
+      "left": {
+        "label": "先开口",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "love": 6
+          }
+        }
+      },
+      "right": {
+        "label": "继续等对方先低头",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "love": -5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_4",
+      "name": "纪念日",
+      "min": 28,
+      "max": 72,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "结婚纪念日这天，你们两个人谁都没买礼物。",
+      "left": {
+        "label": "下楼买束花",
+        "fx": {
+          "money": -3,
+          "mood": 6,
+          "rel": {
+            "love": 5
+          }
+        }
+      },
+      "right": {
+        "label": "点个外卖凑合",
+        "fx": {
+          "money": -3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_5",
+      "name": "两栋楼",
+      "min": 35,
+      "max": 56,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "两边老人同时住院，床位分别在两栋楼里。",
+      "left": {
+        "label": "请假两边跑",
+        "fx": {
+          "career": -5,
+          "energy": -6,
+          "health": -3,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "请护工，让大家分担",
+        "fx": {
+          "money": -7,
+          "mood": -2,
+          "rel": {
+            "family": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_6",
+      "name": "表哥",
+      "min": 30,
+      "max": 62,
+      "text": "表哥开口借钱，说年底一定还。",
+      "left": {
+        "label": "借",
+        "fx": {
+          "money": -7,
+          "mood": 2,
+          "rel": {
+            "family": 4
+          }
+        }
+      },
+      "right": {
+        "label": "拒绝",
+        "fx": {
+          "money": 2,
+          "mood": -3,
+          "rel": {
+            "family": -5
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_7",
+      "name": "家族聚会",
+      "min": 25,
+      "max": 79,
+      "text": "一年一次的家族聚会，长辈又问起你的收入。",
+      "left": {
+        "label": "老实说",
+        "fx": {
+          "mood": -2,
+          "rel": {
+            "family": 4
+          }
+        }
+      },
+      "right": {
+        "label": "含糊过去",
+        "fx": {
+          "mood": 1,
+          "rel": {
+            "family": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_8",
+      "name": "三十九度",
+      "min": 28,
+      "max": 50,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "半夜孩子烧到三十九度，小脸通红。",
+      "left": {
+        "label": "抱着就往医院跑",
+        "fx": {
+          "health": -3,
+          "energy": -4,
+          "mood": 4,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "先物理降温观察",
+        "fx": {
+          "health": 1,
+          "energy": -2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_9",
+      "name": "答应过的旅行",
+      "min": 30,
+      "max": 55,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "答应了孩子很久的那趟旅行，终于排上了日程。",
+      "left": {
+        "label": "放下工作去",
+        "fx": {
+          "money": -8,
+          "mood": 8,
+          "career": -3,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "又推到明年",
+        "fx": {
+          "mood": -5,
+          "rel": {
+            "family": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_10",
+      "name": "又提起二胎",
+      "min": 26,
+      "max": 46,
+      "cond": [
+        {
+          "flag": "hasChild"
+        },
+        {
+          "noFlag": "secondChild"
+        }
+      ],
+      "text": "家里老人又提起要二胎的事。",
+      "left": {
+        "label": "再要一个",
+        "fx": {
+          "money": -9,
+          "energy": -7,
+          "mood": 4,
+          "rel": {
+            "family": 3
+          }
+        },
+        "flags": {
+          "secondChild": true
+        },
+        "milestone": "家里添了第二个孩子"
+      },
+      "right": {
+        "label": "一个就够了",
+        "fx": {
+          "money": 3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_11",
+      "name": "同时发烧",
+      "min": 30,
+      "max": 52,
+      "cond": {
+        "flag": "secondChild"
+      },
+      "text": "两个孩子同时发烧的那个晚上，你几乎撑不住。",
+      "left": {
+        "label": "咬牙扛住",
+        "fx": {
+          "energy": -6,
+          "health": -5,
+          "mood": -2,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "把老大先送去老人那",
+        "fx": {
+          "money": -3,
+          "mood": 2,
+          "rel": {
+            "family": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_12",
+      "name": "摔门",
+      "min": 30,
+      "max": 58,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "又一次争吵之后，屋里安静得可怕。",
+      "left": {
+        "label": "主动把话说开",
+        "fx": {
+          "mood": 2,
+          "rel": {
+            "love": 5
+          }
+        }
+      },
+      "right": {
+        "label": "各自冷战一周",
+        "fx": {
+          "mood": -4,
+          "rel": {
+            "love": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_13",
+      "name": "高考那两天",
+      "min": 40,
+      "max": 55,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "孩子高考这两天，你比他还紧张。",
+      "left": {
+        "label": "请假全程陪着",
+        "fx": {
+          "career": -3,
+          "mood": 5,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "照常去上班",
+        "fx": {
+          "career": 2,
+          "mood": -2,
+          "rel": {
+            "family": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_14",
+      "name": "空房间",
+      "min": 46,
+      "max": 64,
+      "cond": {
+        "flag": "childGrown"
+      },
+      "text": "孩子走了以后，他的房间一直关着门。",
+      "left": {
+        "label": "改成一间书房",
+        "fx": {
+          "mood": 5,
+          "energy": 2
+        },
+        "skills": {
+          "knowledge": 3
+        }
+      },
+      "right": {
+        "label": "保持原样",
+        "fx": {
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_15",
+      "name": "护理费",
+      "min": 45,
+      "max": 68,
+      "text": "老人的护理费，兄妹之间算不太清。",
+      "left": {
+        "label": "自己多担一些",
+        "fx": {
+          "money": -7,
+          "mood": 3,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "按比例分摊",
+        "fx": {
+          "money": -3,
+          "mood": -1,
+          "rel": {
+            "family": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_16",
+      "name": "老房子",
+      "min": 55,
+      "max": 79,
+      "text": "老人走了，留下一套老房子和一个存折。",
+      "left": {
+        "label": "让给兄妹",
+        "fx": {
+          "money": -6,
+          "mood": 5,
+          "rel": {
+            "family": 7
+          }
+        }
+      },
+      "right": {
+        "label": "按法律分",
+        "fx": {
+          "money": 5,
+          "mood": -2,
+          "rel": {
+            "family": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_17",
+      "name": "亲家",
+      "min": 50,
+      "max": 70,
+      "cond": {
+        "flag": "grandchild"
+      },
+      "text": "亲家带孩子的方式，和你们完全不一样。",
+      "left": {
+        "label": "各退一步",
+        "fx": {
+          "mood": 3,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "坚持自己的那套",
+        "fx": {
+          "mood": -2,
+          "rel": {
+            "family": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_18",
+      "name": "团圆饭",
+      "min": 30,
+      "max": 79,
+      "text": "除夕的饭桌上，话题从工作绕到婚事，再绕到孩子。",
+      "left": {
+        "label": "一个个答过去",
+        "fx": {
+          "energy": -2,
+          "mood": 3,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "低头吃饭",
+        "fx": {
+          "mood": -1,
+          "rel": {
+            "family": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_19",
+      "name": "加个名字",
+      "min": 25,
+      "max": 42,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "房产证上要不要加对方的名字，两家人各有各的理。",
+      "left": {
+        "label": "加上",
+        "fx": {
+          "money": -3,
+          "mood": 4,
+          "rel": {
+            "love": 6
+          }
+        }
+      },
+      "right": {
+        "label": "先不加",
+        "fx": {
+          "mood": -3,
+          "rel": {
+            "love": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_20",
+      "name": "谁接谁送",
+      "min": 26,
+      "max": 48,
+      "cond": {
+        "flag": "hasChild"
+      },
+      "text": "谁接送、谁辅导作业，你们争论了很久。",
+      "left": {
+        "label": "列个分工表",
+        "fx": {
+          "mood": 3,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "谁有空谁来",
+        "fx": {
+          "mood": -2,
+          "rel": {
+            "family": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_21",
+      "name": "一起干",
+      "min": 28,
+      "max": 52,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "伴侣说想辞职，跟你一起做点事。",
+      "left": {
+        "label": "那就一起干",
+        "fx": {
+          "money": -6,
+          "career": 5,
+          "energy": -4,
+          "rel": {
+            "love": 4
+          }
+        }
+      },
+      "right": {
+        "label": "让他安稳上班",
+        "fx": {
+          "money": 3,
+          "mood": -1,
+          "rel": {
+            "love": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_22",
+      "name": "没什么话",
+      "min": 35,
+      "max": 58,
+      "cond": {
+        "flag": "married"
+      },
+      "text": "孩子住校以后，你们忽然发现彼此没什么话可说。",
+      "left": {
+        "label": "重新约一次会",
+        "fx": {
+          "money": -4,
+          "mood": 7,
+          "rel": {
+            "love": 5
+          }
+        }
+      },
+      "right": {
+        "label": "各玩各的手机",
+        "fx": {
+          "mood": -3,
+          "rel": {
+            "love": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_23",
+      "name": "冰箱",
+      "min": 40,
+      "max": 79,
+      "text": "你回老家看父母，发现冰箱里只有几个鸡蛋。",
+      "left": {
+        "label": "留下来住几天",
+        "fx": {
+          "career": -3,
+          "mood": 5,
+          "rel": {
+            "family": 7
+          }
+        }
+      },
+      "right": {
+        "label": "塞点钱就走",
+        "fx": {
+          "money": -5,
+          "mood": -3,
+          "rel": {
+            "family": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fp_24",
+      "name": "旧物",
+      "min": 60,
+      "max": 79,
+      "text": "你想把一件用了几十年的旧东西交到孩子手上。",
+      "left": {
+        "label": "认真讲讲它的来历",
+        "fx": {
+          "mood": 6,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "想想还是算了",
+        "fx": {
+          "mood": -1
+        }
+      },
+      "once": true
+    }
+  ]
+}

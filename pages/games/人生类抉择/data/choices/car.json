@@ -1,0 +1,749 @@
+{
+  "title": "汽车链（先有驾照，才有买车，才有后面的用车故事）",
+  "events": [
+    {
+      "id": "car_1",
+      "name": "驾校",
+      "min": 18,
+      "max": 40,
+      "cond": {
+        "noFlag": "license"
+      },
+      "text": "驾校的报名费，差不多是你一个月的生活费。",
+      "left": {
+        "label": "报正规班，慢慢学",
+        "fx": {
+          "money": -7,
+          "energy": -4,
+          "career": 2
+        },
+        "flags": {
+          "license": true
+        },
+        "milestone": "拿到了驾照"
+      },
+      "right": {
+        "label": "报个便宜的快班",
+        "fx": {
+          "money": -4,
+          "energy": -5,
+          "mood": -2
+        },
+        "flags": {
+          "license": true
+        },
+        "milestone": "拿到了驾照"
+      },
+      "once": true
+    },
+    {
+      "id": "car_2",
+      "name": "自家车",
+      "min": 18,
+      "max": 34,
+      "cond": {
+        "noFlag": "license"
+      },
+      "text": "家里人说，先在空地上练练，熟了再去考试。",
+      "left": {
+        "label": "跟着家里人在空地练",
+        "fx": {
+          "money": -2,
+          "energy": -3,
+          "mood": 4,
+          "rel": {
+            "family": 4
+          }
+        },
+        "flags": {
+          "license": true
+        },
+        "milestone": "拿到了驾照"
+      },
+      "right": {
+        "label": "还是去驾校正规学",
+        "fx": {
+          "money": -6,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 2
+        },
+        "flags": {
+          "license": true
+        },
+        "milestone": "拿到了驾照"
+      },
+      "once": true
+    },
+    {
+      "id": "car_3",
+      "name": "科目二",
+      "min": 18,
+      "max": 40,
+      "cond": {
+        "noFlag": "license"
+      },
+      "text": "科目二挂了一次，教练在副驾上骂了一路。",
+      "left": {
+        "label": "咬牙补考到过",
+        "fx": {
+          "money": -3,
+          "energy": -5,
+          "mood": 3
+        },
+        "flags": {
+          "license": true
+        },
+        "milestone": "拿到了驾照"
+      },
+      "right": {
+        "label": "换个脾气好的教练",
+        "fx": {
+          "money": -5,
+          "mood": 2
+        },
+        "flags": {
+          "license": true
+        },
+        "milestone": "拿到了驾照"
+      },
+      "once": true
+    },
+
+    {
+      "id": "car_4",
+      "name": "摇号",
+      "min": 20,
+      "max": 50,
+      "cond": {
+        "noFlag": "car"
+      },
+      "text": "摇号结果出来，你的号又没中。",
+      "left": {
+        "label": "下个月接着摇",
+        "fx": {
+          "money": 1,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "借家里一个牌照先用",
+        "fx": {
+          "money": -6,
+          "mood": 3,
+          "social": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_5",
+      "name": "4S店",
+      "min": 20,
+      "max": 55,
+      "cond": [
+        {
+          "noFlag": "car"
+        },
+        {
+          "flag": "license"
+        }
+      ],
+      "text": "销售追着你讲了一下午配置，说今天下定送一套脚垫。",
+      "left": {
+        "label": "咬牙买下",
+        "fx": {
+          "money": -12,
+          "mood": 6,
+          "career": 2
+        },
+        "flags": {
+          "car": true
+        },
+        "milestone": "有了第一辆车"
+      },
+      "right": {
+        "label": "再攒两年",
+        "fx": {
+          "money": 4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_6",
+      "name": "二手车市场",
+      "min": 22,
+      "max": 55,
+      "cond": [
+        {
+          "noFlag": "car"
+        },
+        {
+          "flag": "license"
+        }
+      ],
+      "text": "车市角落里停着一辆开了六年的车，价格很合适。",
+      "left": {
+        "label": "买下",
+        "fx": {
+          "money": -7,
+          "mood": 4
+        },
+        "flags": {
+          "car": true
+        },
+        "milestone": "有了第一辆车"
+      },
+      "right": {
+        "label": "再想想",
+        "fx": {
+          "money": 2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "car_7",
+      "name": "大雨",
+      "min": 20,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "大雨砸在挡风玻璃上，你从后视镜里看见公交站挤满了人。",
+      "left": {
+        "label": "庆幸自己有车",
+        "fx": {
+          "mood": 6
+        }
+      },
+      "right": {
+        "label": "顺路捎两个陌生人",
+        "fx": {
+          "mood": 5,
+          "energy": -2,
+          "social": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_8",
+      "name": "早高峰",
+      "min": 20,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "立交桥上半小时只挪了两百米。",
+      "left": {
+        "label": "打开播客慢慢听",
+        "fx": {
+          "mood": 3,
+          "energy": -1
+        }
+      },
+      "right": {
+        "label": "频繁变道抢行",
+        "fx": {
+          "mood": -3,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_9",
+      "name": "车位",
+      "min": 20,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "回到小区，绕着楼转了三圈也没找到车位。",
+      "left": {
+        "label": "停到两条街外走回来",
+        "fx": {
+          "health": 3,
+          "energy": -3,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "花高价停进地库",
+        "fx": {
+          "money": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_10",
+      "name": "油价",
+      "min": 20,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "油价又涨了，加满一箱比上个月贵了六十。",
+      "left": {
+        "label": "加满",
+        "fx": {
+          "money": -5,
+          "mood": -1
+        }
+      },
+      "right": {
+        "label": "先加半箱",
+        "fx": {
+          "money": -3,
+          "mood": 1,
+          "energy": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_11",
+      "name": "保养单",
+      "min": 20,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "保养清单上列了八项，师傅说有几项不做也行。",
+      "left": {
+        "label": "全做",
+        "fx": {
+          "money": -7,
+          "health": 2,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "只做必要的",
+        "fx": {
+          "money": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_12",
+      "name": "年检",
+      "min": 22,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "年检的队伍排得很长，前面那辆车尾气不合格。",
+      "left": {
+        "label": "老老实实排队",
+        "fx": {
+          "mood": -2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "找个代办",
+        "fx": {
+          "money": -3,
+          "mood": 1,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_13",
+      "name": "限号",
+      "min": 22,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "限号日，车只能停在楼下。",
+      "left": {
+        "label": "改坐地铁",
+        "fx": {
+          "health": 2,
+          "energy": -2,
+          "money": 1
+        }
+      },
+      "right": {
+        "label": "打车上班",
+        "fx": {
+          "money": -4,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_14",
+      "name": "顺路",
+      "min": 22,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "下大雨，同事说和你住同一片区。",
+      "left": {
+        "label": "捎上他",
+        "fx": {
+          "social": 5,
+          "mood": 3,
+          "energy": -1,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "装作没听见",
+        "fx": {
+          "social": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_15",
+      "name": "放学时间",
+      "min": 28,
+      "max": 55,
+      "cond": [
+        {
+          "flag": "car"
+        },
+        {
+          "flag": "hasChild"
+        }
+      ],
+      "text": "孩子放学的时间，和你下班的时间差了一小时。",
+      "left": {
+        "label": "每天绕路去接",
+        "fx": {
+          "mood": 4,
+          "energy": -4,
+          "career": -2,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "让他自己坐公交",
+        "fx": {
+          "energy": 2,
+          "mood": -1,
+          "rel": {
+            "family": -2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_16",
+      "name": "半夜",
+      "min": 25,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "半夜，家人腹痛得直不起腰。",
+      "left": {
+        "label": "开车立刻送医院",
+        "fx": {
+          "health": 5,
+          "mood": 4,
+          "energy": -3,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "等救护车",
+        "fx": {
+          "health": 2,
+          "mood": -2,
+          "energy": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_17",
+      "name": "借车",
+      "min": 25,
+      "max": 70,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "朋友开口借车，说只用一个周末。",
+      "left": {
+        "label": "借",
+        "fx": {
+          "mood": 2,
+          "rel": {
+            "friends": 5
+          }
+        }
+      },
+      "right": {
+        "label": "委婉拒绝",
+        "fx": {
+          "money": 1,
+          "rel": {
+            "friends": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_18",
+      "name": "散场",
+      "min": 25,
+      "max": 70,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "饭局散场，朋友喝多了，非要自己开回去。",
+      "left": {
+        "label": "抢下钥匙，送他回去",
+        "fx": {
+          "health": -2,
+          "energy": -3,
+          "mood": 4,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "打车送他，车留这儿",
+        "fx": {
+          "money": -3,
+          "mood": 2,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_19",
+      "name": "国庆",
+      "min": 25,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "国庆七天，导航上一条红线从南贯到北。",
+      "left": {
+        "label": "出发",
+        "fx": {
+          "mood": 7,
+          "money": -6,
+          "health": -3,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "改坐高铁",
+        "fx": {
+          "money": -4,
+          "mood": 2,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_20",
+      "name": "凌晨两点",
+      "min": 25,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "凌晨两点的高速上，前后只剩你一辆车。",
+      "left": {
+        "label": "撑到下一个服务区",
+        "fx": {
+          "health": -4,
+          "energy": -5,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "靠边停车睡一觉",
+        "fx": {
+          "health": 3,
+          "energy": 3,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_21",
+      "name": "倒车",
+      "min": 20,
+      "max": 65,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "倒车时蹭到了旁边的车，漆掉了一块，四周没有人。",
+      "left": {
+        "label": "留张纸条",
+        "fx": {
+          "money": -3,
+          "mood": 2,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "一脚油门走了",
+        "fx": {
+          "money": 2,
+          "mood": -4,
+          "career": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_22",
+      "name": "急刹",
+      "min": 22,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "chance": 0.5,
+      "text": "前车毫无征兆地急刹，你踩晚了半秒。",
+      "left": {
+        "label": "报警走保险",
+        "fx": {
+          "money": -2,
+          "mood": -3,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "私了，各修各的",
+        "fx": {
+          "money": -5,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_23",
+      "name": "路口",
+      "min": 22,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "chance": 0.12,
+      "text": "雨夜的路口，一辆车完全没有减速。",
+      "left": {
+        "label": "猛打方向盘避开",
+        "fx": {
+          "health": -7,
+          "money": -5,
+          "mood": -4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "正面扛住",
+        "fx": {
+          "health": -12,
+          "money": -8,
+          "mood": -7,
+          "energy": -6
+        },
+        "flags": {
+          "chronic": true
+        },
+        "milestone": "车祸之后落下了病根"
+      },
+      "once": true
+    },
+    {
+      "id": "car_24",
+      "name": "十年车龄",
+      "min": 35,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "车龄十年，一年修的钱够打两年车。",
+      "left": {
+        "label": "卖了，改打车",
+        "fx": {
+          "money": 4,
+          "mood": -2
+        },
+        "flags": {
+          "car": false
+        }
+      },
+      "right": {
+        "label": "修修接着开",
+        "fx": {
+          "money": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "car_25",
+      "name": "钥匙",
+      "min": 65,
+      "max": 79,
+      "cond": {
+        "flag": "car"
+      },
+      "text": "反应比十年前慢了半拍，儿女劝你把钥匙交出来。",
+      "left": {
+        "label": "把钥匙交给他们",
+        "fx": {
+          "health": 4,
+          "mood": -2,
+          "social": 3
+        },
+        "flags": {
+          "car": false
+        },
+        "milestone": "放下了方向盘"
+      },
+      "right": {
+        "label": "还想再开两年",
+        "fx": {
+          "mood": 3,
+          "health": -4
+        }
+      },
+      "once": true
+    }
+  ]
+}

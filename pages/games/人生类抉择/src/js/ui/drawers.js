@@ -93,11 +93,14 @@ export function renderArch(S) {
 
   html += '</div><div class="sec"><h4>性格特质</h4><div class="chips">'
     + S.traits.map(t => `<span class="chip">${(db.traits[t] || {}).name || t}</span>`).join('')
-    + '</div></div><div class="sec"><h4>人生状态</h4><div class="flagline">';
+    + '</div></div><div class="sec"><h4>人生状态</h4><div class="chips">';
 
+  // 事件线的标记（flag）全部在这里展示，玩家能看出自己走过哪几条线
   const labels = flagLabels();
   const states = Object.keys(labels).filter(k => S.flags[k]).map(k => labels[k]);
-  html += states.length ? states.join(' · ') : '一切还未发生';
+  html += states.length
+    ? states.map(s => `<span class="chip">${s}</span>`).join('')
+    : '<span class="chip">一切还未发生</span>';
   html += '</div></div>';
 
   const a = S.aspiration && db.aspirations[S.aspiration];

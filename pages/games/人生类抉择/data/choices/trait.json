@@ -585,6 +585,453 @@
       "cond": {
         "trait": "gymrat"
       }
+    },
+    {
+      "id": "tr_c1",
+      "name": "散伙饭",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "optimist"
+      },
+      "text": "项目黄了，同事垂头丧气，你却觉得天没塌。",
+      "left": {
+        "label": "张罗大家吃顿好的",
+        "fx": {
+          "money": -5,
+          "mood": 6,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "一个人默默复盘",
+        "fx": {
+          "career": 4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c2",
+      "name": "雨里",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "optimist"
+      },
+      "text": "下雨忘了带伞，你干脆在雨里慢慢走。",
+      "left": {
+        "label": "淋着雨走回家",
+        "fx": {
+          "mood": 7,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "躲雨等停了再走",
+        "fx": {
+          "energy": -2,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c3",
+      "name": "周末的灯",
+      "min": 20,
+      "max": 70,
+      "cond": {
+        "trait": "workaholic"
+      },
+      "text": "周末的办公室，只有你的灯还亮着。",
+      "left": {
+        "label": "把手头的事做完再走",
+        "fx": {
+          "career": 7,
+          "money": 4,
+          "energy": -6,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "破例早点回家",
+        "fx": {
+          "mood": 5,
+          "energy": 4,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c4",
+      "name": "休假",
+      "min": 20,
+      "max": 70,
+      "cond": {
+        "trait": "workaholic"
+      },
+      "text": "休假第一天，你忍不住又点开了工作群。",
+      "left": {
+        "label": "回消息，处理那个急事",
+        "fx": {
+          "career": 4,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "退出群聊，彻底放空",
+        "fx": {
+          "mood": 6,
+          "energy": 5,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c5",
+      "name": "陌生人",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "introvert"
+      },
+      "text": "你被朋友拉进一个全是陌生人的聚会。",
+      "left": {
+        "label": "硬着头皮去寒暄",
+        "fx": {
+          "social": 5,
+          "energy": -5,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "找个角落待着",
+        "fx": {
+          "energy": 3,
+          "mood": 3,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c6",
+      "name": "空周末",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "introvert"
+      },
+      "text": "周末两天没有任何安排，你连门都不想出。",
+      "left": {
+        "label": "在家读到天黑",
+        "fx": {
+          "mood": 7,
+          "social": -2,
+          "skills": {
+            "knowledge": 4
+          }
+        }
+      },
+      "right": {
+        "label": "强迫自己出门见人",
+        "fx": {
+          "social": 5,
+          "energy": -4,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c7",
+      "name": "临期食品",
+      "min": 14,
+      "max": 80,
+      "cond": {
+        "trait": "thrifty"
+      },
+      "text": "超市的临期食品打半价，保质期就在明天。",
+      "left": {
+        "label": "精打细算买一堆",
+        "fx": {
+          "money": 6,
+          "mood": -2,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "还是买新鲜的",
+        "fx": {
+          "money": -4,
+          "health": 3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c8",
+      "name": "旧外套",
+      "min": 14,
+      "max": 80,
+      "cond": {
+        "trait": "thrifty"
+      },
+      "text": "穿了五年的外套，袖口已经磨得发白。",
+      "left": {
+        "label": "补一补接着穿",
+        "fx": {
+          "money": 5,
+          "mood": -2,
+          "skills": {
+            "craft": 3
+          }
+        }
+      },
+      "right": {
+        "label": "换件新的",
+        "fx": {
+          "money": -5,
+          "mood": 5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c9",
+      "name": "训练日",
+      "min": 16,
+      "max": 70,
+      "cond": {
+        "trait": "gymrat"
+      },
+      "text": "今天的训练计划还没完成，你浑身不自在。",
+      "left": {
+        "label": "加练到力竭",
+        "fx": {
+          "health": 6,
+          "energy": -6,
+          "mood": 5,
+          "skills": {
+            "fitness": 4
+          }
+        }
+      },
+      "right": {
+        "label": "今天就休息",
+        "fx": {
+          "energy": 5,
+          "health": 2,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c10",
+      "name": "撸串",
+      "min": 16,
+      "max": 70,
+      "cond": {
+        "trait": "gymrat"
+      },
+      "text": "朋友约你去吃烧烤，而你刚称完体重。",
+      "left": {
+        "label": "去，明早多练两小时",
+        "fx": {
+          "mood": 5,
+          "health": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "婉拒，回家吃鸡胸",
+        "fx": {
+          "health": 5,
+          "social": -2,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c11",
+      "name": "小馆",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "foodie"
+      },
+      "text": "巷子深处新开一家小馆，据说只有本地人才知道。",
+      "left": {
+        "label": "专程去尝尝",
+        "fx": {
+          "money": -5,
+          "mood": 7,
+          "health": -2,
+          "skills": {
+            "cooking": 3
+          }
+        }
+      },
+      "right": {
+        "label": "路途太远算了",
+        "fx": {
+          "money": 2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c12",
+      "name": "宵夜",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "foodie"
+      },
+      "text": "半夜饿醒，冰箱里正好有现成的食材。",
+      "left": {
+        "label": "起来做顿宵夜",
+        "fx": {
+          "mood": 6,
+          "health": -3,
+          "skills": {
+            "cooking": 5
+          }
+        }
+      },
+      "right": {
+        "label": "灌口水接着睡",
+        "fx": {
+          "health": 1,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c13",
+      "name": "闭馆",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "scholar"
+      },
+      "text": "图书馆闭馆铃响了，你那一章还没看完。",
+      "left": {
+        "label": "借回去熬夜读完",
+        "fx": {
+          "energy": -5,
+          "health": -2,
+          "skills": {
+            "knowledge": 7
+          }
+        }
+      },
+      "right": {
+        "label": "明天再来",
+        "fx": {
+          "energy": 3,
+          "skills": {
+            "knowledge": 2
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c14",
+      "name": "公开课",
+      "min": 12,
+      "max": 80,
+      "cond": {
+        "trait": "scholar"
+      },
+      "text": "网上有门公开课，正好是你一直想搞懂的领域。",
+      "left": {
+        "label": "从头到尾学一遍",
+        "fx": {
+          "career": 4,
+          "energy": -5,
+          "skills": {
+            "knowledge": 8
+          }
+        }
+      },
+      "right": {
+        "label": "先收藏，等有空",
+        "fx": {
+          "mood": 1,
+          "skills": {
+            "knowledge": 1
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c15",
+      "name": "野路",
+      "min": 16,
+      "max": 70,
+      "cond": {
+        "trait": "adventurer"
+      },
+      "text": "朋友说有条没走过的野路，风景绝了。",
+      "left": {
+        "label": "说走就走",
+        "fx": {
+          "mood": 7,
+          "health": 2,
+          "energy": -5,
+          "skills": {
+            "fitness": 4
+          }
+        }
+      },
+      "right": {
+        "label": "走安全的大路",
+        "fx": {
+          "energy": 2,
+          "health": 1,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "tr_c16",
+      "name": "机票",
+      "min": 16,
+      "max": 70,
+      "cond": {
+        "trait": "adventurer"
+      },
+      "text": "一张打折机票去陌生城市，明天就能出发。",
+      "left": {
+        "label": "买票订行程",
+        "fx": {
+          "money": -7,
+          "mood": 8,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "算了，计划赶不上变化",
+        "fx": {
+          "money": 3,
+          "mood": -2
+        }
+      },
+      "once": true
     }
   ]
 }

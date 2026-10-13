@@ -1018,6 +1018,366 @@
       "cond": {
         "flag": "bizSuccess"
       }
+    },
+    {
+      "id": "cr_c1",
+      "name": "终面",
+      "min": 22,
+      "max": 50,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "大厂终面，面试官问你五年后的职业规划。",
+      "left": {
+        "label": "讲一番雄心壮志",
+        "fx": {
+          "career": 7,
+          "energy": -3,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "实话实说求稳",
+        "fx": {
+          "career": 3,
+          "mood": 4,
+          "social": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c2",
+      "name": "名单",
+      "min": 26,
+      "max": 58,
+      "text": "公司裁员的名单流了出来，上面有你的名字。",
+      "left": {
+        "label": "争取留下",
+        "fx": {
+          "career": 3,
+          "social": -4,
+          "mood": -3,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "拿赔偿走人",
+        "fx": {
+          "money": 7,
+          "career": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c3",
+      "name": "谈薪",
+      "min": 25,
+      "max": 58,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "你清楚自己的市场价，该谈谈涨薪了。",
+      "left": {
+        "label": "据理力争",
+        "fx": {
+          "money": 8,
+          "career": 4,
+          "social": -3
+        }
+      },
+      "right": {
+        "label": "等公司主动",
+        "fx": {
+          "money": 2,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c4",
+      "name": "带教",
+      "min": 24,
+      "max": 55,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "部门里那位德高望重的前辈，愿意带你。",
+      "left": {
+        "label": "虚心跟着学",
+        "fx": {
+          "career": 6,
+          "social": 4,
+          "energy": -3,
+          "skills": {
+            "knowledge": 6
+          }
+        }
+      },
+      "right": {
+        "label": "靠自己琢磨",
+        "fx": {
+          "career": 3,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c5",
+      "name": "站队",
+      "min": 26,
+      "max": 58,
+      "text": "公司里两个派系在争权，都来拉你站队。",
+      "left": {
+        "label": "选边站",
+        "fx": {
+          "career": 6,
+          "social": 3,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "保持中立",
+        "fx": {
+          "mood": 4,
+          "career": -4,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c6",
+      "name": "长差",
+      "min": 24,
+      "max": 58,
+      "text": "这个月二十天都在外地出差。",
+      "left": {
+        "label": "咬牙跑完",
+        "fx": {
+          "career": 6,
+          "money": 5,
+          "health": -6,
+          "social": -4
+        }
+      },
+      "right": {
+        "label": "申请换人",
+        "fx": {
+          "health": 3,
+          "social": 3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c7",
+      "name": "不想上班",
+      "min": 24,
+      "max": 58,
+      "text": "某个周一早上，你实在不想走进那栋楼。",
+      "left": {
+        "label": "递交辞职信",
+        "fx": {
+          "mood": 8,
+          "career": -3,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "请个假缓一缓",
+        "fx": {
+          "mood": 4,
+          "energy": 3,
+          "career": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c8",
+      "name": "空窗期",
+      "min": 24,
+      "max": 58,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "离职后三个月，简历投出去都石沉大海。",
+      "left": {
+        "label": "降低预期先上岸",
+        "fx": {
+          "career": 4,
+          "money": 3,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "继续等合适的",
+        "fx": {
+          "money": -6,
+          "career": 1,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c9",
+      "name": "外包",
+      "min": 25,
+      "max": 58,
+      "text": "有客户愿意长期找你做外包。",
+      "left": {
+        "label": "转做自由职业",
+        "fx": {
+          "money": 6,
+          "career": 4,
+          "energy": -4,
+          "social": -4
+        }
+      },
+      "right": {
+        "label": "接私活但保住工作",
+        "fx": {
+          "money": 5,
+          "energy": -5,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c10",
+      "name": "团队矛盾",
+      "min": 26,
+      "max": 58,
+      "text": "你带的团队里，两个人吵得不可开交。",
+      "left": {
+        "label": "分别谈话化解",
+        "fx": {
+          "social": 6,
+          "career": 3,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "让他们自己解决",
+        "fx": {
+          "career": -2,
+          "mood": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c11",
+      "name": "过劳",
+      "min": 28,
+      "max": 58,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "连续三个月高强度，你开始失眠、心悸。",
+      "left": {
+        "label": "强制自己停下来",
+        "fx": {
+          "health": 7,
+          "mood": 3,
+          "energy": 4,
+          "career": -4
+        }
+      },
+      "right": {
+        "label": "再撑一个季度",
+        "fx": {
+          "career": 6,
+          "health": -7,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c12",
+      "name": "行业奖",
+      "min": 28,
+      "max": 58,
+      "text": "行业评了一个奖，你的名字出现在候选名单上。",
+      "left": {
+        "label": "认真准备参评",
+        "fx": {
+          "career": 8,
+          "social": 3,
+          "energy": -4,
+          "money": -2
+        }
+      },
+      "right": {
+        "label": "不参与这些",
+        "fx": {
+          "energy": 3,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c13",
+      "name": "新赛道",
+      "min": 30,
+      "max": 58,
+      "text": "老行业在萎缩，有个新赛道向你招手。",
+      "left": {
+        "label": "果断转行",
+        "fx": {
+          "career": 6,
+          "mood": 4,
+          "money": -5,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "守着老本行",
+        "fx": {
+          "career": 2,
+          "money": 3,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "cr_c14",
+      "name": "首单",
+      "min": 24,
+      "max": 60,
+      "cond": {
+        "flag": "biz"
+      },
+      "text": "创业后的第一笔大单摆在面前，但利润很薄。",
+      "left": {
+        "label": "亏本也要拿下",
+        "fx": {
+          "career": 7,
+          "money": -6,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "坚持报高价",
+        "fx": {
+          "career": -3,
+          "money": 2,
+          "mood": -2
+        }
+      },
+      "once": true
     }
   ]
 }

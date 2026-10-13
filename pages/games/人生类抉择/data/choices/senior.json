@@ -1743,6 +1743,381 @@
         }
       },
       "once": true
+    },
+    {
+      "id": "sn_c1",
+      "name": "空巢",
+      "min": 50,
+      "max": 60,
+      "text": "孩子去外地读大学了，家里一下子空了下来。",
+      "left": {
+        "label": "和伴侣重新规划生活",
+        "fx": {
+          "social": 6,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "把日子交给电视",
+        "fx": {
+          "mood": -4,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c2",
+      "name": "交接",
+      "min": 55,
+      "max": 64,
+      "text": "还有两年退休，单位开始让你把手里的事交出去。",
+      "left": {
+        "label": "用心培养接班人",
+        "fx": {
+          "career": 4,
+          "social": 5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "攥着不放",
+        "fx": {
+          "career": 3,
+          "social": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c3",
+      "name": "送别",
+      "min": 55,
+      "max": 64,
+      "text": "母亲走了，你在灵堂前守了一整夜。",
+      "left": {
+        "label": "好好办一场告别",
+        "fx": {
+          "money": -6,
+          "social": 5,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "一切从简",
+        "fx": {
+          "money": 2,
+          "mood": -4,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c4",
+      "name": "体检",
+      "min": 50,
+      "max": 64,
+      "text": "年过五十，体检报告上的箭头一年比一年多。",
+      "left": {
+        "label": "认真调理",
+        "fx": {
+          "health": 7,
+          "money": -4,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "该吃吃该喝喝",
+        "fx": {
+          "mood": 4,
+          "health": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c5",
+      "name": "换小房",
+      "min": 52,
+      "max": 64,
+      "text": "大房子打扫起来越来越吃力，你动了换小房的念头。",
+      "left": {
+        "label": "换套小两居",
+        "fx": {
+          "money": 8,
+          "mood": 4,
+          "energy": 3
+        }
+      },
+      "right": {
+        "label": "守着老屋",
+        "fx": {
+          "mood": 2,
+          "energy": -4,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c6",
+      "name": "传帮带",
+      "min": 50,
+      "max": 64,
+      "text": "年轻同事来请教，你手上有他们想要的二十年经验。",
+      "left": {
+        "label": "倾囊相授",
+        "fx": {
+          "social": 6,
+          "career": 4,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "留一手",
+        "fx": {
+          "career": 2,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c7",
+      "name": "老年大学",
+      "min": 52,
+      "max": 64,
+      "text": "社区开了老年大学，有书法、声乐和摄影。",
+      "left": {
+        "label": "报个摄影班",
+        "fx": {
+          "mood": 6,
+          "money": -4,
+          "skills": {
+            "craft": 5
+          }
+        }
+      },
+      "right": {
+        "label": "在家带孙子更实在",
+        "fx": {
+          "social": 4,
+          "mood": 2,
+          "energy": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c8",
+      "name": "旅行",
+      "min": 52,
+      "max": 64,
+      "text": "攒了半辈子，终于动了去看看外面世界的念头。",
+      "left": {
+        "label": "报个团出发",
+        "fx": {
+          "money": -8,
+          "mood": 8,
+          "health": -2
+        }
+      },
+      "right": {
+        "label": "算了，存着养老",
+        "fx": {
+          "money": 5,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c9",
+      "name": "临界",
+      "min": 55,
+      "max": 64,
+      "text": "医生说你的血压血糖都在临界线上，得长期吃药。",
+      "left": {
+        "label": "忌口按时服药",
+        "fx": {
+          "health": 6,
+          "mood": -3,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "断断续续地吃",
+        "fx": {
+          "health": -5,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c10",
+      "name": "老棋友",
+      "min": 50,
+      "max": 64,
+      "text": "一起下棋二十年的老友，最近总也不来了。",
+      "left": {
+        "label": "上门去看看",
+        "fx": {
+          "social": 6,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "各忙各的",
+        "fx": {
+          "social": -4,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c11",
+      "name": "返聘",
+      "min": 55,
+      "max": 64,
+      "text": "退休返聘的通知来了，还能再干两年。",
+      "left": {
+        "label": "回去发挥余热",
+        "fx": {
+          "career": 5,
+          "money": 6,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "彻底退休享清福",
+        "fx": {
+          "mood": 6,
+          "energy": 4,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c12",
+      "name": "存折",
+      "min": 55,
+      "max": 64,
+      "text": "存折上的数字，是你半辈子攒下的底气。",
+      "left": {
+        "label": "稳妥理财保值",
+        "fx": {
+          "money": 5,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "拿出一部分改善生活",
+        "fx": {
+          "money": -5,
+          "mood": 7,
+          "health": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c13",
+      "name": "上门",
+      "min": 52,
+      "max": 64,
+      "text": "孩子的对象第一次上门，你打量了又打量。",
+      "left": {
+        "label": "热情接纳",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "money": -5
+        }
+      },
+      "right": {
+        "label": "含蓄地挑毛病",
+        "fx": {
+          "social": -3,
+          "mood": -2,
+          "career": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c14",
+      "name": "阳台",
+      "min": 53,
+      "max": 64,
+      "text": "阳台空着，你琢磨着种点什么打发日子。",
+      "left": {
+        "label": "种满一阳台的花",
+        "fx": {
+          "mood": 7,
+          "health": 3,
+          "money": -3,
+          "skills": {
+            "craft": 4
+          }
+        }
+      },
+      "right": {
+        "label": "还是算了",
+        "fx": {
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c15",
+      "name": "广场舞",
+      "min": 55,
+      "max": 64,
+      "text": "晚上小区广场热闹得很，舞伴喊你一起。",
+      "left": {
+        "label": "加入进去",
+        "fx": {
+          "social": 6,
+          "health": 4,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "嫌吵，绕着走",
+        "fx": {
+          "mood": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "sn_c16",
+      "name": "旧相册",
+      "min": 58,
+      "max": 64,
+      "text": "一本旧相册翻出来，里面全是没实现的年轻打算。",
+      "left": {
+        "label": "挑一件现在就去完成",
+        "fx": {
+          "mood": 8,
+          "money": -6,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "合上相册看会儿电视",
+        "fx": {
+          "mood": -3
+        }
+      },
+      "once": true
     }
   ]
 }

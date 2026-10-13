@@ -1039,6 +1039,441 @@
           }
         }
       ]
+    },
+    {
+      "id": "gt_c1",
+      "name": "登顶",
+      "min": 20,
+      "max": 55,
+      "cond": {
+        "skill": {
+          "id": "fitness",
+          "min": 60
+        }
+      },
+      "text": "山脚下有人说，登顶只要两个小时。",
+      "left": {
+        "label": "一口气登顶",
+        "fx": {
+          "health": 4,
+          "energy": -7,
+          "mood": 5,
+          "skills": {
+            "fitness": 4
+          }
+        }
+      },
+      "right": {
+        "label": "半山腰折返",
+        "fx": {
+          "energy": 2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c2",
+      "name": "障碍赛",
+      "min": 20,
+      "max": 60,
+      "cond": {
+        "skill": {
+          "id": "fitness",
+          "min": 70
+        }
+      },
+      "text": "有人邀你参加城市斯巴达障碍赛。",
+      "left": {
+        "label": "报名挑战",
+        "fx": {
+          "health": 5,
+          "mood": 6,
+          "energy": -6,
+          "skills": {
+            "fitness": 5
+          }
+        }
+      },
+      "right": {
+        "label": "观赛就好",
+        "fx": {
+          "mood": 1,
+          "energy": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c3",
+      "name": "技术难题",
+      "min": 22,
+      "max": 60,
+      "cond": {
+        "skill": {
+          "id": "knowledge",
+          "min": 70
+        }
+      },
+      "text": "公司遇到一个技术难题，专家组都犯了难。",
+      "left": {
+        "label": "提出方案",
+        "fx": {
+          "career": 9,
+          "energy": -6,
+          "mood": 3,
+          "skills": {
+            "knowledge": 4
+          }
+        }
+      },
+      "right": {
+        "label": "保持沉默",
+        "fx": {
+          "career": -2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c4",
+      "name": "约稿",
+      "min": 18,
+      "max": 60,
+      "cond": {
+        "skill": {
+          "id": "knowledge",
+          "min": 60
+        }
+      },
+      "text": "有出版社约你写一本专业书。",
+      "left": {
+        "label": "接下这个活",
+        "fx": {
+          "career": 6,
+          "money": 5,
+          "energy": -6,
+          "skills": {
+            "knowledge": 5
+          }
+        }
+      },
+      "right": {
+        "label": "婉拒",
+        "fx": {
+          "mood": 2,
+          "career": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c5",
+      "name": "主持",
+      "min": 18,
+      "max": 60,
+      "cond": {
+        "skill": {
+          "id": "charm",
+          "min": 60
+        }
+      },
+      "text": "你被推选去主持一场重要的活动。",
+      "left": {
+        "label": "上台主持全程",
+        "fx": {
+          "social": 7,
+          "career": 6,
+          "energy": -4,
+          "skills": {
+            "charm": 4
+          }
+        }
+      },
+      "right": {
+        "label": "让给别人",
+        "fx": {
+          "energy": 3,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c6",
+      "name": "批量订单",
+      "min": 20,
+      "max": 65,
+      "cond": {
+        "skill": {
+          "id": "craft",
+          "min": 60
+        }
+      },
+      "text": "有人看中你做的物件，想批量订一批。",
+      "left": {
+        "label": "批量做一批",
+        "fx": {
+          "money": 9,
+          "energy": -6,
+          "skills": {
+            "craft": 5
+          }
+        }
+      },
+      "right": {
+        "label": "只做一件自己留着",
+        "fx": {
+          "mood": 5,
+          "skills": {
+            "craft": 3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c7",
+      "name": "一桌菜",
+      "min": 18,
+      "max": 70,
+      "cond": {
+        "skill": {
+          "id": "cooking",
+          "min": 60
+        }
+      },
+      "text": "家里要来一桌客人，你想露一手。",
+      "left": {
+        "label": "做一桌硬菜",
+        "fx": {
+          "social": 7,
+          "mood": 5,
+          "money": -5,
+          "skills": {
+            "cooking": 4
+          }
+        }
+      },
+      "right": {
+        "label": "点外卖省事",
+        "fx": {
+          "money": -6,
+          "social": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c8",
+      "name": "见底",
+      "min": 20,
+      "max": 70,
+      "cond": {
+        "stat": {
+          "id": "money",
+          "min": 0,
+          "max": 22
+        }
+      },
+      "text": "账户余额见底，下个月的房租还没着落。",
+      "left": {
+        "label": "拉下面子去借",
+        "fx": {
+          "money": 6,
+          "social": -4,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "接几份零工",
+        "fx": {
+          "money": 5,
+          "energy": -6,
+          "health": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c9",
+      "name": "拖着",
+      "min": 30,
+      "max": 75,
+      "cond": {
+        "stat": {
+          "id": "health",
+          "min": 0,
+          "max": 25
+        }
+      },
+      "text": "身体一直拖着，最近连起床都觉得费劲。",
+      "left": {
+        "label": "去医院认真查",
+        "fx": {
+          "money": -6,
+          "health": 7,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "再扛扛",
+        "fx": {
+          "health": -5,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c10",
+      "name": "提不起劲",
+      "min": 20,
+      "max": 80,
+      "cond": {
+        "stat": {
+          "id": "mood",
+          "min": 0,
+          "max": 22
+        }
+      },
+      "text": "有很长一段时间，你对什么都提不起兴趣。",
+      "left": {
+        "label": "找朋友倾诉",
+        "fx": {
+          "mood": 7,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "把自己关起来",
+        "fx": {
+          "mood": -5,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c11",
+      "name": "圈子",
+      "min": 18,
+      "max": 70,
+      "cond": {
+        "stat": {
+          "id": "social",
+          "min": 78
+        }
+      },
+      "text": "你的朋友遍天下，总有人张罗着聚会。",
+      "left": {
+        "label": "继续把圈子经营下去",
+        "fx": {
+          "social": 5,
+          "career": 4,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "学会说不",
+        "fx": {
+          "energy": 5,
+          "mood": 4,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c12",
+      "name": "挖角",
+      "min": 25,
+      "max": 65,
+      "cond": {
+        "stat": {
+          "id": "career",
+          "min": 80
+        }
+      },
+      "text": "猎头开出一个几乎是天价的待遇。",
+      "left": {
+        "label": "接受挖角",
+        "fx": {
+          "career": 8,
+          "money": 10,
+          "social": -5,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "想想还是算了",
+        "fx": {
+          "mood": 4,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c13",
+      "name": "耗空",
+      "min": 20,
+      "max": 70,
+      "cond": {
+        "stat": {
+          "id": "energy",
+          "min": 0,
+          "max": 22
+        }
+      },
+      "text": "你连说话的力气都快没有了。",
+      "left": {
+        "label": "请一段长假休整",
+        "fx": {
+          "energy": 9,
+          "mood": 4,
+          "career": -5
+        }
+      },
+      "right": {
+        "label": "硬扛着上班",
+        "fx": {
+          "career": 3,
+          "health": -5,
+          "energy": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "gt_c14",
+      "name": "闲钱",
+      "min": 25,
+      "max": 70,
+      "cond": {
+        "stat": {
+          "id": "money",
+          "min": 82
+        }
+      },
+      "text": "手里有了闲钱，顾问建议你做个资产配置。",
+      "left": {
+        "label": "认真规划资产",
+        "fx": {
+          "money": 6,
+          "career": 3,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "放银行最省心",
+        "fx": {
+          "money": 2,
+          "mood": 2
+        }
+      },
+      "once": true
     }
   ]
 }

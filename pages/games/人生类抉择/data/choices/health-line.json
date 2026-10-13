@@ -1,0 +1,341 @@
+{
+  "title": "健康线（体检异常 → 大病 → 康复或转慢性）",
+  "events": [
+    {
+      "id": "he_1",
+      "name": "建议复查",
+      "min": 28,
+      "max": 52,
+      "cond": {
+        "noFlag": "illness"
+      },
+      "text": "体检报告上有一项标着「建议进一步检查」。",
+      "left": {
+        "label": "立刻挂号复查",
+        "fx": {
+          "money": -5,
+          "health": 3,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "再拖拖",
+        "fx": {
+          "mood": 1,
+          "health": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_2",
+      "name": "住院观察",
+      "min": 30,
+      "max": 58,
+      "cond": {
+        "noFlag": "illness"
+      },
+      "chance": 0.35,
+      "text": "复查结果出来，医生说需要住院观察几天。",
+      "left": {
+        "label": "住院治疗",
+        "fx": {
+          "money": -10,
+          "health": -6,
+          "mood": -5,
+          "energy": -5
+        },
+        "flags": {
+          "illness": true
+        },
+        "milestone": "住进了医院"
+      },
+      "right": {
+        "label": "先吃药看着",
+        "fx": {
+          "money": -4,
+          "health": -4,
+          "mood": -3
+        },
+        "flags": {
+          "illness": true
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_3",
+      "name": "签字单",
+      "min": 32,
+      "max": 62,
+      "cond": {
+        "flag": "illness"
+      },
+      "text": "手术排在两周后，家属签字单上有七八行风险提示。",
+      "left": {
+        "label": "签",
+        "fx": {
+          "money": -12,
+          "health": 6,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "选择保守治疗",
+        "fx": {
+          "money": -3,
+          "health": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_4",
+      "name": "回到正常",
+      "min": 35,
+      "max": 72,
+      "cond": {
+        "flag": "illness"
+      },
+      "chance": 0.5,
+      "text": "复查的指标一项一项回到了正常。",
+      "left": {
+        "label": "认真调养一段",
+        "fx": {
+          "health": 8,
+          "mood": 6
+        },
+        "flags": {
+          "illness": false
+        },
+        "milestone": "身体缓过来了"
+      },
+      "right": {
+        "label": "立刻回去上班",
+        "fx": {
+          "career": 4,
+          "health": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_5",
+      "name": "一辈子的事",
+      "min": 35,
+      "max": 72,
+      "cond": {
+        "flag": "illness"
+      },
+      "text": "医生说，这个毛病大概要跟着你一辈子了。",
+      "left": {
+        "label": "学会与它共处",
+        "fx": {
+          "health": 4,
+          "mood": 4
+        },
+        "flags": {
+          "illness": false,
+          "chronic": true
+        },
+        "milestone": "开始长期调养"
+      },
+      "right": {
+        "label": "到处去找偏方",
+        "fx": {
+          "money": -6,
+          "health": -4,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_6",
+      "name": "排班表",
+      "min": 30,
+      "max": 72,
+      "cond": {
+        "flag": "illness"
+      },
+      "text": "家人轮流在医院陪床，排班表就贴在冰箱门上。",
+      "left": {
+        "label": "认真说声谢谢",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "family": 7
+          }
+        }
+      },
+      "right": {
+        "label": "装作不在意",
+        "fx": {
+          "mood": -3,
+          "rel": {
+            "family": -4
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_7",
+      "name": "隔壁床",
+      "min": 35,
+      "max": 72,
+      "cond": {
+        "flag": "illness"
+      },
+      "text": "同病房的老张每天下午都来跟你下两盘棋。",
+      "left": {
+        "label": "交个朋友",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "只想安静待着",
+        "fx": {
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_8",
+      "name": "药费单",
+      "min": 35,
+      "max": 79,
+      "cond": {
+        "flag": "illness"
+      },
+      "text": "每个月的药费单子越来越长。",
+      "left": {
+        "label": "咬牙按时买齐",
+        "fx": {
+          "money": -7,
+          "health": 5
+        },
+        "flags": {
+          "chronic": true
+        }
+      },
+      "right": {
+        "label": "自己减点量",
+        "fx": {
+          "money": 2,
+          "health": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_9",
+      "name": "一天一格",
+      "min": 50,
+      "max": 79,
+      "cond": {
+        "flag": "chronic"
+      },
+      "text": "药盒按星期分好，一天一格。",
+      "left": {
+        "label": "严格照着吃",
+        "fx": {
+          "health": 6,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "想起来才吃",
+        "fx": {
+          "health": -5,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_10",
+      "name": "控制得不错",
+      "min": 50,
+      "max": 79,
+      "cond": {
+        "flag": "chronic"
+      },
+      "text": "医生说，这几项指标控制得不错。",
+      "left": {
+        "label": "继续保持",
+        "fx": {
+          "health": 5,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "松了口气，先吃顿好的",
+        "fx": {
+          "mood": 5,
+          "health": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_11",
+      "name": "一个新词",
+      "min": 55,
+      "max": 79,
+      "cond": {
+        "flag": "chronic"
+      },
+      "chance": 0.25,
+      "text": "医生提到一个新词，说这叫并发症。",
+      "left": {
+        "label": "住院处理",
+        "fx": {
+          "money": -8,
+          "health": -5,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "回家养着",
+        "fx": {
+          "health": -7,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "he_12",
+      "name": "运动处方",
+      "min": 45,
+      "max": 79,
+      "text": "医生给你开了张「运动处方」：每天六千步。",
+      "left": {
+        "label": "认真执行",
+        "fx": {
+          "health": 7,
+          "energy": 2,
+          "mood": 4
+        },
+        "skills": {
+          "fitness": 3
+        }
+      },
+      "right": {
+        "label": "三天打鱼两天晒网",
+        "fx": {
+          "health": -2,
+          "mood": 1
+        }
+      },
+      "once": true
+    }
+  ]
+}

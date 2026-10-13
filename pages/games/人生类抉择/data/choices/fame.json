@@ -1,0 +1,278 @@
+{
+  "title": "名声线（随手发的东西忽然有人看）",
+  "events": [
+    {
+      "id": "fa_1",
+      "name": "醒来多了几千赞",
+      "min": 18,
+      "max": 46,
+      "cond": {
+        "noFlag": "fame"
+      },
+      "text": "你随手拍的一条视频，第二天醒来多了几千个赞。",
+      "left": {
+        "label": "接着更下去",
+        "fx": {
+          "energy": -4,
+          "mood": 6
+        },
+        "flags": {
+          "fame": true
+        },
+        "milestone": "成了小有名气的人"
+      },
+      "right": {
+        "label": "删掉，太吵",
+        "fx": {
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_2",
+      "name": "数字一直跳",
+      "min": 20,
+      "max": 56,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "后台的数字一直往上跳，你有点舍不得关掉。",
+      "left": {
+        "label": "趁热加更",
+        "fx": {
+          "money": 6,
+          "energy": -6,
+          "health": -3
+        }
+      },
+      "right": {
+        "label": "保持原来的节奏",
+        "fx": {
+          "mood": 4,
+          "energy": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_3",
+      "name": "报价",
+      "min": 22,
+      "max": 56,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "有品牌私信来谈合作，给的报价比你的月薪高。",
+      "left": {
+        "label": "接",
+        "fx": {
+          "money": 9,
+          "career": 2,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "不接",
+        "fx": {
+          "money": -1,
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_4",
+      "name": "评论区",
+      "min": 22,
+      "max": 62,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "评论区里有人把你骂得很难听，点赞还不少。",
+      "left": {
+        "label": "一条条认真回复",
+        "fx": {
+          "energy": -3,
+          "mood": -3,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "关掉评论",
+        "fx": {
+          "mood": 3,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_5",
+      "name": "挂了半天",
+      "min": 25,
+      "max": 62,
+      "cond": {
+        "flag": "fame"
+      },
+      "chance": 0.3,
+      "text": "一条几年前的旧发言被翻了出来，话题在榜上挂了半天。",
+      "left": {
+        "label": "公开道歉",
+        "fx": {
+          "mood": -5,
+          "career": -3,
+          "social": 4
+        }
+      },
+      "right": {
+        "label": "装作没看见",
+        "fx": {
+          "mood": -6,
+          "social": -6
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_6",
+      "name": "数据下来了",
+      "min": 28,
+      "max": 64,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "流量下来了，数据大不如前。",
+      "left": {
+        "label": "换个方向重做",
+        "fx": {
+          "career": 5,
+          "energy": -5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "慢慢淡出",
+        "fx": {
+          "energy": 3,
+          "mood": -2
+        },
+        "flags": {
+          "fame": false
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_7",
+      "name": "线下分享",
+      "min": 25,
+      "max": 62,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "有人邀请你去线下做一场分享。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "career": 4,
+          "mood": 5,
+          "rel": {
+            "friends": 6
+          }
+        }
+      },
+      "right": {
+        "label": "只在线上露面",
+        "fx": {
+          "energy": 3,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_8",
+      "name": "被搬了",
+      "min": 25,
+      "max": 64,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "有人把你的作品改都没改就发了出去。",
+      "left": {
+        "label": "走流程维权",
+        "fx": {
+          "money": -4,
+          "career": 3,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "算了",
+        "fx": {
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_9",
+      "name": "转给了所有人",
+      "min": 25,
+      "max": 68,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "父母把你的视频转发给了所有亲戚，还配了一句「我家孩子」。",
+      "left": {
+        "label": "由着他们去",
+        "fx": {
+          "mood": 5,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "让他们别转了",
+        "fx": {
+          "mood": 1,
+          "rel": {
+            "family": -3
+          }
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "fa_10",
+      "name": "没人在意",
+      "min": 35,
+      "max": 72,
+      "cond": {
+        "flag": "fame"
+      },
+      "text": "你忽然觉得，其实没人在意你今天发了什么。",
+      "left": {
+        "label": "停更，回归生活",
+        "fx": {
+          "health": 5,
+          "energy": 4,
+          "mood": 6
+        },
+        "flags": {
+          "fame": false
+        }
+      },
+      "right": {
+        "label": "咬牙继续更",
+        "fx": {
+          "mood": -4,
+          "energy": -4
+        }
+      },
+      "once": true
+    }
+  ]
+}

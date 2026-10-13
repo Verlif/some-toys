@@ -1,0 +1,1120 @@
+{
+  "title": "职业时间线（先择业，才有这条职业的专属事件池）",
+  "events": [
+    {
+      "id": "jb_1",
+      "name": "实习面试",
+      "min": 20,
+      "max": 28,
+      "cond": {
+        "noFlag": "jobSet"
+      },
+      "text": "面试官问你，想做技术方向还是市场方向。",
+      "left": {
+        "label": "技术方向",
+        "fx": {
+          "career": 3,
+          "energy": -3
+        },
+        "skills": {
+          "knowledge": 4
+        },
+        "flags": {
+          "jobSet": true,
+          "jobTech": true
+        },
+        "milestone": "选了研发这条线"
+      },
+      "right": {
+        "label": "市场方向",
+        "fx": {
+          "career": 3,
+          "energy": -2
+        },
+        "skills": {
+          "charm": 4
+        },
+        "flags": {
+          "jobSet": true,
+          "jobBiz": true
+        },
+        "milestone": "选了商务这条线"
+      },
+      "once": true
+    },
+    {
+      "id": "jb_2",
+      "name": "托人问的",
+      "min": 18,
+      "max": 28,
+      "cond": {
+        "noFlag": "jobSet"
+      },
+      "text": "家里托关系问来两个去处，让你自己挑。",
+      "left": {
+        "label": "考编，图个安稳",
+        "fx": {
+          "career": 3,
+          "money": 3,
+          "mood": -2
+        },
+        "flags": {
+          "jobSet": true,
+          "jobGov": true
+        },
+        "milestone": "进了体制内"
+      },
+      "right": {
+        "label": "学门手艺",
+        "fx": {
+          "money": 2,
+          "energy": -3
+        },
+        "skills": {
+          "craft": 4
+        },
+        "flags": {
+          "jobSet": true,
+          "jobCraft": true
+        },
+        "milestone": "拜师学手艺"
+      },
+      "once": true
+    },
+    {
+      "id": "jb_3",
+      "name": "填志愿",
+      "min": 18,
+      "max": 28,
+      "cond": {
+        "noFlag": "jobSet"
+      },
+      "text": "志愿表上，两个专业在你眼前晃了一整晚。",
+      "left": {
+        "label": "学医",
+        "fx": {
+          "career": 4,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 5
+        },
+        "flags": {
+          "jobSet": true,
+          "jobMed": true
+        },
+        "milestone": "走进了医学院"
+      },
+      "right": {
+        "label": "师范",
+        "fx": {
+          "mood": 3,
+          "career": 3
+        },
+        "skills": {
+          "charm": 3,
+          "knowledge": 3
+        },
+        "flags": {
+          "jobSet": true,
+          "jobEdu": true
+        },
+        "milestone": "报考了师范"
+      },
+      "once": true
+    },
+
+    {
+      "id": "jb_tech1",
+      "name": "凌晨三点",
+      "min": 22,
+      "max": 42,
+      "cond": {
+        "flag": "jobTech"
+      },
+      "text": "凌晨三点，线上服务挂了，群里一排 @ 全指向你。",
+      "left": {
+        "label": "爬起来修",
+        "fx": {
+          "career": 6,
+          "money": 4,
+          "health": -4,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "明天再说",
+        "fx": {
+          "health": 2,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_tech2",
+      "name": "新同事",
+      "min": 32,
+      "max": 46,
+      "cond": {
+        "flag": "jobTech"
+      },
+      "text": "新来的同事比你小十岁，工资和你一样。",
+      "left": {
+        "label": "转做技术管理",
+        "fx": {
+          "career": 6,
+          "social": 4,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "继续深耕技术",
+        "fx": {
+          "career": 3,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 7
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_tech3",
+      "name": "有人用你的东西",
+      "min": 24,
+      "max": 46,
+      "cond": {
+        "flag": "jobTech"
+      },
+      "text": "你写的一个小工具，被不少不认识的人用起来了。",
+      "left": {
+        "label": "认真维护下去",
+        "fx": {
+          "career": 6,
+          "money": 3,
+          "energy": -5,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "放着不管",
+        "fx": {
+          "energy": 3,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_tech4",
+      "name": "掉头发",
+      "min": 22,
+      "max": 42,
+      "cond": {
+        "flag": "jobTech"
+      },
+      "text": "连着三个大版本，你开始掉头发，也开始失眠。",
+      "left": {
+        "label": "请假休整一段",
+        "fx": {
+          "health": 6,
+          "mood": 3,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "硬扛过去",
+        "fx": {
+          "career": 5,
+          "health": -6,
+          "energy": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_tech5",
+      "name": "私活",
+      "min": 22,
+      "max": 46,
+      "cond": {
+        "flag": "jobTech"
+      },
+      "text": "有人出钱请你私下做一套系统。",
+      "left": {
+        "label": "接下来",
+        "fx": {
+          "money": 8,
+          "energy": -6,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "不接",
+        "fx": {
+          "energy": 3,
+          "money": -1
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "jb_med1",
+      "name": "夜班",
+      "min": 22,
+      "max": 46,
+      "cond": {
+        "flag": "jobMed"
+      },
+      "text": "又一个急诊的夜班，走廊的加床排到了门口。",
+      "left": {
+        "label": "连轴转到底",
+        "fx": {
+          "career": 5,
+          "health": -5,
+          "energy": -6,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "到点交班",
+        "fx": {
+          "health": 3,
+          "mood": 2,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_med2",
+      "name": "拍桌子",
+      "min": 24,
+      "max": 52,
+      "cond": {
+        "flag": "jobMed"
+      },
+      "text": "家属在办公室拍了桌子，说你们没有尽力。",
+      "left": {
+        "label": "耐心解释到底",
+        "fx": {
+          "social": 5,
+          "mood": -3,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "请主任出面",
+        "fx": {
+          "career": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_med3",
+      "name": "评职称",
+      "min": 26,
+      "max": 52,
+      "cond": {
+        "flag": "jobMed"
+      },
+      "text": "评职称要论文，你手上全是病例，就是没时间写。",
+      "left": {
+        "label": "熬夜写出来",
+        "fx": {
+          "career": 6,
+          "energy": -6,
+          "health": -4
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "先放放",
+        "fx": {
+          "health": 2,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_med4",
+      "name": "信封",
+      "min": 25,
+      "max": 52,
+      "cond": {
+        "flag": "jobMed"
+      },
+      "text": "手术前，家属把信封往你白大褂口袋里塞。",
+      "left": {
+        "label": "坚决退回去",
+        "fx": {
+          "career": 3,
+          "mood": 4,
+          "money": -1
+        }
+      },
+      "right": {
+        "label": "收下",
+        "fx": {
+          "money": 6,
+          "mood": -3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_med5",
+      "name": "抽调",
+      "min": 25,
+      "max": 52,
+      "cond": {
+        "flag": "jobMed"
+      },
+      "text": "通知下来，要抽一批人去支援一线。",
+      "left": {
+        "label": "报名",
+        "fx": {
+          "social": 4,
+          "mood": 5,
+          "health": -5,
+          "career": 4
+        }
+      },
+      "right": {
+        "label": "没有报名",
+        "fx": {
+          "health": 2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "jb_edu1",
+      "name": "讲台",
+      "min": 22,
+      "max": 52,
+      "cond": {
+        "flag": "jobEdu"
+      },
+      "text": "第一次站上讲台，底下三十双眼睛一齐看着你。",
+      "left": {
+        "label": "每一课都认真备",
+        "fx": {
+          "career": 4,
+          "mood": 4,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "照着教参念",
+        "fx": {
+          "career": 1,
+          "energy": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_edu2",
+      "name": "家长群",
+      "min": 24,
+      "max": 52,
+      "cond": {
+        "flag": "jobEdu"
+      },
+      "text": "有家长在群里点名质疑你布置的作业太多。",
+      "left": {
+        "label": "私下沟通",
+        "fx": {
+          "social": 4,
+          "mood": 2,
+          "energy": -2
+        }
+      },
+      "right": {
+        "label": "在群里回怼",
+        "fx": {
+          "social": -4,
+          "mood": 2,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_edu3",
+      "name": "周末",
+      "min": 25,
+      "max": 52,
+      "cond": {
+        "flag": "jobEdu"
+      },
+      "text": "有人开出高价，请你周末带几个学生。",
+      "left": {
+        "label": "接下来",
+        "fx": {
+          "money": 8,
+          "energy": -5,
+          "career": -3
+        }
+      },
+      "right": {
+        "label": "不接",
+        "fx": {
+          "mood": 3,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_edu4",
+      "name": "后排",
+      "min": 24,
+      "max": 56,
+      "cond": {
+        "flag": "jobEdu"
+      },
+      "text": "那个总坐最后一排的学生，期末考进了前十。",
+      "left": {
+        "label": "单独找他聊聊",
+        "fx": {
+          "mood": 6,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "归功于自己教得好",
+        "fx": {
+          "mood": 3,
+          "career": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_edu5",
+      "name": "名额",
+      "min": 28,
+      "max": 56,
+      "cond": {
+        "flag": "jobEdu"
+      },
+      "text": "评职称的名额只有两个，竞争者五个。",
+      "left": {
+        "label": "认真准备材料",
+        "fx": {
+          "career": 6,
+          "energy": -5
+        },
+        "skills": {
+          "knowledge": 4
+        }
+      },
+      "right": {
+        "label": "不争了",
+        "fx": {
+          "mood": 2,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "jb_gov1",
+      "name": "第八稿",
+      "min": 22,
+      "max": 56,
+      "cond": {
+        "flag": "jobGov"
+      },
+      "text": "一份汇报材料改到第八稿，领导还是不满意。",
+      "left": {
+        "label": "继续磨",
+        "fx": {
+          "career": 4,
+          "energy": -5,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "就这样交上去",
+        "fx": {
+          "mood": 2,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_gov2",
+      "name": "驻村",
+      "min": 24,
+      "max": 52,
+      "cond": {
+        "flag": "jobGov"
+      },
+      "text": "要派人下乡两年，条件艰苦，但履历上会好看。",
+      "left": {
+        "label": "报名",
+        "fx": {
+          "career": 6,
+          "social": 4,
+          "health": -4,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "不去",
+        "fx": {
+          "mood": 3,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_gov3",
+      "name": "调岗",
+      "min": 25,
+      "max": 56,
+      "cond": {
+        "flag": "jobGov"
+      },
+      "text": "有机会调去更忙但也更核心的部门。",
+      "left": {
+        "label": "去",
+        "fx": {
+          "career": 7,
+          "energy": -6,
+          "health": -4
+        }
+      },
+      "right": {
+        "label": "留在原岗",
+        "fx": {
+          "health": 3,
+          "mood": 4,
+          "career": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_gov4",
+      "name": "托你办的事",
+      "min": 25,
+      "max": 56,
+      "cond": {
+        "flag": "jobGov"
+      },
+      "text": "老同学托你办一件事，不太好办。",
+      "left": {
+        "label": "尽力帮",
+        "fx": {
+          "social": 5,
+          "career": -3,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "婉言回绝",
+        "fx": {
+          "career": 3,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_gov5",
+      "name": "下海",
+      "min": 30,
+      "max": 58,
+      "cond": {
+        "flag": "jobGov"
+      },
+      "text": "同事陆续下海，收入是你的好几倍。",
+      "left": {
+        "label": "守住这个位置",
+        "fx": {
+          "mood": 3,
+          "money": 2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "也动心辞职",
+        "fx": {
+          "money": 6,
+          "career": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "jb_biz1",
+      "name": "酒局",
+      "min": 22,
+      "max": 52,
+      "cond": {
+        "flag": "jobBiz"
+      },
+      "text": "客户说，这单签不签，就看你今晚怎么陪。",
+      "left": {
+        "label": "陪到底",
+        "fx": {
+          "money": 8,
+          "career": 5,
+          "health": -6,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "找个理由走",
+        "fx": {
+          "health": 3,
+          "mood": 2,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_biz2",
+      "name": "最后一周",
+      "min": 24,
+      "max": 52,
+      "cond": {
+        "flag": "jobBiz"
+      },
+      "text": "季度指标还差一大截，只剩最后一周。",
+      "left": {
+        "label": "疯狂跑客户",
+        "fx": {
+          "career": 6,
+          "money": 6,
+          "health": -4,
+          "energy": -7
+        }
+      },
+      "right": {
+        "label": "认了",
+        "fx": {
+          "mood": -3,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_biz3",
+      "name": "辛苦费",
+      "min": 25,
+      "max": 56,
+      "cond": {
+        "flag": "jobBiz"
+      },
+      "text": "对方暗示，可以给你一笔「辛苦费」。",
+      "left": {
+        "label": "收下",
+        "fx": {
+          "money": 9,
+          "career": -4,
+          "mood": -3
+        }
+      },
+      "right": {
+        "label": "不碰这条线",
+        "fx": {
+          "career": 3,
+          "mood": 4,
+          "money": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_biz4",
+      "name": "第八十趟",
+      "min": 24,
+      "max": 52,
+      "cond": {
+        "flag": "jobBiz"
+      },
+      "text": "一年飞了八十趟，孩子快不认识你了。",
+      "left": {
+        "label": "申请调回本地",
+        "fx": {
+          "mood": 3,
+          "social": 5,
+          "career": -4
+        }
+      },
+      "right": {
+        "label": "接着飞",
+        "fx": {
+          "money": 7,
+          "career": 5,
+          "social": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_biz5",
+      "name": "对手报价",
+      "min": 28,
+      "max": 58,
+      "cond": {
+        "flag": "jobBiz"
+      },
+      "text": "对手公司的报价，比你们低两成。",
+      "left": {
+        "label": "降价抢单",
+        "fx": {
+          "money": -3,
+          "career": 5,
+          "mood": -2
+        }
+      },
+      "right": {
+        "label": "讲价值，不降价",
+        "fx": {
+          "career": 3,
+          "social": 3,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "jb_cf1",
+      "name": "三年",
+      "min": 20,
+      "max": 56,
+      "cond": {
+        "flag": "jobCraft"
+      },
+      "text": "师傅说，这门手艺要三年才算入门。",
+      "left": {
+        "label": "沉下心学",
+        "fx": {
+          "career": 4,
+          "energy": -4
+        },
+        "skills": {
+          "craft": 8
+        }
+      },
+      "right": {
+        "label": "换门来钱快的",
+        "fx": {
+          "career": 1,
+          "mood": 2
+        },
+        "skills": {
+          "craft": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_cf2",
+      "name": "外单",
+      "min": 22,
+      "max": 56,
+      "cond": {
+        "flag": "jobCraft"
+      },
+      "text": "有人看中你做的活，让你私下接一批。",
+      "left": {
+        "label": "接",
+        "fx": {
+          "money": 8,
+          "energy": -5
+        },
+        "skills": {
+          "craft": 4
+        }
+      },
+      "right": {
+        "label": "按规矩来",
+        "fx": {
+          "career": 4,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_cf3",
+      "name": "新设备",
+      "min": 25,
+      "max": 56,
+      "cond": {
+        "flag": "jobCraft"
+      },
+      "text": "厂里换了新设备，老师傅手上的活不太用得上。",
+      "left": {
+        "label": "从头学新设备",
+        "fx": {
+          "career": 5,
+          "energy": -4
+        },
+        "skills": {
+          "knowledge": 5
+        }
+      },
+      "right": {
+        "label": "守着老手艺",
+        "fx": {
+          "mood": 3,
+          "career": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_cf4",
+      "name": "小作坊",
+      "min": 28,
+      "max": 58,
+      "cond": {
+        "flag": "jobCraft"
+      },
+      "text": "攒了几年钱，你想自己开个小作坊。",
+      "left": {
+        "label": "开",
+        "fx": {
+          "money": -8,
+          "career": 5,
+          "energy": -5
+        },
+        "flags": {
+          "shop": true
+        },
+        "milestone": "有了自己的小作坊"
+      },
+      "right": {
+        "label": "继续给人干",
+        "fx": {
+          "money": 4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_cf5",
+      "name": "带徒",
+      "min": 30,
+      "max": 58,
+      "cond": {
+        "flag": "jobCraft"
+      },
+      "text": "老板让你带两个刚来的新人。",
+      "left": {
+        "label": "认真教",
+        "fx": {
+          "career": 4,
+          "mood": 4,
+          "energy": -4,
+          "rel": {
+            "friends": 4
+          }
+        }
+      },
+      "right": {
+        "label": "随便带带",
+        "fx": {
+          "career": 1,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "jb_g1",
+      "name": "第一笔工资",
+      "min": 18,
+      "max": 28,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "第一笔工资到账，你把截图发给了家里。",
+      "left": {
+        "label": "给爸妈买点东西",
+        "fx": {
+          "money": -4,
+          "mood": 5,
+          "rel": {
+            "family": 6
+          }
+        }
+      },
+      "right": {
+        "label": "全存起来",
+        "fx": {
+          "money": 7,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_g2",
+      "name": "猎头",
+      "min": 22,
+      "max": 48,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "猎头发来一个岗位，薪资高了三成。",
+      "left": {
+        "label": "去面一面",
+        "fx": {
+          "career": 5,
+          "money": 5,
+          "energy": -4
+        }
+      },
+      "right": {
+        "label": "不动",
+        "fx": {
+          "mood": 3,
+          "career": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_g3",
+      "name": "不想去",
+      "min": 28,
+      "max": 52,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "早上睁眼，你是真的不想去上班。",
+      "left": {
+        "label": "请个长假",
+        "fx": {
+          "mood": 6,
+          "energy": 5,
+          "career": -4
+        }
+      },
+      "right": {
+        "label": "忍着去",
+        "fx": {
+          "career": 3,
+          "mood": -5
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_g4",
+      "name": "优化名单",
+      "min": 30,
+      "max": 56,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "部门优化，名单上有你。",
+      "left": {
+        "label": "争取内部转岗",
+        "fx": {
+          "career": 3,
+          "energy": -5,
+          "social": -2
+        }
+      },
+      "right": {
+        "label": "谈赔偿走人",
+        "fx": {
+          "money": 7,
+          "career": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_g5",
+      "name": "转行",
+      "min": 30,
+      "max": 58,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "有个完全陌生的行业，正在向你招手。",
+      "left": {
+        "label": "转过去",
+        "fx": {
+          "career": 6,
+          "mood": 4,
+          "money": -5,
+          "energy": -6
+        }
+      },
+      "right": {
+        "label": "待着不动",
+        "fx": {
+          "money": 3,
+          "career": 1,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "jb_g6",
+      "name": "名片",
+      "min": 35,
+      "max": 60,
+      "cond": {
+        "flag": "degree"
+      },
+      "text": "印着自己名字和头衔的名片，你看了很久。",
+      "left": {
+        "label": "认真收进名片夹",
+        "fx": {
+          "career": 4,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "随手扔进抽屉",
+        "fx": {
+          "mood": 1
+        }
+      },
+      "once": true
+    }
+  ]
+}

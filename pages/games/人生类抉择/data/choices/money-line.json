@@ -1,0 +1,435 @@
+{
+  "title": "钱与房（投资理财 / 买房换房 / 房贷物业）",
+  "events": [
+    {
+      "id": "mo_1",
+      "name": "同事赚了",
+      "min": 22,
+      "max": 46,
+      "cond": {
+        "noFlag": "invest"
+      },
+      "text": "同事在办公室说他上个月赚了多少，说得眉飞色舞。",
+      "left": {
+        "label": "跟着开个户",
+        "fx": {
+          "money": -5,
+          "mood": 3,
+          "career": 1
+        },
+        "flags": {
+          "invest": true
+        },
+        "milestone": "开始理财"
+      },
+      "right": {
+        "label": "不碰这些",
+        "fx": {
+          "money": 3,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_2",
+      "name": "红了几天",
+      "min": 24,
+      "max": 52,
+      "cond": {
+        "flag": "invest"
+      },
+      "text": "账户连红了好几天，你有点上头。",
+      "left": {
+        "label": "加仓",
+        "fx": {
+          "money": -7,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "先止盈一部分",
+        "fx": {
+          "money": 6,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_3",
+      "name": "一辆车",
+      "min": 24,
+      "max": 56,
+      "cond": {
+        "flag": "invest"
+      },
+      "chance": 0.5,
+      "text": "一夜之间，账户里少了一辆车的钱。",
+      "left": {
+        "label": "割肉离场",
+        "fx": {
+          "money": -6,
+          "mood": -5
+        },
+        "flags": {
+          "invest": false
+        }
+      },
+      "right": {
+        "label": "死扛不卖",
+        "fx": {
+          "mood": -7,
+          "health": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_4",
+      "name": "内部消息",
+      "min": 25,
+      "max": 56,
+      "cond": {
+        "flag": "invest"
+      },
+      "text": "有人拉你进一个群，说里面有「内部消息」。",
+      "left": {
+        "label": "跟着买",
+        "fx": {
+          "money": -8,
+          "mood": 4
+        }
+      },
+      "right": {
+        "label": "退群",
+        "fx": {
+          "money": 2,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_5",
+      "name": "拿了五年",
+      "min": 28,
+      "max": 58,
+      "cond": {
+        "flag": "invest"
+      },
+      "chance": 0.4,
+      "text": "一只拿了五年的股票，忽然分了一笔红。",
+      "left": {
+        "label": "落袋为安",
+        "fx": {
+          "money": 8,
+          "mood": 5
+        }
+      },
+      "right": {
+        "label": "继续拿着",
+        "fx": {
+          "money": 3,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+
+    {
+      "id": "mo_6",
+      "name": "沙盘",
+      "min": 25,
+      "max": 42,
+      "cond": {
+        "noFlag": "house"
+      },
+      "text": "售楼处的沙盘前，你和销售算了整整一下午。",
+      "left": {
+        "label": "掏出全部积蓄",
+        "fx": {
+          "money": -14,
+          "mood": 5,
+          "social": 3
+        },
+        "flags": {
+          "house": true
+        },
+        "milestone": "买下了第一套房"
+      },
+      "right": {
+        "label": "继续租",
+        "fx": {
+          "money": 3,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_7",
+      "name": "多出来的一间",
+      "min": 30,
+      "max": 62,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "有人想租你多出来的那一间。",
+      "left": {
+        "label": "租出去",
+        "fx": {
+          "money": 6,
+          "mood": 1,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "留着当书房",
+        "fx": {
+          "energy": 2,
+          "mood": 4
+        },
+        "skills": {
+          "knowledge": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_8",
+      "name": "不够住",
+      "min": 35,
+      "max": 56,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "孩子大了，两居室开始不够住。",
+      "left": {
+        "label": "卖旧买新",
+        "fx": {
+          "money": -10,
+          "mood": 5,
+          "social": 2
+        },
+        "milestone": "换了一套大房子"
+      },
+      "right": {
+        "label": "挤一挤",
+        "fx": {
+          "money": 4,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_9",
+      "name": "还款日",
+      "min": 30,
+      "max": 62,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "每月还款日，银行卡被划走固定的一笔。",
+      "left": {
+        "label": "提前还一部分",
+        "fx": {
+          "money": -9,
+          "mood": 6
+        }
+      },
+      "right": {
+        "label": "慢慢还",
+        "fx": {
+          "money": 2,
+          "mood": -1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_10",
+      "name": "跌了",
+      "min": 32,
+      "max": 62,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "小区房价跌了，中介说再等等就晚了。",
+      "left": {
+        "label": "硬撑着不卖",
+        "fx": {
+          "money": 1,
+          "mood": -4
+        }
+      },
+      "right": {
+        "label": "割肉卖掉",
+        "fx": {
+          "money": 6,
+          "mood": -5
+        },
+        "flags": {
+          "house": false
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_11",
+      "name": "拉票",
+      "min": 30,
+      "max": 79,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "业委会选举，有人上门来拉票。",
+      "left": {
+        "label": "参与进去",
+        "fx": {
+          "energy": -3,
+          "career": 2,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "不掺和",
+        "fx": {
+          "energy": 3,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_12",
+      "name": "天花板",
+      "min": 30,
+      "max": 79,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "楼上漏水，天花板泡了一大片。",
+      "left": {
+        "label": "好好协商",
+        "fx": {
+          "money": -3,
+          "mood": 1,
+          "social": 5
+        }
+      },
+      "right": {
+        "label": "直接投诉到底",
+        "fx": {
+          "money": -2,
+          "mood": -2,
+          "social": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_13",
+      "name": "超支",
+      "min": 30,
+      "max": 72,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "装修预算超了三成，工期还一直往后拖。",
+      "left": {
+        "label": "追加预算做完",
+        "fx": {
+          "money": -9,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "就按现在的做",
+        "fx": {
+          "money": 2,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_14",
+      "name": "以房养老",
+      "min": 60,
+      "max": 79,
+      "cond": {
+        "flag": "house"
+      },
+      "text": "有人上门，给你讲了一整套以房养老的方案。",
+      "left": {
+        "label": "签",
+        "fx": {
+          "money": 9,
+          "mood": 2
+        },
+        "flags": {
+          "house": false
+        }
+      },
+      "right": {
+        "label": "不签，房子留着",
+        "fx": {
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_15",
+      "name": "六位数",
+      "min": 24,
+      "max": 72,
+      "text": "第一次看到存折上的数字超过六位数。",
+      "left": {
+        "label": "拿出一部分改善生活",
+        "fx": {
+          "money": -5,
+          "mood": 6
+        }
+      },
+      "right": {
+        "label": "一分不动",
+        "fx": {
+          "money": 5,
+          "mood": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "mo_16",
+      "name": "开口买房",
+      "min": 28,
+      "max": 72,
+      "text": "亲戚开口借钱买房，数目不小。",
+      "left": {
+        "label": "借",
+        "fx": {
+          "money": -8,
+          "mood": 1,
+          "rel": {
+            "family": 5
+          }
+        }
+      },
+      "right": {
+        "label": "拒绝",
+        "fx": {
+          "money": 2,
+          "mood": -3,
+          "rel": {
+            "family": -5
+          }
+        }
+      },
+      "once": true
+    }
+  ]
+}

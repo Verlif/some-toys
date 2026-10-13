@@ -724,6 +724,9 @@
       "min": 28,
       "max": 55,
       "text": "摇到号了，销售说今天下定送脚垫。",
+      "cond": {
+        "flag": "license"
+      },
       "left": {
         "label": "买",
         "fx": {
@@ -1229,6 +1232,9 @@
       "min": 34,
       "max": 49,
       "text": "开了八年的车，修还是换。",
+      "cond": {
+        "flag": "car"
+      },
       "left": {
         "label": "换",
         "fx": {
@@ -2591,6 +2597,485 @@
           "health": 3,
           "energy": 4,
           "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c1",
+      "name": "学区房",
+      "min": 32,
+      "max": 45,
+      "text": "孩子要上学了，学区房的价格让人倒吸一口凉气。",
+      "left": {
+        "label": "咬牙买下",
+        "fx": {
+          "money": -14,
+          "mood": 4,
+          "career": 3,
+          "social": 2
+        }
+      },
+      "right": {
+        "label": "就近入学",
+        "fx": {
+          "money": 4,
+          "mood": -3,
+          "social": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c2",
+      "name": "晋升",
+      "min": 30,
+      "max": 49,
+      "text": "主管的位置空出来了，两个候选人，你是其一。",
+      "left": {
+        "label": "全力争取",
+        "fx": {
+          "career": 8,
+          "energy": -6,
+          "social": 3,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "不争，让他去",
+        "fx": {
+          "mood": 2,
+          "career": -5,
+          "social": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c3",
+      "name": "中年危机",
+      "min": 38,
+      "max": 49,
+      "text": "镜子里的人鬓角有了白，你忽然有点不认识自己。",
+      "left": {
+        "label": "报个班重新学",
+        "fx": {
+          "career": 4,
+          "money": -5,
+          "mood": 3,
+          "skills": {
+            "knowledge": 6
+          }
+        }
+      },
+      "right": {
+        "label": "就这样吧",
+        "fx": {
+          "mood": -4,
+          "career": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c4",
+      "name": "病房电话",
+      "min": 32,
+      "max": 49,
+      "text": "深夜的电话响起，父亲住院了。",
+      "left": {
+        "label": "请假回去照顾",
+        "fx": {
+          "social": 6,
+          "career": -5,
+          "energy": -5,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "请护工先撑着",
+        "fx": {
+          "money": -7,
+          "mood": -4,
+          "career": 1
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c5",
+      "name": "投资",
+      "min": 32,
+      "max": 49,
+      "text": "朋友说有个稳赚的项目，问你投不投。",
+      "left": {
+        "label": "投进去一半积蓄",
+        "fx": {
+          "money": -8,
+          "career": 6,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "谢绝",
+        "fx": {
+          "money": 2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c6",
+      "name": "换房",
+      "min": 33,
+      "max": 48,
+      "text": "现在的房子小了，换房得背上一大笔贷款。",
+      "left": {
+        "label": "换，住得舒心",
+        "fx": {
+          "money": -12,
+          "mood": 6,
+          "health": 3
+        }
+      },
+      "right": {
+        "label": "再挤几年",
+        "fx": {
+          "money": 5,
+          "mood": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c7",
+      "name": "家长会",
+      "min": 33,
+      "max": 49,
+      "text": "孩子的家长会上，老师说他在课上总走神。",
+      "left": {
+        "label": "回家耐心谈",
+        "fx": {
+          "social": 5,
+          "mood": 2,
+          "career": -2
+        }
+      },
+      "right": {
+        "label": "严厉批评一顿",
+        "fx": {
+          "mood": -4,
+          "career": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c8",
+      "name": "应酬",
+      "min": 30,
+      "max": 49,
+      "text": "客户点名要你相陪，这单生意不小。",
+      "left": {
+        "label": "陪到底",
+        "fx": {
+          "money": 8,
+          "career": 5,
+          "health": -6,
+          "energy": -5
+        }
+      },
+      "right": {
+        "label": "找借口先走",
+        "fx": {
+          "health": 3,
+          "career": -4,
+          "mood": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c9",
+      "name": "体重",
+      "min": 35,
+      "max": 49,
+      "text": "体检报告上「超重」两个字格外扎眼。",
+      "left": {
+        "label": "制定健身计划",
+        "fx": {
+          "health": 7,
+          "energy": -4,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "承认中年发福",
+        "fx": {
+          "mood": 3,
+          "health": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c10",
+      "name": "同学群",
+      "min": 32,
+      "max": 49,
+      "text": "同学群里张罗聚会，你混得不算最差也不算最好。",
+      "left": {
+        "label": "去，见见老伙计",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "money": -3
+        }
+      },
+      "right": {
+        "label": "找理由推掉",
+        "fx": {
+          "mood": -2,
+          "social": -4
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c11",
+      "name": "副业",
+      "min": 32,
+      "max": 49,
+      "text": "你发现一个能长期做的副业，但要牺牲所有周末。",
+      "left": {
+        "label": "大力投入",
+        "fx": {
+          "money": 9,
+          "energy": -6,
+          "health": -3,
+          "career": 3
+        }
+      },
+      "right": {
+        "label": "只当兴趣",
+        "fx": {
+          "mood": 4,
+          "money": 2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c12",
+      "name": "二胎",
+      "min": 32,
+      "max": 42,
+      "text": "家里人催着要二胎，你算了算精力和开销。",
+      "left": {
+        "label": "再要一个",
+        "fx": {
+          "mood": 4,
+          "money": -8,
+          "energy": -6,
+          "social": 3
+        }
+      },
+      "right": {
+        "label": "一个就好",
+        "fx": {
+          "mood": 3,
+          "money": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c13",
+      "name": "回乡",
+      "min": 32,
+      "max": 49,
+      "text": "有个回家乡发展的机会，收入减半但离父母近。",
+      "left": {
+        "label": "回去",
+        "fx": {
+          "social": 7,
+          "mood": 5,
+          "career": -6,
+          "money": -4
+        }
+      },
+      "right": {
+        "label": "留在大城市",
+        "fx": {
+          "career": 5,
+          "money": 5,
+          "social": -4,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c14",
+      "name": "体检",
+      "min": 35,
+      "max": 49,
+      "text": "今年体检，医生加了一个你从没做过的项目。",
+      "left": {
+        "label": "全套做下来",
+        "fx": {
+          "money": -6,
+          "health": 5,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "只做基础的",
+        "fx": {
+          "money": -2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c15",
+      "name": "借钱",
+      "min": 33,
+      "max": 49,
+      "text": "多年的老朋友开口借钱，数目让你有些为难。",
+      "left": {
+        "label": "借给他",
+        "fx": {
+          "money": -8,
+          "social": 6,
+          "mood": 2
+        }
+      },
+      "right": {
+        "label": "婉言拒绝",
+        "fx": {
+          "money": 2,
+          "social": -5,
+          "mood": -3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c16",
+      "name": "爱好",
+      "min": 34,
+      "max": 49,
+      "text": "你重新捡起了年轻时放下的那个爱好。",
+      "left": {
+        "label": "认真投入时间",
+        "fx": {
+          "mood": 7,
+          "money": -4,
+          "energy": -3
+        }
+      },
+      "right": {
+        "label": "偶尔玩玩",
+        "fx": {
+          "mood": 3
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c17",
+      "name": "换车",
+      "min": 33,
+      "max": 49,
+      "text": "开了八年的车毛病渐多，4S 店催你置换。",
+      "left": {
+        "label": "换辆新的",
+        "fx": {
+          "money": -10,
+          "mood": 5,
+          "health": 2,
+          "career": 2
+        }
+      },
+      "right": {
+        "label": "修修接着开",
+        "fx": {
+          "money": -3,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c18",
+      "name": "房贷",
+      "min": 33,
+      "max": 49,
+      "text": "房贷还剩一大半，利率却传来调整的消息。",
+      "left": {
+        "label": "提前还一部分",
+        "fx": {
+          "money": -9,
+          "mood": 5,
+          "health": 2
+        }
+      },
+      "right": {
+        "label": "保持现状",
+        "fx": {
+          "money": 2,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c19",
+      "name": "背后话",
+      "min": 32,
+      "max": 49,
+      "text": "有人在背后说了你的坏话，还传到了领导耳朵里。",
+      "left": {
+        "label": "当面对质",
+        "fx": {
+          "social": 3,
+          "career": -2,
+          "mood": 3
+        }
+      },
+      "right": {
+        "label": "用业绩证明",
+        "fx": {
+          "career": 6,
+          "energy": -4,
+          "mood": -2
+        }
+      },
+      "once": true
+    },
+    {
+      "id": "pr_c20",
+      "name": "婚变",
+      "min": 33,
+      "max": 49,
+      "text": "结婚十年，你们之间的对话只剩下孩子和账单。",
+      "left": {
+        "label": "一起去做咨询",
+        "fx": {
+          "social": 6,
+          "mood": 4,
+          "money": -5
+        }
+      },
+      "right": {
+        "label": "各过各的",
+        "fx": {
+          "mood": -3,
+          "social": -3,
+          "health": -2
         }
       },
       "once": true
