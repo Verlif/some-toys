@@ -28,7 +28,7 @@
     border-radius: 28px;
     overflow: hidden;
     box-shadow: 0 28px 90px -24px rgba(60, 70, 110, .4),
-                0 0 0 1px rgba(70, 80, 130, .06);
+                0 0 0 1px rgba(24, 24, 27, .06);
   }
   .et-title { font-size: 16px; }
   .editor-bottom { left: 16px; right: 16px; bottom: 16px; padding: 14px; }
@@ -66,4 +66,11 @@
   .et-mode { padding: 10px 6px; }
   .eb-btn { padding: 12px 6px; }
   .rp-clear { padding: 7px 13px; }
+}
+
+/* ---------- 极窄屏：模式栏四个按钮压缩间距与字号 ---------- */
+@media (max-width: 360px) {
+  .et-modes { gap: 4px; }
+  .et-mode { padding: 9px 3px; font-size: 11px; letter-spacing: 0; }
+  .et-mode .ic { font-size: 12px; }
 }

@@ -4,7 +4,7 @@
 
 把作品丢进 `pages/`，推送到 GitHub，剩下的交给 GitHub Actions 和 GitHub Pages——自动生成带搜索、分组索引和卡片信息的导航页，并发布到网上。
 
-**核心理念：放文件 → 推送 → 自动上线。** 不需要改配置，不需要手动登记，不需要手动更新导航页。
+**核心理念：放文件 → 推送 → 自动上线。** 不用手动登记，不用手动更新导航页；想改站点名称、简介或 GitHub 地址，动一个 `site.config.json` 就够了。
 
 📘 [使用文档](./docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3.md) · 🛠 [开发文档](./docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md) · 🌐 [项目介绍页](./pages/%E4%BB%8B%E7%BB%8D.html)
 
@@ -20,6 +20,7 @@
 - **自动导航**：每次向 `pages/` 推送内容，Action 自动扫描并重新生成导航页。
 - **信息完整的卡片**：自动读取标题、描述、体积、更新时间和页面数量。
 - **好用的检索**：实时搜索 + 命中高亮，分组折叠、分组索引、回到顶部、深/浅色主题。
+- **个人信息可配置**：站点名称、简介、头像、GitHub 地址集中在 `site.config.json`，脚本会自动解析 GitHub 地址并派生头像与文档链接。
 - **中英双语**：导航页与介绍页都内置语言切换（顶栏 🌐 按钮，或 `?lang=en`），语言偏好自动记忆。
 - **跨端响应式**：手机单列 + 抽屉导航、平板两列、宽屏多列 + 常驻侧栏，含安全区与动效降级适配。
 - **零成本发布**：基于 GitHub Pages，完全免费。
@@ -60,6 +61,7 @@ someToys/
 │  ├─ nav.css                  # 导航页样式（主题变量 + 响应式断点）
 │  └─ i18n.js                  # 中英字典与双语运行时
 ├─ generate-index.js           # 生成导航页的脚本
+├─ site.config.json            # 站点信息（名称、简介、GitHub 地址等）
 ├─ index.html                  # 自动生成，请勿手动修改
 ├─ .nojekyll                   # 告诉 GitHub Pages 不要用 Jekyll
 └─ README.md
@@ -106,6 +108,10 @@ permissions:
 
 - **Settings → Branches** 中是否有针对 `main` 的分支保护规则。如果有，删除或放宽规则，允许 `github-actions[bot]` 推送。
 - **Settings → Actions → General → Workflow permissions** 是否为 `Read and write`。
+
+### 3. 改站点信息（可选）
+
+站点名称、简介、头像与 GitHub 地址都集中在 `site.config.json`，按需修改即可。参数含义、`github` 地址的解析规则与派生关系见 [站点配置 site.config.json](#站点配置-siteconfigjson)；全部字段都可省略，不写就用默认值。
 
 ## 添加作品（核心用法）
 
@@ -205,18 +211,80 @@ npx serve .                 # 或 python -m http.server 8000
 | 文案、新增语言 | `assets/i18n.js`（配合页面上的 `data-i18n`） | 不需要 |
 | 页面结构、脚本 | `templates/nav-template.html` | 需要（Action 会自动跑） |
 | 扫描规则、排序、图标、卡片内容 | `generate-index.js` | 需要 |
-| 站点标题、作者、简介、仓库名 | `generate-index.js` 顶部的 `site` 配置 | 需要 |
+| 站点名称、简介、GitHub 地址等个人信息 | `site.config.json` | 需要 |
 | 图标映射 | `generate-index.js` 里的 `iconMap` | 需要 |
 
-`site` 配置：
+### 站点配置 site.config.json
 
-```js
-const site = {
-  owner: 'Verlif',              // GitHub 用户名，用于头像、链接和文档地址
-  repo: 'someToys',             // 仓库名，用于拼接 docs 链接
-  siteTitle: 'someToys',        // 站点标题
-  bio: 'AI 单页面作品集',        // 副标题
-};
+站点名称、简介、头像、GitHub 地址等个人信息都集中在仓库根目录的 `site.config.json`，改完不用碰代码。本仓库当前使用的完整配置如下：
+
+```json
+{
+  "siteTitle": "someToys",
+  "bio": "AI 单页面作品集",
+  "github": "https://github.com/Verlif/someToys",
+  "branch": "main",
+  "docsDir": "docs"
+}
+```
+
+改完推送即可（Action 会自动重新生成 `index.html`）；本地则重跑一次 `node generate-index.js`。
+
+#### 参数说明
+
+| 参数 | 类型 | 作用 | 影响的位置 | 不写时的默认值 |
+| :--- | :--- | :--- | :--- | :--- |
+| `siteTitle` | string | 站点名称 | 浏览器标签标题、页面底部页脚署名 | `someToys` |
+| `bio` | string | 一句话简介 | 侧栏作者名下方的小字、页面 `<meta description>` | `AI 单页面作品集` |
+| `github` | string | 个人 GitHub 地址，脚本会解析出用户名与仓库名 | 侧栏头像、作者名、浏览器标题、GitHub 链接、文档链接 | `https://github.com/Verlif/someToys` |
+| `owner` | string | 直接指定 GitHub 用户名，覆盖 `github` 的解析结果 | 作者名、头像地址、浏览器标题、GitHub 主页链接 | 由 `github` 解析得到 |
+| `repo` | string | 直接指定仓库名，覆盖 `github` 的解析结果 | 文档链接（拼在 `<仓库地址>/blob/<branch>/<docsDir>/` 后） | 由 `github` 解析得到 |
+| `avatar` | string | 自定义头像图片地址（任意 URL 或相对路径） | 侧栏头像 `<img src>` | `https://avatars.githubusercontent.com/<owner>` |
+| `branch` | string | 文档链接指向的分支 | 「使用文档 / 开发文档」链接 | `main` |
+| `docsDir` | string | 文档所在目录，可带或不带首尾斜杠 | 「使用文档 / 开发文档」链接 | `docs` |
+
+- 常用的是前三项 `siteTitle`、`bio`、`github`；`owner`、`repo`、`avatar` 只在「想单独覆盖某个派生结果」时才需要。
+- `owner` / `repo` 优先级高于 `github` 的解析结果，例如地址里是 `github.com/Verlif/someToys`，但想把文档链接指向 `Verlif/docs`，写 `"repo": "docs"` 即可。
+
+#### `github` 地址的解析规则
+
+脚本用 `parseGithub()` 从 `github` 里取出用户名（owner）与仓库名（repo），以下写法都认：
+
+| 写法 | 解析出的 owner | 解析出的 repo |
+| :--- | :--- | :--- |
+| `https://github.com/Verlif/someToys` | `Verlif` | `someToys` |
+| `github.com/Verlif/someToys` | `Verlif` | `someToys` |
+| `Verlif/someToys` | `Verlif` | `someToys` |
+| `https://github.com/Verlif` | `Verlif` | 空（退回默认仓库名） |
+| `Verlif` | `Verlif` | 空（退回默认仓库名） |
+
+末尾带 `.git`、`?query`、`#hash` 或斜杠也能解析，例如 `https://github.com/Verlif/someToys.git`。
+
+#### 由配置派生出的内容
+
+| 派生结果 | 计算方式 | 用在 |
+| :--- | :--- | :--- |
+| 头像地址 | 未写 `avatar` 时取 `https://avatars.githubusercontent.com/<owner>` | 侧栏头像 |
+| GitHub 主页链接 | `https://github.com/<owner>` | 侧栏作者块、页脚 GitHub 链接 |
+| 仓库地址 | `https://github.com/<owner>/<repo>` | 用于拼接文档链接 |
+| 文档链接 | `<仓库地址>/blob/<branch>/<docsDir>/使用文档.md`（开发文档同理） | 侧栏与页脚的「使用文档 / 开发文档」 |
+
+#### 缺省与容错
+
+- 任何字段没写都会退回脚本里的 `DEFAULT_SITE`；**删掉整个 `site.config.json` 也能正常生成**，效果与默认配置一致。
+- 文件不存在、JSON 语法错误、顶层不是对象时都不会中断构建，只打印一条警告并全部走默认值。
+- `owner` / `repo` 都拿不到时文档链接留空，不会生成错误链接。
+
+#### 换成自己的站点（示例）
+
+```json
+{
+  "siteTitle": "我的作品集",
+  "bio": "随手写的小东西",
+  "github": "https://github.com/octocat/Hello-World",
+  "branch": "develop",
+  "docsDir": "doc"
+}
 ```
 
 ### 中英双语
@@ -255,6 +323,7 @@ const site = {
 - **搜索**：匹配标题、描述、文件名、标签；命中的文字高亮，分组计数显示为 `命中/总数`。
 - **快捷键**：`/` 或 `Ctrl/Cmd + K` 聚焦搜索框，`Esc` 逐层退出（弹窗 → 抽屉 → 清空搜索），`D` 切换主题，`L` 切换语言。
 - **分组折叠**：点分组标题折叠，顶栏按钮一键折叠/展开全部，折叠状态记在浏览器里；动画结束后父容器恢复 `overflow: visible`，卡片悬浮阴影不会被裁剪。
+- **无滚动条位移**：隐藏页面滚动条，折叠 / 展开分组时页面高度变化不会带来横向抖动。
 - **分组索引**：宽屏在左侧栏，≤1199px 变成向上滑出的抽屉 + 横向分组条，滚动时自动高亮当前分组，点击跳转；目标被折叠或被搜索隐藏时会自动展开。
 - **卡片信息**：图标、标题、3 行描述、体积、更新时间（近期显示「3 天前」）、项目页面数。
 - **详情弹窗**：卡片右下角 `…` 查看完整描述，可一键打开页面或复制链接。

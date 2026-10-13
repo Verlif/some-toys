@@ -1,6 +1,6 @@
 /* =========================================================
    main.js — 引导与界面编排
-   初始化编辑器与游戏，处理屏幕切换、开始游戏、窗口尺寸自适应。
+   初始化编辑器与游戏，处理屏幕切换、进入连接、窗口尺寸自适应。
    暴露到：window.App（入口脚本，最后加载）
    ========================================================= */
 (function (App) {
@@ -24,7 +24,7 @@
     App.Editor.init();
     App.Game.init();
 
-    // 开始游戏
+    // 进入连接：载入编辑器地图并切换到游戏屏幕
     $('#edStart').addEventListener('click', () => {
       const map = App.Editor.getMap();
       if (map.places.length < App.config.MIN_PLACES || map.edges.length < App.config.MIN_EDGES) return;

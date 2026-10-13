@@ -9,7 +9,7 @@ import { $ } from './dom.js';
 import { db, flagLabels } from '../core/engine.js';
 import { barHTML } from './statusBar.js';
 
-const DRAWER_IDS = ['drawerLog', 'drawerArch'];
+const DRAWER_IDS = ['drawerLog', 'drawerArch', 'drawerRestart'];
 
 /** 下拉多少像素算「确认关闭」 */
 const CLOSE_DISTANCE = 64;

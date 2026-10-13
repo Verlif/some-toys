@@ -19,7 +19,7 @@ import { renderEnding } from './ui/ending.js';
 
 import {
   db, CARD_FLY_MS,
-  newGame, pickEvent, choose, saveGame, loadGame, clearSave
+  newGame, pickEvent, choose, saveGame, loadGame
 } from './core/engine.js';
 
 /** 当前局状态；cur 为当前卡牌事件；busy 防止动画期间重复提交 */
@@ -175,13 +175,10 @@ function bindEvents() {
   on('btnR', 'pointerenter', () => { if (isPlaying()) previewPeek('right'); });
   on('btnL', 'pointerleave', () => previewPeek(null));
   on('btnR', 'pointerleave', () => previewPeek(null));
-  on('btnRestart', 'click', () => {
-    if (!S) return;
-    if (confirm('确定重新开始吗？当前进度将被覆盖。')) {
-      clearSave();
-      goHome();
-    }
-  });
+  // 重开：先弹底部确认浮窗，避免误触；确认后才刷新页面
+  on('btnRestart', 'click', () => openDrawer('drawerRestart'));
+  on('btnRestartCancel', 'click', closeDrawers);
+  on('btnRestartOk', 'click', () => location.reload());
   on('btnArch', 'click', () => { if (S) { renderArch(S); openDrawer('drawerArch'); } });
   on('btnLog',  'click', () => { if (S) { renderLog(S);  openDrawer('drawerLog');  } });
 

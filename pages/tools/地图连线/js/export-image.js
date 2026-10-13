@@ -25,7 +25,7 @@
     'path', 'circle', 'rect', 'ellipse', 'line', 'polygon', 'polyline', 'text'
   ]);
 
-  const BG = '#fbfcfe';
+  const BG = '#fafafa';
 
   /**
    * 把【页面上真实可见】源元素的真实计算样式，递归写入对应的克隆元素。

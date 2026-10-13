@@ -8,6 +8,7 @@ on:
       - 'templates/**'
       - 'assets/**'
       - 'generate-index.js'
+      - 'site.config.json'
   workflow_dispatch:
 # 关键：给这个工作流写权限
 permissions:

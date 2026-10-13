@@ -21,16 +21,48 @@
   var SUPPORTED = ['zh', 'en'];
   var FALLBACK = 'zh';
 
+  // ---------------------------------------------------------------- 站点信息
+  // 站点名称 / 作者 / 简介由生成脚本注入 window.SITE（源自 site.config.json）。
+  // 这里保留一份默认值，介绍页等没有注入的静态页面也能照常渲染。
+
+  var SITE_DEFAULTS = {
+    siteTitle: 'someToys',
+    owner: 'Verlif',
+    bio: 'AI 单页面作品集',
+  };
+
+  function siteVars() {
+    var injected = (global && global.SITE) || {};
+    var out = {};
+    for (var key in SITE_DEFAULTS) {
+      if (Object.prototype.hasOwnProperty.call(SITE_DEFAULTS, key)) {
+        out[key] = injected[key] || SITE_DEFAULTS[key];
+      }
+    }
+    return out;
+  }
+
+  /** 站点变量打底，调用方传入的 vars 覆盖它：{siteTitle} 来自站点配置，{n} 来自调用方 */
+  function mergeVars(vars) {
+    var out = siteVars();
+    if (vars) {
+      for (var key in vars) {
+        if (Object.prototype.hasOwnProperty.call(vars, key)) out[key] = vars[key];
+      }
+    }
+    return out;
+  }
+
   // ---------------------------------------------------------------- 字典
   // 新增文案时：先在这里补 key（zh / en 各一条），再在 HTML 上写 data-i18n="xxx"。
   var DICT = {
     // ============================== 中文 ==============================
     zh: {
       // ---- 导航页 ----
-      'nav.docTitle': 'someToys · Verlif 的作品导航',
-      'nav.metaDesc': 'AI 单页面作品集：单文件页面与项目文件夹的自动导航站。',
+      'nav.docTitle': '{siteTitle} · {owner} 的作品导航',
+      'nav.metaDesc': '{bio}：单文件页面与项目文件夹的自动导航站。',
       'nav.home': '首页',
-      'nav.bio': 'AI 单页面作品集',
+      'nav.bio': '{bio}',
       'nav.openMenu': '打开分组菜单',
       'nav.closeMenu': '关闭分组菜单',
       'nav.search': '搜索项目',
@@ -79,17 +111,17 @@
       'time.yearsAgo': '{n} 年前',
 
       // ---- 介绍页：Hero ----
-      'intro.docTitle': 'someToys - AI 单页面作品导航站',
+      'intro.docTitle': '{siteTitle} - AI 单页面作品导航站',
       'intro.metaDesc': '专为 AI 生成的单页面 HTML 作品设计的自动化导航站，放文件、推送、自动上线。',
       'intro.badge': 'AI 单页面作品集',
       'intro.heroSub': '专为 AI 生成的单页面 HTML 作品设计的导航站。放文件、推送、自动上线。',
       'intro.source': '查看源码',
-      'intro.author': '@Verlif',
+      'intro.author': '@{owner}',
       'intro.docDev': '开发文档',
       'intro.docUser': '使用文档',
       'intro.navHome': '返回导航页',
       'intro.introTitle': '这是什么',
-      'intro.introBody': 'someToys 是一个「只负责展示」的作品架：AI 生成的 HTML 直接放进 pages/ 目录，推送到 GitHub，Actions 会自动扫描、生成带分组与搜索的导航页，再由 GitHub Pages 发布。整个过程不需要手写任何清单或配置。',
+      'intro.introBody': '{siteTitle} 是一个「只负责展示」的作品架：AI 生成的 HTML 直接放进 pages/ 目录，推送到 GitHub，Actions 会自动扫描、生成带分组与搜索的导航页，再由 GitHub Pages 发布。整个过程不需要手写任何清单或配置。',
 
       // ---- 介绍页：流程 ----
       'intro.flow1': '放入 HTML',
@@ -193,10 +225,10 @@
     // ============================== English ==============================
     en: {
       // ---- Nav page ----
-      'nav.docTitle': 'someToys · Portfolio of Verlif',
-      'nav.metaDesc': 'AI single-page portfolio: an auto-generated index for single-file pages and project folders.',
+      'nav.docTitle': '{siteTitle} · Portfolio of {owner}',
+      'nav.metaDesc': '{bio}: an auto-generated index for single-file pages and project folders.',
       'nav.home': 'Home',
-      'nav.bio': 'AI single-page portfolio',
+      'nav.bio': '{bio}',
       'nav.openMenu': 'Open group menu',
       'nav.closeMenu': 'Close group menu',
       'nav.search': 'Search projects',
@@ -245,17 +277,17 @@
       'time.yearsAgo': '{n} years ago',
 
       // ---- Intro: hero ----
-      'intro.docTitle': 'someToys · AI single-page works index',
+      'intro.docTitle': '{siteTitle} · AI single-page works index',
       'intro.metaDesc': 'An automated index site for AI-generated single-page HTML works — drop it in, push, ship.',
       'intro.badge': 'AI single-page portfolio',
       'intro.heroSub': 'An index site built for AI-generated single-page HTML. Drop it in, push, ship.',
       'intro.source': 'View source',
-      'intro.author': '@Verlif',
+      'intro.author': '@{owner}',
       'intro.docDev': 'Developer docs',
       'intro.docUser': 'User guide',
       'intro.navHome': 'Back to index',
       'intro.introTitle': 'What is this',
-      'intro.introBody': 'someToys is a display-only shelf: put the HTML your AI produced into pages/, push to GitHub, and Actions rescans, rebuilds the searchable group index, and GitHub Pages publishes it. No manifest, no configuration, no manual registration.',
+      'intro.introBody': '{siteTitle} is a display-only shelf: put the HTML your AI produced into pages/, push to GitHub, and Actions rescans, rebuilds the searchable group index, and GitHub Pages publishes it. No manifest, no configuration, no manual registration.',
 
       // ---- Intro: flow ----
       'intro.flow1': 'Drop in HTML',
@@ -414,12 +446,10 @@
       text = (DICT[FALLBACK] || {})[key];
       if (text === undefined) text = key;
     }
-    if (vars) {
-      text = text.replace(/\{(\w+)\}/g, function (all, name) {
-        return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : all;
-      });
-    }
-    return text;
+    var values = mergeVars(vars);
+    return text.replace(/\{(\w+)\}/g, function (all, name) {
+      return Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : all;
+    });
   }
 
   function parseVars(attr) {

@@ -16,6 +16,7 @@
     edges: [],
     mode: 'place',
     pending: null,
+    previewId: null,   // 预览模式下被选中的地点（高亮其连接与相邻地点）
     history: [],
     nextId: 1
   };
@@ -56,19 +57,35 @@
     if (start) start.disabled = !(p >= cfg.MIN_PLACES && e >= cfg.MIN_EDGES);
   }
 
+  /** 预览状态：是否正在高亮某个（仍存在的）地点，及其相邻地点集合 */
+  function previewState() {
+    const none = { active: false, neighbors: new Set() };
+    if (editor.mode !== 'preview' || editor.previewId == null) return none;
+    if (!editor.places.some(p => p.id === editor.previewId)) return none;
+
+    const neighbors = new Set();
+    editor.edges.forEach(([a, b]) => {
+      if (a === editor.previewId) neighbors.add(b);
+      else if (b === editor.previewId) neighbors.add(a);
+    });
+    return { active: true, neighbors };
+  }
+
   function renderEditor() {
+    const { active: previewing, neighbors } = previewState();
+
     // 道路
     const edgeEls = editor.edges.map(([a, b]) => {
       const pa = editor.places.find(x => x.id === a);
       const pb = editor.places.find(x => x.id === b);
       if (!pa || !pb) return '';
       const d = roadPath(pa, pb);
-      const k = edgeKey(a, b);
-      const cls = (editor.mode === 'delete') ? 'road del-mode' : 'road';
-      return `<g class="${cls}" data-key="${k}">
-        <path class="road-outer" d="${d}"></path>
-        <path class="road-inner" d="${d}"></path>
-        <path class="road-dash" d="${d}"></path>
+      let cls = 'road';
+      if (previewing) {
+        cls += (a === editor.previewId || b === editor.previewId) ? ' active' : ' dim';
+      }
+      return `<g class="${cls}" data-key="${edgeKey(a, b)}">
+        <path class="road-line" d="${d}"></path>
         <path class="road-hit" d="${d}"></path>
       </g>`;
     }).join('');
@@ -79,6 +96,11 @@
       const cls = ['edit-place'];
       if (editor.pending === p.id) cls.push('pending');
       if (p.id === editor.places[0]?.id) cls.push('first');
+      if (previewing) {
+        if (p.id === editor.previewId) cls.push('selected');
+        else if (neighbors.has(p.id)) cls.push('neighbor');
+        else cls.push('dim');
+      }
       return `<g class="${cls.join(' ')}" data-id="${p.id}" data-x="${p.x}" data-y="${p.y}" style="--c:${esc(p.color)}">
         <circle class="place-halo" r="34"></circle>
         <circle class="place-ring" r="22"></circle>
@@ -99,10 +121,12 @@
      ========================================================= */
   function placeHitTest(x, y) {
     const wpt = viewport.screenToWorld(x, y);
+    // 命中半径随缩放补偿，与地点在屏幕上的实际大小一致（避免缩小后点不中）
+    const r = 26 * placeScale(viewport.scale);
     let best = null, bestD = Infinity;
     for (const p of editor.places) {
       const d = Math.hypot(p.x - wpt.x, p.y - wpt.y);
-      if (d < 26 && d < bestD) { best = p; bestD = d; }
+      if (d < r && d < bestD) { best = p; bestD = d; }
     }
     return best;
   }
@@ -112,6 +136,7 @@
      ========================================================= */
   function setMode(mode) {
     editor.mode = mode;
+    if (mode !== 'preview') editor.previewId = null;
     closePlaceEditor();
     // 清除可能残留的单击/双击延时状态，避免切换模式后误触发
     if (edTapTimer) { clearTimeout(edTapTimer); edTapTimer = null; }
@@ -232,6 +257,9 @@
       road: editor.pending
         ? '点击另一个地点完成连接 · 再次点击起点取消'
         : '先点一个地点作为起点',
+      preview: editor.previewId != null
+        ? '再次点击该地点或点空白处退出预览'
+        : '点击任意地点，高亮它的道路与相邻地点',
       delete: '点击地点或道路即可删除'
     };
     tip.textContent = tips[editor.mode] || '';
@@ -382,8 +410,8 @@
 
       if (ps && !ps.moved) {
         // 地点点击
-        if (editor.mode === 'road' || editor.mode === 'delete') {
-          // 连线 / 删除模式：立即响应，避免等待双击造成的卡顿
+        if (editor.mode === 'road' || editor.mode === 'delete' || editor.mode === 'preview') {
+          // 连线 / 删除 / 预览模式：立即响应，避免等待双击造成的卡顿
           handlePlaceTap(ps.id);
         } else {
           // place 模式：双击编辑，单击无操作（先等一下看是否双击）
@@ -422,6 +450,12 @@
       removePlace(id);
       return;
     }
+    if (editor.mode === 'preview') {
+      // 点新地点 → 选中预览；再点同一地点 → 取消
+      editor.previewId = (editor.previewId === id) ? null : id;
+      renderEditor();
+      return;
+    }
     if (editor.mode === 'road') {
       if (editor.pending == null) {
         editor.pending = id;
@@ -438,6 +472,10 @@
   }
 
   function handleBlankTap(cx, cy) {
+    if (editor.mode === 'preview') {
+      if (editor.previewId != null) { editor.previewId = null; renderEditor(); }
+      return;
+    }
     if (editor.mode === 'place') {
       const wpt = viewport.screenToWorld(cx, cy);
       // 与已有地点过近则忽略
@@ -630,8 +668,8 @@
 
     // 长按移动（按下后延时进入拖动模式）
     edSvg.addEventListener('pointerdown', (e) => {
-      // 仅对地点生效，且非删除模式
-      if (editor.mode === 'delete') return;
+      // 仅对地点生效，且非删除 / 预览模式
+      if (editor.mode === 'delete' || editor.mode === 'preview') return;
       const element = e.target.closest('.edit-place');
       if (!element) return;
       const id = Number(element.dataset.id);

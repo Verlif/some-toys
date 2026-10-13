@@ -58,9 +58,7 @@
       if (!pa || !pb) return '';
       const d = roadPath(pa, pb);
       return `<g class="road" data-key="${edgeKey(a, b)}">
-        <path class="road-outer" d="${d}"></path>
-        <path class="road-inner" d="${d}"></path>
-        <path class="road-dash" d="${d}"></path>
+        <path class="road-line" d="${d}"></path>
       </g>`;
     }).join('');
 
@@ -151,7 +149,9 @@
       activeEdges.add(edgeKey(game.path[i], game.path[i + 1]));
     }
     gmRoads.querySelectorAll('.road').forEach(g => {
-      g.classList.toggle('active', activeEdges.has(g.dataset.key));
+      const on = activeEdges.has(g.dataset.key);
+      g.classList.toggle('active', on);
+      g.classList.toggle('idle', !on);
     });
 
     // 地点状态
@@ -169,6 +169,8 @@
       g.classList.toggle('current', isCur);
       g.classList.toggle('back', isBack);
       g.classList.toggle('available', isAvail);
+      // 与当前路线无关的地点：半灰度、退居背景
+      g.classList.toggle('idle', !isOn && !isAvail);
     });
 
     gmScreen.classList.toggle('completed', game.finished);

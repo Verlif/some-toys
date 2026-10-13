@@ -11,7 +11,7 @@
     STORAGE_KEY: 'map-connect:editor:v1',
 
     /* ---- 编辑器 / 游戏 通用阈值与限制 ---- */
-    MIN_PLACES: 2,            // 开始游戏至少需要地点数
+    MIN_PLACES: 2,            // 进入连接至少需要地点数
     MIN_EDGES: 1,             // 至少一条道路
     NEW_PLACE_MIN_DIST: 46,   // 新地点与已有地点的最小间距（世界坐标，会除以缩放）
     LONG_PRESS_MS: 480,       // 长按判定时长

@@ -19,11 +19,11 @@
   <div class="screen active" id="editorScreen">
     <svg id="editorSvg" class="map-svg" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <pattern id="editorGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(70,80,130,.05)" stroke-width="1"/>
+        <pattern id="editorGrid" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1.5" cy="1.5" r="1.1" fill="#dcdcdf"/>
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="#fbfcfe"/>
+      <rect width="100%" height="100%" fill="#fafafa"/>
       <g id="editorWorld">
         <rect x="-3000" y="-3000" width="8000" height="8000" fill="url(#editorGrid)"/>
         <g id="editorRoads"></g>
@@ -39,6 +39,7 @@
       <div class="et-modes">
         <button class="et-mode active" data-mode="place"><span class="ic">📍</span>放置</button>
         <button class="et-mode" data-mode="road"><span class="ic">🔗</span>连线</button>
+        <button class="et-mode" data-mode="preview"><span class="ic">👁️</span>预览</button>
         <button class="et-mode" data-mode="delete"><span class="ic">🗑️</span>删除</button>
       </div>
     </div>
@@ -56,7 +57,7 @@
         <button class="eb-btn" id="edImport">⬆ 导入 JSON</button>
         <button class="eb-btn" id="edExportImg">🖼 导出图片</button>
       </div>
-      <button class="eb-start" id="edStart" disabled>开 始 游 戏</button>
+      <button class="eb-start" id="edStart" disabled>进 入 连 接</button>
     </div>
 
     <div class="drop-overlay" id="dropOverlay">
@@ -89,11 +90,11 @@
   <div class="screen" id="gameScreen">
     <svg id="gameSvg" class="map-svg" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <pattern id="gameGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(70,80,130,.05)" stroke-width="1"/>
+        <pattern id="gameGrid" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1.5" cy="1.5" r="1.1" fill="#dcdcdf"/>
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="#fbfcfe"/>
+      <rect width="100%" height="100%" fill="#fafafa"/>
       <g id="gameWorld">
         <rect x="-3000" y="-3000" width="8000" height="8000" fill="url(#gameGrid)"/>
         <g id="gameRoads"></g>

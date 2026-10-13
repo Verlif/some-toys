@@ -15,6 +15,9 @@
  *   <meta name="description" content="一句话介绍">
  *   <meta name="date" content="2025-01-31">   也可用 article:modified_time
  *   <meta name="tags" content="标签1, 标签2">  也可用 keywords
+ *
+ * 站点信息（站点名称、简介、GitHub 地址等）从 site.config.json 读取，
+ * 没写或读取失败的字段一律退回脚本里的默认值。
  */
 
 const fs = require('fs');
@@ -26,12 +29,15 @@ const { execFileSync } = require('child_process');
 const pagesDir = 'pages';
 const templatePath = 'templates/nav-template.html';
 const outputFile = 'index.html';
+const configFile = 'site.config.json';
 
-const site = {
-  owner: 'Verlif',              // GitHub 用户名，用于头像、链接与文档地址
-  repo: 'someToys',             // 仓库名
+// 站点默认信息：site.config.json 里缺字段时用这里的值兜底（即项目初始状态）
+const DEFAULT_SITE = {
   siteTitle: 'someToys',
   bio: 'AI 单页面作品集',
+  github: 'https://github.com/Verlif/someToys', // 个人 GitHub 地址，会解析出 owner / repo
+  branch: 'main',                               // 文档链接指向的分支
+  docsDir: 'docs',                              // 文档所在目录
 };
 
 // 图标映射：分组名 / 项目名 / 文件名包含关键词时使用对应图标（先匹配到的优先）
@@ -54,6 +60,79 @@ const iconMap = {
   about: 'fa-circle-info',
 };
 const defaultIcon = 'fa-cube';
+
+// ---------- 站点信息 ----------
+
+/** 读取 site.config.json；文件缺失或格式不对就返回空对象，全部走默认值 */
+function readConfig(file) {
+  if (!fs.existsSync(file)) {
+    console.warn(`未找到 ${file}，站点信息全部使用默认值。`);
+    return {};
+  }
+  try {
+    const raw = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      console.warn(`警告：${file} 顶层不是对象，已忽略。`);
+      return {};
+    }
+    return data;
+  } catch (e) {
+    console.warn(`警告：解析 ${file} 失败（${e.message}），站点信息使用默认值。`);
+    return {};
+  }
+}
+
+/**
+ * 从 GitHub 地址里解析 owner / repo。
+ * 兼容 https://github.com/owner/repo、github.com/owner、owner/repo、owner 等写法。
+ */
+function parseGithub(input) {
+  const text = String(input || '')
+    .trim()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '') // 去掉协议
+    .replace(/^www\./i, '')
+    .replace(/^github\.com\//i, '')
+    .split(/[?#]/)[0]
+    .replace(/\.git$/i, '')
+    .replace(/\/+$/, '');
+  const parts = text.split('/').filter(Boolean);
+  if (!parts.length) return {};
+  return { owner: parts[0], repo: parts[1] || '' };
+}
+
+/** 合并默认值、配置文件和 GitHub 地址解析结果，得到最终站点信息 */
+function buildSite(config) {
+  const merged = Object.assign({}, DEFAULT_SITE, config);
+  const parsed = parseGithub(merged.github);
+  const fallback = parseGithub(DEFAULT_SITE.github);
+
+  const owner = merged.owner || parsed.owner || fallback.owner || '';
+  const repo = merged.repo || parsed.repo || fallback.repo || '';
+
+  const githubUrl = owner ? `https://github.com/${owner}` : DEFAULT_SITE.github;
+  const repoUrl = owner && repo ? `https://github.com/${owner}/${repo}` : githubUrl;
+  const avatarUrl = merged.avatar || (owner ? `https://avatars.githubusercontent.com/${owner}` : '');
+
+  const branch = merged.branch || DEFAULT_SITE.branch;
+  const docsDir = String(merged.docsDir || DEFAULT_SITE.docsDir).replace(/^\/+|\/+$/g, '');
+  const docsBase = owner && repo ? `${repoUrl}/blob/${branch}/${docsDir}/` : '';
+
+  return {
+    owner,
+    repo,
+    siteTitle: merged.siteTitle || DEFAULT_SITE.siteTitle,
+    bio: merged.bio || DEFAULT_SITE.bio,
+    branch,
+    docsDir,
+    githubUrl,
+    repoUrl,
+    avatarUrl,
+    docsBase,
+  };
+}
+
+const site = buildSite(readConfig(configFile));
 
 // ---------- 基础工具 ----------
 
@@ -477,17 +556,28 @@ const railNav = [
 const introEntry = tree.items.find(item => item.rawName === '介绍');
 const introUrl = introEntry ? introEntry.url : encodeUrl(`${pagesDir}/介绍.html`);
 
-/** 文档地址：指向仓库里的 Markdown（GitHub 上可直接阅读） */
-const docsBase = `https://github.com/${site.owner}/${site.repo}/blob/main/docs/`;
-const docDevUrl = docsBase + encodeURIComponent('开发文档.md');
-const docUserUrl = docsBase + encodeURIComponent('使用文档.md');
+/** 文档地址：指向仓库里的 Markdown（GitHub 上可直接阅读），取不到仓库时留空 */
+const docDevUrl = site.docsBase ? site.docsBase + encodeURIComponent('开发文档.md') : '';
+const docUserUrl = site.docsBase ? site.docsBase + encodeURIComponent('使用文档.md') : '';
+
+/** 注入给浏览器的站点信息：供 i18n 里的 {siteTitle} / {owner} / {bio} 等占位符使用 */
+const siteConfigScript = `<script>window.SITE = ${JSON.stringify({
+  siteTitle: site.siteTitle,
+  owner: site.owner,
+  bio: site.bio,
+  githubUrl: site.githubUrl,
+  repoUrl: site.repoUrl,
+  avatarUrl: site.avatarUrl,
+}).replace(/</g, '\\u003c')};</script>`;
 
 let template = fs.readFileSync(templatePath, 'utf8');
 template = template
   .replace(/\{\{siteTitle\}\}/g, escapeHtml(site.siteTitle))
-  .replace(/\{\{owner\}\}/g, encodeURIComponent(site.owner))
   .replace(/\{\{ownerText\}\}/g, escapeHtml(site.owner))
   .replace(/\{\{bio\}\}/g, escapeHtml(site.bio))
+  .replace(/\{\{githubUrl\}\}/g, site.githubUrl)
+  .replace(/\{\{avatarUrl\}\}/g, site.avatarUrl)
+  .replace(/\{\{siteConfig\}\}/g, siteConfigScript)
   .replace(/\{\{sideNav\}\}/g, sideNav)
   .replace(/\{\{railNav\}\}/g, railNav)
   .replace(/\{\{content\}\}/g, content)
