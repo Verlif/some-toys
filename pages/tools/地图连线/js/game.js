@@ -58,7 +58,9 @@
       if (!pa || !pb) return '';
       const d = roadPath(pa, pb);
       return `<g class="road" data-key="${edgeKey(a, b)}">
-        <path class="road-line" d="${d}"></path>
+        <path class="road-outer" d="${d}"></path>
+        <path class="road-inner" d="${d}"></path>
+        <path class="road-dash" d="${d}"></path>
       </g>`;
     }).join('');
 

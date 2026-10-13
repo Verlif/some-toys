@@ -100,9 +100,13 @@ body {
 }
 .road.del-hover .road-outer { stroke: #ffcccc; }
 .road.del-hover .road-inner { stroke: #ff6b6b; }
+/* 预览模式下压暗非高亮道路（editor.js 会加 dim 类） */
+.road.dim .road-outer { stroke: #eef0f6; }
+.road.dim .road-inner { stroke: #f8f9fc; }
+.road.dim .road-dash { stroke: rgba(120, 130, 170, .08); }
 
 /* ---------- 地点（编辑器与游戏共用） ---------- */
-.place { cursor: pointer; }
+.place { cursor: pointer; transition: opacity .3s, filter .3s; }
 .place-halo {
   fill: var(--c);
   opacity: .06;
@@ -174,6 +178,13 @@ body {
 .place.on-path .place-ring { stroke: #8b5bff; stroke-width: 2.5; opacity: 1; }
 .place.on-path .place-name { fill: #6b4ce0; }
 .place.on-path .place-halo { opacity: .1; }
+
+/* 与当前路线无关的地点（游戏）：半灰度化，退居背景 */
+.place.idle {
+  opacity: .5;
+  filter: grayscale(1);
+  -webkit-filter: grayscale(1);
+}
 
 @keyframes haloPulse {
   0%, 100% { opacity: .13; r: 34; }

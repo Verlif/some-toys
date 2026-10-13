@@ -309,3 +309,9 @@
 }
 .edit-place.moving .place-bg { fill: #fff1e0; }
 .edit-place.first .place-ring { stroke-dasharray: 4 3; }
+/* 预览模式：非高亮地点半灰度化（与 .road.dim 对应，editor.js 会加 dim 类） */
+.edit-place.dim {
+  opacity: .5;
+  filter: grayscale(1);
+  -webkit-filter: grayscale(1);
+}

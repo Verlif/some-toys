@@ -85,7 +85,9 @@
         cls += (a === editor.previewId || b === editor.previewId) ? ' active' : ' dim';
       }
       return `<g class="${cls}" data-key="${edgeKey(a, b)}">
-        <path class="road-line" d="${d}"></path>
+        <path class="road-outer" d="${d}"></path>
+        <path class="road-inner" d="${d}"></path>
+        <path class="road-dash" d="${d}"></path>
         <path class="road-hit" d="${d}"></path>
       </g>`;
     }).join('');
