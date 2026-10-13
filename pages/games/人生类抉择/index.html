@@ -82,6 +82,10 @@
     </div>
 
     <div class="cardzone">
+      <!-- 卡片列：卡片 + 两侧滑动浮窗。浮窗必须贴着卡片的左右边缘，
+           所以要有一层和卡片同宽的定位容器（宽屏下 .cardzone 是行布局、右侧还有侧栏）；
+           卡片自身是 overflow:hidden，浮窗也不能塞进卡片里 -->
+      <div class="cardcol">
       <div class="card" id="card">
         <div class="cardhead">
           <div class="avatar" id="cardAvatar"></div>
@@ -108,6 +112,7 @@
         <span class="pk-arrow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg></span>
         <span class="pk-lbl" id="peekLblR"></span>
         <span class="pk-go">松手即选</span>
+      </div>
       </div>
 
       <aside class="sideinfo">
@@ -171,6 +176,21 @@
     </button>
   </div>
   <div class="body" id="archBody"></div>
+</div>
+
+<div class="drawer" id="drawerRestart" role="dialog" aria-label="重新开始">
+  <div class="grab" aria-hidden="true"><i></i></div>
+  <div class="drawer-confirm">
+    <span class="dc-ic">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </span>
+    <h3 class="font-d">重新开始？</h3>
+    <p>这一生的进度会全部清空，无法恢复。</p>
+    <div class="dc-btns">
+      <button class="btn ghost" id="btnRestartCancel">再想想</button>
+      <button class="btn danger" id="btnRestartOk">重新开始</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== 底部标签栏：带文字，点击后从底部上浮出对应浮窗 ===== -->

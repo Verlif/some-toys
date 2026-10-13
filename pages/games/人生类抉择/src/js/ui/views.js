@@ -3,6 +3,7 @@
  */
 
 import { $ } from './dom.js';
+import { fxChipsHTML } from './statusBar.js';
 import { db, rollTraits, loadGame } from '../core/engine.js';
 
 const VIEW_IDS = ['view-start', 'view-game'];
@@ -50,10 +51,23 @@ export function bindAspirationGrid(onSelect) {
   });
 }
 
-/** 宽屏右侧：大事记 + 当前心愿 */
+/** 宽屏右侧：上一件事 + 大事记 + 当前心愿 */
 export function renderSideInfo(S) {
+  // 顶部先给「上一件事」：刚才发生了什么、你选了什么、结果如何
+  const last = S.log[S.log.length - 1];
+  const lastAct = last ? `
+    <div class="lastact">
+      <div class="la-head">
+        <span class="la-tag">上一件事</span>
+        <span class="la-age">${last.age}岁</span>
+      </div>
+      <div class="la-text">${last.name}：「${last.text}」</div>
+      <div class="la-side">你选择了「${last.side}」</div>
+      <div class="la-fx">${fxChipsHTML(last, '这一年，什么都没变')}</div>
+    </div>` : '';
+
   const recent = S.milestones.slice(-7).reverse();
-  $('miniMilestones').innerHTML = recent
+  $('miniMilestones').innerHTML = lastAct + recent
     .map(x => `<div class="milestone-mini"><span class="ma">${x.age}岁</span><span>${x.text}</span></div>`)
     .join('');
 

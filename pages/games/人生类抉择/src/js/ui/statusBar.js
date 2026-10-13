@@ -100,6 +100,41 @@ function chipsHTML(deltas) {
   }).join('');
 }
 
+/** 属性 / 技能 / 羁绊的中文名 */
+function fxLabel(kind, id) {
+  if (kind === 'meter') return (meterMeta(id) || {}).label || id;
+  const list = kind === 'skill' ? db.skills : db.relations;
+  return ((list || []).find(x => x.id === id) || {}).label || id;
+}
+
+/**
+ * 一条抉择记录的效果标签（六项属性 + 技能 + 羁绊），涨绿跌红。
+ * 抉择履历（drawers.js）与人生大事记的「上一件事」（views.js）共用这一套，
+ * 保证同一份数据在两处读起来完全一致。
+ *
+ * @param {{fx?:object, skills?:object, rel?:object}} entry 履历条目
+ * @param {string} [emptyTip] 有记录但全部为 0 时的占位文案；留空则不输出占位
+ * @returns {string} HTML；旧存档没有这些字段时返回空串（不误报「什么都没变」）
+ */
+export function fxChipsHTML(entry, emptyTip = '') {
+  if (!entry.fx && !entry.skills && !entry.rel) return '';
+
+  const out = [];
+  const collect = (kind, obj) => {
+    for (const [k, v] of Object.entries(obj || {})) {
+      if (!v) continue;
+      out.push(`<span class="fx ${v > 0 ? 'up' : 'down'} ${kind}">`
+        + `${fxLabel(kind, k)} ${v > 0 ? '+' : ''}${v}</span>`);
+    }
+  };
+  collect('meter', entry.fx);
+  collect('skill', entry.skills);
+  collect('rel', entry.rel);
+
+  if (!out.length) return emptyTip ? `<span class="fx hold">${emptyTip}</span>` : '';
+  return out.join('');
+}
+
 /**
  * 播报一条旁白
  * @param {object} n

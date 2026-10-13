@@ -177,7 +177,20 @@ export function choose(S, ev, side) {
     S.stats[m] = clamp(nv);
   }
 
-  S.log.push({ age: S.age, id: ev.id, name: ev.name, side: opt.label, text: ev.text, died: !!broken });
+  // 履历要能回看「这一次抉择到底改了什么」，所以把真正生效的增量一并存进去：
+  // 六项属性用结算后的 deltas（已含特质修正，与旁白条上播报的一致），技能与羁绊同理。
+  // 只保留非零项，避免日志里堆一片 +0。
+  const logFx = {};
+  for (const m of db.mIds) if (deltas[m]) logFx[m] = deltas[m];
+  const logSkills = {};
+  for (const k in sk) if (sk[k]) logSkills[k] = sk[k];
+  const logRel = {};
+  for (const k in rl) if (rl[k]) logRel[k] = rl[k];
+
+  S.log.push({
+    age: S.age, id: ev.id, name: ev.name, side: opt.label, text: ev.text, died: !!broken,
+    fx: logFx, skills: logSkills, rel: logRel
+  });
   S.turn++;
 
   if (broken) {

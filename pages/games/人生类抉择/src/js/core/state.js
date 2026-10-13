@@ -11,7 +11,9 @@
  *   aspiration string   心愿 id
  *   flags      {}       人生标记，见 init/config.json 的 flags
  *   milestones []       {age, text} 大事记
- *   log        []       {age, id, name, side, text, died} 抉择履历
+ *   log        []       {age, id, name, side, text, died, fx, skills, rel} 抉择履历
+ *                       fx / skills / rel 是这次抉择真正生效的增量（只存非零项），
+ *                       履历页与大事记的「上一件事」靠它们显示「健康 +5」这类标签
  *   used       {}       once 事件是否已用过
  *   lastId     string   上一条事件 id，用于避免连续重复
  *   aspirationDone bool 心愿是否已达成

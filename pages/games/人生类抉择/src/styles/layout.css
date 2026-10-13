@@ -226,12 +226,35 @@ body.in-game #app { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
   min-height: 0;
 }
 
-.card { width: 100%; }
+/* 卡片列：卡片 + 两侧滑动浮窗的共同容器。
+   窄屏下不定位（position: static），浮窗仍以 .cardzone 为参照，垂直位置保持原样；
+   宽屏由 responsive.css 打开定位，让 left/right 相对卡片而不是整个卡片区。 */
+.cardcol { min-width: 0; display: flex; flex-direction: column; }
+
+.card { flex: 1 1 auto; width: 100%; }
 
 .sidecard { background: var(--c-panel); border: 2px solid var(--c-line); border-radius: 20px; padding: 16px; }
 .sidecard h4 { font-size: 13px; color: var(--c-muted); margin-bottom: 10px; }
 
 .milestone-mini { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; font-size: 12px; color: var(--c-ink-soft); }
 .milestone-mini .ma { flex: none; font-weight: 800; color: var(--c-green); }
+
+/* 大事记顶部的「上一件事」：上一张卡 + 所选项 + 数值结果（.la-fx 的排布见 components.css） */
+.lastact {
+  border: 1.5px solid var(--c-line);
+  background: var(--c-card);
+  border-radius: 13px;
+  padding: 10px 11px;
+  margin-bottom: 10px;
+}
+.lastact .la-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.lastact .la-tag {
+  font-size: 10.5px; font-weight: 800; letter-spacing: .4px;
+  padding: 2px 8px; border-radius: 999px;
+  background: #E4F1E8; color: #33754F;
+}
+.lastact .la-age { font-size: 11px; font-weight: 800; color: var(--c-green); }
+.lastact .la-text { font-size: 12.5px; line-height: 1.6; color: var(--c-ink-soft); }
+.lastact .la-side { margin-top: 4px; font-size: 11.5px; font-weight: 800; color: var(--c-ink-mid); }
 
 .flagline { font-size: 12.5px; color: var(--c-ink-mid); line-height: 1.9; }

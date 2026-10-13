@@ -50,7 +50,12 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
+
+/* 卡牌拖动（translateX(dx)）与飞出动画（translateX ±130% + rotate）会把卡片平移到视口之外，
+   没有任何祖先裁剪时就会撑开文档，在窗口上多出一条横向滚动条。
+   这里在根节点裁掉横向溢出：优先用 clip —— 它不产生滚动容器，也不会让 fixed 元素
+   （底部标签栏 / 上浮浮窗 / Toast）脱离视口定位；hidden 只作旧浏览器兜底。 */
+html, body { height: 100%; overflow-x: hidden; overflow-x: clip; }
 
 body {
   font-family: var(--font-body);

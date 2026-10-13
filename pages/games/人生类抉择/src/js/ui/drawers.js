@@ -7,7 +7,7 @@
 
 import { $ } from './dom.js';
 import { db, flagLabels } from '../core/engine.js';
-import { barHTML } from './statusBar.js';
+import { barHTML, fxChipsHTML } from './statusBar.js';
 
 const DRAWER_IDS = ['drawerLog', 'drawerArch', 'drawerRestart'];
 
@@ -16,29 +16,38 @@ const CLOSE_DISTANCE = 64;
 
 export function openDrawer(id) {
   $('backdrop').classList.add('show');
-  $(id).classList.add('open');
+  const el = $(id);
+  if (el) el.classList.add('open');
 }
 
 export function closeDrawers() {
   $('backdrop').classList.remove('show');
   DRAWER_IDS.forEach(d => {
     const el = $(d);
+    if (!el) return;
     el.classList.remove('open', 'dragging');
     el.style.transform = '';   // 清掉拖拽过程中写入的位移
   });
 }
 
 export function isAnyOpen() {
-  return DRAWER_IDS.some(d => $(d).classList.contains('open'));
+  return DRAWER_IDS.some(d => {
+    const el = $(d);
+    return !!el && el.classList.contains('open');
+  });
 }
 
 /**
  * 给浮窗抓手绑定下拉关闭手势
  * 只需在 boot() 里调用一次，容器是常驻 DOM，内容重绘不影响监听
+ *
+ * 三个浮窗是各自独立的节点，某个 id 在 index.html 里漏了不该把整个 boot 带崩，
+ * 所以这里对缺失节点一律跳过（openDrawer / closeDrawers 同样做了兜底）。
  */
 export function initSheets() {
   DRAWER_IDS.forEach(id => {
     const el = $(id);
+    if (!el) return;
     const grab = el.querySelector('.grab');
     if (!grab) return;
 
@@ -70,11 +79,15 @@ export function initSheets() {
   });
 }
 
-/** 抉择履历：倒序展示 */
+/** 抉择履历：倒序展示。每条包含年龄、说话人、卡面文本、所选项，以及这次抉择带来的数值变化 */
 export function renderLog(S) {
   $('logBody').innerHTML = S.log.slice().reverse().map(l =>
-    `<div class="logitem"><span class="age">${l.age}岁</span>`
-    + `<div class="txt">${l.name}：「${l.text}」<br><span class="side">→ ${l.side}</span></div></div>`
+    `<div class="logitem${l.died ? ' dead' : ''}">`
+    + `<span class="age">${l.age}岁</span>`
+    + `<div class="txt">${l.name}：「${l.text}」`
+    + `<span class="side">→ ${l.side}${l.died ? ' · 人生就此落幕' : ''}</span>`
+    + `<div class="fxrow">${fxChipsHTML(l, '这一年，什么都没变')}</div>`
+    + '</div></div>'
   ).join('') || '<div class="logitem"><span class="txt">还没有任何抉择</span></div>';
 }
 

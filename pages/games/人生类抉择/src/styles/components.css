@@ -107,6 +107,8 @@
 .btn.primary { background: var(--c-green); color: #FFF; }
 .btn.primary:hover { filter: brightness(1.06); }
 .btn.ghost { background: var(--c-card); border: 1.5px solid var(--c-line); color: var(--c-ink-mid); }
+.btn.danger { background: var(--c-red); color: #FFF; }
+.btn.danger:hover { filter: brightness(1.06); }
 .btn svg { width: 18px; height: 18px; }
 
 .bigbtns { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
@@ -134,13 +136,17 @@
   background: var(--c-panel);
   border: 2px solid var(--c-line);
   border-radius: 24px;
-  box-shadow: 0 -12px 40px rgba(60, 45, 25, .26), var(--sh-pop);
   transform: translateY(calc(100% + 22px));
   transition: transform .34s cubic-bezier(.25, .95, .3, 1);
   z-index: 60; display: flex; flex-direction: column;
   overflow: hidden;
 }
-.drawer.open { transform: none; }
+/* 阴影只在展开时给：收起状态整块被推到视口下方，若一直挂着阴影，
+   会在页面最底部透出一条暗带 */
+.drawer.open {
+  transform: none;
+  box-shadow: 0 -12px 40px rgba(60, 45, 25, .26), var(--sh-pop);
+}
 .drawer.dragging { transition: none; }
 
 /* 顶部抓手：提示可以下拉关闭 */
@@ -159,6 +165,19 @@
 .drawer .body { flex: 1; overflow-y: auto; padding: 14px 16px 30px; }
 .drawer .close { width: 38px; height: 38px; border-radius: 10px; background: var(--c-fill); display: grid; place-items: center; color: var(--c-ink-mid); }
 
+/* 重开确认浮窗：居中排布 —— 圆底图标 + 标题 + 说明 + 横排等分按钮 */
+.drawer-confirm { padding: 4px 22px 24px; text-align: center; }
+.drawer-confirm .dc-ic {
+  width: 58px; height: 58px; margin: 8px auto 14px;
+  border-radius: 50%; background: #F8E6E1; color: var(--c-red);
+  display: grid; place-items: center;
+}
+.drawer-confirm .dc-ic svg { width: 28px; height: 28px; }
+.drawer-confirm h3 { font-size: 18px; margin-bottom: 6px; }
+.drawer-confirm p { font-size: 13px; color: var(--c-muted); line-height: 1.6; margin-bottom: 18px; }
+.drawer-confirm .dc-btns { display: flex; gap: 10px; }
+.drawer-confirm .dc-btns .btn { flex: 1; }
+
 .backdrop {
   position: fixed; inset: 0;
   background: rgba(59, 51, 38, .38);
@@ -173,8 +192,22 @@
 
 .logitem { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px dashed var(--c-line-soft); }
 .logitem .age { flex: none; font-size: 11px; font-weight: 800; color: var(--c-green); padding-top: 2px; width: 44px; }
-.logitem .txt { font-size: 12.5px; line-height: 1.6; color: var(--c-ink-soft); }
-.logitem .side { font-size: 11px; font-weight: 700; color: var(--c-muted); }
+.logitem .txt { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.6; color: var(--c-ink-soft); }
+.logitem .side { display: block; margin-top: 3px; font-size: 11px; font-weight: 700; color: var(--c-muted); }
+.logitem.dead .side { color: var(--c-red); }
+
+/* 一次抉择的效果标签（六项属性 / 技能 / 羁绊）。
+   抉择履历与大事记的「上一件事」共用，先按属性排、再技能、再羁绊 */
+.fxrow, .la-fx { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.fx {
+  display: inline-block; padding: 2px 7px; border-radius: 7px;
+  font-size: 11px; font-weight: 800; white-space: nowrap;
+}
+.fx.up   { background: #E4F1E8; color: #33754F; }
+.fx.down { background: #F8E6E1; color: #A2402C; }
+.fx.hold { background: var(--c-fill); color: var(--c-muted); font-weight: 700; }
+.fx.skill { box-shadow: inset 0 0 0 1px rgba(94, 156, 196, .45); }
+.fx.rel   { box-shadow: inset 0 0 0 1px rgba(199, 125, 184, .45); }
 
 /* ===== Toast ===== */
 /* Toast 抬高一点，避免被底部标签栏压住 */
