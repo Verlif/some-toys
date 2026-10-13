@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="支持权重、滚动动画与历史统计的随机抽奖工具" />
+    <title>随机抽奖系统</title>
+    <link rel="stylesheet" href="./css/main.css" />
+</head>
+
+<body>
+    <!-- 顶栏 -->
+    <header class="header">
+        <div class="brand">
+            <span class="brand__mark" aria-hidden="true">🎲</span>
+            <h1 class="brand__title">随机抽奖系统</h1>
+        </div>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">
+            <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+            <span class="theme-toggle__label">暗色模式</span>
+        </button>
+    </header>
+
+    <main class="layout">
+        <!-- 左侧：控制面板 -->
+        <section class="panel">
+            <h2 class="section-title">添加抽奖项目</h2>
+            <form id="add-form" class="add-form" autocomplete="off">
+                <input id="content" class="field field--grow" type="text" placeholder="输入内容" />
+                <input id="weight" class="field field--weight" type="number" placeholder="权重" min="1" step="1"
+                    value="1" />
+                <button type="submit" class="btn btn--accent">添加</button>
+            </form>
+            <ul id="items-list" class="item-list"></ul>
+
+            <h2 class="section-title">抽奖结果</h2>
+            <div id="result-display" class="result-display" aria-live="polite"></div>
+
+            <h2 class="section-title">操作</h2>
+            <div class="speed-control">
+                <label class="speed-control__label" for="speed-slider">滚动速度</label>
+                <div class="speed-control__row">
+                    <span>慢</span>
+                    <input id="speed-slider" type="range" min="1" max="8" step="1" value="5" />
+                    <span>快</span>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <div class="dropdown-host" id="multi-draw">
+                    <button type="button" id="start-btn" class="btn btn--info btn--block">开始</button>
+                    <div class="dropdown" id="draw-options">
+                        <div class="dropdown__item" role="button" tabindex="0" data-times="3">连抽 3 次</div>
+                        <div class="dropdown__item" role="button" tabindex="0" data-times="5">连抽 5 次</div>
+                        <div class="dropdown__item" role="button" tabindex="0" data-times="10">连抽 10 次</div>
+                        <div class="dropdown__item" role="button" tabindex="0" data-times="20">连抽 20 次</div>
+                        <div class="dropdown__item" role="button" tabindex="0" data-times="50">连抽 50 次</div>
+                        <div class="dropdown__item" role="button" tabindex="0" data-times="100">连抽 100 次</div>
+                    </div>
+                </div>
+                <button type="button" id="stop-btn" class="btn btn--warn btn--block" disabled>停止</button>
+                <button type="button" id="save-config-btn" class="btn btn--block">保存配置</button>
+                <button type="button" id="load-config-btn" class="btn btn--block">读取配置</button>
+            </div>
+
+            <h2 class="section-title">历史记录</h2>
+            <div class="history">
+                <div class="history__toolbar">
+                    <div class="dropdown-host">
+                        <button type="button" id="toggle-history" class="btn btn--info btn--block">显示历史记录</button>
+                        <div class="dropdown" id="sort-options">
+                            <div class="dropdown__item" role="button" tabindex="0" data-sort="time">按时间排序</div>
+                            <div class="dropdown__item" role="button" tabindex="0" data-sort="frequency">按抽中次数排序</div>
+                        </div>
+                    </div>
+                    <button type="button" id="clear-history" class="btn btn--danger btn--block">清空历史</button>
+                </div>
+                <div id="history-list" class="history__list"></div>
+            </div>
+        </section>
+
+        <!-- 右侧：滚动抽奖区 -->
+        <aside id="scroll-stage" class="scroll-stage" aria-label="抽奖滚动区">
+            <div id="scroll-track" class="scroll-track"></div>
+            <div class="scroll-stage__fade" aria-hidden="true"></div>
+        </aside>
+    </main>
+
+    <!-- 保存配置 -->
+    <div id="save-config-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="save-config-title">
+        <div class="modal__dialog">
+            <div class="modal__header">
+                <h3 id="save-config-title" class="modal__title">保存配置</h3>
+                <button type="button" class="modal__close" data-close aria-label="关闭">&times;</button>
+            </div>
+            <label class="field-label" for="config-name">配置名称</label>
+            <input id="config-name" class="field field--block" type="text" placeholder="输入配置名称" />
+            <div class="modal__footer">
+                <button type="button" class="btn btn--ghost" data-close>取消</button>
+                <button type="button" id="save-config-confirm" class="btn btn--accent">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 读取配置 -->
+    <div id="load-config-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="load-config-title">
+        <div class="modal__dialog">
+            <div class="modal__header">
+                <h3 id="load-config-title" class="modal__title">读取配置</h3>
+                <button type="button" class="modal__close" data-close aria-label="关闭">&times;</button>
+            </div>
+            <div id="config-list" class="config-list"></div>
+            <div class="modal__footer">
+                <button type="button" class="btn btn--ghost" data-close>关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空历史确认 -->
+    <div id="confirm-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="modal__dialog modal__dialog--sm">
+            <h3 id="confirm-title" class="modal__title">确认清空历史记录</h3>
+            <p class="modal__text">确定要清空所有历史记录吗？此操作不可恢复。</p>
+            <div class="modal__footer">
+                <button type="button" class="btn btn--ghost" data-close>取消</button>
+                <button type="button" id="confirm-clear-btn" class="btn btn--danger">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用提示 / 二次确认 -->
+    <div id="general-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="general-modal-title">
+        <div class="modal__dialog modal__dialog--sm">
+            <h3 id="general-modal-title" class="modal__title"></h3>
+            <p id="general-modal-message" class="modal__text"></p>
+            <div id="general-modal-actions" class="modal__footer"></div>
+        </div>
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>

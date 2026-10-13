@@ -1,0 +1,109 @@
+/* ==========================================================================
+   主题令牌（Design Tokens）
+   - 亮色为默认值，定义在 :root
+   - 暗色通过 <html data-theme="dark"> 覆盖
+   所有组件只消费变量，不写死颜色，因此换肤无需任何额外规则。
+   ========================================================================== */
+
+:root {
+    color-scheme: light;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+
+    /* 层级背景 */
+    --bg: #eef1f6;
+    --surface: #ffffff;
+    --surface-muted: #f6f8fb;
+    --surface-hover: #eef2f7;
+    --surface-sunken: #e9edf3;
+    --header-bg: rgba(255, 255, 255, 0.82);
+    --overlay: rgba(17, 24, 39, 0.42);
+
+    /* 文本 */
+    --text-1: #1b2027;
+    --text-2: #5a6472;
+    --text-3: #8d97a6;
+    --text-on-accent: #ffffff;
+
+    /* 描边 */
+    --border: #e3e8ef;
+    --border-strong: #ccd4e0;
+
+    /* 主色 */
+    --accent: #2f9e63;
+    --accent-hover: #278a55;
+    --accent-soft: #e9f7f0;
+    --accent-text: #1f7a4a;
+    --accent-ring: rgba(47, 158, 99, 0.18);
+    --accent-glow: rgba(47, 158, 99, 0.35);
+
+    /* 功能色 */
+    --info: #2f7fd8;
+    --info-hover: #2569b8;
+    --warn: #dd8a1c;
+    --warn-hover: #c17510;
+    --danger: #d94a4a;
+    --danger-hover: #bf3a3a;
+
+    /* 组件专用 */
+    --track: #dfe5ee;
+    --highlight: #ffd76a;
+    --highlight-text: #4a3800;
+    --scrollbar: #c7d0dd;
+
+    /* 阴影与圆角 */
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-md: 0 4px 14px rgba(16, 24, 40, 0.07);
+    --shadow-lg: 0 10px 28px rgba(16, 24, 40, 0.13);
+    --shadow-xl: 0 20px 48px rgba(16, 24, 40, 0.2);
+
+    --radius-xs: 6px;
+    --radius-sm: 8px;
+    --radius: 10px;
+    --radius-lg: 14px;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --bg: #0d1117;
+    --surface: #161c24;
+    --surface-muted: #1b222c;
+    --surface-hover: #222b37;
+    --surface-sunken: #111820;
+    --header-bg: rgba(22, 28, 36, 0.82);
+    --overlay: rgba(0, 0, 0, 0.6);
+
+    --text-1: #e6edf5;
+    --text-2: #9fadbf;
+    --text-3: #6d7b8d;
+    --text-on-accent: #ffffff;
+
+    --border: #262f3b;
+    --border-strong: #35404f;
+
+    --accent: #35ab6d;
+    --accent-hover: #40bd7c;
+    --accent-soft: rgba(53, 171, 109, 0.14);
+    --accent-text: #6ed49b;
+    --accent-ring: rgba(53, 171, 109, 0.25);
+    --accent-glow: rgba(53, 171, 109, 0.45);
+
+    --info: #3d8fdd;
+    --info-hover: #4d9ee9;
+    --warn: #dd9a2e;
+    --warn-hover: #e8a942;
+    --danger: #dd5c5c;
+    --danger-hover: #e87575;
+
+    --track: #2b3541;
+    --highlight: #f0c14b;
+    --highlight-text: #2b1f00;
+    --scrollbar: #333e4c;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.6);
+}

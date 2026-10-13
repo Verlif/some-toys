@@ -1,0 +1,66 @@
+/* ==========================================================================
+   历史记录
+   ========================================================================== */
+
+.history__toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.history__list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: var(--surface-sunken);
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease,
+        margin-top 0.3s ease, padding 0.3s ease, border-color 0.25s ease;
+}
+
+.history__list.is-open {
+    margin-top: 10px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px;
+    border-color: var(--border);
+    opacity: 1;
+}
+
+.history-item {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-item__index {
+    color: var(--text-3);
+    font-size: 13px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.history-item__result {
+    font-weight: 600;
+    color: var(--text-1);
+    word-break: break-word;
+}
+
+.history-item__meta {
+    margin-top: 2px;
+    color: var(--text-3);
+    font-size: 12px;
+    line-height: 1.3;
+}

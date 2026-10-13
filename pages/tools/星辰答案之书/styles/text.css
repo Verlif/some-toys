@@ -1,0 +1,31 @@
+/* =========================================================
+   text.css —— 答案文本的排版与淡入淡出
+   时长由 CSS 变量 --text-fade 控制，进程内由 src/config.js 注入
+   ========================================================= */
+
+#text {
+  max-width: min(18em, 86vw);
+  text-align: center;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: clamp(23px, 4.2vw, 62px);
+  line-height: 1.7;
+  letter-spacing: 0.14em;
+
+  /* 三态：默认隐藏 / .in 就位 / .out 向上离场 */
+  opacity: 0;
+  transform: translateY(var(--text-shift));
+  transition:
+    opacity   var(--text-fade) var(--text-ease),
+    transform var(--text-fade) var(--text-ease);
+
+  text-shadow:
+    0 0 18px  var(--ink-glow),
+    0 0 56px  rgba(90, 140, 255, 0.35),
+    0 0 120px rgba(70, 110, 255, 0.25);
+
+  will-change: opacity, transform;
+}
+
+#text.in  { opacity: 1; transform: translateY(0); }
+#text.out { opacity: 0; transform: translateY(calc(var(--text-shift) * -1)); }

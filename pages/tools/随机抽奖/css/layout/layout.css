@@ -1,0 +1,26 @@
+/* ==========================================================================
+   页面骨架：控制面板 + 滚动抽奖区的两栏布局
+   ========================================================================== */
+
+.layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+    gap: 16px;
+    padding: 16px;
+    align-items: start;
+    min-height: 0;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}

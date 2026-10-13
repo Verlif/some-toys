@@ -1,0 +1,51 @@
+/* ==========================================================================
+   抽奖结果展示区
+   ========================================================================== */
+
+.result-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 78px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--accent-soft);
+    text-align: center;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.result-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    line-height: 1.4;
+}
+
+.result-label {
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.result-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--warn);
+    word-break: break-word;
+}
+
+.result-frequent {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--danger);
+    word-break: break-word;
+}
+
+.result-sep {
+    color: var(--text-3);
+}

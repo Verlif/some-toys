@@ -1,0 +1,71 @@
+/* ==========================================================================
+   响应式适配
+   ========================================================================== */
+
+@media (max-width: 900px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .scroll-stage {
+        position: relative;
+        top: auto;
+        height: 380px;
+        min-height: 300px;
+        order: -1;
+    }
+}
+
+@media (max-width: 560px) {
+    .layout {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .header {
+        padding: 10px 14px;
+    }
+
+    .brand__title {
+        font-size: 16px;
+    }
+
+    .theme-toggle__label {
+        display: none;
+    }
+
+    .panel {
+        padding: 14px;
+    }
+
+    .add-form {
+        flex-wrap: wrap;
+    }
+
+    .field--grow {
+        flex: 1 1 100%;
+    }
+
+    .field--weight {
+        flex: 1 1 auto;
+    }
+
+    .button-group,
+    .history__toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .item {
+        grid-template-columns: 72px minmax(0, 1fr) auto;
+        gap: 8px;
+    }
+
+    .scroll-stage {
+        height: 320px;
+        min-height: 260px;
+    }
+
+    .modal {
+        padding: 14px;
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "answer-book-starry-night",
+  "version": "2.5.0",
+  "private": true,
+  "description": "答案之书 · 星夜 —— 纯前端 Canvas 星空与黑洞特效页面",
+  "scripts": {
+    "build:texts": "node scripts/build-texts.mjs",
+    "check": "node scripts/check-syntax.mjs && node scripts/audit-config.mjs",
+    "serve": "npx --yes serve ."
+  },
+  "keywords": ["canvas", "starry-night", "blackhole", "answer-book"],
+  "license": "MIT"
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#04060e" />
+<meta name="description" content="答案之书 · 星夜 —— 一页星空，一句答案。" />
+<title>答案之书 · 星夜</title>
+
+<link rel="stylesheet" href="styles/base.css" />
+<link rel="stylesheet" href="styles/sky.css" />
+<link rel="stylesheet" href="styles/text.css" />
+</head>
+<body>
+
+  <!-- 背景层：星云（CSS） / 星辰与黑洞（Canvas） / 暗角 -->
+  <div id="nebula" aria-hidden="true"></div>
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <!-- 内容层：答案文本 -->
+  <main id="stage">
+    <p id="text"></p>
+  </main>
+
+  <!-- ============ 基础工具 ============ -->
+  <script src="src/utils/math.js"></script>
+  <script src="src/utils/random.js"></script>
+  <script src="src/config.js"></script>
+
+  <!-- ============ 核心运行时 ============ -->
+  <script src="src/core/viewport.js"></script>
+  <script src="src/core/loop.js"></script>
+
+  <!-- ============ 数据 ============ -->
+  <!-- texts.fallback.js 由 scripts/build-texts.mjs 依据 data/texts.txt 生成 -->
+  <script src="src/data/texts.fallback.js"></script>
+  <script src="src/data/texts.js"></script>
+
+  <!-- ============ 场景元素（依赖顺序不可调换） ============ -->
+  <script src="src/scene/sprites.js"></script>
+  <script src="src/scene/trail.js"></script>
+  <script src="src/scene/stars.js"></script>
+  <script src="src/scene/meteors.js"></script>
+  <script src="src/scene/blackhole.js"></script>
+
+  <!-- ============ UI ============ -->
+  <script src="src/ui/answer-text.js"></script>
+
+  <!-- ============ 启动 ============ -->
+  <script src="src/main.js"></script>
+
+</body>
+</html>
