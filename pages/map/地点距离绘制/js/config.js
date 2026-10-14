@@ -5,7 +5,7 @@
     STORAGE_KEY: 'place-distance-drawing:v1',
     HISTORY_LIMIT: 60,
     MIN_SCALE: .2,
-    MAX_SCALE: 3,
+    MAX_SCALE: 5,
     COLORS: ['#147d78','#d17a45','#657fbd','#a66c9d','#799347','#ce6860','#518ca0'],
     SAMPLE: {
       places: [

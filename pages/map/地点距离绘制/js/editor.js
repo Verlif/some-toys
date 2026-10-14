@@ -7,6 +7,7 @@
   const state = { places: [], edges: [], mode: 'place', pending: null, preview: null, nextId: 1, scale: 1, tx: 0, ty: 0, history: [], editing: null, cellDistance: 100, mapId: null, mapName: '' };
   let library = null;
   let drag = null, moved = false, lastTap = null, tapTimer = null, toastTimer = null;
+  let pointerFrame = 0, pendingPointer = null, wheelFrame = 0, wheelDelta = 0, wheelPoint = null, zoomSettleTimer = 0;
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const edgeKey = (a,b) => a < b ? `${a}|${b}` : `${b}|${a}`;
 
@@ -146,6 +147,23 @@
     }else renderHistory();
   }
   function snap(n) { return Math.round(n / CELL_SIZE) * CELL_SIZE; }
+  function applyPointerMove(x, y) {
+    if (!drag) return;
+    const dx = x - drag.x, dy = y - drag.y;
+    if (Math.hypot(dx, dy) > 5) moved = true;
+    if (!moved) return;
+    if (drag.id != null) {
+      const place = findPlace(drag.id);
+      if (!place) return;
+      const point = renderer.screenToWorld(x, y, state), nextX = snap(point.x), nextY = snap(point.y);
+      if (state.places.some(other => other.id !== place.id && other.x === nextX && other.y === nextY)) return;
+      renderer.movePlace(state, place.id, nextX, nextY, state.cellDistance);
+    } else {
+      svg.classList.add('dragging');
+      state.tx = drag.tx + dx; state.ty = drag.ty + dy;
+      renderer.applyView(state);
+    }
+  }
   function setMode(mode) {
     state.mode=mode;state.pending=null;if(mode!=='preview')state.preview=null;
     document.querySelectorAll('.tool').forEach(button=>button.classList.toggle('active',button.dataset.mode===mode));render();
@@ -201,26 +219,27 @@
   function bindPointerEvents() {
     svg.addEventListener('pointerdown', event=>{
       if(event.button!==undefined&&event.button!==0)return;
-      const target=event.target;
-      const placeElement=target.closest('.place'),place=placeElement?findPlace(Number(placeElement.dataset.id)):null;
-      const edge=target.closest('.edge');
-      drag={id:place&&state.mode==='place'?place.id:null,placeId:place?.id??null,edgeKey:edge?.dataset.key??null,
-        x:event.clientX,y:event.clientY,tx:state.tx,ty:state.ty,wx:place?.x,wy:place?.y,before:snapshot()};
+      const hit=renderer.hitTest(event.clientX,event.clientY,state);
+      const place=hit?.placeId!=null?findPlace(hit.placeId):null;
+      drag={id:place&&state.mode==='place'?place.id:null,placeId:place?.id??null,edgeKey:hit?.edgeKey??null,
+        x:event.clientX,y:event.clientY,tx:state.tx,ty:state.ty,
+        before:place&&state.mode==='place'?snapshot():null};
       moved=false;svg.setPointerCapture(event.pointerId);
     });
     svg.addEventListener('pointermove',event=>{
-      if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
-      if(Math.hypot(dx,dy)>5)moved=true;if(!moved)return;
-      if(drag.id!=null) {
-        const place=findPlace(drag.id);if(!place)return;
-        const point=renderer.screenToWorld(event.clientX,event.clientY,state);place.x=snap(point.x);place.y=snap(point.y);
-        if(state.places.some(other=>other.id!==place.id&&other.x===place.x&&other.y===place.y)){place.x=drag.wx;place.y=drag.wy;}
-        renderer.render(state,state.cellDistance);
-        storage.scheduleSave(library,state.mapId,snapshot());
-      } else {svg.classList.add('dragging');state.tx=drag.tx+dx;state.ty=drag.ty+dy;renderer.applyView(state);}
+      if(!drag)return;
+      pendingPointer={x:event.clientX,y:event.clientY};
+      if(!pointerFrame)pointerFrame=requestAnimationFrame(()=>{
+        pointerFrame=0;const point=pendingPointer;pendingPointer=null;
+        if(point)applyPointerMove(point.x,point.y);
+      });
     });
     svg.addEventListener('pointerup',event=>{
-      if(!drag)return;const previous=drag;drag=null;
+      if(!drag)return;const previous=drag;
+      if(pointerFrame){cancelAnimationFrame(pointerFrame);pointerFrame=0;}
+      pendingPointer=null;
+      applyPointerMove(event.clientX,event.clientY);
+      drag=null;
       if(moved){svg.classList.remove('dragging');if(previous.id!=null){storage.flushSave();state.history.push(previous.before);if(state.history.length>HISTORY_LIMIT)state.history.shift();render();}return;}
       if(previous.placeId!=null){tapPlace(previous.placeId);return;}
       if(previous.edgeKey&&state.mode==='delete'){removeEdge(previous.edgeKey);return;}
@@ -228,12 +247,27 @@
       else if(state.mode==='preview'&&state.preview!=null){state.preview=null;render();}
       else if(state.mode==='connect'&&state.pending!=null){state.pending=null;render();}
     });
-    svg.addEventListener('pointercancel',()=>{drag=null;svg.classList.remove('dragging');});
-    svg.addEventListener('wheel',event=>{event.preventDefault();renderer.zoom(state,event.clientX,event.clientY,event.deltaY<0?1.12:1/1.12);},{passive:false});
+    svg.addEventListener('pointercancel',()=>{
+      drag=null;pendingPointer=null;
+      if(pointerFrame){cancelAnimationFrame(pointerFrame);pointerFrame=0;}
+      svg.classList.remove('dragging');
+    });
+    svg.addEventListener('wheel',event=>{
+      event.preventDefault();
+      clearTimeout(zoomSettleTimer);
+      wheelDelta+=event.deltaY;wheelPoint={x:event.clientX,y:event.clientY};
+      if(!wheelFrame)wheelFrame=requestAnimationFrame(()=>{
+        wheelFrame=0;const delta=wheelDelta,point=wheelPoint;wheelDelta=0;wheelPoint=null;
+        if(point&&delta){
+          renderer.zoomPreview(state,point.x,point.y,Math.pow(1.12,-delta/100));
+          zoomSettleTimer=setTimeout(()=>{zoomSettleTimer=0;renderer.finishZoom(state);},120);
+        }
+      });
+    },{passive:false});
   }
   function bindControls() {
-    $('#zoomIn').onclick=()=>{const rect=svg.getBoundingClientRect();renderer.zoom(state,rect.left+rect.width/2,rect.top+rect.height/2,1.22);};
-    $('#zoomOut').onclick=()=>{const rect=svg.getBoundingClientRect();renderer.zoom(state,rect.left+rect.width/2,rect.top+rect.height/2,1/1.22);};
+    $('#zoomIn').onclick=()=>renderer.zoomCenter(state,1.22);
+    $('#zoomOut').onclick=()=>renderer.zoomCenter(state,1/1.22);
     $('#zoomReset').onclick=()=>renderer.resetView(state);
     $('#centerMap').onclick=()=>renderer.centerMap(state);
     document.querySelectorAll('.tool').forEach(button=>button.addEventListener('click',()=>setMode(button.dataset.mode)));

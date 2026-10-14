@@ -12,11 +12,7 @@
 </head>
 <body>
 <div id="app">
-  <svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="地点距离绘图画布">
-    <defs><pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M44 0H0V44"/><circle cx="0" cy="0" r="1.4"/></pattern></defs>
-    <rect class="canvas-bg" width="100%" height="100%"/>
-    <g id="world"><rect class="grid-bg" x="-4000" y="-4000" width="10000" height="10000" fill="url(#grid)"/><g id="edges"></g><g id="places"></g></g>
-  </svg>
+  <canvas id="map" role="application" aria-label="地点距离绘图画布"></canvas>
   <header class="topbar">
     <div class="brand"><div class="eyebrow">FIELD NOTES · MAP SKETCH</div><h1><input class="map-name-input" id="mapNameInput" type="text" maxlength="40" value="示例地图" aria-label="地图名称" title="编辑地图名称"></h1><div class="subtitle">在网格上放置地点，连接后自动标注直线距离。</div></div>
     <div class="top-controls">
