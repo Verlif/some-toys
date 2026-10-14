@@ -3,11 +3,13 @@
  *
  * 扫描 pages/ 目录，生成 index.html。
  *
+ * 收录范围：任何纯静态作品，来源不限（手写、AI 生成、脚手架打包产物皆可）。
+ *
  * 规则：
- *   1. 单个页面：目录中的 .html 文件 = 一个单文件作品。
- *   2. 项目文件夹：只要文件夹里存在 index.html，这个文件夹就是一个「单项目」，
- *      文件夹名 = 项目名，index.html = 该项目的主页面。
- *   3. 分组文件夹：文件夹里没有 index.html，就当作分组用，里面的内容会被递归收录，
+ *   1. 单文件页面：目录中的 .html 文件 = 一个独立作品（CSS / JS 内联）。
+ *   2. 项目文件夹：只要文件夹里存在 index.html，这个文件夹就是一个「多文件项目」，
+ *      整体收成一张卡片；文件夹名 = 项目名，index.html = 该项目的主页面。
+ *   3. 分组文件夹：文件夹里没有 index.html，就当作分类用，里面的内容会被递归收录，
  *      分组可以任意层级嵌套。
  *
  * 可选元数据（写在页面 <head> 里）：
@@ -34,7 +36,7 @@ const configFile = 'site.config.json';
 // 站点默认信息：site.config.json 里缺字段时用这里的值兜底（即项目初始状态）
 const DEFAULT_SITE = {
   siteTitle: 'someToys',
-  bio: 'AI 单页面作品集',
+  bio: '单页面与项目文件夹作品集',
   github: 'https://github.com/Verlif/someToys', // 个人 GitHub 地址，会解析出 owner / repo
   branch: 'main',                               // 文档链接指向的分支
   docsDir: 'docs',                              // 文档所在目录
@@ -52,6 +54,8 @@ const iconMap = {
   image: 'fa-image',
   图片: 'fa-image',
   图像: 'fa-image',
+  map: 'fa-map',
+  地图: 'fa-map',
   demo: 'fa-flask',
   blog: 'fa-pen-fancy',
   博客: 'fa-pen-fancy',
@@ -564,6 +568,9 @@ const docUserUrl = site.docsBase ? site.docsBase + encodeURIComponent('使用文
 const siteConfigScript = `<script>window.SITE = ${JSON.stringify({
   siteTitle: site.siteTitle,
   owner: site.owner,
+  repo: site.repo,
+  branch: site.branch,
+  docsDir: site.docsDir,
   bio: site.bio,
   githubUrl: site.githubUrl,
   repoUrl: site.repoUrl,

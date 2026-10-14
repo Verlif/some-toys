@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#f6f8fc" media="(prefers-color-scheme: light)">
-  <title data-i18n="intro.docTitle">someToys - AI 单页面作品导航站</title>
-  <meta name="description" content="专为 AI 生成的单页面 HTML 作品设计的自动化导航站，放文件、推送、自动上线。">
+  <title data-i18n="intro.docTitle">someToys · 单页面与项目文件夹导航站</title>
+  <meta name="description" data-i18n-content="intro.metaDesc" content="不挑来源的作品导航站：单个 HTML 文件、多文件项目文件夹，放进 pages/ 推送即自动生成导航页。">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="../assets/i18n.js"></script>
 
@@ -348,6 +348,58 @@
       -webkit-backdrop-filter: blur(12px);
     }
 
+    /* ===== 三种形态 ===== */
+    .forms {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .form-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 22px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, background 0.28s ease;
+    }
+
+    .form-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-line);
+      background: var(--card-bg-hover);
+      box-shadow: 0 18px 40px -18px var(--shadow);
+    }
+
+    .form-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    .form-card h3 { font-size: 1rem; }
+    .form-card p { font-size: 0.85rem; color: var(--text-muted); }
+
+    .form-path {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px dashed var(--divider);
+      font-family: "SF Mono", "Fira Code", Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      word-break: break-all;
+    }
+
     /* ===== 特性栅格 ===== */
     .features {
       display: grid;
@@ -499,6 +551,13 @@
 
     .callout i { color: var(--accent); flex: none; margin-top: 3px; }
 
+    .callout-warn {
+      border-left-color: var(--orange);
+      background: rgba(251, 146, 60, 0.1);
+    }
+
+    .callout-warn i { color: var(--orange); }
+
     /* ===== FAQ ===== */
     .faq { display: flex; flex-direction: column; gap: 10px; }
 
@@ -574,7 +633,7 @@
       .flow { padding: 14px; gap: 8px; }
       .flow-arrow { display: none; }
       .flow-step { font-size: 0.8rem; padding: 6px 13px; }
-      .features { grid-template-columns: 1fr; }
+      .features, .forms { grid-template-columns: 1fr; }
       .step { flex-direction: column; gap: 12px; }
       .callout { flex-direction: column; gap: 8px; }
       .faq-answer { padding-left: 18px; }
@@ -594,13 +653,13 @@
   <!-- ===== 顶部工具条 ===== -->
   <header class="topbar">
     <a class="topbar-brand" href="../index.html" data-i18n-title="intro.navHome" title="返回导航页">
-      <i class="fas fa-cube"></i><span>someToys</span>
+      <i class="fas fa-cube"></i><span data-i18n="common.siteTitle">someToys</span>
     </a>
 
     <nav class="topbar-nav">
       <a href="../index.html"><i class="fas fa-house"></i><span data-i18n="intro.navHome">返回导航页</span></a>
-      <a href="https://github.com/Verlif/someToys/blob/main/docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener"><i class="fas fa-book-open"></i><span data-i18n="intro.docUser">使用文档</span></a>
-      <a href="https://github.com/Verlif/someToys/blob/main/docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener"><i class="fas fa-code"></i><span data-i18n="intro.docDev">开发文档</span></a>
+      <a href="../docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3.md" data-doc="user" target="_blank" rel="noopener"><i class="fas fa-book-open"></i><span data-i18n="intro.docUser">使用文档</span></a>
+      <a href="../docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" data-doc="dev" target="_blank" rel="noopener"><i class="fas fa-code"></i><span data-i18n="intro.docDev">开发文档</span></a>
     </nav>
 
     <div class="topbar-actions">
@@ -623,17 +682,17 @@
     <!-- Hero -->
     <div class="hero">
       <div class="hero-badge">
-        <i class="fas fa-wand-magic-sparkles"></i>
-        <span data-i18n="intro.badge">AI 单页面作品集</span>
+        <i class="fas fa-layer-group"></i>
+        <span data-i18n="intro.badge">单页面 &amp; 项目文件夹导航</span>
       </div>
-      <h1>someToys</h1>
-      <p data-i18n="intro.heroSub">专为 AI 生成的单页面 HTML 作品设计的导航站。放文件、推送、自动上线。</p>
+      <h1 data-i18n="common.siteTitle">someToys</h1>
+      <p data-i18n="intro.heroSub">不管是一个 HTML 文件，还是带资源的多文件项目，丢进 pages/ 推送就能上线。</p>
       <div class="hero-actions">
-        <a href="https://github.com/Verlif/someToys" target="_blank" rel="noopener" class="btn btn-primary">
+        <a href="https://github.com/Verlif/someToys" data-gh="repo" target="_blank" rel="noopener" class="btn btn-primary">
           <i class="fab fa-github"></i>
           <span data-i18n="intro.source">查看源码</span>
         </a>
-        <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="btn btn-ghost">
+        <a href="https://github.com/Verlif" data-gh="owner" target="_blank" rel="noopener" class="btn btn-ghost">
           <i class="fas fa-user"></i>
           <span data-i18n="intro.author">@Verlif</span>
         </a>
@@ -644,7 +703,7 @@
     <div class="flow">
       <div class="flow-step">
         <i class="fas fa-file-code"></i>
-        <span data-i18n="intro.flow1">放入 HTML</span>
+        <span data-i18n="intro.flow1">放入作品</span>
       </div>
       <i class="fas fa-arrow-right flow-arrow"></i>
       <div class="flow-step">
@@ -670,7 +729,46 @@
         <span data-i18n="intro.introTitle">这是什么</span>
       </h2>
       <div class="panel">
-        <p data-i18n="intro.introBody">someToys 是一个「只负责展示」的作品架：AI 生成的 HTML 直接放进 pages/ 目录，推送到 GitHub，Actions 会自动扫描、生成带分组与搜索的导航页，再由 GitHub Pages 发布。整个过程不需要手写任何清单或配置。</p>
+        <p data-i18n="intro.introBody">someToys 是一个「只负责展示」的作品架：把作品放进 pages/ 目录，推送到 GitHub，Actions 会自动扫描、生成带分组与搜索的导航页，再由 GitHub Pages 发布。单个 HTML 文件和多文件项目文件夹都收，整个过程不需要手写任何清单或配置。</p>
+      </div>
+    </div>
+
+    <!-- 支持哪些作品 -->
+    <div class="section" id="support">
+      <h2 class="section-title">
+        <i class="fas fa-boxes-stacked"></i>
+        <span data-i18n="intro.supportTitle">支持哪些作品</span>
+      </h2>
+      <p class="section-lead" data-i18n="intro.supportLead">判断规则只有一条：文件夹里有没有 index.html。来源不限、技术栈不限，纯静态就行。</p>
+      <div class="forms">
+        <div class="form-card">
+          <div class="form-icon"><i class="fas fa-file-code"></i></div>
+          <h3 data-i18n="intro.form1Tag">单文件页面</h3>
+          <p data-i18n="intro.form1Body">一个 .html 里塞满 CSS / JS，双击就能跑。手写的、AI 生成的、工具导出的都算。</p>
+          <div class="form-path">pages/随便什么名字.html</div>
+        </div>
+        <div class="form-card">
+          <div class="form-icon"><i class="fas fa-folder-open"></i></div>
+          <h3 data-i18n="intro.form2Tag">项目文件夹</h3>
+          <p data-i18n="intro.form2Body">index.html 加 css / js / img 的多文件项目，整目录收成一张卡片，内部相对路径不用改。</p>
+          <div class="form-path">pages/项目名/index.html</div>
+        </div>
+        <div class="form-card">
+          <div class="form-icon"><i class="fas fa-folder-tree"></i></div>
+          <h3 data-i18n="intro.form3Tag">分组文件夹</h3>
+          <p data-i18n="intro.form3Body">没有 index.html 的文件夹用来归类，里面的页面、项目和子分组会被递归收录，可无限嵌套。</p>
+          <div class="form-path">pages/分组名/…</div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <i class="fas fa-lightbulb"></i>
+        <p data-i18n="intro.supportTip">不挑来源：手写页面、AI 生成、脚手架打包产物（Vite / webpack 的 dist）、教学 Demo、数据可视化、小游戏、文档页……只要能用浏览器直接打开就行。</p>
+      </div>
+
+      <div class="callout callout-warn">
+        <i class="fas fa-triangle-exclamation"></i>
+        <p data-i18n="intro.limitTip">唯一硬要求是「纯静态」：需要服务端、数据库或运行时构建的项目（Node / PHP 后端、SSR）不在射程内 —— GitHub Pages 只提供静态托管。</p>
       </div>
     </div>
 
@@ -682,9 +780,9 @@
       </h2>
       <div class="features">
         <div class="feature">
-          <div class="feature-icon"><i class="fas fa-box-open"></i></div>
-          <h3 data-i18n="intro.feat1Title">放进去就能用</h3>
-          <p data-i18n="intro.feat1Body">把 AI 生成的 HTML 丢进 pages/，推送即可，无需任何额外配置。</p>
+          <div class="feature-icon"><i class="fas fa-boxes-stacked"></i></div>
+          <h3 data-i18n="intro.feat1Title">单文件 / 项目都收</h3>
+          <p data-i18n="intro.feat1Body">单个 HTML 与多文件项目文件夹各自成卡，卡片上会标明是哪一种形态。</p>
         </div>
         <div class="feature">
           <div class="feature-icon"><i class="fas fa-folder-tree"></i></div>
@@ -733,11 +831,14 @@
       <div class="code-block tree"><span class="folder">someToys/</span>
 ├─ <span class="folder">.github/workflows/</span>
 │  └─ <span class="file">generate-nav.yml</span>          <span class="note" data-i18n="intro.treeNote1"># 自动化工作流</span>
-├─ <span class="folder">pages/</span>                          <span class="note" data-i18n="intro.treeNote2"># 所有作品放这里</span>
-│  ├─ <span class="file">介绍.html</span>                    <span class="note" data-i18n="intro.treeNote3"># 根目录页面，直接展示</span>
+├─ <span class="folder">pages/</span>                          <span class="note" data-i18n="intro.treeNote2"># 所有作品放这里（单文件 / 项目 / 分组）</span>
+│  ├─ <span class="file">介绍.html</span>                    <span class="note" data-i18n="intro.treeNote3"># 根目录单文件页面 → 一张卡片</span>
 │  ├─ <span class="folder">games/</span>                       <span class="note" data-i18n="intro.treeNote4"># 一级子文件夹 → 分组</span>
+│  │  ├─ <span class="file">贪吃蛇.html</span>                <span class="note" data-i18n="intro.treeNote12"># 单文件页面</span>
 │  │  └─ <span class="folder">回声躲猫猫/</span>
-│  │     └─ <span class="file">index.html</span>          <span class="note" data-i18n="intro.treeNote5"># 项目文件夹 → 一张卡片</span>
+│  │     ├─ <span class="file">index.html</span>          <span class="note" data-i18n="intro.treeNote5"># 项目文件夹 → 一张卡片</span>
+│  │     ├─ <span class="folder">css/</span>
+│  │     └─ <span class="folder">js/</span>
 │  └─ <span class="folder">tools/</span>
 │     └─ <span class="file">随机抽奖.html</span>
 ├─ <span class="folder">templates/</span>
@@ -747,6 +848,7 @@
 │  └─ <span class="file">i18n.js</span>                      <span class="note" data-i18n="intro.treeNote8"># 双语字典与运行时</span>
 ├─ <span class="folder">docs/</span>                            <span class="note" data-i18n="intro.treeNote11"># 开发文档 / 使用文档</span>
 ├─ <span class="file">generate-index.js</span>               <span class="note" data-i18n="intro.treeNote9"># 生成脚本</span>
+├─ <span class="file">site.config.json</span>                <span class="note" data-i18n="intro.treeNote13"># 站点信息配置</span>
 ├─ <span class="file">index.html</span>                      <span class="note" data-i18n="intro.treeNote10"># 自动生成，勿手改</span>
 └─ <span class="file">README.md</span></div>
     </div>
@@ -775,14 +877,16 @@
         <div class="step">
           <div class="step-num">3</div>
           <div class="step-content">
-            <h3 data-i18n="intro.step3Title">把 HTML 放进 pages/</h3>
-            <p data-i18n="intro.step3Body">把 AI 生成的文件直接丢进去；想分组就建一个没有 index.html 的文件夹，文件夹名就是分组标题。</p>
+            <h3 data-i18n="intro.step3Title">把作品放进 pages/</h3>
+            <p data-i18n="intro.step3Body">单个 HTML 直接丢进去；多文件项目放进自己的文件夹并确保入口叫 index.html；想归类就建一个没有 index.html 的分组文件夹，文件夹名就是分组标题。</p>
             <div class="code-block"><span class="path">pages/</span>
-├─ <span class="file">demo.html</span>              <span class="comment" data-i18n="intro.step3Note1"># 根目录页面 → 直接展示</span>
+├─ <span class="file">demo.html</span>              <span class="comment" data-i18n="intro.step3Note1"># 根目录单文件页面 → 一张卡片</span>
 ├─ <span class="path">games/</span>                 <span class="comment" data-i18n="intro.step3Note2"># 分组：games</span>
 │  └─ <span class="file">snake.html</span>
 └─ <span class="path">抽卡模拟/</span>
-   └─ <span class="file">index.html</span>         <span class="comment" data-i18n="intro.step3Note3"># 项目文件夹 → 一张卡片</span></div>
+   ├─ <span class="file">index.html</span>         <span class="comment" data-i18n="intro.step3Note3"># 项目文件夹 → 一张卡片</span>
+   ├─ <span class="path">css/</span>
+   └─ <span class="path">js/</span></div>
           </div>
         </div>
         <div class="step">
@@ -831,6 +935,11 @@
               <td data-i18n="intro.rowPicture">图片处理</td>
             </tr>
             <tr>
+              <td><code>map</code> / <code>地图</code></td>
+              <td><i class="fas fa-map"></i> fa-map</td>
+              <td data-i18n="intro.rowMap">地图 / 空间类</td>
+            </tr>
+            <tr>
               <td><code>demo</code></td>
               <td><i class="fas fa-flask"></i> fa-flask</td>
               <td data-i18n="intro.rowDemo">演示页面</td>
@@ -871,7 +980,7 @@
         <span data-i18n="intro.flowTitle">工作流程</span>
       </h2>
       <div class="code-block"><span class="comment" data-i18n="intro.flowComment"># 你只需要做第一步</span>
-<span class="flow-line" data-i18n="intro.flowStep1">把 HTML 放入</span> <span class="path">pages/</span>
+<span class="flow-line" data-i18n="intro.flowStep1">把作品放入</span> <span class="path">pages/</span>
         ↓
 <span class="flow-line" data-i18n="intro.flowStep2">触发 GitHub Actions</span>
         ↓
@@ -912,8 +1021,20 @@
           <div class="faq-answer" data-i18n="intro.faq5A">确认文件夹（含子目录）里至少有一个 .html 文件，完全空的文件夹会被跳过。</div>
         </details>
         <details class="faq-item">
-          <summary><i class="fas fa-chevron-right faq-chevron"></i><span data-i18n="intro.faq6Q">AI 生成的 HTML 里有外部依赖怎么办</span></summary>
-          <div class="faq-answer" data-i18n="intro.faq6A">只要页面能独立运行即可。依赖 CDN 的 CSS/JS 保持原样；有本地资源时，建议放进项目文件夹并用相对路径引用。</div>
+          <summary><i class="fas fa-chevron-right faq-chevron"></i><span data-i18n="intro.faq6Q">不是 AI 生成的页面，能放进来吗</span></summary>
+          <div class="faq-answer" data-i18n="intro.faq6A">能，来源完全不限。手写页面、模板导出、脚手架打包产物（Vite / webpack 的 dist）都行，只要是纯静态、浏览器能直接打开。</div>
+        </details>
+        <details class="faq-item">
+          <summary><i class="fas fa-chevron-right faq-chevron"></i><span data-i18n="intro.faq7Q">项目里有 css / js / img 等多个文件，怎么放</span></summary>
+          <div class="faq-answer" data-i18n="intro.faq7A">整个项目放进一个文件夹，主页面命名为 index.html，再把文件夹放进 pages/ 的任意位置。页面内用相对路径引用资源，不需要改路径。</div>
+        </details>
+        <details class="faq-item">
+          <summary><i class="fas fa-chevron-right faq-chevron"></i><span data-i18n="intro.faq8Q">需要后端或数据库的项目能收吗</span></summary>
+          <div class="faq-answer" data-i18n="intro.faq8A">不能。GitHub Pages 只做静态托管，服务端代码不会被执行。这类项目请另找托管，等它们能导出成纯静态产物后再放进来。</div>
+        </details>
+        <details class="faq-item">
+          <summary><i class="fas fa-chevron-right faq-chevron"></i><span data-i18n="intro.faq9Q">页面里有外部依赖怎么办</span></summary>
+          <div class="faq-answer" data-i18n="intro.faq9A">只要能独立运行即可。CDN 上的 CSS / JS 保持原样；本地资源放进项目文件夹并用相对路径引用。</div>
         </details>
       </div>
     </div>
@@ -922,9 +1043,9 @@
     <div class="footer">
       <div class="footer-links">
         <a href="../index.html"><i class="fas fa-house"></i><span data-i18n="intro.navHome">返回导航页</span></a>
-        <a href="https://github.com/Verlif/someToys/blob/main/docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener"><i class="fas fa-book-open"></i><span data-i18n="intro.docUser">使用文档</span></a>
-        <a href="https://github.com/Verlif/someToys/blob/main/docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener"><i class="fas fa-code"></i><span data-i18n="intro.docDev">开发文档</span></a>
-        <a href="https://github.com/Verlif/someToys" target="_blank" rel="noopener"><i class="fab fa-github"></i>GitHub</a>
+        <a href="../docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3.md" data-doc="user" target="_blank" rel="noopener"><i class="fas fa-book-open"></i><span data-i18n="intro.docUser">使用文档</span></a>
+        <a href="../docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" data-doc="dev" target="_blank" rel="noopener"><i class="fas fa-code"></i><span data-i18n="intro.docDev">开发文档</span></a>
+        <a href="https://github.com/Verlif/someToys" data-gh="repo" target="_blank" rel="noopener"><i class="fab fa-github"></i>GitHub</a>
       </div>
       <p><span data-i18n="intro.footBuilt">基于 GitHub Pages 构建 · MIT License</span></p>
     </div>
@@ -936,6 +1057,29 @@
       'use strict';
       var I18N = window.I18N;
       if (I18N) I18N.apply(document);
+
+      // ---- 站点链接：优先用注入的 SITE，退回 i18n 内置默认值 ----
+      // 介绍页是静态页、没有 window.SITE，所以这里统一由 I18N.site 拼出 GitHub 地址。
+      (function resolveLinks() {
+        var s = I18N ? I18N.site : null;
+        if (!s) return;
+        var owner = s.owner, repo = s.repo, branch = s.branch || 'main';
+        var docsDir = String(s.docsDir || 'docs').replace(/^\/+|\/+$/g, '');
+
+        Array.prototype.forEach.call(document.querySelectorAll('[data-gh]'), function (a) {
+          if (a.getAttribute('data-gh') === 'repo') {
+            if (owner && repo) a.href = 'https://github.com/' + owner + '/' + repo;
+          } else if (owner) {
+            a.href = 'https://github.com/' + owner;
+          }
+        });
+
+        Array.prototype.forEach.call(document.querySelectorAll('[data-doc]'), function (a) {
+          if (!owner || !repo) return;
+          var name = a.getAttribute('data-doc') === 'dev' ? '开发文档.md' : '使用文档.md';
+          a.href = 'https://github.com/' + owner + '/' + repo + '/blob/' + branch + '/' + docsDir + '/' + encodeURIComponent(name);
+        });
+      })();
 
       // ---- 主题 ----
       document.getElementById('themeToggle').addEventListener('click', function () {

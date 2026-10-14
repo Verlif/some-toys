@@ -28,7 +28,10 @@
   var SITE_DEFAULTS = {
     siteTitle: 'someToys',
     owner: 'Verlif',
-    bio: 'AI 单页面作品集',
+    repo: 'someToys',
+    branch: 'main',
+    docsDir: 'docs',
+    bio: '单页面与项目文件夹作品集',
   };
 
   function siteVars() {
@@ -101,6 +104,7 @@
       'nav.countPages': '{n} 个页面',
       'nav.hits': '{visible} / {total}',
       'nav.langName': '中文',
+      'common.siteTitle': '{siteTitle}',
 
       // ---- 时间 ----
       'time.today': '今天',
@@ -111,28 +115,40 @@
       'time.yearsAgo': '{n} 年前',
 
       // ---- 介绍页：Hero ----
-      'intro.docTitle': '{siteTitle} - AI 单页面作品导航站',
-      'intro.metaDesc': '专为 AI 生成的单页面 HTML 作品设计的自动化导航站，放文件、推送、自动上线。',
-      'intro.badge': 'AI 单页面作品集',
-      'intro.heroSub': '专为 AI 生成的单页面 HTML 作品设计的导航站。放文件、推送、自动上线。',
+      'intro.docTitle': '{siteTitle} · 单页面与项目文件夹导航站',
+      'intro.metaDesc': '不挑来源的作品导航站：单个 HTML 文件、多文件项目文件夹，放进 pages/ 推送即自动生成导航页。',
+      'intro.badge': '单页面 & 项目文件夹导航',
+      'intro.heroSub': '不管是一个 HTML 文件，还是带资源的多文件项目，丢进 pages/ 推送就能上线。',
       'intro.source': '查看源码',
       'intro.author': '@{owner}',
       'intro.docDev': '开发文档',
       'intro.docUser': '使用文档',
       'intro.navHome': '返回导航页',
       'intro.introTitle': '这是什么',
-      'intro.introBody': '{siteTitle} 是一个「只负责展示」的作品架：AI 生成的 HTML 直接放进 pages/ 目录，推送到 GitHub，Actions 会自动扫描、生成带分组与搜索的导航页，再由 GitHub Pages 发布。整个过程不需要手写任何清单或配置。',
+      'intro.introBody': '{siteTitle} 是一个「只负责展示」的作品架：把作品放进 pages/ 目录，推送到 GitHub，Actions 会自动扫描、生成带分组与搜索的导航页，再由 GitHub Pages 发布。单个 HTML 文件和多文件项目文件夹都收，整个过程不需要手写任何清单或配置。',
 
       // ---- 介绍页：流程 ----
-      'intro.flow1': '放入 HTML',
+      'intro.flow1': '放入作品',
       'intro.flow2': '推送',
       'intro.flow3': '自动生成',
       'intro.flow4': '自动上线',
 
+      // ---- 介绍页：收录范围 ----
+      'intro.supportTitle': '支持哪些作品',
+      'intro.supportLead': '判断规则只有一条：文件夹里有没有 index.html。来源不限、技术栈不限，纯静态就行。',
+      'intro.form1Tag': '单文件页面',
+      'intro.form1Body': '一个 .html 里塞满 CSS / JS，双击就能跑。手写的、AI 生成的、工具导出的都算。',
+      'intro.form2Tag': '项目文件夹',
+      'intro.form2Body': 'index.html 加 css / js / img 的多文件项目，整目录收成一张卡片，内部相对路径不用改。',
+      'intro.form3Tag': '分组文件夹',
+      'intro.form3Body': '没有 index.html 的文件夹用来归类，里面的页面、项目和子分组会被递归收录，可无限嵌套。',
+      'intro.supportTip': '不挑来源：手写页面、AI 生成、脚手架打包产物（Vite / webpack 的 dist）、教学 Demo、数据可视化、小游戏、文档页……只要能用浏览器直接打开就行。',
+      'intro.limitTip': '唯一硬要求是「纯静态」：需要服务端、数据库或运行时构建的项目（Node / PHP 后端、SSR）不在射程内 —— GitHub Pages 只提供静态托管。',
+
       // ---- 介绍页：特性 ----
       'intro.featTitle': '核心特性',
-      'intro.feat1Title': '放进去就能用',
-      'intro.feat1Body': '把 AI 生成的 HTML 丢进 pages/，推送即可，无需任何额外配置。',
+      'intro.feat1Title': '单文件 / 项目都收',
+      'intro.feat1Body': '单个 HTML 与多文件项目文件夹各自成卡，卡片上会标明是哪一种形态。',
       'intro.feat2Title': '自动分组',
       'intro.feat2Body': '没有 index.html 的文件夹自动成为分组，子分组可以无限嵌套。',
       'intro.feat3Title': '实时搜索',
@@ -151,8 +167,8 @@
       // ---- 介绍页：目录结构 ----
       'intro.treeTitle': '目录结构',
       'intro.treeNote1': '# 自动化工作流',
-      'intro.treeNote2': '# 所有作品放这里',
-      'intro.treeNote3': '# 根目录页面，直接展示',
+      'intro.treeNote2': '# 所有作品放这里（单文件 / 项目 / 分组）',
+      'intro.treeNote3': '# 根目录单文件页面 → 一张卡片',
       'intro.treeNote4': '# 一级子文件夹 → 分组',
       'intro.treeNote5': '# 项目文件夹 → 一张卡片',
       'intro.treeNote6': '# 导航页模板',
@@ -161,6 +177,8 @@
       'intro.treeNote9': '# 生成脚本',
       'intro.treeNote10': '# 自动生成，勿手改',
       'intro.treeNote11': '# 开发文档 / 使用文档',
+      'intro.treeNote12': '# 分组里的单文件页面',
+      'intro.treeNote13': '# 站点信息配置',
 
       // ---- 介绍页：快速开始 ----
       'intro.quickTitle': '快速开始',
@@ -168,9 +186,9 @@
       'intro.step1Body': '打开仓库 Settings → Pages，Source 选择 Deploy from a branch，Branch 选 main，文件夹选 / (root)，保存。',
       'intro.step2Title': '配置 Actions 写权限',
       'intro.step2Body': '打开 Settings → Actions → General，在 Workflow permissions 中选择 Read and write permissions，保存。',
-      'intro.step3Title': '把 HTML 放进 pages/',
-      'intro.step3Body': '把 AI 生成的文件直接丢进去；想分组就建一个没有 index.html 的文件夹，文件夹名就是分组标题。',
-      'intro.step3Note1': '# 根目录页面 → 直接展示',
+      'intro.step3Title': '把作品放进 pages/',
+      'intro.step3Body': '单个 HTML 直接丢进去；多文件项目放进自己的文件夹并确保入口叫 index.html；想归类就建一个没有 index.html 的分组文件夹，文件夹名就是分组标题。',
+      'intro.step3Note1': '# 根目录页面 → 一张卡片',
       'intro.step3Note2': '# 分组：games',
       'intro.step3Note3': '# 项目文件夹 → 一张卡片',
       'intro.step4Title': '推送',
@@ -185,6 +203,7 @@
       'intro.rowGame': '游戏类页面',
       'intro.rowTool': '实用工具',
       'intro.rowPicture': '图片处理',
+      'intro.rowMap': '地图 / 空间类',
       'intro.rowDemo': '演示页面',
       'intro.rowBlog': '文章页面',
       'intro.rowAi': 'AI 相关',
@@ -214,8 +233,14 @@
       'intro.faq4A': '确认 Source 为 Deploy from a branch、分支为 main、文件夹为 / (root)。刚部署完请等待几分钟再刷新。',
       'intro.faq5Q': '分组没有显示出来',
       'intro.faq5A': '确认文件夹（含子目录）里至少有一个 .html 文件，完全空的文件夹会被跳过。',
-      'intro.faq6Q': 'AI 生成的 HTML 里有外部依赖怎么办',
-      'intro.faq6A': '只要页面能独立运行即可。依赖 CDN 的 CSS/JS 保持原样；有本地资源时，建议放进项目文件夹并用相对路径引用。',
+      'intro.faq6Q': '不是 AI 生成的页面，能放进来吗',
+      'intro.faq6A': '能，来源完全不限。手写页面、模板导出、脚手架打包产物（Vite / webpack 的 dist）都行，只要是纯静态、浏览器能直接打开。',
+      'intro.faq7Q': '项目里有 css / js / img 等多个文件，怎么放',
+      'intro.faq7A': '整个项目放进一个文件夹，主页面命名为 index.html，再把文件夹放进 pages/ 的任意位置。页面内用相对路径引用资源，不需要改路径。',
+      'intro.faq8Q': '需要后端或数据库的项目能收吗',
+      'intro.faq8A': '不能。GitHub Pages 只做静态托管，服务端代码不会被执行。这类项目请另找托管，等它们能导出成纯静态产物后再放进来。',
+      'intro.faq9Q': '页面里有外部依赖怎么办',
+      'intro.faq9A': '只要能独立运行即可。CDN 上的 CSS / JS 保持原样；本地资源放进项目文件夹并用相对路径引用。',
 
       // ---- 介绍页：页脚 ----
       'intro.footBuilt': '基于 GitHub Pages 构建 · MIT License',
@@ -267,6 +292,7 @@
       'nav.countPages': '{n} pages',
       'nav.hits': '{visible} / {total}',
       'nav.langName': 'English',
+      'common.siteTitle': '{siteTitle}',
 
       // ---- Time ----
       'time.today': 'today',
@@ -277,28 +303,40 @@
       'time.yearsAgo': '{n} years ago',
 
       // ---- Intro: hero ----
-      'intro.docTitle': '{siteTitle} · AI single-page works index',
-      'intro.metaDesc': 'An automated index site for AI-generated single-page HTML works — drop it in, push, ship.',
-      'intro.badge': 'AI single-page portfolio',
-      'intro.heroSub': 'An index site built for AI-generated single-page HTML. Drop it in, push, ship.',
+      'intro.docTitle': '{siteTitle} · Single-page & project-folder index',
+      'intro.metaDesc': 'A source-agnostic works index: single HTML files and multi-file project folders — drop them into pages/, push, and the index rebuilds itself.',
+      'intro.badge': 'Single pages & project folders',
+      'intro.heroSub': 'One HTML file or a whole multi-file project — drop it into pages/, push, and it is online.',
       'intro.source': 'View source',
       'intro.author': '@{owner}',
       'intro.docDev': 'Developer docs',
       'intro.docUser': 'User guide',
       'intro.navHome': 'Back to index',
       'intro.introTitle': 'What is this',
-      'intro.introBody': '{siteTitle} is a display-only shelf: put the HTML your AI produced into pages/, push to GitHub, and Actions rescans, rebuilds the searchable group index, and GitHub Pages publishes it. No manifest, no configuration, no manual registration.',
+      'intro.introBody': '{siteTitle} is a display-only shelf: put your work into pages/, push to GitHub, and Actions rescans, rebuilds the searchable group index, and GitHub Pages publishes it. Both single HTML files and multi-file project folders are accepted, and there is no manifest, no configuration and no manual registration.',
 
       // ---- Intro: flow ----
-      'intro.flow1': 'Drop in HTML',
+      'intro.flow1': 'Drop it in',
       'intro.flow2': 'Push',
       'intro.flow3': 'Auto generate',
       'intro.flow4': 'Auto deploy',
 
+      // ---- Intro: what it accepts ----
+      'intro.supportTitle': 'What it accepts',
+      'intro.supportLead': 'One rule decides everything: does the folder contain an index.html? Any origin, any stack — as long as it is static.',
+      'intro.form1Tag': 'Single-file page',
+      'intro.form1Body': 'One .html holding all its CSS and JS, runnable on double click. Hand-written, AI-generated or exported — all fine.',
+      'intro.form2Tag': 'Project folder',
+      'intro.form2Body': 'A multi-file project with index.html plus css / js / img. The whole folder becomes one card and relative paths keep working.',
+      'intro.form3Tag': 'Group folder',
+      'intro.form3Body': 'A folder without index.html is a category. Pages, projects and nested groups inside it are collected recursively, with no depth limit.',
+      'intro.supportTip': 'Origin does not matter: hand-written pages, AI output, bundled builds (the dist of Vite / webpack), teaching demos, data visualisations, small games, docs pages — anything that opens directly in a browser.',
+      'intro.limitTip': 'The one hard requirement is "purely static". Anything needing a server, a database or a runtime build (Node / PHP backends, SSR) is out of reach — GitHub Pages serves static files only.',
+
       // ---- Intro: features ----
       'intro.featTitle': 'Key features',
-      'intro.feat1Title': 'Just drop it in',
-      'intro.feat1Body': 'Put the generated HTML inside pages/ and push. No configuration required.',
+      'intro.feat1Title': 'Files and folders alike',
+      'intro.feat1Body': 'Single HTML files and multi-file project folders each get their own card, tagged with which shape they came from.',
       'intro.feat2Title': 'Automatic grouping',
       'intro.feat2Body': 'Any folder without index.html becomes a group, and groups can nest indefinitely.',
       'intro.feat3Title': 'Instant search',
@@ -317,8 +355,8 @@
       // ---- Intro: tree ----
       'intro.treeTitle': 'Directory layout',
       'intro.treeNote1': '# CI workflow',
-      'intro.treeNote2': '# every work lives here',
-      'intro.treeNote3': '# root page, shown directly',
+      'intro.treeNote2': '# every work lives here (file / project / group)',
+      'intro.treeNote3': '# root single-file page → one card',
       'intro.treeNote4': '# top-level folder → group',
       'intro.treeNote5': '# project folder → one card',
       'intro.treeNote6': '# index page template',
@@ -327,6 +365,8 @@
       'intro.treeNote9': '# generator script',
       'intro.treeNote10': '# generated, do not edit',
       'intro.treeNote11': '# developer / user docs',
+      'intro.treeNote12': '# single-file page inside a group',
+      'intro.treeNote13': '# site configuration',
 
       // ---- Intro: quick start ----
       'intro.quickTitle': 'Quick start',
@@ -334,9 +374,9 @@
       'intro.step1Body': 'Open Settings → Pages, pick "Deploy from a branch", choose branch main and folder / (root), then Save.',
       'intro.step2Title': 'Grant Actions write access',
       'intro.step2Body': 'Open Settings → Actions → General and set Workflow permissions to "Read and write permissions".',
-      'intro.step3Title': 'Put HTML into pages/',
-      'intro.step3Body': 'Drop the generated file straight in. To group, create a folder without index.html — its name becomes the group title.',
-      'intro.step3Note1': '# root page → shown directly',
+      'intro.step3Title': 'Put your work into pages/',
+      'intro.step3Body': 'Drop a single HTML straight in. For a multi-file project, give it its own folder and make sure the entry file is named index.html. To categorise, create a folder without index.html — its name becomes the group title.',
+      'intro.step3Note1': '# root page → one card',
       'intro.step3Note2': '# group: games',
       'intro.step3Note3': '# project folder → one card',
       'intro.step4Title': 'Push',
@@ -351,6 +391,7 @@
       'intro.rowGame': 'Games',
       'intro.rowTool': 'Utilities',
       'intro.rowPicture': 'Image tools',
+      'intro.rowMap': 'Maps / spatial',
       'intro.rowDemo': 'Demos',
       'intro.rowBlog': 'Articles',
       'intro.rowAi': 'AI related',
@@ -380,8 +421,14 @@
       'intro.faq4A': 'Confirm Source is "Deploy from a branch", branch main, folder / (root). Right after deploy, wait a few minutes and refresh.',
       'intro.faq5Q': 'My group does not show up',
       'intro.faq5A': 'Make sure the folder (including subfolders) contains at least one .html file — completely empty folders are skipped.',
-      'intro.faq6Q': 'My AI-generated HTML depends on external assets',
-      'intro.faq6A': 'As long as it runs standalone you are fine. Keep CDN links as-is; for local assets, put them in the project folder and reference them relatively.',
+      'intro.faq6Q': 'Can I add work that was not generated by AI',
+      'intro.faq6A': 'Yes — the origin is irrelevant. Hand-written pages, exported templates and bundled builds (the dist of Vite / webpack) are all welcome, as long as they are static and open straight in a browser.',
+      'intro.faq7Q': 'My project has css / js / img files — how do I add it',
+      'intro.faq7A': 'Put the whole project in one folder, name the entry file index.html, then place that folder anywhere under pages/. Reference your assets with relative paths; nothing needs rewriting.',
+      'intro.faq8Q': 'Can I host something that needs a backend or a database',
+      'intro.faq8A': 'No. GitHub Pages serves static files only, so server-side code never runs. Host those elsewhere, or export a static build first and add that.',
+      'intro.faq9Q': 'My page depends on external assets',
+      'intro.faq9A': 'As long as it runs standalone you are fine. Keep CDN links as-is; for local assets, put them in the project folder and reference them relatively.',
 
       // ---- Intro: footer ----
       'intro.footBuilt': 'Built on GitHub Pages · MIT License',
@@ -530,6 +577,10 @@
     },
     get langName() {
       return t('nav.langName');
+    },
+    /** 站点变量快照：{siteTitle} {owner} {repo} {branch} {docsDir} {bio}，静态页可用来拼链接 */
+    get site() {
+      return siteVars();
     },
     /** 语言按钮上显示的标签：始终指向「点一下会切到的那种语言」 */
     get nextLabel() {
