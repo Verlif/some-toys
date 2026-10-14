@@ -14,7 +14,7 @@
         "label": "主动揽下夜里那几趟",
         "fx": {
           "health": -4,
-          "energy": -4,
+          "energy": -1,
           "mood": 3,
           "rel": {
             "family": 6
@@ -44,7 +44,7 @@
       "left": {
         "label": "认真和老人谈一次",
         "fx": {
-          "energy": -2,
+          "energy": -1,
           "mood": 2,
           "rel": {
             "family": 4
@@ -72,7 +72,7 @@
       "left": {
         "label": "先开口",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "love": 6
           }
@@ -102,7 +102,7 @@
         "label": "下楼买束花",
         "fx": {
           "money": -3,
-          "mood": 6,
+          "mood": 5,
           "rel": {
             "love": 5
           }
@@ -129,8 +129,8 @@
       "left": {
         "label": "请假两边跑",
         "fx": {
-          "career": -5,
-          "energy": -6,
+          "career": -4,
+          "energy": -3,
           "health": -3,
           "rel": {
             "family": 6
@@ -140,11 +140,12 @@
       "right": {
         "label": "请护工，让大家分担",
         "fx": {
-          "money": -7,
+          "money": -5,
           "mood": -2,
           "rel": {
             "family": 2
-          }
+          },
+          "energy": 1
         }
       },
       "once": true
@@ -158,7 +159,7 @@
       "left": {
         "label": "借",
         "fx": {
-          "money": -7,
+          "money": -5,
           "mood": 2,
           "rel": {
             "family": 4
@@ -216,7 +217,7 @@
         "label": "抱着就往医院跑",
         "fx": {
           "health": -3,
-          "energy": -4,
+          "energy": -1,
           "mood": 4,
           "rel": {
             "family": 6
@@ -227,7 +228,7 @@
         "label": "先物理降温观察",
         "fx": {
           "health": 1,
-          "energy": -2,
+          "energy": -1,
           "mood": -2
         }
       },
@@ -245,8 +246,8 @@
       "left": {
         "label": "放下工作去",
         "fx": {
-          "money": -8,
-          "mood": 8,
+          "money": -5,
+          "mood": 5,
           "career": -3,
           "rel": {
             "family": 6
@@ -256,7 +257,7 @@
       "right": {
         "label": "又推到明年",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "rel": {
             "family": -3
           }
@@ -281,8 +282,8 @@
       "left": {
         "label": "再要一个",
         "fx": {
-          "money": -9,
-          "energy": -7,
+          "money": -8,
+          "energy": -3,
           "mood": 4,
           "rel": {
             "family": 3
@@ -314,8 +315,8 @@
       "left": {
         "label": "咬牙扛住",
         "fx": {
-          "energy": -6,
-          "health": -5,
+          "energy": -2,
+          "health": -4,
           "mood": -2,
           "rel": {
             "family": 5
@@ -376,7 +377,7 @@
         "label": "请假全程陪着",
         "fx": {
           "career": -3,
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "family": 6
           }
@@ -406,7 +407,7 @@
       "left": {
         "label": "改成一间书房",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "energy": 2
         },
         "skills": {
@@ -430,7 +431,7 @@
       "left": {
         "label": "自己多担一些",
         "fx": {
-          "money": -7,
+          "money": -5,
           "mood": 3,
           "rel": {
             "family": 5
@@ -458,8 +459,8 @@
       "left": {
         "label": "让给兄妹",
         "fx": {
-          "money": -6,
-          "mood": 5,
+          "money": -5,
+          "mood": 4,
           "rel": {
             "family": 7
           }
@@ -515,7 +516,7 @@
       "left": {
         "label": "一个个答过去",
         "fx": {
-          "energy": -2,
+          "energy": -1,
           "mood": 3,
           "rel": {
             "family": 5
@@ -604,9 +605,9 @@
       "left": {
         "label": "那就一起干",
         "fx": {
-          "money": -6,
-          "career": 5,
-          "energy": -4,
+          "money": -5,
+          "career": 4,
+          "energy": -1,
           "rel": {
             "love": 4
           }
@@ -637,7 +638,7 @@
         "label": "重新约一次会",
         "fx": {
           "money": -4,
-          "mood": 7,
+          "mood": 5,
           "rel": {
             "love": 5
           }
@@ -664,7 +665,7 @@
         "label": "留下来住几天",
         "fx": {
           "career": -3,
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "family": 7
           }
@@ -691,7 +692,7 @@
       "left": {
         "label": "认真讲讲它的来历",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "rel": {
             "family": 6
           }

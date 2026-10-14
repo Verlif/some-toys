@@ -1,0 +1,21 @@
+.canvas-bg { fill: var(--paper); }
+#grid path { fill: none; stroke: var(--grid-line); stroke-width: 1; }
+#grid circle { fill: var(--grid-dot); }
+.edge { transition: opacity .2s ease; }
+.edge.dim { opacity: .16; }
+.edge .route { stroke: var(--route); }
+.edge .route-dash { stroke: var(--route-dash); }
+.edge .distance-bg { fill: var(--panel); stroke: var(--line); }
+.edge .distance-label { fill: var(--route-label); }
+.place { cursor: pointer; transition: opacity .2s ease, filter .2s ease; }
+.place.dim { opacity: .25; filter: grayscale(1); }
+.place .halo { fill: var(--place); opacity: .09; }
+.place .ring { fill: none; stroke: var(--place); stroke-width: 2; opacity: .8; }
+.place .bg { fill: var(--panel); stroke: var(--line-strong); stroke-width: 1; }
+.place .icon { fill: var(--ink); font-size: 21px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.place .name { fill: var(--muted); font-size: 11px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.place.pending .ring, .place.selected .ring { stroke: var(--orange); stroke-width: 3; }
+.place.pending .bg, .place.selected .bg { fill: color-mix(in srgb, var(--orange) 18%, var(--panel)); }
+.place.neighbor .ring { stroke: var(--teal); stroke-width: 2.5; }
+.place.neighbor .bg { fill: var(--teal-soft); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }

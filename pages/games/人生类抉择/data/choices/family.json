@@ -18,8 +18,8 @@
       "left": {
         "label": "上前认识",
         "fx": {
-          "mood": 5,
-          "energy": -3
+          "mood": 4,
+          "energy": -1
         },
         "rel": {
           "love": 10
@@ -53,7 +53,7 @@
       "left": {
         "label": "精心安排",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": 4
         },
         "rel": {
@@ -84,7 +84,7 @@
         "label": "去",
         "fx": {
           "mood": -3,
-          "energy": -3
+          "energy": -1
         },
         "rel": {
           "love": 5,
@@ -159,8 +159,8 @@
       "left": {
         "label": "跪下来",
         "fx": {
-          "money": -8,
-          "mood": 7
+          "money": -5,
+          "mood": 5
         },
         "rel": {
           "love": 10
@@ -192,7 +192,7 @@
       "left": {
         "label": "全包了",
         "fx": {
-          "energy": -5,
+          "energy": -2,
           "mood": -2
         },
         "rel": {
@@ -228,9 +228,9 @@
       "left": {
         "label": "生",
         "fx": {
-          "money": -10,
-          "energy": -8,
-          "mood": 5
+          "money": -8,
+          "energy": -3,
+          "mood": 4
         },
         "rel": {
           "family": 8
@@ -243,8 +243,8 @@
       "right": {
         "label": "两个人也挺好",
         "fx": {
-          "money": 8,
-          "energy": 5
+          "money": 5,
+          "energy": 4
         },
         "rel": {
           "love": 3
@@ -263,7 +263,7 @@
       "left": {
         "label": "起来哄",
         "fx": {
-          "energy": -6,
+          "energy": -2,
           "mood": -3
         },
         "rel": {
@@ -294,7 +294,7 @@
       "left": {
         "label": "砸锅卖铁买",
         "fx": {
-          "money": -20,
+          "money": -8,
           "career": 3,
           "mood": 3
         },
@@ -308,7 +308,7 @@
       "right": {
         "label": "就近上学",
         "fx": {
-          "money": 8,
+          "money": 5,
           "career": -2
         }
       },
@@ -327,7 +327,7 @@
       "left": {
         "label": "放手",
         "fx": {
-          "mood": 5
+          "mood": 4
         },
         "rel": {
           "family": 4
@@ -358,15 +358,15 @@
       "left": {
         "label": "找点事做",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 4,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
         "label": "守着电话",
         "fx": {
-          "mood": -5
+          "mood": -4
         },
         "rel": {
           "family": 2
@@ -416,8 +416,8 @@
       "left": {
         "label": "帮忙带",
         "fx": {
-          "energy": -6,
-          "mood": 6
+          "energy": -2,
+          "mood": 5
         },
         "rel": {
           "family": 8
@@ -430,7 +430,7 @@
       "right": {
         "label": "出钱不出力",
         "fx": {
-          "money": -8
+          "money": -5
         },
         "rel": {
           "family": 4
@@ -450,7 +450,7 @@
         "label": "摊开聊",
         "fx": {
           "mood": -4,
-          "energy": -4
+          "energy": -1
         },
         "rel": {
           "love": 6
@@ -480,9 +480,9 @@
       "left": {
         "label": "离",
         "fx": {
-          "money": -15,
+          "money": -8,
           "mood": 4,
-          "social": -5
+          "social": -4
         },
         "rel": {
           "love": -20
@@ -515,9 +515,9 @@
       "left": {
         "label": "办一场",
         "fx": {
-          "money": -10,
-          "mood": 8,
-          "energy": -5
+          "money": -8,
+          "mood": 5,
+          "energy": -2
         },
         "rel": {
           "family": 8
@@ -527,7 +527,7 @@
       "right": {
         "label": "两个人吃顿饭",
         "fx": {
-          "mood": 5
+          "mood": 4
         },
         "rel": {
           "love": 5
@@ -547,7 +547,7 @@
         "label": "立个规矩",
         "fx": {
           "mood": -2,
-          "energy": -3
+          "energy": -1
         },
         "rel": {
           "love": 6
@@ -573,10 +573,10 @@
       "left": {
         "label": "说出口",
         "fx": {
-          "mood": 8,
-          "social": 5,
+          "mood": 5,
+          "social": 4,
           "career": -3,
-          "energy": -3
+          "energy": -1
         },
         "flags": {
           "dating": true
@@ -588,7 +588,7 @@
       "right": {
         "label": "继续当朋友",
         "fx": {
-          "mood": -6,
+          "mood": -5,
           "career": 4,
           "social": 3
         },
@@ -619,8 +619,8 @@
         "label": "先道歉",
         "fx": {
           "mood": -3,
-          "social": 6,
-          "energy": -3
+          "social": 5,
+          "energy": -1
         },
         "rel": {
           "love": 7
@@ -629,7 +629,7 @@
       "right": {
         "label": "各自冷静",
         "fx": {
-          "mood": -6,
+          "mood": -5,
           "social": -4,
           "career": 3
         },
@@ -651,10 +651,10 @@
       "left": {
         "label": "带上好酒",
         "fx": {
-          "money": -8,
-          "social": 6,
+          "money": -5,
+          "social": 5,
           "mood": 4,
-          "energy": -3
+          "energy": -1
         },
         "rel": {
           "love": 6
@@ -686,8 +686,8 @@
         "label": "打圆场",
         "fx": {
           "mood": -3,
-          "social": 6,
-          "energy": -4
+          "social": 5,
+          "energy": -1
         },
         "rel": {
           "love": 6,
@@ -697,7 +697,7 @@
       "right": {
         "label": "把话挑明",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "social": -3,
           "career": 4
         },
@@ -719,9 +719,9 @@
       "left": {
         "label": "一起出",
         "fx": {
-          "money": -13,
+          "money": -8,
           "mood": 4,
-          "social": 5
+          "social": 4
         },
         "flags": {
           "house": true
@@ -733,7 +733,7 @@
       "right": {
         "label": "各出各的",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": -4,
           "social": -3
         },
@@ -763,8 +763,8 @@
       "left": {
         "label": "想办法凑",
         "fx": {
-          "money": -12,
-          "mood": -5,
+          "money": -8,
+          "mood": -4,
           "social": 4
         },
         "flags": {
@@ -780,7 +780,7 @@
         "fx": {
           "money": -5,
           "mood": -3,
-          "social": 5,
+          "social": 4,
           "career": 3
         },
         "rel": {
@@ -806,9 +806,9 @@
       "left": {
         "label": "选贵的",
         "fx": {
-          "money": -14,
-          "mood": 7,
-          "social": 7,
+          "money": -8,
+          "mood": 5,
+          "social": 5,
           "career": -2
         }
       },
@@ -840,10 +840,10 @@
       "left": {
         "label": "远",
         "fx": {
-          "money": -11,
-          "mood": 8,
-          "social": 5,
-          "energy": -6,
+          "money": -8,
+          "mood": 5,
+          "social": 4,
+          "energy": -2,
           "health": -2
         },
         "rel": {
@@ -854,8 +854,8 @@
         "label": "近",
         "fx": {
           "money": -4,
-          "mood": 5,
-          "energy": -2,
+          "mood": 4,
+          "energy": -1,
           "career": 3
         },
         "rel": {
@@ -877,7 +877,7 @@
         "label": "让出去",
         "fx": {
           "mood": -4,
-          "social": 6,
+          "social": 5,
           "energy": 3
         },
         "rel": {
@@ -890,7 +890,7 @@
           "mood": -3,
           "social": -4,
           "career": 3,
-          "energy": -3
+          "energy": -1
         },
         "skills": {
           "cooking": 5
@@ -910,10 +910,10 @@
       "left": {
         "label": "你多扛点",
         "fx": {
-          "health": -5,
-          "energy": -7,
+          "health": -4,
+          "energy": -3,
           "mood": -3,
-          "social": 5
+          "social": 4
         },
         "rel": {
           "family": 7,
@@ -926,7 +926,7 @@
           "mood": -3,
           "social": 4,
           "career": 3,
-          "energy": -3
+          "energy": -1
         },
         "rel": {
           "love": 6
@@ -947,7 +947,7 @@
         "label": "陪着补完",
         "fx": {
           "mood": -3,
-          "energy": -5,
+          "energy": -2,
           "career": -3
         },
         "rel": {
@@ -979,10 +979,10 @@
       "left": {
         "label": "轮流守夜",
         "fx": {
-          "health": -6,
-          "energy": -8,
-          "mood": -6,
-          "money": -7
+          "health": -5,
+          "energy": -3,
+          "mood": -5,
+          "money": -5
         },
         "rel": {
           "family": 8
@@ -991,7 +991,7 @@
       "right": {
         "label": "请护工",
         "fx": {
-          "money": -11,
+          "money": -8,
           "health": -2,
           "mood": -3,
           "career": -2
@@ -1015,9 +1015,9 @@
         "label": "请假去",
         "fx": {
           "career": -4,
-          "mood": 5,
+          "mood": 4,
           "social": 4,
-          "energy": -3
+          "energy": -2
         },
         "rel": {
           "family": 7
@@ -1028,7 +1028,8 @@
         "fx": {
           "career": 4,
           "mood": -4,
-          "money": -2
+          "money": -2,
+          "energy": 1
         },
         "rel": {
           "family": 3
@@ -1060,8 +1061,8 @@
         "label": "找个机会聊聊",
         "fx": {
           "mood": 4,
-          "social": 5,
-          "energy": -3
+          "social": 4,
+          "energy": -1
         },
         "rel": {
           "family": 7
@@ -1081,9 +1082,9 @@
       "left": {
         "label": "听完再说话",
         "fx": {
-          "mood": 5,
-          "social": 6,
-          "energy": -4
+          "mood": 4,
+          "social": 5,
+          "energy": -1
         },
         "rel": {
           "family": 8
@@ -1092,8 +1093,8 @@
       "right": {
         "label": "一时接受不了",
         "fx": {
-          "mood": -7,
-          "social": -5,
+          "mood": -5,
+          "social": -4,
           "career": 3
         },
         "rel": {
@@ -1114,9 +1115,9 @@
       "left": {
         "label": "帮他铺好床",
         "fx": {
-          "mood": 6,
-          "energy": -6,
-          "money": -6,
+          "mood": 5,
+          "energy": -2,
+          "money": -5,
           "social": 4
         },
         "flags": {
@@ -1154,10 +1155,10 @@
       "left": {
         "label": "上台说两句",
         "fx": {
-          "mood": 7,
-          "social": 7,
-          "energy": -4,
-          "money": -9
+          "mood": 5,
+          "social": 5,
+          "energy": -1,
+          "money": -8
         },
         "rel": {
           "family": 8
@@ -1168,7 +1169,7 @@
         "fx": {
           "mood": 4,
           "social": 3,
-          "money": -6
+          "money": -5
         },
         "rel": {
           "family": 5
@@ -1189,8 +1190,8 @@
         "label": "客客气气",
         "fx": {
           "mood": 3,
-          "social": 6,
-          "energy": -4,
+          "social": 5,
+          "energy": -1,
           "money": -5
         },
         "rel": {
@@ -1222,10 +1223,10 @@
       "left": {
         "label": "接下来",
         "fx": {
-          "mood": 7,
-          "energy": -7,
+          "mood": 5,
+          "energy": -3,
           "health": -4,
-          "money": -6
+          "money": -5
         },
         "rel": {
           "family": 8
@@ -1235,7 +1236,7 @@
         "label": "住几天就行",
         "fx": {
           "mood": 3,
-          "energy": -3,
+          "energy": -1,
           "money": -2
         },
         "rel": {
@@ -1257,8 +1258,8 @@
         "label": "敲门进去",
         "fx": {
           "mood": -3,
-          "social": 5,
-          "energy": -3
+          "social": 4,
+          "energy": -1
         },
         "rel": {
           "family": 6
@@ -1267,7 +1268,7 @@
       "right": {
         "label": "等他自己出来",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "social": -3,
           "career": 3
         },
@@ -1289,9 +1290,9 @@
       "left": {
         "label": "试试",
         "fx": {
-          "mood": 7,
-          "social": 6,
-          "energy": -4,
+          "mood": 5,
+          "social": 5,
+          "energy": -1,
           "money": -5
         },
         "rel": {
@@ -1320,10 +1321,10 @@
       "left": {
         "label": "签",
         "fx": {
-          "mood": -6,
+          "mood": -5,
           "health": -4,
-          "energy": -6,
-          "money": -10
+          "energy": -2,
+          "money": -8
         },
         "rel": {
           "love": 9
@@ -1334,8 +1335,8 @@
         "fx": {
           "mood": -4,
           "career": 4,
-          "money": -6,
-          "energy": -4
+          "money": -5,
+          "energy": -1
         },
         "rel": {
           "love": 6
@@ -1356,8 +1357,8 @@
         "label": "耐心解释",
         "fx": {
           "mood": -3,
-          "social": 5,
-          "energy": -3
+          "social": 4,
+          "energy": -1
         },
         "rel": {
           "family": 5
@@ -1396,7 +1397,7 @@
       "left": {
         "label": "主动张罗暖场",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 3,
           "money": -4
         }
@@ -1427,8 +1428,8 @@
       "left": {
         "label": "单膝跪地",
         "fx": {
-          "mood": 8,
-          "money": -8,
+          "mood": 5,
+          "money": -5,
           "social": 4
         }
       },
@@ -1453,7 +1454,7 @@
       "left": {
         "label": "尽量满足",
         "fx": {
-          "money": -10,
+          "money": -8,
           "social": 4,
           "mood": 2
         }
@@ -1480,16 +1481,16 @@
       "left": {
         "label": "办一场大的",
         "fx": {
-          "money": -13,
-          "mood": 7,
-          "social": 6
+          "money": -8,
+          "mood": 5,
+          "social": 5
         }
       },
       "right": {
         "label": "领证旅行结婚",
         "fx": {
           "money": -4,
-          "mood": 5,
+          "mood": 4,
           "social": -2
         }
       },
@@ -1507,7 +1508,7 @@
       "left": {
         "label": "慢慢磨合",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 3
         }
       },
@@ -1538,7 +1539,7 @@
       "left": {
         "label": "开始备孕",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "money": -5,
           "health": 2
         }
@@ -1565,9 +1566,9 @@
       "left": {
         "label": "全程陪同",
         "fx": {
-          "social": 5,
-          "mood": 5,
-          "energy": -3,
+          "social": 4,
+          "mood": 4,
+          "energy": -1,
           "money": -3
         }
       },
@@ -1593,17 +1594,17 @@
       "left": {
         "label": "起来哄他",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 2,
           "health": -4,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
         "label": "推给对方",
         "fx": {
           "energy": 3,
-          "social": -5,
+          "social": -4,
           "mood": -3
         }
       },
@@ -1626,7 +1627,7 @@
       "left": {
         "label": "选私立，多花钱",
         "fx": {
-          "money": -9,
+          "money": -8,
           "mood": 3,
           "social": 2
         }
@@ -1658,7 +1659,7 @@
       "left": {
         "label": "耐心沟通",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 2,
           "career": -2
         }
@@ -1666,7 +1667,7 @@
       "right": {
         "label": "冷战到底",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "social": -3
         }
       },
@@ -1684,8 +1685,8 @@
       "left": {
         "label": "安排一次约会",
         "fx": {
-          "mood": 7,
-          "social": 5,
+          "mood": 5,
+          "social": 4,
           "money": -4
         }
       },
@@ -1710,7 +1711,7 @@
       "left": {
         "label": "补一份礼物",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "social": 4,
           "money": -5
         }
@@ -1737,8 +1738,8 @@
       "left": {
         "label": "重新安排两个人的生活",
         "fx": {
-          "social": 6,
-          "mood": 5,
+          "social": 5,
+          "mood": 4,
           "energy": 2
         }
       },
@@ -1763,9 +1764,9 @@
       "left": {
         "label": "多抱一会儿",
         "fx": {
-          "mood": 8,
+          "mood": 5,
           "social": 4,
-          "energy": -2
+          "energy": -1
         }
       },
       "right": {

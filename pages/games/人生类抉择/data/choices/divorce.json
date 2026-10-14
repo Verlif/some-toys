@@ -14,7 +14,7 @@
         "label": "签字",
         "fx": {
           "money": -4,
-          "mood": -6,
+          "mood": -5,
           "social": -3
         },
         "flags": {
@@ -51,7 +51,7 @@
       "left": {
         "label": "每一次都到",
         "fx": {
-          "energy": -3,
+          "energy": -1,
           "mood": 4,
           "rel": {
             "family": 6
@@ -81,7 +81,7 @@
       "left": {
         "label": "好聚好散",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": 2,
           "social": 4
         }
@@ -89,9 +89,9 @@
       "right": {
         "label": "争到底",
         "fx": {
-          "money": 6,
+          "money": 5,
           "mood": -4,
-          "social": -6
+          "social": -5
         }
       },
       "once": true
@@ -108,7 +108,7 @@
       "left": {
         "label": "学着自己修",
         "fx": {
-          "energy": -3,
+          "energy": -1,
           "mood": 3
         },
         "skills": {
@@ -144,7 +144,7 @@
         "label": "从此不再来往",
         "fx": {
           "mood": -2,
-          "social": -5
+          "social": -4
         }
       },
       "once": true
@@ -161,7 +161,7 @@
       "left": {
         "label": "给老朋友打个电话",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "friends": 5
           }
@@ -236,8 +236,8 @@
         "label": "认真相处看看",
         "fx": {
           "money": -4,
-          "mood": 6,
-          "social": 5
+          "mood": 5,
+          "social": 4
         },
         "flags": {
           "married": true,

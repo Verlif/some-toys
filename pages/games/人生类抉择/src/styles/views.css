@@ -69,6 +69,14 @@
 .endbtns { display: flex; gap: 10px; }
 .endbtns .btn { flex: 1; padding: 12px; font-size: 14px; }
 
+/* 结算页的「人生履历」入口：整行一个按钮，放在评分与动作行之间 */
+.endlog { width: 100%; margin-bottom: 10px; padding: 12px; font-size: 14px; }
+
+/* 结局遮层 z-index 90 高于底部浮窗的 60，
+   在结算页里打开履历浮窗时要把浮窗与遮罩抬到它上面，否则浮窗会藏在结局面板后面 */
+body:has(.overlay.active) .backdrop.show { z-index: 95; }
+body:has(.overlay.active) .drawer.open { z-index: 96; }
+
 /* ===== file:// 启动提示 ===== */
 .boot-error {
   display: none;

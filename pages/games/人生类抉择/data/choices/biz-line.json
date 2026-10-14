@@ -13,15 +13,15 @@
       "left": {
         "label": "亲自盯着核心业务",
         "fx": {
-          "career": 7,
-          "energy": -6,
+          "career": 5,
+          "energy": -2,
           "health": -4
         }
       },
       "right": {
         "label": "交给职业经理人",
         "fx": {
-          "money": 6,
+          "money": 5,
           "mood": 4,
           "career": -3
         }
@@ -71,7 +71,7 @@
       "left": {
         "label": "接受",
         "fx": {
-          "career": 5,
+          "career": 4,
           "mood": 4,
           "rel": {
             "friends": 6
@@ -99,7 +99,7 @@
       "left": {
         "label": "加薪挽留",
         "fx": {
-          "money": -8,
+          "money": -5,
           "career": 3,
           "rel": {
             "friends": 5
@@ -145,7 +145,6 @@
       },
       "once": true
     },
-
     {
       "id": "bz_6",
       "name": "还差一笔",
@@ -158,7 +157,7 @@
       "left": {
         "label": "卖房还债",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": -3
         },
         "flags": {
@@ -195,7 +194,7 @@
       "left": {
         "label": "一家一家去谈",
         "fx": {
-          "energy": -5,
+          "energy": -2,
           "mood": -3,
           "social": 3
         }
@@ -204,7 +203,7 @@
         "label": "换个号躲起来",
         "fx": {
           "mood": -4,
-          "social": -5
+          "social": -4
         }
       },
       "once": true
@@ -221,7 +220,7 @@
       "left": {
         "label": "坦诚复盘",
         "fx": {
-          "career": 5,
+          "career": 4,
           "mood": 3
         }
       },
@@ -255,7 +254,7 @@
       "right": {
         "label": "干脆把自己关起来",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "rel": {
             "friends": -6
           }
@@ -275,7 +274,7 @@
       "left": {
         "label": "收下，记在心里",
         "fx": {
-          "money": 7,
+          "money": 5,
           "mood": -2,
           "rel": {
             "family": 5
@@ -306,9 +305,9 @@
       "left": {
         "label": "再来一次",
         "fx": {
-          "money": -8,
-          "career": 5,
-          "energy": -6
+          "money": -5,
+          "career": 4,
+          "energy": -2
         },
         "flags": {
           "biz": true,
@@ -326,7 +325,6 @@
       },
       "once": true
     },
-
     {
       "id": "bz_12",
       "name": "招租",
@@ -339,9 +337,9 @@
       "left": {
         "label": "租下来开个店",
         "fx": {
-          "money": -9,
-          "career": 5,
-          "energy": -5
+          "money": -8,
+          "career": 4,
+          "energy": -2
         },
         "flags": {
           "shop": true
@@ -369,8 +367,8 @@
       "left": {
         "label": "加班加点做",
         "fx": {
-          "money": 9,
-          "energy": -7,
+          "money": 8,
+          "energy": -3,
           "health": -4
         }
       },
@@ -396,7 +394,7 @@
       "left": {
         "label": "咬牙撑下去",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": -4
         }
       },
@@ -404,7 +402,7 @@
         "label": "关店止损",
         "fx": {
           "money": 3,
-          "mood": -5
+          "mood": -4
         },
         "flags": {
           "shop": false
@@ -424,7 +422,7 @@
       "left": {
         "label": "接受",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": -3
         }
       },
@@ -432,7 +430,7 @@
         "label": "换个地方",
         "fx": {
           "money": -5,
-          "energy": -5,
+          "energy": -2,
           "mood": 1
         }
       },
@@ -450,9 +448,9 @@
       "left": {
         "label": "开",
         "fx": {
-          "money": -9,
-          "career": 6,
-          "energy": -6,
+          "money": -8,
+          "career": 5,
+          "energy": -2,
           "social": 4
         }
       },

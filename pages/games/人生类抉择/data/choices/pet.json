@@ -14,8 +14,8 @@
         "label": "抱回家",
         "fx": {
           "money": -4,
-          "mood": 6,
-          "energy": -3
+          "mood": 5,
+          "energy": -1
         },
         "flags": {
           "pet": true,
@@ -43,9 +43,9 @@
       "left": {
         "label": "接回家",
         "fx": {
-          "money": -6,
-          "mood": 6,
-          "energy": -4
+          "money": -5,
+          "mood": 5,
+          "energy": -1
         },
         "flags": {
           "pet": true,
@@ -72,7 +72,7 @@
       "left": {
         "label": "认真训",
         "fx": {
-          "energy": -4,
+          "energy": -1,
           "mood": -2
         },
         "skills": {
@@ -101,7 +101,7 @@
         "label": "每天两小时",
         "fx": {
           "health": 4,
-          "energy": -4,
+          "energy": -1,
           "mood": 4
         },
         "skills": {
@@ -129,16 +129,16 @@
       "left": {
         "label": "治",
         "fx": {
-          "money": -12,
+          "money": -8,
           "mood": -4,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
         "label": "保守治疗",
         "fx": {
           "money": -4,
-          "mood": -6
+          "mood": -5
         }
       },
       "once": true
@@ -155,8 +155,8 @@
       "left": {
         "label": "天天陪着",
         "fx": {
-          "mood": -5,
-          "energy": -4
+          "mood": -4,
+          "energy": -1
         },
         "rel": {
           "family": 3
@@ -183,7 +183,7 @@
       "left": {
         "label": "全城找",
         "fx": {
-          "energy": -6,
+          "energy": -2,
           "mood": -4,
           "social": 4,
           "money": -3
@@ -192,7 +192,7 @@
       "right": {
         "label": "贴启事等着",
         "fx": {
-          "mood": -6,
+          "mood": -5,
           "money": 2
         }
       },
@@ -210,7 +210,7 @@
       "left": {
         "label": "爬起来陪玩",
         "fx": {
-          "energy": -4,
+          "energy": -1,
           "mood": 3
         }
       },
@@ -236,9 +236,9 @@
       "left": {
         "label": "做",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": 2,
-          "energy": -2
+          "energy": -1
         }
       },
       "right": {
@@ -246,7 +246,7 @@
         "fx": {
           "money": 2,
           "mood": -3,
-          "energy": -3
+          "energy": -1
         }
       }
     },
@@ -263,7 +263,7 @@
         "label": "去拍一套",
         "fx": {
           "money": -5,
-          "mood": 5,
+          "mood": 4,
           "social": 3
         }
       },
@@ -288,7 +288,7 @@
       "left": {
         "label": "好好告别",
         "fx": {
-          "mood": -6
+          "mood": -5
         },
         "rel": {
           "family": 5
@@ -297,7 +297,7 @@
       "right": {
         "label": "马上再养一只",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": 4
         }
       }
@@ -314,7 +314,7 @@
       "left": {
         "label": "赔钱道歉",
         "fx": {
-          "money": -8,
+          "money": -5,
           "social": -4,
           "mood": -3
         }
@@ -322,7 +322,7 @@
       "right": {
         "label": "据理力争",
         "fx": {
-          "social": -6,
+          "social": -5,
           "mood": 2,
           "money": 3
         }
@@ -338,9 +338,9 @@
       "left": {
         "label": "报班",
         "fx": {
-          "money": -9,
-          "mood": 5,
-          "energy": -5,
+          "money": -8,
+          "mood": 4,
+          "energy": -2,
           "social": 4
         },
         "skills": {
@@ -351,7 +351,7 @@
         "label": "自己教",
         "fx": {
           "mood": 3,
-          "energy": -6,
+          "energy": -2,
           "career": 3
         }
       },
@@ -369,7 +369,7 @@
       "left": {
         "label": "寄养机构",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": -3,
           "energy": 2,
           "career": 4
@@ -380,7 +380,7 @@
         "fx": {
           "money": -2,
           "mood": 4,
-          "social": 5,
+          "social": 4,
           "career": -2
         },
         "rel": {
@@ -402,7 +402,7 @@
         "label": "天天梳",
         "fx": {
           "mood": 3,
-          "energy": -4,
+          "energy": -1,
           "health": 2
         },
         "skills": {
@@ -434,7 +434,7 @@
           "money": -5,
           "health": 3,
           "mood": -2,
-          "energy": -2
+          "energy": -1
         }
       },
       "right": {
@@ -459,7 +459,7 @@
       "left": {
         "label": "另找地方坐",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "energy": 2,
           "social": 2
         }
@@ -486,10 +486,10 @@
       "left": {
         "label": "带去",
         "fx": {
-          "mood": 7,
-          "social": 6,
+          "mood": 5,
+          "social": 5,
           "career": -3,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
@@ -514,9 +514,9 @@
       "left": {
         "label": "认真运营",
         "fx": {
-          "mood": 6,
-          "social": 6,
-          "energy": -5,
+          "mood": 5,
+          "social": 5,
+          "energy": -2,
           "career": 2
         },
         "flags": {
@@ -527,7 +527,7 @@
         "label": "随手发",
         "fx": {
           "mood": 4,
-          "energy": -2
+          "energy": -1
         }
       },
       "once": true,
@@ -544,8 +544,8 @@
       "left": {
         "label": "蹲下来摸摸",
         "fx": {
-          "mood": 8,
-          "energy": -2,
+          "mood": 5,
+          "energy": -1,
           "social": 3
         },
         "rel": {
@@ -574,9 +574,9 @@
       "left": {
         "label": "领回来",
         "fx": {
-          "money": -8,
-          "mood": 7,
-          "energy": -6,
+          "money": -5,
+          "mood": 5,
+          "energy": -2,
           "social": 4
         },
         "flags": {
@@ -605,8 +605,8 @@
       "left": {
         "label": "赔礼加疫苗费",
         "fx": {
-          "money": -9,
-          "social": 5,
+          "money": -8,
+          "social": 4,
           "mood": -4
         },
         "rel": {
@@ -617,7 +617,7 @@
         "label": "说是对方先动手",
         "fx": {
           "money": 3,
-          "social": -6,
+          "social": -5,
           "mood": -2
         }
       },
@@ -637,7 +637,7 @@
         "fx": {
           "money": -5,
           "mood": 4,
-          "energy": -2
+          "energy": -1
         },
         "skills": {
           "craft": 3
@@ -648,7 +648,7 @@
         "fx": {
           "money": -3,
           "mood": -2,
-          "energy": -2
+          "energy": -1
         }
       },
       "once": true,
@@ -665,9 +665,9 @@
       "left": {
         "label": "一起带回去",
         "fx": {
-          "money": -7,
-          "mood": 6,
-          "energy": -5,
+          "money": -5,
+          "mood": 5,
+          "energy": -2,
           "social": 4
         },
         "rel": {
@@ -696,9 +696,9 @@
       "left": {
         "label": "去当志愿者",
         "fx": {
-          "social": 6,
-          "mood": 6,
-          "energy": -5,
+          "social": 5,
+          "mood": 5,
+          "energy": -2,
           "money": -4
         },
         "flags": {
@@ -738,7 +738,7 @@
       "right": {
         "label": "预约上门服务",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": 3
         }
       },
@@ -756,8 +756,8 @@
       "left": {
         "label": "连夜送医院",
         "fx": {
-          "money": -9,
-          "mood": 5
+          "money": -8,
+          "mood": 4
         }
       },
       "right": {
@@ -782,15 +782,15 @@
         "label": "贴满寻宠启事",
         "fx": {
           "money": -4,
-          "mood": -5,
+          "mood": -4,
           "social": 4,
-          "energy": -5
+          "energy": -2
         }
       },
       "right": {
         "label": "在家等它自己回来",
         "fx": {
-          "mood": -6
+          "mood": -5
         }
       },
       "once": true
@@ -807,7 +807,7 @@
       "left": {
         "label": "认真训练它",
         "fx": {
-          "energy": -4,
+          "energy": -1,
           "mood": -1,
           "skills": {
             "knowledge": 3
@@ -836,7 +836,7 @@
         "label": "买吸毛器勤打扫",
         "fx": {
           "money": -4,
-          "energy": -3,
+          "energy": -1,
           "mood": 2
         }
       },
@@ -861,7 +861,7 @@
       "left": {
         "label": "送到宠物店寄养",
         "fx": {
-          "money": -7,
+          "money": -5,
           "mood": 2,
           "health": 1
         }
@@ -889,7 +889,7 @@
         "label": "买个蛋糕一起过",
         "fx": {
           "money": -4,
-          "mood": 9
+          "mood": 5
         }
       },
       "right": {
@@ -913,15 +913,15 @@
       "left": {
         "label": "登门道歉并管好它",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": -1,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
         "label": "觉得对方小题大做",
         "fx": {
-          "social": -5,
+          "social": -4,
           "mood": -2
         }
       },
@@ -939,16 +939,16 @@
       "left": {
         "label": "放慢脚步多陪它",
         "fx": {
-          "mood": 8,
-          "energy": -3,
+          "mood": 5,
+          "energy": -1,
           "health": 1
         }
       },
       "right": {
         "label": "抱它回家歇着",
         "fx": {
-          "mood": 6,
-          "energy": -2
+          "mood": 5,
+          "energy": -1
         }
       },
       "once": true
@@ -965,15 +965,15 @@
       "left": {
         "label": "陪它走完最后一段",
         "fx": {
-          "money": -7,
+          "money": -5,
           "mood": -2,
-          "social": 5
+          "social": 4
         }
       },
       "right": {
         "label": "把日子尽量过得平常",
         "fx": {
-          "mood": -6,
+          "mood": -5,
           "energy": 2
         }
       },

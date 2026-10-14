@@ -13,9 +13,9 @@
       "left": {
         "label": "说走就走",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "health": 2,
-          "energy": -6,
+          "energy": -2,
           "skills": {
             "fitness": 5
           }
@@ -42,10 +42,10 @@
       "left": {
         "label": "排！必须吃到",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "health": -2,
           "money": -5,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
@@ -99,7 +99,7 @@
         "label": "走起",
         "fx": {
           "health": 3,
-          "energy": -6,
+          "energy": -2,
           "mood": 2,
           "skills": {
             "fitness": 8
@@ -127,7 +127,7 @@
       "left": {
         "label": "往好处想",
         "fx": {
-          "mood": 7,
+          "mood": 5,
           "energy": 3
         }
       },
@@ -152,8 +152,8 @@
       "left": {
         "label": "打开电脑",
         "fx": {
-          "career": 7,
-          "energy": -6,
+          "career": 5,
+          "energy": -2,
           "health": -3,
           "money": 4
         }
@@ -181,7 +181,7 @@
         "label": "再待一会儿",
         "fx": {
           "social": 4,
-          "energy": -4,
+          "energy": -1,
           "mood": -2
         }
       },
@@ -216,7 +216,7 @@
         "fx": {
           "money": -5,
           "mood": 3,
-          "energy": -2
+          "energy": -1
         }
       },
       "once": true
@@ -230,10 +230,10 @@
       "left": {
         "label": "第一个报名",
         "fx": {
-          "health": 6,
-          "mood": 8,
-          "energy": -7,
-          "social": 5
+          "health": 5,
+          "mood": 5,
+          "energy": -3,
+          "social": 4
         },
         "skills": {
           "fitness": 7
@@ -261,18 +261,18 @@
       "left": {
         "label": "买",
         "fx": {
-          "money": -10,
-          "mood": 8,
-          "social": 5,
+          "money": -8,
+          "mood": 5,
+          "social": 4,
           "career": -4,
-          "energy": -5
+          "energy": -2
         }
       },
       "right": {
         "label": "攒着下次",
         "fx": {
-          "money": 6,
-          "mood": -5,
+          "money": 5,
+          "mood": -4,
           "career": 4
         }
       },
@@ -290,9 +290,9 @@
       "left": {
         "label": "排",
         "fx": {
-          "mood": 7,
-          "money": -6,
-          "energy": -4,
+          "mood": 5,
+          "money": -5,
+          "energy": -1,
           "health": -2
         },
         "skills": {
@@ -321,9 +321,9 @@
       "left": {
         "label": "再试第五次",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "money": -5,
-          "energy": -5
+          "energy": -2
         },
         "skills": {
           "cooking": 8
@@ -353,9 +353,9 @@
       "left": {
         "label": "借回去看",
         "fx": {
-          "career": 7,
-          "mood": 5,
-          "energy": -6
+          "career": 5,
+          "mood": 4,
+          "energy": -2
         },
         "skills": {
           "knowledge": 8
@@ -383,10 +383,10 @@
       "left": {
         "label": "去",
         "fx": {
-          "money": -8,
-          "career": 8,
-          "social": 5,
-          "energy": -5
+          "money": -5,
+          "career": 5,
+          "social": 4,
+          "energy": -2
         },
         "skills": {
           "knowledge": 7
@@ -397,7 +397,7 @@
         "fx": {
           "money": 1,
           "career": 4,
-          "energy": -2
+          "energy": -1
         },
         "skills": {
           "knowledge": 3
@@ -417,16 +417,16 @@
       "left": {
         "label": "往好处想",
         "fx": {
-          "mood": 7,
+          "mood": 5,
           "career": 3,
           "health": 2,
-          "energy": -2
+          "energy": -1
         }
       },
       "right": {
         "label": "先难过一会儿",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "social": 4,
           "energy": 2
         }
@@ -445,19 +445,19 @@
       "left": {
         "label": "打开电脑",
         "fx": {
-          "career": 8,
-          "money": 6,
-          "health": -5,
+          "career": 5,
+          "money": 5,
+          "health": -4,
           "mood": -4,
-          "energy": -6
+          "energy": -2
         }
       },
       "right": {
         "label": "装作没看见",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "health": 4,
-          "career": -5,
+          "career": -4,
           "energy": 3
         }
       },
@@ -475,17 +475,17 @@
       "left": {
         "label": "去",
         "fx": {
-          "social": 6,
-          "mood": -5,
-          "energy": -5,
+          "social": 5,
+          "mood": -4,
+          "energy": -2,
           "health": -2
         }
       },
       "right": {
         "label": "在家待着",
         "fx": {
-          "mood": 6,
-          "energy": 5,
+          "mood": 5,
+          "energy": 4,
           "career": 4,
           "social": -4
         }
@@ -504,7 +504,7 @@
       "left": {
         "label": "买",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": 4,
           "career": -2
         }
@@ -531,9 +531,9 @@
       "left": {
         "label": "出门跑十公里",
         "fx": {
-          "health": 8,
-          "mood": 6,
-          "energy": -7
+          "health": 5,
+          "mood": 5,
+          "energy": -3
         },
         "skills": {
           "fitness": 8
@@ -542,7 +542,7 @@
       "right": {
         "label": "睡到七点",
         "fx": {
-          "energy": 6,
+          "energy": 4,
           "health": -2,
           "mood": 3
         }
@@ -561,10 +561,10 @@
       "left": {
         "label": "请教练纠正",
         "fx": {
-          "money": -8,
-          "health": 6,
+          "money": -5,
+          "health": 5,
           "mood": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "fitness": 7
@@ -575,7 +575,7 @@
         "fx": {
           "health": -4,
           "mood": 3,
-          "energy": -3
+          "energy": -1
         },
         "skills": {
           "fitness": 3
@@ -599,8 +599,8 @@
         "label": "张罗大家吃顿好的",
         "fx": {
           "money": -5,
-          "mood": 6,
-          "social": 5
+          "mood": 5,
+          "social": 4
         }
       },
       "right": {
@@ -624,14 +624,15 @@
       "left": {
         "label": "淋着雨走回家",
         "fx": {
-          "mood": 7,
-          "health": -4
+          "mood": 5,
+          "health": -4,
+          "energy": -1
         }
       },
       "right": {
         "label": "躲雨等停了再走",
         "fx": {
-          "energy": -2,
+          "energy": 1,
           "mood": 1
         }
       },
@@ -649,16 +650,16 @@
       "left": {
         "label": "把手头的事做完再走",
         "fx": {
-          "career": 7,
+          "career": 5,
           "money": 4,
-          "energy": -6,
+          "energy": -2,
           "health": -4
         }
       },
       "right": {
         "label": "破例早点回家",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "energy": 4,
           "career": -3
         }
@@ -679,14 +680,14 @@
         "fx": {
           "career": 4,
           "mood": -3,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
         "label": "退出群聊，彻底放空",
         "fx": {
-          "mood": 6,
-          "energy": 5,
+          "mood": 5,
+          "energy": 4,
           "career": -2
         }
       },
@@ -704,8 +705,8 @@
       "left": {
         "label": "硬着头皮去寒暄",
         "fx": {
-          "social": 5,
-          "energy": -5,
+          "social": 4,
+          "energy": -2,
           "mood": -2
         }
       },
@@ -731,7 +732,7 @@
       "left": {
         "label": "在家读到天黑",
         "fx": {
-          "mood": 7,
+          "mood": 5,
           "social": -2,
           "skills": {
             "knowledge": 4
@@ -741,8 +742,8 @@
       "right": {
         "label": "强迫自己出门见人",
         "fx": {
-          "social": 5,
-          "energy": -4,
+          "social": 4,
+          "energy": -1,
           "mood": -1
         }
       },
@@ -760,7 +761,7 @@
       "left": {
         "label": "精打细算买一堆",
         "fx": {
-          "money": 6,
+          "money": 5,
           "mood": -2,
           "health": -2
         }
@@ -798,7 +799,7 @@
         "label": "换件新的",
         "fx": {
           "money": -5,
-          "mood": 5
+          "mood": 4
         }
       },
       "once": true
@@ -815,9 +816,9 @@
       "left": {
         "label": "加练到力竭",
         "fx": {
-          "health": 6,
-          "energy": -6,
-          "mood": 5,
+          "health": 5,
+          "energy": -2,
+          "mood": 4,
           "skills": {
             "fitness": 4
           }
@@ -826,7 +827,7 @@
       "right": {
         "label": "今天就休息",
         "fx": {
-          "energy": 5,
+          "energy": 4,
           "health": 2,
           "mood": -3
         }
@@ -845,15 +846,15 @@
       "left": {
         "label": "去，明早多练两小时",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "health": -3,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
         "label": "婉拒，回家吃鸡胸",
         "fx": {
-          "health": 5,
+          "health": 4,
           "social": -2,
           "mood": -4
         }
@@ -873,7 +874,7 @@
         "label": "专程去尝尝",
         "fx": {
           "money": -5,
-          "mood": 7,
+          "mood": 5,
           "health": -2,
           "skills": {
             "cooking": 3
@@ -901,7 +902,7 @@
       "left": {
         "label": "起来做顿宵夜",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "health": -3,
           "skills": {
             "cooking": 5
@@ -929,7 +930,7 @@
       "left": {
         "label": "借回去熬夜读完",
         "fx": {
-          "energy": -5,
+          "energy": -2,
           "health": -2,
           "skills": {
             "knowledge": 7
@@ -960,7 +961,7 @@
         "label": "从头到尾学一遍",
         "fx": {
           "career": 4,
-          "energy": -5,
+          "energy": -2,
           "skills": {
             "knowledge": 8
           }
@@ -989,9 +990,9 @@
       "left": {
         "label": "说走就走",
         "fx": {
-          "mood": 7,
+          "mood": 5,
           "health": 2,
-          "energy": -5,
+          "energy": -2,
           "skills": {
             "fitness": 4
           }
@@ -1019,9 +1020,9 @@
       "left": {
         "label": "买票订行程",
         "fx": {
-          "money": -7,
-          "mood": 8,
-          "energy": -3
+          "money": -5,
+          "mood": 5,
+          "energy": -1
         }
       },
       "right": {

@@ -13,10 +13,10 @@
       "left": {
         "label": "继续拼",
         "fx": {
-          "career": 7,
+          "career": 5,
           "money": 5,
-          "health": -5,
-          "energy": -7
+          "health": -4,
+          "energy": -3
         }
       },
       "right": {
@@ -24,7 +24,7 @@
         "fx": {
           "career": -4,
           "health": 3,
-          "energy": 5,
+          "energy": 4,
           "mood": 3
         }
       },
@@ -42,9 +42,9 @@
       "left": {
         "label": "跳",
         "fx": {
-          "career": 8,
-          "money": 8,
-          "energy": -4
+          "career": 5,
+          "money": 5,
+          "energy": -1
         },
         "rel": {
           "friends": -3
@@ -71,8 +71,8 @@
       "left": {
         "label": "接",
         "fx": {
-          "career": 6,
-          "energy": -6,
+          "career": 5,
+          "energy": -2,
           "social": 4,
           "mood": 2
         }
@@ -98,7 +98,7 @@
       "left": {
         "label": "站过去",
         "fx": {
-          "career": 5,
+          "career": 4,
           "mood": -4,
           "social": 3
         }
@@ -125,10 +125,10 @@
       "left": {
         "label": "辞职干",
         "fx": {
-          "money": -15,
-          "career": 6,
-          "energy": -8,
-          "mood": 6
+          "money": -8,
+          "career": 5,
+          "energy": -3,
+          "mood": 5
         },
         "flags": {
           "biz": true
@@ -138,7 +138,7 @@
       "right": {
         "label": "安稳上班",
         "fx": {
-          "money": 6,
+          "money": 5,
           "career": 2,
           "mood": -2
         }
@@ -156,8 +156,8 @@
       "left": {
         "label": "拉朋友入伙",
         "fx": {
-          "career": 6,
-          "money": 8
+          "career": 5,
+          "money": 5
         },
         "rel": {
           "friends": -5
@@ -167,7 +167,7 @@
         "label": "单干",
         "fx": {
           "career": 2,
-          "energy": -5
+          "energy": -2
         }
       },
       "once": true
@@ -184,9 +184,9 @@
       "left": {
         "label": "拿钱",
         "fx": {
-          "money": 20,
-          "career": 8,
-          "energy": -6
+          "money": 8,
+          "career": 5,
+          "energy": -2
         }
       },
       "right": {
@@ -211,10 +211,10 @@
       "left": {
         "label": "熬夜冲",
         "fx": {
-          "career": 8,
+          "career": 5,
           "mood": 4,
-          "health": -6,
-          "energy": -8
+          "health": -5,
+          "energy": -3
         }
       },
       "right": {
@@ -238,9 +238,9 @@
       "left": {
         "label": "全投回去",
         "fx": {
-          "money": -10,
-          "career": 9,
-          "energy": -6
+          "money": -8,
+          "career": 5,
+          "energy": -2
         },
         "flags": {
           "bizSuccess": true
@@ -249,9 +249,9 @@
       "right": {
         "label": "先分了",
         "fx": {
-          "money": 15,
+          "money": 8,
           "career": 3,
-          "mood": 5
+          "mood": 4
         }
       },
       "once": true
@@ -268,9 +268,9 @@
       "left": {
         "label": "再撑半年",
         "fx": {
-          "money": -15,
-          "health": -5,
-          "mood": -6
+          "money": -8,
+          "health": -4,
+          "mood": -5
         },
         "flags": {
           "biz": false,
@@ -281,7 +281,7 @@
         "label": "及时止损",
         "fx": {
           "money": 5,
-          "career": -6,
+          "career": -5,
           "mood": 2
         },
         "flags": {
@@ -303,9 +303,9 @@
       "left": {
         "label": "再来一次",
         "fx": {
-          "money": -12,
-          "career": 7,
-          "energy": -8
+          "money": -8,
+          "career": 5,
+          "energy": -3
         },
         "flags": {
           "biz": true,
@@ -316,7 +316,7 @@
         "label": "找个班上",
         "fx": {
           "career": 3,
-          "money": 6,
+          "money": 5,
           "mood": 3
         }
       },
@@ -334,18 +334,18 @@
       "left": {
         "label": "冲",
         "fx": {
-          "career": 10,
-          "money": 15,
-          "health": -6,
-          "energy": -8
+          "career": 5,
+          "money": 8,
+          "health": -5,
+          "energy": -3
         }
       },
       "right": {
         "label": "见好就收",
         "fx": {
-          "money": 12,
+          "money": 8,
           "career": 4,
-          "mood": 5
+          "mood": 4
         }
       },
       "once": true
@@ -365,18 +365,18 @@
       "left": {
         "label": "休个长假",
         "fx": {
-          "health": 6,
-          "energy": 7,
-          "mood": 5,
-          "career": -6
+          "health": 5,
+          "energy": 4,
+          "mood": 4,
+          "career": -5
         }
       },
       "right": {
         "label": "再撑撑",
         "fx": {
-          "career": 5,
-          "health": -7,
-          "energy": -7
+          "career": 4,
+          "health": -5,
+          "energy": -3
         }
       },
       "once": true
@@ -390,8 +390,8 @@
       "left": {
         "label": "搞起来",
         "fx": {
-          "money": 6,
-          "energy": -6,
+          "money": 5,
+          "energy": -2,
           "career": 3
         },
         "skills": {
@@ -419,16 +419,16 @@
       "left": {
         "label": "回去",
         "fx": {
-          "money": 8,
+          "money": 5,
           "career": 4,
-          "energy": -5,
+          "energy": -2,
           "health": -3
         }
       },
       "right": {
         "label": "享清闲",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "energy": 4
         }
       },
@@ -443,10 +443,10 @@
       "left": {
         "label": "主动汇报",
         "fx": {
-          "career": 6,
+          "career": 5,
           "money": 5,
           "mood": -2,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
@@ -471,9 +471,9 @@
       "left": {
         "label": "砍到十页",
         "fx": {
-          "career": 7,
+          "career": 5,
           "mood": 3,
-          "energy": -5
+          "energy": -2
         },
         "skills": {
           "charm": 5
@@ -484,7 +484,7 @@
         "fx": {
           "career": -4,
           "mood": -3,
-          "energy": -3
+          "energy": -1
         }
       },
       "once": true,
@@ -501,10 +501,10 @@
       "left": {
         "label": "认真准备",
         "fx": {
-          "career": 6,
-          "social": 6,
+          "career": 5,
+          "social": 5,
           "mood": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "charm": 6
@@ -532,8 +532,8 @@
       "left": {
         "label": "主动请缨",
         "fx": {
-          "career": 8,
-          "energy": -7,
+          "career": 5,
+          "energy": -3,
           "mood": 3,
           "social": -4
         }
@@ -543,7 +543,7 @@
         "fx": {
           "career": -4,
           "mood": -3,
-          "social": 5,
+          "social": 4,
           "energy": 3
         }
       },
@@ -562,17 +562,17 @@
         "label": "站出来",
         "fx": {
           "career": 4,
-          "mood": -6,
-          "social": 6,
-          "energy": -4
+          "mood": -5,
+          "social": 5,
+          "energy": -1
         }
       },
       "right": {
         "label": "推给流程",
         "fx": {
-          "career": -5,
+          "career": -4,
           "mood": -3,
-          "social": -5
+          "social": -4
         }
       },
       "once": true,
@@ -589,8 +589,8 @@
       "left": {
         "label": "开口要",
         "fx": {
-          "money": 9,
-          "career": 5,
+          "money": 8,
+          "career": 4,
           "mood": -4,
           "social": -3
         }
@@ -617,9 +617,9 @@
       "left": {
         "label": "一个个去谈",
         "fx": {
-          "career": 6,
-          "social": 6,
-          "energy": -6,
+          "career": 5,
+          "social": 5,
+          "energy": -2,
           "mood": -2
         }
       },
@@ -645,7 +645,7 @@
       "left": {
         "label": "签",
         "fx": {
-          "career": 7,
+          "career": 5,
           "money": -4,
           "mood": -3
         },
@@ -675,10 +675,10 @@
       "left": {
         "label": "去",
         "fx": {
-          "career": 7,
-          "money": 6,
-          "health": -5,
-          "energy": -6,
+          "career": 5,
+          "money": 5,
+          "health": -4,
+          "energy": -2,
           "social": -3
         }
       },
@@ -705,19 +705,19 @@
       "left": {
         "label": "留他",
         "fx": {
-          "career": 5,
-          "social": 5,
-          "money": -6,
-          "energy": -4
+          "career": 4,
+          "social": 4,
+          "money": -5,
+          "energy": -1
         }
       },
       "right": {
         "label": "送他",
         "fx": {
-          "social": 6,
+          "social": 5,
           "mood": -3,
           "career": -3,
-          "energy": -2
+          "energy": -1
         }
       },
       "once": true,
@@ -734,9 +734,9 @@
       "left": {
         "label": "选有潜力的",
         "fx": {
-          "career": 6,
-          "social": 5,
-          "energy": -5,
+          "career": 5,
+          "social": 4,
+          "energy": -2,
           "mood": 3
         }
       },
@@ -745,7 +745,7 @@
         "fx": {
           "career": 4,
           "money": -5,
-          "energy": -2,
+          "energy": -1,
           "mood": 2
         }
       },
@@ -763,10 +763,10 @@
       "left": {
         "label": "申诉",
         "fx": {
-          "career": 5,
-          "mood": -5,
+          "career": 4,
+          "mood": -4,
           "social": -3,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
@@ -791,10 +791,10 @@
       "left": {
         "label": "申请",
         "fx": {
-          "career": 5,
+          "career": 4,
           "money": -3,
           "mood": 4,
-          "energy": -5,
+          "energy": -2,
           "social": -3
         }
       },
@@ -820,10 +820,10 @@
       "left": {
         "label": "接",
         "fx": {
-          "money": 10,
+          "money": 8,
           "career": 3,
-          "health": -5,
-          "energy": -7,
+          "health": -4,
+          "energy": -3,
           "mood": -3
         }
       },
@@ -847,11 +847,11 @@
       "left": {
         "label": "当面去道歉",
         "fx": {
-          "career": 5,
+          "career": 4,
           "money": -4,
-          "mood": -5,
-          "social": 5,
-          "energy": -4
+          "mood": -4,
+          "social": 4,
+          "energy": -1
         }
       },
       "right": {
@@ -876,10 +876,10 @@
       "left": {
         "label": "接着写",
         "fx": {
-          "career": 7,
-          "social": 6,
-          "mood": 5,
-          "energy": -5
+          "career": 5,
+          "social": 5,
+          "mood": 4,
+          "energy": -2
         },
         "flags": {
           "fame": true
@@ -907,10 +907,10 @@
       "left": {
         "label": "去",
         "fx": {
-          "money": -9,
-          "career": 8,
-          "mood": 5,
-          "energy": -7,
+          "money": -8,
+          "career": 5,
+          "mood": 4,
+          "energy": -3,
           "social": 4
         }
       },
@@ -939,10 +939,10 @@
       "left": {
         "label": "招",
         "fx": {
-          "career": 6,
-          "money": -9,
-          "energy": -4,
-          "social": 5,
+          "career": 5,
+          "money": -8,
+          "energy": -1,
+          "social": 4,
           "mood": 3
         }
       },
@@ -950,8 +950,8 @@
         "label": "继续一个人",
         "fx": {
           "career": -4,
-          "health": -5,
-          "energy": -6,
+          "health": -4,
+          "energy": -2,
           "money": 4
         }
       },
@@ -969,10 +969,10 @@
       "left": {
         "label": "谈",
         "fx": {
-          "career": 6,
-          "mood": -5,
+          "career": 5,
+          "mood": -4,
           "social": 4,
-          "energy": -5,
+          "energy": -2,
           "money": -4
         }
       },
@@ -980,9 +980,9 @@
         "label": "各退一步",
         "fx": {
           "career": -3,
-          "money": -6,
+          "money": -5,
           "mood": 3,
-          "social": 5
+          "social": 4
         }
       },
       "once": true,
@@ -999,8 +999,8 @@
       "left": {
         "label": "卖",
         "fx": {
-          "money": 18,
-          "career": 6,
+          "money": 8,
+          "career": 5,
           "mood": -4,
           "social": -4
         }
@@ -1008,10 +1008,10 @@
       "right": {
         "label": "不卖",
         "fx": {
-          "career": 8,
-          "money": -8,
-          "mood": 5,
-          "energy": -6
+          "career": 5,
+          "money": -5,
+          "mood": 4,
+          "energy": -2
         }
       },
       "once": true,
@@ -1031,8 +1031,8 @@
       "left": {
         "label": "讲一番雄心壮志",
         "fx": {
-          "career": 7,
-          "energy": -3,
+          "career": 5,
+          "energy": -1,
           "mood": 2
         }
       },
@@ -1058,13 +1058,13 @@
           "career": 3,
           "social": -4,
           "mood": -3,
-          "energy": -5
+          "energy": -2
         }
       },
       "right": {
         "label": "拿赔偿走人",
         "fx": {
-          "money": 7,
+          "money": 5,
           "career": -4,
           "mood": 2
         }
@@ -1083,7 +1083,7 @@
       "left": {
         "label": "据理力争",
         "fx": {
-          "money": 8,
+          "money": 5,
           "career": 4,
           "social": -3
         }
@@ -1109,9 +1109,9 @@
       "left": {
         "label": "虚心跟着学",
         "fx": {
-          "career": 6,
+          "career": 5,
           "social": 4,
-          "energy": -3,
+          "energy": -1,
           "skills": {
             "knowledge": 6
           }
@@ -1121,7 +1121,7 @@
         "label": "靠自己琢磨",
         "fx": {
           "career": 3,
-          "energy": -2
+          "energy": -1
         }
       },
       "once": true
@@ -1135,7 +1135,7 @@
       "left": {
         "label": "选边站",
         "fx": {
-          "career": 6,
+          "career": 5,
           "social": 3,
           "mood": -3
         }
@@ -1159,9 +1159,9 @@
       "left": {
         "label": "咬牙跑完",
         "fx": {
-          "career": 6,
+          "career": 5,
           "money": 5,
-          "health": -6,
+          "health": -5,
           "social": -4
         }
       },
@@ -1184,7 +1184,7 @@
       "left": {
         "label": "递交辞职信",
         "fx": {
-          "mood": 8,
+          "mood": 5,
           "career": -3,
           "money": -4
         }
@@ -1219,7 +1219,7 @@
       "right": {
         "label": "继续等合适的",
         "fx": {
-          "money": -6,
+          "money": -5,
           "career": 1,
           "mood": -3
         }
@@ -1235,9 +1235,9 @@
       "left": {
         "label": "转做自由职业",
         "fx": {
-          "money": 6,
+          "money": 5,
           "career": 4,
-          "energy": -4,
+          "energy": -1,
           "social": -4
         }
       },
@@ -1245,7 +1245,7 @@
         "label": "接私活但保住工作",
         "fx": {
           "money": 5,
-          "energy": -5,
+          "energy": -2,
           "career": 2
         }
       },
@@ -1260,9 +1260,9 @@
       "left": {
         "label": "分别谈话化解",
         "fx": {
-          "social": 6,
+          "social": 5,
           "career": 3,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
@@ -1287,7 +1287,7 @@
       "left": {
         "label": "强制自己停下来",
         "fx": {
-          "health": 7,
+          "health": 5,
           "mood": 3,
           "energy": 4,
           "career": -4
@@ -1296,9 +1296,9 @@
       "right": {
         "label": "再撑一个季度",
         "fx": {
-          "career": 6,
-          "health": -7,
-          "energy": -5
+          "career": 5,
+          "health": -5,
+          "energy": -2
         }
       },
       "once": true
@@ -1312,9 +1312,9 @@
       "left": {
         "label": "认真准备参评",
         "fx": {
-          "career": 8,
+          "career": 5,
           "social": 3,
-          "energy": -4,
+          "energy": -1,
           "money": -2
         }
       },
@@ -1336,10 +1336,10 @@
       "left": {
         "label": "果断转行",
         "fx": {
-          "career": 6,
+          "career": 5,
           "mood": 4,
           "money": -5,
-          "energy": -6
+          "energy": -2
         }
       },
       "right": {
@@ -1364,9 +1364,9 @@
       "left": {
         "label": "亏本也要拿下",
         "fx": {
-          "career": 7,
-          "money": -6,
-          "social": 5
+          "career": 5,
+          "money": -5,
+          "social": 4
         }
       },
       "right": {

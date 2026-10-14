@@ -11,8 +11,8 @@
         "label": "把书包一扔就上",
         "fx": {
           "health": 3,
-          "mood": 5,
-          "energy": -3,
+          "mood": 4,
+          "energy": -1,
           "rel": {
             "friends": 6
           }
@@ -38,7 +38,7 @@
       "left": {
         "label": "接过来一起刷",
         "fx": {
-          "energy": -2,
+          "energy": -1,
           "rel": {
             "friends": 5
           },
@@ -68,7 +68,7 @@
         "label": "去，认认门",
         "fx": {
           "mood": 4,
-          "energy": -2,
+          "energy": -1,
           "rel": {
             "friends": 6
           }
@@ -124,8 +124,8 @@
       "left": {
         "label": "坐下来听完",
         "fx": {
-          "mood": 5,
-          "energy": -2,
+          "mood": 4,
+          "energy": -1,
           "rel": {
             "friends": 6
           }
@@ -152,7 +152,7 @@
         "label": "加个好友",
         "fx": {
           "mood": 4,
-          "energy": -2,
+          "energy": -1,
           "rel": {
             "friends": 5
           }
@@ -170,7 +170,6 @@
       },
       "once": true
     },
-
     {
       "id": "fr_s1",
       "name": "三缺一",
@@ -185,7 +184,7 @@
         "fx": {
           "health": 4,
           "mood": 4,
-          "energy": -4,
+          "energy": -1,
           "rel": {
             "friends": 4
           }
@@ -219,7 +218,7 @@
         "label": "冰敷休息两周",
         "fx": {
           "health": 4,
-          "energy": -2
+          "energy": -1
         },
         "skills": {
           "fitness": 2
@@ -228,7 +227,7 @@
       "right": {
         "label": "贴个膏药接着打",
         "fx": {
-          "health": -5,
+          "health": -4,
           "mood": 2
         },
         "skills": {
@@ -250,8 +249,8 @@
         "label": "戴上，带队上场",
         "fx": {
           "social": 3,
-          "mood": 6,
-          "energy": -5,
+          "mood": 5,
+          "energy": -2,
           "health": 1,
           "rel": {
             "friends": 4
@@ -279,8 +278,8 @@
       "left": {
         "label": "去带课",
         "fx": {
-          "money": 6,
-          "energy": -5,
+          "money": 5,
+          "energy": -2,
           "rel": {
             "friends": 4
           }
@@ -300,7 +299,6 @@
       },
       "once": true
     },
-
     {
       "id": "fr_t1",
       "name": "通宵",
@@ -313,7 +311,7 @@
       "left": {
         "label": "陪他熬完",
         "fx": {
-          "energy": -6,
+          "energy": -2,
           "health": -3,
           "rel": {
             "friends": 4
@@ -377,7 +375,7 @@
       "left": {
         "label": "认真抄一遍",
         "fx": {
-          "energy": -4,
+          "energy": -1,
           "rel": {
             "friends": 3
           }
@@ -411,7 +409,7 @@
       "left": {
         "label": "把简历发过去",
         "fx": {
-          "career": 6,
+          "career": 5,
           "money": 4,
           "rel": {
             "friends": 4
@@ -429,7 +427,6 @@
       },
       "once": true
     },
-
     {
       "id": "fr_r1",
       "name": "他家",
@@ -500,8 +497,8 @@
       "left": {
         "label": "借他的势",
         "fx": {
-          "career": 7,
-          "money": 7,
+          "career": 5,
+          "money": 5,
           "mood": -2,
           "rel": {
             "friends": 3
@@ -548,7 +545,6 @@
       },
       "once": true
     },
-
     {
       "id": "fr_k1",
       "name": "堵在巷口",
@@ -561,8 +557,8 @@
       "left": {
         "label": "赶过去",
         "fx": {
-          "health": -5,
-          "career": -5,
+          "health": -4,
+          "career": -4,
           "mood": 4,
           "rel": {
             "friends": 6
@@ -593,7 +589,7 @@
       "left": {
         "label": "借给他",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": 2,
           "rel": {
             "friends": 5
@@ -634,7 +630,7 @@
       "right": {
         "label": "替他兜着",
         "fx": {
-          "career": -5,
+          "career": -4,
           "mood": -2,
           "rel": {
             "friends": 5
@@ -655,7 +651,7 @@
       "left": {
         "label": "坐下来喝一杯",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "friends": 5
           }
@@ -671,7 +667,6 @@
       },
       "once": true
     },
-
     {
       "id": "fr_a1",
       "name": "地下演出",
@@ -684,9 +679,9 @@
       "left": {
         "label": "跟着热闹一晚",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "money": -3,
-          "energy": -3,
+          "energy": -1,
           "rel": {
             "friends": 5
           }
@@ -713,7 +708,7 @@
       "left": {
         "label": "借给他",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": 4,
           "rel": {
             "friends": 5
@@ -741,7 +736,7 @@
       "left": {
         "label": "替他高兴",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "rel": {
             "friends": 6
           }
@@ -786,7 +781,6 @@
       },
       "once": true
     },
-
     {
       "id": "fr_n1",
       "name": "奔现",
@@ -799,9 +793,9 @@
       "left": {
         "label": "再等等",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 3,
-          "energy": -2,
+          "energy": -1,
           "rel": {
             "friends": 4
           }
@@ -830,7 +824,7 @@
       "left": {
         "label": "转过去",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": -2,
           "rel": {
             "friends": 3
@@ -860,9 +854,9 @@
       "left": {
         "label": "一起做",
         "fx": {
-          "money": 6,
+          "money": 5,
           "career": 4,
-          "energy": -5,
+          "energy": -2,
           "rel": {
             "friends": 3
           }
@@ -889,8 +883,8 @@
       "left": {
         "label": "聊一整晚",
         "fx": {
-          "mood": 5,
-          "energy": -3,
+          "mood": 4,
+          "energy": -1,
           "rel": {
             "friends": 4
           }

@@ -40,10 +40,10 @@
       "left": {
         "label": "住院治疗",
         "fx": {
-          "money": -10,
-          "health": -6,
-          "mood": -5,
-          "energy": -5
+          "money": -8,
+          "health": -5,
+          "mood": -4,
+          "energy": -2
         },
         "flags": {
           "illness": true
@@ -75,8 +75,8 @@
       "left": {
         "label": "签",
         "fx": {
-          "money": -12,
-          "health": 6,
+          "money": -8,
+          "health": 5,
           "mood": -3
         }
       },
@@ -103,8 +103,8 @@
       "left": {
         "label": "认真调养一段",
         "fx": {
-          "health": 8,
-          "mood": 6
+          "health": 5,
+          "mood": 5
         },
         "flags": {
           "illness": false
@@ -115,7 +115,7 @@
         "label": "立刻回去上班",
         "fx": {
           "career": 4,
-          "health": -5
+          "health": -4
         }
       },
       "once": true
@@ -144,7 +144,7 @@
       "right": {
         "label": "到处去找偏方",
         "fx": {
-          "money": -6,
+          "money": -5,
           "health": -4,
           "mood": -3
         }
@@ -163,7 +163,7 @@
       "left": {
         "label": "认真说声谢谢",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "family": 7
           }
@@ -192,7 +192,7 @@
       "left": {
         "label": "交个朋友",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "friends": 6
           }
@@ -218,8 +218,8 @@
       "left": {
         "label": "咬牙按时买齐",
         "fx": {
-          "money": -7,
-          "health": 5
+          "money": -5,
+          "health": 4
         },
         "flags": {
           "chronic": true
@@ -229,7 +229,7 @@
         "label": "自己减点量",
         "fx": {
           "money": 2,
-          "health": -6
+          "health": -5
         }
       },
       "once": true
@@ -246,14 +246,14 @@
       "left": {
         "label": "严格照着吃",
         "fx": {
-          "health": 6,
+          "health": 5,
           "mood": 2
         }
       },
       "right": {
         "label": "想起来才吃",
         "fx": {
-          "health": -5,
+          "health": -4,
           "mood": 2
         }
       },
@@ -271,14 +271,14 @@
       "left": {
         "label": "继续保持",
         "fx": {
-          "health": 5,
+          "health": 4,
           "mood": 4
         }
       },
       "right": {
         "label": "松了口气，先吃顿好的",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "health": -3
         }
       },
@@ -297,15 +297,15 @@
       "left": {
         "label": "住院处理",
         "fx": {
-          "money": -8,
-          "health": -5,
-          "energy": -4
+          "money": -5,
+          "health": -4,
+          "energy": -1
         }
       },
       "right": {
         "label": "回家养着",
         "fx": {
-          "health": -7,
+          "health": -5,
           "mood": -4
         }
       },
@@ -320,7 +320,7 @@
       "left": {
         "label": "认真执行",
         "fx": {
-          "health": 7,
+          "health": 5,
           "energy": 2,
           "mood": 4
         },

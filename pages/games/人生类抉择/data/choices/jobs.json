@@ -14,7 +14,7 @@
         "label": "技术方向",
         "fx": {
           "career": 3,
-          "energy": -3
+          "energy": -1
         },
         "skills": {
           "knowledge": 4
@@ -29,7 +29,7 @@
         "label": "市场方向",
         "fx": {
           "career": 3,
-          "energy": -2
+          "energy": -1
         },
         "skills": {
           "charm": 4
@@ -68,7 +68,7 @@
         "label": "学门手艺",
         "fx": {
           "money": 2,
-          "energy": -3
+          "energy": -1
         },
         "skills": {
           "craft": 4
@@ -94,7 +94,7 @@
         "label": "学医",
         "fx": {
           "career": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "knowledge": 5
@@ -123,7 +123,6 @@
       },
       "once": true
     },
-
     {
       "id": "jb_tech1",
       "name": "凌晨三点",
@@ -136,10 +135,10 @@
       "left": {
         "label": "爬起来修",
         "fx": {
-          "career": 6,
+          "career": 5,
           "money": 4,
           "health": -4,
-          "energy": -6
+          "energy": -2
         }
       },
       "right": {
@@ -163,16 +162,16 @@
       "left": {
         "label": "转做技术管理",
         "fx": {
-          "career": 6,
+          "career": 5,
           "social": 4,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
         "label": "继续深耕技术",
         "fx": {
           "career": 3,
-          "energy": -5
+          "energy": -2
         },
         "skills": {
           "knowledge": 7
@@ -192,9 +191,9 @@
       "left": {
         "label": "认真维护下去",
         "fx": {
-          "career": 6,
+          "career": 5,
           "money": 3,
-          "energy": -5,
+          "energy": -2,
           "rel": {
             "friends": 4
           }
@@ -221,7 +220,7 @@
       "left": {
         "label": "请假休整一段",
         "fx": {
-          "health": 6,
+          "health": 5,
           "mood": 3,
           "career": -3
         }
@@ -229,9 +228,9 @@
       "right": {
         "label": "硬扛过去",
         "fx": {
-          "career": 5,
-          "health": -6,
-          "energy": -5
+          "career": 4,
+          "health": -5,
+          "energy": -2
         }
       },
       "once": true
@@ -248,8 +247,8 @@
       "left": {
         "label": "接下来",
         "fx": {
-          "money": 8,
-          "energy": -6,
+          "money": 5,
+          "energy": -2,
           "career": 2
         }
       },
@@ -262,7 +261,6 @@
       },
       "once": true
     },
-
     {
       "id": "jb_med1",
       "name": "夜班",
@@ -275,9 +273,9 @@
       "left": {
         "label": "连轴转到底",
         "fx": {
-          "career": 5,
-          "health": -5,
-          "energy": -6,
+          "career": 4,
+          "health": -4,
+          "energy": -2,
           "mood": -2
         }
       },
@@ -303,9 +301,9 @@
       "left": {
         "label": "耐心解释到底",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": -3,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
@@ -329,8 +327,8 @@
       "left": {
         "label": "熬夜写出来",
         "fx": {
-          "career": 6,
-          "energy": -6,
+          "career": 5,
+          "energy": -2,
           "health": -4
         },
         "skills": {
@@ -366,7 +364,7 @@
       "right": {
         "label": "收下",
         "fx": {
-          "money": 6,
+          "money": 5,
           "mood": -3,
           "career": -3
         }
@@ -386,8 +384,8 @@
         "label": "报名",
         "fx": {
           "social": 4,
-          "mood": 5,
-          "health": -5,
+          "mood": 4,
+          "health": -4,
           "career": 4
         }
       },
@@ -400,7 +398,6 @@
       },
       "once": true
     },
-
     {
       "id": "jb_edu1",
       "name": "讲台",
@@ -415,7 +412,7 @@
         "fx": {
           "career": 4,
           "mood": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "knowledge": 5
@@ -444,7 +441,7 @@
         "fx": {
           "social": 4,
           "mood": 2,
-          "energy": -2
+          "energy": -1
         }
       },
       "right": {
@@ -469,8 +466,8 @@
       "left": {
         "label": "接下来",
         "fx": {
-          "money": 8,
-          "energy": -5,
+          "money": 5,
+          "energy": -2,
           "career": -3
         }
       },
@@ -495,7 +492,7 @@
       "left": {
         "label": "单独找他聊聊",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "rel": {
             "friends": 4
           }
@@ -522,8 +519,8 @@
       "left": {
         "label": "认真准备材料",
         "fx": {
-          "career": 6,
-          "energy": -5
+          "career": 5,
+          "energy": -2
         },
         "skills": {
           "knowledge": 4
@@ -538,7 +535,6 @@
       },
       "once": true
     },
-
     {
       "id": "jb_gov1",
       "name": "第八稿",
@@ -552,7 +548,7 @@
         "label": "继续磨",
         "fx": {
           "career": 4,
-          "energy": -5,
+          "energy": -2,
           "mood": -3
         }
       },
@@ -577,10 +573,10 @@
       "left": {
         "label": "报名",
         "fx": {
-          "career": 6,
+          "career": 5,
           "social": 4,
           "health": -4,
-          "energy": -5
+          "energy": -2
         }
       },
       "right": {
@@ -604,8 +600,8 @@
       "left": {
         "label": "去",
         "fx": {
-          "career": 7,
-          "energy": -6,
+          "career": 5,
+          "energy": -2,
           "health": -4
         }
       },
@@ -631,7 +627,7 @@
       "left": {
         "label": "尽力帮",
         "fx": {
-          "social": 5,
+          "social": 4,
           "career": -3,
           "mood": -2
         }
@@ -665,14 +661,13 @@
       "right": {
         "label": "也动心辞职",
         "fx": {
-          "money": 6,
+          "money": 5,
           "career": -4,
           "mood": -2
         }
       },
       "once": true
     },
-
     {
       "id": "jb_biz1",
       "name": "酒局",
@@ -685,10 +680,10 @@
       "left": {
         "label": "陪到底",
         "fx": {
-          "money": 8,
-          "career": 5,
-          "health": -6,
-          "energy": -5
+          "money": 5,
+          "career": 4,
+          "health": -5,
+          "energy": -2
         }
       },
       "right": {
@@ -713,10 +708,10 @@
       "left": {
         "label": "疯狂跑客户",
         "fx": {
-          "career": 6,
-          "money": 6,
+          "career": 5,
+          "money": 5,
           "health": -4,
-          "energy": -7
+          "energy": -3
         }
       },
       "right": {
@@ -740,7 +735,7 @@
       "left": {
         "label": "收下",
         "fx": {
-          "money": 9,
+          "money": 8,
           "career": -4,
           "mood": -3
         }
@@ -768,16 +763,16 @@
         "label": "申请调回本地",
         "fx": {
           "mood": 3,
-          "social": 5,
+          "social": 4,
           "career": -4
         }
       },
       "right": {
         "label": "接着飞",
         "fx": {
-          "money": 7,
-          "career": 5,
-          "social": -5
+          "money": 5,
+          "career": 4,
+          "social": -4
         }
       },
       "once": true
@@ -795,7 +790,7 @@
         "label": "降价抢单",
         "fx": {
           "money": -3,
-          "career": 5,
+          "career": 4,
           "mood": -2
         }
       },
@@ -809,7 +804,6 @@
       },
       "once": true
     },
-
     {
       "id": "jb_cf1",
       "name": "三年",
@@ -823,7 +817,7 @@
         "label": "沉下心学",
         "fx": {
           "career": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "craft": 8
@@ -853,8 +847,8 @@
       "left": {
         "label": "接",
         "fx": {
-          "money": 8,
-          "energy": -5
+          "money": 5,
+          "energy": -2
         },
         "skills": {
           "craft": 4
@@ -881,8 +875,8 @@
       "left": {
         "label": "从头学新设备",
         "fx": {
-          "career": 5,
-          "energy": -4
+          "career": 4,
+          "energy": -1
         },
         "skills": {
           "knowledge": 5
@@ -909,9 +903,9 @@
       "left": {
         "label": "开",
         "fx": {
-          "money": -8,
-          "career": 5,
-          "energy": -5
+          "money": -5,
+          "career": 4,
+          "energy": -2
         },
         "flags": {
           "shop": true
@@ -941,7 +935,7 @@
         "fx": {
           "career": 4,
           "mood": 4,
-          "energy": -4,
+          "energy": -1,
           "rel": {
             "friends": 4
           }
@@ -956,7 +950,6 @@
       },
       "once": true
     },
-
     {
       "id": "jb_g1",
       "name": "第一笔工资",
@@ -970,7 +963,7 @@
         "label": "给爸妈买点东西",
         "fx": {
           "money": -4,
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "family": 6
           }
@@ -979,7 +972,7 @@
       "right": {
         "label": "全存起来",
         "fx": {
-          "money": 7,
+          "money": 5,
           "mood": 2
         }
       },
@@ -997,9 +990,9 @@
       "left": {
         "label": "去面一面",
         "fx": {
-          "career": 5,
+          "career": 4,
           "money": 5,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
@@ -1023,8 +1016,8 @@
       "left": {
         "label": "请个长假",
         "fx": {
-          "mood": 6,
-          "energy": 5,
+          "mood": 5,
+          "energy": 3,
           "career": -4
         }
       },
@@ -1032,7 +1025,8 @@
         "label": "忍着去",
         "fx": {
           "career": 3,
-          "mood": -5
+          "mood": -4,
+          "energy": -1
         }
       },
       "once": true
@@ -1050,14 +1044,14 @@
         "label": "争取内部转岗",
         "fx": {
           "career": 3,
-          "energy": -5,
+          "energy": -2,
           "social": -2
         }
       },
       "right": {
         "label": "谈赔偿走人",
         "fx": {
-          "money": 7,
+          "money": 5,
           "career": -4,
           "mood": 2
         }
@@ -1076,10 +1070,10 @@
       "left": {
         "label": "转过去",
         "fx": {
-          "career": 6,
+          "career": 5,
           "mood": 4,
           "money": -5,
-          "energy": -6
+          "energy": -2
         }
       },
       "right": {
@@ -1105,7 +1099,7 @@
         "label": "认真收进名片夹",
         "fx": {
           "career": 4,
-          "mood": 5
+          "mood": 4
         }
       },
       "right": {

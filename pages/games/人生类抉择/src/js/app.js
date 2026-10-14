@@ -166,6 +166,8 @@ function bindEvents() {
   // 结局页
   on('btnAgain', 'click', () => startNew(S ? S.aspiration : selAsp));
   on('btnHome', 'click', goHome);
+  // 结算页回看人生履历：与游戏内履历共用同一个底部浮窗
+  on('btnEndLog', 'click', () => { if (S) { renderLog(S); openDrawer('drawerLog'); } });
 
   // 游戏页：两个选择按钮
   on('btnL', 'click', () => resolve('left'));

@@ -10,7 +10,7 @@
       "left": {
         "label": "先吃再赶",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "energy": 2,
           "career": -3
         }
@@ -33,7 +33,7 @@
       "left": {
         "label": "买零食爽一把",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "money": -4,
           "health": -2
         }
@@ -56,8 +56,8 @@
       "left": {
         "label": "报名拼一把",
         "fx": {
-          "career": 6,
-          "energy": -4,
+          "career": 5,
+          "energy": -1,
           "mood": 2
         }
       },
@@ -79,9 +79,9 @@
       "left": {
         "label": "一起去",
         "fx": {
-          "social": 6,
+          "social": 5,
           "mood": 4,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
@@ -103,7 +103,7 @@
       "left": {
         "label": "吃药休息",
         "fx": {
-          "health": 8,
+          "health": 5,
           "career": -3
         }
       },
@@ -111,7 +111,7 @@
         "label": "硬扛上学",
         "fx": {
           "career": 3,
-          "health": -6,
+          "health": -5,
           "mood": 2
         }
       },
@@ -126,7 +126,7 @@
       "left": {
         "label": "偷偷抱回家",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "health": -2,
           "rel": {
             "family": -2
@@ -155,15 +155,15 @@
       "left": {
         "label": "通宵复习",
         "fx": {
-          "career": 7,
-          "energy": -7,
+          "career": 5,
+          "energy": -3,
           "health": -3
         }
       },
       "right": {
         "label": "早睡早起",
         "fx": {
-          "energy": 5,
+          "energy": 4,
           "health": 2,
           "career": 2
         }
@@ -205,7 +205,7 @@
         "label": "咬牙登顶",
         "fx": {
           "health": 4,
-          "energy": -5,
+          "energy": -2,
           "skills": {
             "fitness": 6
           }
@@ -232,7 +232,7 @@
       "left": {
         "label": "美术班",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "money": -4,
           "skills": {
             "craft": 6
@@ -242,7 +242,7 @@
       "right": {
         "label": "奥数班",
         "fx": {
-          "career": 5,
+          "career": 4,
           "money": -4,
           "mood": -2
         }
@@ -263,7 +263,7 @@
         "fx": {
           "mood": 4,
           "social": -2,
-          "energy": -2
+          "energy": -1
         }
       },
       "right": {
@@ -285,7 +285,7 @@
         "label": "咬牙跑完",
         "fx": {
           "health": 4,
-          "energy": -5,
+          "energy": -2,
           "mood": 2
         },
         "skills": {
@@ -311,7 +311,7 @@
       "left": {
         "label": "看完再吃",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "health": -2,
           "career": -2
         }
@@ -386,7 +386,7 @@
         "label": "大胆骑",
         "fx": {
           "health": 3,
-          "energy": -4,
+          "energy": -1,
           "mood": 3
         },
         "skills": {
@@ -413,7 +413,7 @@
       "left": {
         "label": "乖乖穿上",
         "fx": {
-          "health": 5,
+          "health": 4,
           "mood": -2,
           "social": -2
         }
@@ -423,7 +423,7 @@
         "fx": {
           "mood": 4,
           "social": 4,
-          "health": -6
+          "health": -5
         }
       },
       "once": true
@@ -437,7 +437,7 @@
       "left": {
         "label": "收下说谢谢",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 3
         },
         "rel": {
@@ -471,7 +471,7 @@
         "label": "再赖一年",
         "fx": {
           "mood": 4,
-          "energy": -2,
+          "energy": 1,
           "career": -2
         }
       },
@@ -511,7 +511,7 @@
         "label": "收下",
         "fx": {
           "money": 5,
-          "mood": 5
+          "mood": 4
         },
         "rel": {
           "family": 4
@@ -538,9 +538,9 @@
       "left": {
         "label": "上台竞选",
         "fx": {
-          "social": 6,
+          "social": 5,
           "mood": 3,
-          "energy": -4,
+          "energy": -1,
           "career": 4
         },
         "skills": {
@@ -566,8 +566,8 @@
       "left": {
         "label": "多带点",
         "fx": {
-          "mood": 6,
-          "money": -6,
+          "mood": 5,
+          "money": -5,
           "social": 4
         }
       },
@@ -590,15 +590,15 @@
       "left": {
         "label": "看完再睡",
         "fx": {
-          "mood": 5,
-          "energy": -5,
+          "mood": 4,
+          "energy": -2,
           "health": -2
         }
       },
       "right": {
         "label": "关掉上床",
         "fx": {
-          "energy": 5,
+          "energy": 3,
           "health": 3,
           "mood": -3
         }
@@ -616,7 +616,7 @@
         "fx": {
           "health": -4,
           "mood": 4,
-          "career": 5
+          "career": 4
         },
         "skills": {
           "fitness": 6
@@ -641,8 +641,8 @@
       "left": {
         "label": "也要一盒",
         "fx": {
-          "mood": 6,
-          "energy": -4,
+          "mood": 5,
+          "energy": -1,
           "money": -2
         },
         "skills": {
@@ -667,7 +667,7 @@
       "left": {
         "label": "写想当科学家",
         "fx": {
-          "career": 5,
+          "career": 4,
           "mood": 2
         },
         "skills": {
@@ -677,7 +677,7 @@
       "right": {
         "label": "写想当厨师",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "career": 1
         },
         "skills": {
@@ -702,7 +702,7 @@
       "right": {
         "label": "当场翻脸",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "social": -4,
           "career": 2
         }
@@ -719,7 +719,7 @@
         "label": "煮一碗粥",
         "fx": {
           "mood": 3,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "cooking": 6
@@ -749,9 +749,9 @@
       "left": {
         "label": "冲进雨里跑回家",
         "fx": {
-          "health": -5,
+          "health": -4,
           "mood": -2,
-          "energy": -3
+          "energy": -1
         }
       },
       "right": {
@@ -774,7 +774,7 @@
         "label": "送给他",
         "fx": {
           "mood": -4,
-          "social": 6
+          "social": 5
         },
         "rel": {
           "family": 5
@@ -828,7 +828,8 @@
         "fx": {
           "health": 4,
           "mood": -4,
-          "career": 2
+          "career": 2,
+          "energy": -1
         }
       },
       "right": {
@@ -836,7 +837,7 @@
         "fx": {
           "health": -3,
           "mood": 3,
-          "energy": -2
+          "energy": 1
         }
       },
       "once": true
@@ -850,9 +851,9 @@
       "left": {
         "label": "过去搭话",
         "fx": {
-          "social": 6,
+          "social": 5,
           "mood": 3,
-          "energy": -2
+          "energy": -1
         },
         "rel": {
           "friends": 5
@@ -877,9 +878,9 @@
       "left": {
         "label": "我来",
         "fx": {
-          "health": 5,
+          "health": 4,
           "social": 4,
-          "energy": -6
+          "energy": -2
         },
         "skills": {
           "fitness": 6
@@ -905,7 +906,7 @@
         "label": "蹲下来帮忙",
         "fx": {
           "mood": 4,
-          "energy": -3
+          "energy": -1
         },
         "skills": {
           "cooking": 4
@@ -945,8 +946,8 @@
       "right": {
         "label": "偷偷留着",
         "fx": {
-          "money": 8,
-          "mood": 5,
+          "money": 5,
+          "mood": 4,
           "career": -2
         }
       },
@@ -971,7 +972,7 @@
       "right": {
         "label": "报足球",
         "fx": {
-          "health": 5,
+          "health": 4,
           "mood": 4,
           "money": -5
         },
@@ -990,8 +991,8 @@
       "left": {
         "label": "整夜研究",
         "fx": {
-          "mood": 5,
-          "energy": -6,
+          "mood": 4,
+          "energy": -2,
           "health": -3
         },
         "skills": {
@@ -1002,7 +1003,7 @@
         "label": "只在周末玩",
         "fx": {
           "mood": 2,
-          "energy": -2
+          "energy": -1
         },
         "skills": {
           "knowledge": 3
@@ -1019,9 +1020,9 @@
       "left": {
         "label": "抱回家",
         "fx": {
-          "mood": 7,
+          "mood": 5,
           "money": -4,
-          "energy": -4
+          "energy": -1
         },
         "rel": {
           "family": -2
@@ -1046,7 +1047,7 @@
       "left": {
         "label": "先开口",
         "fx": {
-          "social": 6,
+          "social": 5,
           "mood": 4
         },
         "rel": {
@@ -1072,8 +1073,8 @@
       "left": {
         "label": "一路盯着窗外",
         "fx": {
-          "mood": 6,
-          "energy": -3
+          "mood": 5,
+          "energy": -1
         },
         "skills": {
           "knowledge": 3
@@ -1082,7 +1083,7 @@
       "right": {
         "label": "躺下睡觉",
         "fx": {
-          "energy": 5,
+          "energy": 4,
           "mood": -2
         }
       },
@@ -1098,7 +1099,7 @@
         "label": "认真养",
         "fx": {
           "mood": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "craft": 4,
@@ -1123,9 +1124,9 @@
       "left": {
         "label": "熬夜背",
         "fx": {
-          "career": 5,
+          "career": 4,
           "mood": -3,
-          "energy": -5
+          "energy": -2
         },
         "skills": {
           "knowledge": 7
@@ -1149,7 +1150,7 @@
       "left": {
         "label": "老实交出去",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "career": 3
         },
         "rel": {
@@ -1175,8 +1176,8 @@
       "left": {
         "label": "抢过抹布",
         "fx": {
-          "mood": 5,
-          "energy": -4,
+          "mood": 4,
+          "energy": -1,
           "health": 2
         },
         "rel": {
@@ -1204,10 +1205,10 @@
       "left": {
         "label": "上台",
         "fx": {
-          "social": 6,
+          "social": 5,
           "career": 4,
           "mood": -3,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "charm": 6
@@ -1256,7 +1257,7 @@
       "left": {
         "label": "闭眼伸胳膊",
         "fx": {
-          "health": 5,
+          "health": 4,
           "mood": -4
         }
       },
@@ -1265,7 +1266,7 @@
         "fx": {
           "health": -2,
           "mood": 2,
-          "energy": -2
+          "energy": 1
         }
       },
       "once": true
@@ -1279,7 +1280,7 @@
       "left": {
         "label": "摘一兜",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "health": 2,
           "social": -2
         }
@@ -1287,7 +1288,7 @@
       "right": {
         "label": "敲门的去说一声",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 2,
           "health": 1
         }
@@ -1303,8 +1304,8 @@
       "left": {
         "label": "买下那本",
         "fx": {
-          "money": -6,
-          "mood": 6
+          "money": -5,
+          "mood": 5
         },
         "skills": {
           "knowledge": 6
@@ -1328,8 +1329,8 @@
       "left": {
         "label": "抽十次",
         "fx": {
-          "money": -6,
-          "mood": 6,
+          "money": -5,
+          "mood": 5,
           "career": -3
         }
       },
@@ -1352,7 +1353,7 @@
       "left": {
         "label": "陪他杀两盘",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 4,
           "career": -3
         }
@@ -1384,7 +1385,7 @@
       "right": {
         "label": "顺手买了辣条",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "money": -4,
           "health": -2
         }
@@ -1400,7 +1401,7 @@
       "left": {
         "label": "分他一半",
         "fx": {
-          "social": 6,
+          "social": 5,
           "mood": 4,
           "money": -2
         }
@@ -1445,7 +1446,7 @@
       "left": {
         "label": "一路送他回家",
         "fx": {
-          "social": 6,
+          "social": 5,
           "health": -3,
           "mood": 3
         }
@@ -1493,7 +1494,7 @@
         "fx": {
           "career": 3,
           "mood": -2,
-          "energy": -2,
+          "energy": -1,
           "skills": {
             "knowledge": 4
           }
@@ -1521,7 +1522,7 @@
       "left": {
         "label": "全交给她",
         "fx": {
-          "money": 6,
+          "money": 5,
           "mood": -3
         }
       },
@@ -1543,8 +1544,8 @@
       "left": {
         "label": "看到深夜",
         "fx": {
-          "mood": 6,
-          "energy": -5,
+          "mood": 5,
+          "energy": -2,
           "health": -2
         }
       },
@@ -1567,8 +1568,8 @@
       "left": {
         "label": "熬夜两天补完",
         "fx": {
-          "career": 5,
-          "energy": -5,
+          "career": 4,
+          "energy": -2,
           "health": -3
         }
       },
@@ -1591,8 +1592,8 @@
       "left": {
         "label": "看到太阳落山",
         "fx": {
-          "mood": 6,
-          "energy": -2,
+          "mood": 5,
+          "energy": -1,
           "career": -2
         }
       },
@@ -1614,7 +1615,7 @@
       "left": {
         "label": "拉他一起玩",
         "fx": {
-          "social": 6,
+          "social": 5,
           "mood": 3
         }
       },
@@ -1636,8 +1637,8 @@
       "left": {
         "label": "攒钱买一整箱",
         "fx": {
-          "money": -6,
-          "mood": 5,
+          "money": -5,
+          "mood": 4,
           "career": -2
         }
       },

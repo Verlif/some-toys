@@ -43,14 +43,14 @@
       "left": {
         "label": "加仓",
         "fx": {
-          "money": -7,
-          "mood": 5
+          "money": -5,
+          "mood": 4
         }
       },
       "right": {
         "label": "先止盈一部分",
         "fx": {
-          "money": 6,
+          "money": 5,
           "mood": 2
         }
       },
@@ -69,8 +69,8 @@
       "left": {
         "label": "割肉离场",
         "fx": {
-          "money": -6,
-          "mood": -5
+          "money": -5,
+          "mood": -4
         },
         "flags": {
           "invest": false
@@ -79,7 +79,7 @@
       "right": {
         "label": "死扛不卖",
         "fx": {
-          "mood": -7,
+          "mood": -5,
           "health": -2
         }
       },
@@ -97,7 +97,7 @@
       "left": {
         "label": "跟着买",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": 4
         }
       },
@@ -123,8 +123,8 @@
       "left": {
         "label": "落袋为安",
         "fx": {
-          "money": 8,
-          "mood": 5
+          "money": 5,
+          "mood": 4
         }
       },
       "right": {
@@ -136,7 +136,6 @@
       },
       "once": true
     },
-
     {
       "id": "mo_6",
       "name": "沙盘",
@@ -149,8 +148,8 @@
       "left": {
         "label": "掏出全部积蓄",
         "fx": {
-          "money": -14,
-          "mood": 5,
+          "money": -8,
+          "mood": 4,
           "social": 3
         },
         "flags": {
@@ -179,7 +178,7 @@
       "left": {
         "label": "租出去",
         "fx": {
-          "money": 6,
+          "money": 5,
           "mood": 1,
           "social": 2
         }
@@ -208,8 +207,8 @@
       "left": {
         "label": "卖旧买新",
         "fx": {
-          "money": -10,
-          "mood": 5,
+          "money": -8,
+          "mood": 4,
           "social": 2
         },
         "milestone": "换了一套大房子"
@@ -235,8 +234,8 @@
       "left": {
         "label": "提前还一部分",
         "fx": {
-          "money": -9,
-          "mood": 6
+          "money": -8,
+          "mood": 5
         }
       },
       "right": {
@@ -267,8 +266,8 @@
       "right": {
         "label": "割肉卖掉",
         "fx": {
-          "money": 6,
-          "mood": -5
+          "money": 5,
+          "mood": -4
         },
         "flags": {
           "house": false
@@ -288,9 +287,9 @@
       "left": {
         "label": "参与进去",
         "fx": {
-          "energy": -3,
+          "energy": -1,
           "career": 2,
-          "social": 5
+          "social": 4
         }
       },
       "right": {
@@ -316,7 +315,7 @@
         "fx": {
           "money": -3,
           "mood": 1,
-          "social": 5
+          "social": 4
         }
       },
       "right": {
@@ -341,7 +340,7 @@
       "left": {
         "label": "追加预算做完",
         "fx": {
-          "money": -9,
+          "money": -8,
           "mood": 3
         }
       },
@@ -366,7 +365,7 @@
       "left": {
         "label": "签",
         "fx": {
-          "money": 9,
+          "money": 8,
           "mood": 2
         },
         "flags": {
@@ -391,7 +390,7 @@
         "label": "拿出一部分改善生活",
         "fx": {
           "money": -5,
-          "mood": 6
+          "mood": 5
         }
       },
       "right": {
@@ -412,7 +411,7 @@
       "left": {
         "label": "借",
         "fx": {
-          "money": -8,
+          "money": -5,
           "mood": 1,
           "rel": {
             "family": 5

@@ -72,7 +72,7 @@
   "tuning": {
     "winAge": 80,
     "retireAge": 60,
-    "moodDecay": 2,
+    "moodDecay": 1,
     "degreeMinCareer": 30,
     "degreeMinAge": 18,
     "peakCareer": 60,

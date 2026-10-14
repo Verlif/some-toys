@@ -13,8 +13,8 @@
       "left": {
         "label": "接着更下去",
         "fx": {
-          "energy": -4,
-          "mood": 6
+          "energy": -1,
+          "mood": 5
         },
         "flags": {
           "fame": true
@@ -41,8 +41,8 @@
       "left": {
         "label": "趁热加更",
         "fx": {
-          "money": 6,
-          "energy": -6,
+          "money": 5,
+          "energy": -2,
           "health": -3
         }
       },
@@ -50,7 +50,7 @@
         "label": "保持原来的节奏",
         "fx": {
           "mood": 4,
-          "energy": -2
+          "energy": -1
         }
       },
       "once": true
@@ -67,7 +67,7 @@
       "left": {
         "label": "接",
         "fx": {
-          "money": 9,
+          "money": 8,
           "career": 2,
           "mood": -2
         }
@@ -93,7 +93,7 @@
       "left": {
         "label": "一条条认真回复",
         "fx": {
-          "energy": -3,
+          "energy": -1,
           "mood": -3,
           "social": 3
         }
@@ -120,7 +120,7 @@
       "left": {
         "label": "公开道歉",
         "fx": {
-          "mood": -5,
+          "mood": -4,
           "career": -3,
           "social": 4
         }
@@ -128,8 +128,8 @@
       "right": {
         "label": "装作没看见",
         "fx": {
-          "mood": -6,
-          "social": -6
+          "mood": -5,
+          "social": -5
         }
       },
       "once": true
@@ -146,8 +146,8 @@
       "left": {
         "label": "换个方向重做",
         "fx": {
-          "career": 5,
-          "energy": -5,
+          "career": 4,
+          "energy": -2,
           "mood": 3
         }
       },
@@ -176,7 +176,7 @@
         "label": "去",
         "fx": {
           "career": 4,
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "friends": 6
           }
@@ -228,7 +228,7 @@
       "left": {
         "label": "由着他们去",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "family": 5
           }
@@ -257,9 +257,9 @@
       "left": {
         "label": "停更，回归生活",
         "fx": {
-          "health": 5,
+          "health": 4,
           "energy": 4,
-          "mood": 6
+          "mood": 5
         },
         "flags": {
           "fame": false
@@ -269,7 +269,7 @@
         "label": "咬牙继续更",
         "fx": {
           "mood": -4,
-          "energy": -4
+          "energy": -1
         }
       },
       "once": true

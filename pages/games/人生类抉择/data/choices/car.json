@@ -13,8 +13,8 @@
       "left": {
         "label": "报正规班，慢慢学",
         "fx": {
-          "money": -7,
-          "energy": -4,
+          "money": -5,
+          "energy": -1,
           "career": 2
         },
         "flags": {
@@ -26,7 +26,7 @@
         "label": "报个便宜的快班",
         "fx": {
           "money": -4,
-          "energy": -5,
+          "energy": -2,
           "mood": -2
         },
         "flags": {
@@ -49,7 +49,7 @@
         "label": "跟着家里人在空地练",
         "fx": {
           "money": -2,
-          "energy": -3,
+          "energy": -1,
           "mood": 4,
           "rel": {
             "family": 4
@@ -63,8 +63,8 @@
       "right": {
         "label": "还是去驾校正规学",
         "fx": {
-          "money": -6,
-          "energy": -4
+          "money": -5,
+          "energy": -1
         },
         "skills": {
           "knowledge": 2
@@ -89,7 +89,7 @@
         "label": "咬牙补考到过",
         "fx": {
           "money": -3,
-          "energy": -5,
+          "energy": -2,
           "mood": 3
         },
         "flags": {
@@ -110,7 +110,6 @@
       },
       "once": true
     },
-
     {
       "id": "car_4",
       "name": "摇号",
@@ -130,7 +129,7 @@
       "right": {
         "label": "借家里一个牌照先用",
         "fx": {
-          "money": -6,
+          "money": -5,
           "mood": 3,
           "social": 2
         }
@@ -154,8 +153,8 @@
       "left": {
         "label": "咬牙买下",
         "fx": {
-          "money": -12,
-          "mood": 6,
+          "money": -8,
+          "mood": 5,
           "career": 2
         },
         "flags": {
@@ -189,7 +188,7 @@
       "left": {
         "label": "买下",
         "fx": {
-          "money": -7,
+          "money": -5,
           "mood": 4
         },
         "flags": {
@@ -206,7 +205,6 @@
       },
       "once": true
     },
-
     {
       "id": "car_7",
       "name": "大雨",
@@ -219,15 +217,15 @@
       "left": {
         "label": "庆幸自己有车",
         "fx": {
-          "mood": 6
+          "mood": 5
         }
       },
       "right": {
         "label": "顺路捎两个陌生人",
         "fx": {
-          "mood": 5,
-          "energy": -2,
-          "social": 5
+          "mood": 4,
+          "energy": -1,
+          "social": 4
         }
       },
       "once": true
@@ -270,7 +268,7 @@
         "label": "停到两条街外走回来",
         "fx": {
           "health": 3,
-          "energy": -3,
+          "energy": -1,
           "mood": -2
         }
       },
@@ -321,7 +319,7 @@
       "left": {
         "label": "全做",
         "fx": {
-          "money": -7,
+          "money": -5,
           "health": 2,
           "mood": 2
         }
@@ -348,7 +346,7 @@
         "label": "老老实实排队",
         "fx": {
           "mood": -2,
-          "energy": -2
+          "energy": -1
         }
       },
       "right": {
@@ -374,7 +372,7 @@
         "label": "改坐地铁",
         "fx": {
           "health": 2,
-          "energy": -2,
+          "energy": -1,
           "money": 1
         }
       },
@@ -399,7 +397,7 @@
       "left": {
         "label": "捎上他",
         "fx": {
-          "social": 5,
+          "social": 4,
           "mood": 3,
           "energy": -1,
           "rel": {
@@ -434,7 +432,7 @@
         "label": "每天绕路去接",
         "fx": {
           "mood": 4,
-          "energy": -4,
+          "energy": -1,
           "career": -2,
           "rel": {
             "family": 5
@@ -465,9 +463,9 @@
       "left": {
         "label": "开车立刻送医院",
         "fx": {
-          "health": 5,
+          "health": 4,
           "mood": 4,
-          "energy": -3,
+          "energy": -1,
           "rel": {
             "family": 5
           }
@@ -525,7 +523,7 @@
         "label": "抢下钥匙，送他回去",
         "fx": {
           "health": -2,
-          "energy": -3,
+          "energy": -1,
           "mood": 4,
           "rel": {
             "friends": 6
@@ -556,10 +554,10 @@
       "left": {
         "label": "出发",
         "fx": {
-          "mood": 7,
-          "money": -6,
+          "mood": 5,
+          "money": -5,
           "health": -3,
-          "energy": -6
+          "energy": -2
         }
       },
       "right": {
@@ -585,7 +583,7 @@
         "label": "撑到下一个服务区",
         "fx": {
           "health": -4,
-          "energy": -5,
+          "energy": -2,
           "mood": 2
         }
       },
@@ -613,7 +611,7 @@
         "fx": {
           "money": -3,
           "mood": 2,
-          "social": 5
+          "social": 4
         }
       },
       "right": {
@@ -666,19 +664,19 @@
       "left": {
         "label": "猛打方向盘避开",
         "fx": {
-          "health": -7,
+          "health": -5,
           "money": -5,
           "mood": -4,
-          "energy": -4
+          "energy": -1
         }
       },
       "right": {
         "label": "正面扛住",
         "fx": {
-          "health": -12,
-          "money": -8,
-          "mood": -7,
-          "energy": -6
+          "health": -5,
+          "money": -5,
+          "mood": -5,
+          "energy": -2
         },
         "flags": {
           "chronic": true

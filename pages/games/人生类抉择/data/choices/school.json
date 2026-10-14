@@ -11,7 +11,7 @@
         "label": "当",
         "fx": {
           "career": 4,
-          "energy": -3,
+          "energy": -1,
           "rel": {
             "friends": 4
           }
@@ -40,7 +40,7 @@
         "fx": {
           "health": 4,
           "mood": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "fitness": 4
@@ -67,7 +67,7 @@
         "label": "举手",
         "fx": {
           "career": 4,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "knowledge": 7
@@ -103,7 +103,7 @@
         "label": "每天通勤两小时",
         "fx": {
           "health": -3,
-          "energy": -4,
+          "energy": -1,
           "rel": {
             "friends": -2
           }
@@ -147,7 +147,7 @@
       "left": {
         "label": "该来往还来往",
         "fx": {
-          "mood": 6,
+          "mood": 5,
           "career": -4
         }
       },
@@ -169,7 +169,7 @@
       "left": {
         "label": "进队",
         "fx": {
-          "health": 5,
+          "health": 4,
           "social": 4,
           "career": -3
         },
@@ -270,8 +270,8 @@
       "left": {
         "label": "复读一年",
         "fx": {
-          "career": 6,
-          "energy": -6,
+          "career": 5,
+          "energy": -2,
           "mood": -3,
           "money": -5
         }
@@ -323,7 +323,7 @@
         "fx": {
           "social": 3,
           "mood": 4,
-          "energy": -3
+          "energy": -1
         },
         "skills": {
           "charm": 4
@@ -346,9 +346,9 @@
       "left": {
         "label": "深呼吸走进去",
         "fx": {
-          "career": 6,
+          "career": 5,
           "mood": 4,
-          "energy": -3
+          "energy": -1
         },
         "skills": {
           "knowledge": 3
@@ -375,7 +375,7 @@
         "fx": {
           "health": 3,
           "mood": 3,
-          "energy": -5
+          "energy": -2
         },
         "skills": {
           "fitness": 3
@@ -402,8 +402,8 @@
       "left": {
         "label": "认真聊到半夜",
         "fx": {
-          "mood": 5,
-          "energy": -3,
+          "mood": 4,
+          "energy": -1,
           "rel": {
             "friends": 5
           }
@@ -432,8 +432,8 @@
       "left": {
         "label": "认真准备材料",
         "fx": {
-          "career": 7,
-          "energy": -4
+          "career": 5,
+          "energy": -1
         },
         "skills": {
           "knowledge": 3
@@ -457,7 +457,7 @@
       "left": {
         "label": "挨个抱一下",
         "fx": {
-          "mood": 5,
+          "mood": 4,
           "rel": {
             "friends": 5
           }
@@ -472,7 +472,6 @@
       },
       "once": true
     },
-
     {
       "id": "sc_d1",
       "name": "一张单子",
@@ -500,9 +499,9 @@
       "right": {
         "label": "咬牙再撑一学期",
         "fx": {
-          "career": 5,
+          "career": 4,
           "mood": -2,
-          "energy": -4
+          "energy": -1
         }
       },
       "once": true
@@ -568,7 +567,7 @@
         "fx": {
           "career": 3,
           "mood": -3,
-          "energy": -3
+          "energy": -1
         }
       },
       "once": true
@@ -585,9 +584,9 @@
       "left": {
         "label": "先干着",
         "fx": {
-          "money": 7,
-          "health": -5,
-          "energy": -5
+          "money": 5,
+          "health": -4,
+          "energy": -2
         }
       },
       "right": {
@@ -614,7 +613,7 @@
         "fx": {
           "money": 5,
           "career": 3,
-          "energy": -4
+          "energy": -1
         },
         "skills": {
           "craft": 7
@@ -623,9 +622,9 @@
       "right": {
         "label": "去送外卖",
         "fx": {
-          "money": 6,
+          "money": 5,
           "health": -3,
-          "energy": -5
+          "energy": -2
         }
       },
       "once": true
@@ -642,9 +641,9 @@
       "left": {
         "label": "报上",
         "fx": {
-          "career": 5,
+          "career": 4,
           "money": -4,
-          "energy": -5
+          "energy": -2
         },
         "skills": {
           "knowledge": 6
@@ -700,8 +699,8 @@
       "left": {
         "label": "回去念",
         "fx": {
-          "career": 6,
-          "money": -6,
+          "career": 5,
+          "money": -5,
           "mood": 4
         },
         "flags": {
