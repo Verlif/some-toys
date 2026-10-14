@@ -1,7 +1,7 @@
 (function (app) {
   'use strict';
   const { CELL_SIZE, HISTORY_LIMIT, COLORS, SAMPLE } = app.config;
-  const { renderer, storage } = app;
+  const { renderer, storage, exportImage } = app;
   const $ = selector => document.querySelector(selector);
   const svg = renderer.svg;
   const state = { places: [], edges: [], mode: 'place', pending: null, preview: null, nextId: 1, scale: 1, tx: 0, ty: 0, history: [], editing: null, cellDistance: 100 };
@@ -131,6 +131,7 @@
     $('#clear').onclick=async()=>{if(!state.places.length)return;if(!await askConfirm('清空地图','将清空当前的所有地点和路线，确定继续吗？','确认清空'))return;remember();state.places=[];state.edges=[];state.pending=null;state.preview=null;nextPlaceId();render();};
     $('#sample').onclick=async()=>{if(await askConfirm('加载示例','加载示例地图会替换当前内容，确定继续吗？','加载示例'))loadSample();};
     $('#export').onclick=()=>{storage.exportJSON(state);flash('地图已导出');};
+    $('#exportImage').onclick=async()=>{try{await exportImage.exportMap(state);flash('地图图片已导出');}catch(error){flash(error.message||'图片导出失败');}};
     $('#import').onclick=()=>$('#fileInput').click();
     $('#fileInput').onchange=async event=>{
       const file=event.target.files[0];if(!file)return;
