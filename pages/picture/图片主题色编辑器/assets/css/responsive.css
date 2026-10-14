@@ -1,0 +1,75 @@
+/* ============ 响应式与动效偏好 ============ */
+
+@media (max-width: 1100px) {
+  .top-switch .ts-label {
+    display: none;
+  }
+
+  .top-switch {
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 940px) {
+  body {
+    overflow: auto;
+  }
+
+  .app {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .workspace {
+    flex-direction: column;
+  }
+
+  .pane {
+    min-height: 46vh;
+  }
+
+  .pane + .pane {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .pane-mid {
+    width: 100%;
+    min-height: 0;
+  }
+
+  .mid-list {
+    max-height: 52vh;
+  }
+}
+
+/* 窄屏：精简顶栏 */
+@media (max-width: 720px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .brand small {
+    display: none;
+  }
+
+  .top-actions {
+    gap: 8px;
+  }
+
+  .lang-btn {
+    padding: 0 9px;
+  }
+}
+
+/* 减少动态效果偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,207 @@
+/* ============ 应用骨架 / 顶栏 / 工作区 / 面板布局 ============ */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ============ 顶栏 ============ */
+.topbar {
+  height: 58px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--topbar-bg-1), var(--topbar-bg-2));
+  z-index: 30;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.brand .logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  flex: none;
+  background: conic-gradient(from 200deg, #4f9cf9, #8b5cf6, #f472b6, #facc15, #4f9cf9);
+  box-shadow: 0 0 16px var(--accent-ring);
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+.brand h1 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.brand small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+/* ============ 工作区 ============ */
+.workspace {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+.pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pane + .pane {
+  border-left: 1px solid var(--border);
+}
+
+.pane-mid {
+  flex: none;
+  width: 348px;
+  background: var(--panel);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.pane-head {
+  height: 46px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: border-color 0.25s ease;
+}
+
+/* ============ 图片查看区（可缩放 / 拖拽 / 点击找色） ============ */
+.pane-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  background-color: var(--stage-bg);
+  background-image:
+    linear-gradient(45deg, var(--stage-checker) 25%, transparent 25%, transparent 75%, var(--stage-checker) 75%),
+    linear-gradient(45deg, var(--stage-checker) 25%, transparent 25%, transparent 75%, var(--stage-checker) 75%);
+  background-size: 22px 22px;
+  background-position: 0 0, 11px 11px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: background-color 0.25s ease;
+}
+
+.pane-body.dragging {
+  cursor: grabbing;
+}
+
+.pane-body.pickable {
+  cursor: crosshair;
+}
+
+.viewer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.viewer canvas {
+  display: block;
+  -webkit-user-drag: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+}
+
+/* ============ 中间面板 ============ */
+.mid-controls {
+  flex: none;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mid-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 14px 14px;
+  overscroll-behavior: contain;
+  position: relative;
+  scroll-behavior: auto;
+}
+
+.color-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mid-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ============ 空状态 ============ */
+.empty-state {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition: background 0.25s ease;
+}
+
+.empty-state.hide {
+  display: none;
+}

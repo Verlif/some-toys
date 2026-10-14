@@ -1,0 +1,178 @@
+/**
+ * 设计变量（Design Tokens）
+ * - :root 为暗色主题（默认）
+ * - [data-theme="light"] 为亮色主题，由 JS 挂在 <html> 上
+ * - 所有组件样式只允许引用变量，不写死颜色
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* 表面 */
+  --bg: #0c1015;
+  --panel: #131920;
+  --panel-2: #0f151c;
+  --border: #212b36;
+
+  /* 文本 */
+  --text: #e7eef6;
+  --muted: #7d8b9a;
+
+  /* 强调色 */
+  --accent: #4f9cf9;
+  --accent-2: #8b5cf6;
+  --accent-soft: rgba(79, 156, 249, 0.13);
+  --accent-2-soft: rgba(139, 92, 246, 0.13);
+  --accent-ring: rgba(79, 156, 249, 0.4);
+  --btn-shadow: rgba(79, 156, 249, 0.28);
+
+  /* 顶栏 */
+  --topbar-bg-1: #141b24;
+  --topbar-bg-2: #10161d;
+
+  /* 次要按钮 / 区块 */
+  --btn-ghost-bg: #1a222c;
+  --btn-ghost-hover-bg: #212b37;
+  --border-strong: #2e3c4c;
+
+  /* 分段控件（语言切换） */
+  --chip-bg: #232f3c;
+  --shadow-soft: rgba(0, 0, 0, 0.35);
+
+  /* 开关 */
+  --switch-bg: #28333f;
+  --switch-knob: #7d8b9a;
+  --switch-on-bg: #2f4a6b;
+
+  /* 查看区棋盘格 */
+  --stage-bg: #0a0e13;
+  --stage-checker: #12181f;
+
+  /* 画布浮动控件 */
+  --overlay-bg: rgba(22, 30, 40, 0.86);
+  --overlay-hover-bg: rgba(34, 46, 60, 0.95);
+  --overlay-border: #2a3644;
+  --overlay-border-hover: #35506e;
+  --overlay-text: #9aa8b6;
+  --zoom-hint: #3f4c5b;
+
+  /* 徽标 / 数值 */
+  --badge-bg: #1c2836;
+  --value-bg: #16232f;
+  --value-den: #5c7fa8;
+
+  /* 辅助文本 */
+  --tip-text: #5e6c7b;
+  --tip-strong: #8496a8;
+  --sub-text: #5e6c7b;
+  --footer-text: #4e5c6b;
+
+  /* 滑块 */
+  --track-bg: #26313e;
+  --shadow-strong: rgba(0, 0, 0, 0.5);
+
+  /* 颜色行 */
+  --row-hover-bg: #111922;
+  --row-hover-border: #2e3c4c;
+  --row-changed-bg: #111c28;
+  --row-changed-border: #31527a;
+  --row-flash-bg: #16232f;
+  --row-flash-border: #3f7cc0;
+  --flash-glow: rgba(79, 156, 249, 0.9);
+  --flash-glow-soft: rgba(79, 156, 249, 0.35);
+  --arrow: #3d4b5b;
+  --reset-text: #556577;
+  --reset-hover-bg: #1e2937;
+  --reset-hover-border: #2b3a4b;
+  --cbox-inset: rgba(255, 255, 255, 0.13);
+  --cbox-inset-strong: rgba(255, 255, 255, 0.22);
+
+  /* 滚动条 */
+  --scrollbar-thumb: #222d3a;
+  --scrollbar-thumb-hover: #2c3a4a;
+
+  /* 上传框 */
+  --upload-border: #26313e;
+  --upload-bg: #10161d;
+  --upload-hover-bg: #121b25;
+  --upload-ico-border: #22303f;
+}
+
+/* ============ 亮色主题 ============ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #edf0f5;
+  --panel: #ffffff;
+  --panel-2: #f5f7fa;
+  --border: #e3e8f0;
+
+  --text: #1e2733;
+  --muted: #64748b;
+
+  --accent: #2b7de0;
+  --accent-2: #7c5cf0;
+  --accent-soft: rgba(43, 125, 224, 0.1);
+  --accent-2-soft: rgba(124, 92, 240, 0.1);
+  --accent-ring: rgba(43, 125, 224, 0.25);
+  --btn-shadow: rgba(43, 125, 224, 0.28);
+
+  --topbar-bg-1: #ffffff;
+  --topbar-bg-2: #f2f5f9;
+
+  --btn-ghost-bg: #eef2f7;
+  --btn-ghost-hover-bg: #e2e9f1;
+  --border-strong: #d0dae6;
+
+  --chip-bg: #ffffff;
+  --shadow-soft: rgba(15, 23, 42, 0.08);
+
+  --switch-bg: #d8dfe9;
+  --switch-knob: #9aa8ba;
+  --switch-on-bg: #c3d9f8;
+
+  --stage-bg: #e8ecf2;
+  --stage-checker: #dce3ec;
+
+  --overlay-bg: rgba(255, 255, 255, 0.92);
+  --overlay-hover-bg: #ffffff;
+  --overlay-border: #d7dfe9;
+  --overlay-border-hover: #a9c6ea;
+  --overlay-text: #5c6b7d;
+  --zoom-hint: #9fabb9;
+
+  --badge-bg: #e8f0fc;
+  --value-bg: #edf4fd;
+  --value-den: #7ba1ce;
+
+  --tip-text: #64748b;
+  --tip-strong: #475569;
+  --sub-text: #7b8896;
+  --footer-text: #8e9cad;
+
+  --track-bg: #dbe2eb;
+  --shadow-strong: rgba(15, 23, 42, 0.22);
+
+  --row-hover-bg: #f1f5fa;
+  --row-hover-border: #d2dce7;
+  --row-changed-bg: #e9f2fd;
+  --row-changed-border: #b8d3f3;
+  --row-flash-bg: #e2edfd;
+  --row-flash-border: #5b9bea;
+  --flash-glow: rgba(43, 125, 224, 0.75);
+  --flash-glow-soft: rgba(43, 125, 224, 0.25);
+  --arrow: #b6c2cf;
+  --reset-text: #94a3b8;
+  --reset-hover-bg: #e9eff6;
+  --reset-hover-border: #cfd9e4;
+  --cbox-inset: rgba(15, 23, 42, 0.1);
+  --cbox-inset-strong: rgba(15, 23, 42, 0.16);
+
+  --scrollbar-thumb: #ccd5e0;
+  --scrollbar-thumb-hover: #b4c1d0;
+
+  --upload-border: #d3dce7;
+  --upload-bg: #ffffff;
+  --upload-hover-bg: #f6fafd;
+  --upload-ico-border: #e2e9f2;
+}
