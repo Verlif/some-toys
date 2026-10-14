@@ -19,6 +19,10 @@
   .action { width: 100%; padding: 9px 5px; }
   .place-editor { bottom: 111px; }
   .center-map { left: 10px; bottom: 119px; padding: 8px 10px; }
+  .history-toggle { right: 10px; bottom: 150px; }
+  .history-panel { right: 10px; bottom: 202px; max-height: min(58vh, 520px); }
+  .confirm-dialog { max-height: calc(100vh - 32px); overflow-y: auto; }
+  .confirm-preview { max-height: 170px; }
 }
 @media (max-width: 400px) {
   .tool { font-size: 11px; }

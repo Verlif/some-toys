@@ -4,7 +4,8 @@
   const { renderer, storage, exportImage } = app;
   const $ = selector => document.querySelector(selector);
   const svg = renderer.svg;
-  const state = { places: [], edges: [], mode: 'place', pending: null, preview: null, nextId: 1, scale: 1, tx: 0, ty: 0, history: [], editing: null, cellDistance: 100 };
+  const state = { places: [], edges: [], mode: 'place', pending: null, preview: null, nextId: 1, scale: 1, tx: 0, ty: 0, history: [], editing: null, cellDistance: 100, mapId: null, mapName: '' };
+  let library = null;
   let drag = null, moved = false, lastTap = null, tapTimer = null, toastTimer = null;
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const edgeKey = (a,b) => a < b ? `${a}|${b}` : `${b}|${a}`;
@@ -17,13 +18,48 @@
     return state.nextId;
   }
   function flash(message) { const node=$('#toast');node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),1600); }
-  function askConfirm(title,message,actionLabel) {
+  function askConfirm(title,message,actionLabel,previewSrc=null) {
     const dialog=$('#confirmDialog');
     $('#confirmTitle').textContent=title;$('#confirmMessage').textContent=message;$('#confirmAction').textContent=actionLabel;
+    const preview=$('#confirmPreview');
+    preview.hidden=!previewSrc;
+    if(previewSrc){preview.src=previewSrc;preview.alt=`${title}预览图`;}
+    else{preview.removeAttribute('src');preview.alt='';}
     dialog.returnValue='';
     return new Promise(resolve=>{
-      dialog.addEventListener('close',()=>resolve(dialog.returnValue==='confirm'),{once:true});
+      dialog.addEventListener('close',()=>{const confirmed=dialog.returnValue==='confirm';preview.removeAttribute('src');preview.hidden=true;resolve(confirmed);},{once:true});
       dialog.showModal();
+    });
+  }
+  async function loadJsonFile(file) {
+    const isJson=/\.json$/i.test(file.name)||file.type==='application/json'||file.type.endsWith('+json');
+    if(!isJson){flash('请导入 JSON 地图文件');return;}
+    try{
+      const data=JSON.parse(await file.text()),loaded=storage.normalize(data);
+      storage.flushSave();
+      remember();restore(loaded);
+      if(typeof data.name==='string'&&data.name.trim()){
+        state.mapName=data.name.trim().slice(0,40);$('#mapNameInput').value=state.mapName;
+        storage.renameMap(library,state.mapId,state.mapName);
+      }
+      render();renderer.resetView(state);flash('地图已导入');
+    } catch(error) { flash(error.message||'文件格式不正确'); }
+  }
+  function bindImportDrop() {
+    const root=$('#app'),overlay=$('#dropOverlay');
+    const hasFiles=event=>Array.from(event.dataTransfer?.types||[]).includes('Files')||(event.dataTransfer?.files?.length||0)>0;
+    window.addEventListener('dragover',event=>{if(hasFiles(event))event.preventDefault();});
+    window.addEventListener('drop',event=>{if(hasFiles(event))event.preventDefault();});
+    root.addEventListener('dragenter',event=>{if(!hasFiles(event))return;event.preventDefault();overlay.classList.add('show');});
+    root.addEventListener('dragover',event=>{if(!hasFiles(event))return;event.preventDefault();});
+    root.addEventListener('dragleave',event=>{
+      if(event.relatedTarget&&root.contains(event.relatedTarget))return;
+      overlay.classList.remove('show');
+    });
+    root.addEventListener('drop',event=>{
+      if(!hasFiles(event))return;
+      event.preventDefault();overlay.classList.remove('show');
+      const file=event.dataTransfer.files[0];if(file)loadJsonFile(file);
     });
   }
   function updateTip() {
@@ -32,8 +68,82 @@
   }
   function render() {
     renderer.render(state, state.cellDistance);
-    storage.save(state);
+    storage.saveMap(library,state.mapId,snapshot());
+    renderHistory();
     updateTip();
+  }
+  function renderHistory() {
+    const list=$('#historyList');if(!list||!library)return;
+    const maps=[...library.maps].sort((a,b)=>b.updatedAt-a.updatedAt);
+    if(!maps.length){list.innerHTML='<div class="history-empty">还没有保存的地图</div>';return;}
+    list.innerHTML=maps.map(map=>{
+      const updated=new Date(map.updatedAt).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      const active=map.id===state.mapId;
+      return `<article class="history-item" data-map-id="${esc(map.id)}">
+        <div class="history-item-top"><div class="history-name">${esc(map.name)}</div>${active?'<span class="history-current">当前</span>':''}</div>
+        <div class="history-meta">${updated} · ${map.places.length} 个地点</div>
+        <div class="history-actions"><button class="history-action" data-action="load" ${active?'disabled':''}>加载</button><button class="history-action" data-action="rename">重命名</button><button class="history-action danger" data-action="delete">删除</button></div>
+      </article>`;
+    }).join('');
+  }
+  function activateMap(map) {
+    storage.flushSave();
+    storage.saveMap(library,state.mapId,snapshot());
+    closeEditor();
+    storage.setActiveMap(library,map.id);
+    restore(storage.normalize(map));
+    state.mapId=map.id;state.mapName=map.name;state.history=[];state.mode='place';state.pending=null;state.preview=null;
+    $('#mapNameInput').value=state.mapName;
+    document.querySelectorAll('.tool').forEach(button=>button.classList.toggle('active',button.dataset.mode==='place'));
+    $('#historyPanel').classList.remove('show');$('#historyToggle').setAttribute('aria-expanded','false');
+    render();renderer.resetView(state);
+  }
+  function createNewMap() {
+    storage.flushSave();storage.saveMap(library,state.mapId,snapshot());
+    closeEditor();
+    let suffix=library.maps.length+1,name=`新地图 ${suffix}`;
+    while(library.maps.some(map=>map.name===name)){suffix++;name=`新地图 ${suffix}`;}
+    const map=storage.createMap(library,name,{places:[],edges:[],cellDistance:100});
+    state.mapId=map.id;state.mapName=map.name;state.places=[];state.edges=[];state.nextId=1;state.cellDistance=100;
+    state.history=[];state.mode='place';state.pending=null;state.preview=null;state.editing=null;
+    $('#cellDistance').value=100;$('#mapNameInput').value=name;
+    document.querySelectorAll('.tool').forEach(button=>button.classList.toggle('active',button.dataset.mode==='place'));
+    render();renderer.resetView(state);
+    $('#historyPanel').classList.remove('show');$('#historyToggle').setAttribute('aria-expanded','false');
+    $('#mapNameInput').focus();$('#mapNameInput').select();
+  }
+  function beginHistoryRename(mapId,row) {
+    const map=library.maps.find(item=>item.id===mapId),oldName=map?.name;
+    if(!map||!row)return;
+    const title=row.querySelector('.history-name'),input=document.createElement('input');
+    input.className='history-name-input';input.maxLength=40;input.value=oldName;input.setAttribute('aria-label','地图名称');
+    title.replaceWith(input);input.focus();input.select();
+    let finished=false;
+    const save=()=>{
+      if(finished)return;finished=true;
+      const nextName=input.value.trim()||oldName;
+      storage.renameMap(library,mapId,nextName);
+      if(state.mapId===mapId){state.mapName=map.name;$('#mapNameInput').value=map.name;}
+      renderHistory();
+    };
+    input.addEventListener('blur',save);
+    input.addEventListener('keydown',event=>{
+      if(event.key==='Enter'){event.preventDefault();input.blur();}
+      else if(event.key==='Escape'){event.preventDefault();input.value=oldName;input.blur();}
+    });
+  }
+  async function deleteHistoryMap(mapId) {
+    const map=library.maps.find(item=>item.id===mapId);if(!map)return;
+    storage.flushSave();
+    if(mapId===state.mapId)storage.saveMap(library,state.mapId,snapshot());
+    const preview=app.exportImage.createPreview(map);
+    const confirmed=await askConfirm('删除地图',`确定删除“${map.name}”吗？删除后无法恢复。`,'删除地图',preview);
+    if(!confirmed)return;
+    const wasActive=storage.deleteMap(library,mapId);
+    if(wasActive){
+      const next=library.maps[0]||storage.createMap(library,'新地图',{places:[],edges:[],cellDistance:100});
+      activateMap(next);
+    }else renderHistory();
   }
   function snap(n) { return Math.round(n / CELL_SIZE) * CELL_SIZE; }
   function setMode(mode) {
@@ -106,11 +216,12 @@
         const point=renderer.screenToWorld(event.clientX,event.clientY,state);place.x=snap(point.x);place.y=snap(point.y);
         if(state.places.some(other=>other.id!==place.id&&other.x===place.x&&other.y===place.y)){place.x=drag.wx;place.y=drag.wy;}
         renderer.render(state,state.cellDistance);
+        storage.scheduleSave(library,state.mapId,snapshot());
       } else {svg.classList.add('dragging');state.tx=drag.tx+dx;state.ty=drag.ty+dy;renderer.applyView(state);}
     });
     svg.addEventListener('pointerup',event=>{
       if(!drag)return;const previous=drag;drag=null;
-      if(moved){svg.classList.remove('dragging');if(previous.id!=null){state.history.push(previous.before);if(state.history.length>HISTORY_LIMIT)state.history.shift();render();}return;}
+      if(moved){svg.classList.remove('dragging');if(previous.id!=null){storage.flushSave();state.history.push(previous.before);if(state.history.length>HISTORY_LIMIT)state.history.shift();render();}return;}
       if(previous.placeId!=null){tapPlace(previous.placeId);return;}
       if(previous.edgeKey&&state.mode==='delete'){removeEdge(previous.edgeKey);return;}
       if(state.mode==='place'){const point=renderer.screenToWorld(event.clientX,event.clientY,state);addPlace(point.x,point.y);}
@@ -130,15 +241,10 @@
     $('#undo').onclick=()=>{const previous=state.history.pop();if(!previous)return;restore(previous);state.pending=null;render();};
     $('#clear').onclick=async()=>{if(!state.places.length)return;if(!await askConfirm('清空地图','将清空当前的所有地点和路线，确定继续吗？','确认清空'))return;remember();state.places=[];state.edges=[];state.pending=null;state.preview=null;nextPlaceId();render();};
     $('#sample').onclick=async()=>{if(await askConfirm('加载示例','加载示例地图会替换当前内容，确定继续吗？','加载示例'))loadSample();};
-    $('#export').onclick=()=>{storage.exportJSON(state);flash('地图已导出');};
+    $('#export').onclick=()=>{storage.exportJSON(state,state.mapName);flash('地图已导出');};
     $('#exportImage').onclick=async()=>{try{await exportImage.exportMap(state);flash('地图图片已导出');}catch(error){flash(error.message||'图片导出失败');}};
     $('#import').onclick=()=>$('#fileInput').click();
-    $('#fileInput').onchange=async event=>{
-      const file=event.target.files[0];if(!file)return;
-      try{const loaded=storage.normalize(JSON.parse(await file.text()));remember();restore(loaded);render();renderer.resetView(state);flash('地图已导入');}
-      catch(error){flash(error.message||'文件格式不正确');}
-      event.target.value='';
-    };
+    $('#fileInput').onchange=async event=>{const file=event.target.files[0];if(file)await loadJsonFile(file);event.target.value='';};
     $('#closeEditor').onclick=$('#cancelEdit').onclick=closeEditor;
     $('#savePlace').onclick=()=>{
       const place=findPlace(state.editing);if(place){remember();place.name=$('#placeName').value.trim()||'地点';place.icon=$('#placeIcon').value.trim()||app.firstCharacter(place.name);render();}
@@ -146,17 +252,43 @@
     };
     $('#deletePlace').onclick=()=>{if(state.editing!=null)removePlace(state.editing);closeEditor();};
     $('#placeName').addEventListener('keydown',event=>{if(event.key==='Enter')$('#savePlace').click();if(event.key==='Escape')closeEditor();});
+    $('#mapNameInput').addEventListener('blur',()=>{
+      const name=$('#mapNameInput').value.trim()||'未命名地图';
+      state.mapName=name;$('#mapNameInput').value=name;storage.renameMap(library,state.mapId,name);renderHistory();
+    });
+    $('#mapNameInput').addEventListener('keydown',event=>{
+      if(event.key==='Enter'){event.preventDefault();event.currentTarget.blur();}
+      else if(event.key==='Escape'){event.preventDefault();event.currentTarget.value=state.mapName;event.currentTarget.blur();}
+    });
+    $('#historyToggle').onclick=()=>{
+      const panel=$('#historyPanel'),open=!panel.classList.contains('show');
+      panel.classList.toggle('show',open);$('#historyToggle').setAttribute('aria-expanded',String(open));
+      if(open)renderHistory();
+    };
+    $('#newMap').onclick=createNewMap;
+    $('#historyList').addEventListener('click',event=>{
+      const button=event.target.closest('[data-action]');if(!button)return;
+      const row=button.closest('[data-map-id]');if(!row)return;
+      const mapId=row.dataset.mapId,action=button.dataset.action;
+      if(action==='load'){const map=library.maps.find(item=>item.id===mapId);if(map)activateMap(map);}
+      else if(action==='rename')beginHistoryRename(mapId,row);
+      else if(action==='delete')deleteHistoryMap(mapId);
+    });
+    document.addEventListener('pointerdown',event=>{
+      if($('#historyPanel').classList.contains('show')&&!$('#historyPanel').contains(event.target)&&!$('#historyToggle').contains(event.target)){
+        $('#historyPanel').classList.remove('show');$('#historyToggle').setAttribute('aria-expanded','false');
+      }
+    });
     window.addEventListener('resize',()=>renderer.resetView(state));
+    window.addEventListener('beforeunload',storage.flushSave);
   }
   function init() {
-    const saved=storage.load();
-    if(saved&&Array.isArray(saved.places)) {
-      try{restore(storage.normalize(saved));}
-      catch(_){state.places=[];state.edges=[];state.nextId=1;}
-    } else {
-      state.places=SAMPLE.places.map(p=>({...p}));state.edges=SAMPLE.edges.map(edge=>[...edge]);state.nextId=SAMPLE.nextId;
-    }
-    bindPointerEvents();bindControls();render();renderer.resetView(state);
+    library=storage.loadLibrary();
+    let active=library.maps.find(map=>map.id===library.activeMapId);
+    if(!active){active=storage.createMap(library,'示例地图',{places:SAMPLE.places,edges:SAMPLE.edges,cellDistance:100});}
+    restore(storage.normalize(active));
+    state.mapId=active.id;state.mapName=active.name;$('#mapNameInput').value=active.name;
+    bindPointerEvents();bindControls();bindImportDrop();render();renderer.resetView(state);
   }
   app.editor={init};
 })(window.DistanceDrawing = window.DistanceDrawing || {});

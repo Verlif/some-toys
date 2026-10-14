@@ -18,7 +18,7 @@
     <g id="world"><rect class="grid-bg" x="-4000" y="-4000" width="10000" height="10000" fill="url(#grid)"/><g id="edges"></g><g id="places"></g></g>
   </svg>
   <header class="topbar">
-    <div class="brand"><div class="eyebrow">FIELD NOTES · MAP SKETCH</div><h1>地点距离绘制</h1><div class="subtitle">在网格上放置地点，连接后自动标注直线距离。</div></div>
+    <div class="brand"><div class="eyebrow">FIELD NOTES · MAP SKETCH</div><h1><input class="map-name-input" id="mapNameInput" type="text" maxlength="40" value="示例地图" aria-label="地图名称" title="编辑地图名称"></h1><div class="subtitle">在网格上放置地点，连接后自动标注直线距离。</div></div>
     <div class="top-controls">
       <label class="scale-box">每格距离 <input id="cellDistance" type="number" min="1" max="100000" step="10" value="100" aria-label="每格距离"><span>米</span></label>
       <div class="tool-switch" role="toolbar" aria-label="绘图工具">
@@ -35,6 +35,11 @@
     <div class="stats"><b id="placeCount">0</b> 个地点　·　<b id="edgeCount">0</b> 条路线</div>
     <div class="actions"><button class="action" id="undo">↶ 撤回</button><button class="action" id="clear">清空</button><button class="action primary" id="sample">加载示例</button><button class="action" id="export">导出 JSON</button><button class="action" id="exportImage">🖼 导出图片</button><button class="action" id="import">导入 JSON</button></div>
   </div>
+  <button class="history-toggle" id="historyToggle" aria-expanded="false" aria-controls="historyPanel">▤ 加载历史</button>
+  <aside class="history-panel" id="historyPanel" aria-label="地图历史记录">
+    <div class="history-panel-head"><strong>加载历史</strong><button class="action primary" id="newMap">＋ 新地图</button></div>
+    <div class="history-list" id="historyList"></div>
+  </aside>
   <div class="place-editor" id="placeEditor" role="dialog" aria-label="编辑地点">
     <div class="modal-head"><span>编辑地点</span><button class="close" id="closeEditor" aria-label="关闭">×</button></div>
     <div class="fields"><input id="placeIcon" maxlength="4" aria-label="地点图标" placeholder="📍"><input id="placeName" maxlength="16" aria-label="地点名称" placeholder="地点名称"></div>
@@ -43,10 +48,12 @@
   <dialog class="confirm-dialog" id="confirmDialog" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
     <form method="dialog">
       <h2 id="confirmTitle">确认操作</h2>
+      <img class="confirm-preview" id="confirmPreview" alt="地图预览" hidden>
       <p id="confirmMessage"></p>
       <div class="confirm-actions"><button class="action" value="cancel">取消</button><button class="action primary" id="confirmAction" value="confirm">确定</button></div>
     </form>
   </dialog>
+  <div class="drop-overlay" id="dropOverlay" aria-hidden="true"><div>松开以导入 JSON 地图</div></div>
   <div class="toast" id="toast" role="status"></div><input id="fileInput" type="file" accept="application/json,.json" hidden>
 </div>
 <script src="js/config.js"></script>

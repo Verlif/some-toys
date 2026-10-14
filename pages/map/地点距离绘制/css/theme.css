@@ -42,7 +42,7 @@ html[data-theme="dark"] {
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
-body { user-select: none;  color: var(--ink); background: var(--paper); font-family: var(--font); }
+body { user-select: none; color: var(--ink); background: var(--paper); font-family: var(--font); }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
