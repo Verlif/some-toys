@@ -11,22 +11,20 @@
   .tool { flex: 1; padding: 0 7px; }
   .zoom-box { position: absolute; right: 60px; top: 12px; }
   .theme-toggle { position: absolute; right: 14px; top: 12px; }
-  .tip { top: 112px; font-size: 10px; }
+  .tip { top: 148px; font-size: 10px; }
   .bottom { left: 10px; right: 10px; bottom: 10px; align-items: stretch; flex-direction: column-reverse; gap: 7px; }
   .legend { display: none; }
   .stats { align-self: flex-start; padding: 7px 10px; }
   .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .action { width: 100%; padding: 9px 5px; }
   .place-editor { bottom: 111px; }
-  .center-map { left: 10px; bottom: 119px; padding: 8px 10px; }
-  .history-toggle { right: 10px; bottom: 150px; }
-  .history-panel { right: 10px; bottom: 202px; max-height: min(58vh, 520px); }
+  .floaters { right: 10px; bottom: 150px; }
+  .history-panel { right: 10px; bottom: 248px; max-height: min(58vh, 520px); }
   .confirm-dialog { max-height: calc(100vh - 32px); overflow-y: auto; }
   .confirm-preview { max-height: 170px; }
 }
 @media (max-width: 400px) {
-  .tool { font-size: 11px; }
   .scale-box { gap: 5px; padding-inline: 7px; }
   .scale-box input { width: 46px; }
-  .center-map small { display: none; }
+  .floaters small { display: none; }
 }

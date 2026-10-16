@@ -63,6 +63,16 @@
       const file=event.dataTransfer.files[0];if(file)loadJsonFile(file);
     });
   }
+  function bindShortcuts() {
+    document.addEventListener('keydown',event=>{
+      if(event.key!=='c'&&event.key!=='C'&&event.code!=='KeyC')return;
+      if(!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey)return;
+      if($('#confirmDialog').open)return;
+      const target=event.target;
+      if(target&&typeof target.selectionStart==='number'&&target.selectionStart!==target.selectionEnd)return;
+      if(duplicatePlace())event.preventDefault();
+    });
+  }
   function updateTip() {
     const tips={place:'点击空白网格放置地点 · 拖动地点可重新吸附定位',connect:state.pending?'再点一个地点完成连接 · 点起点取消':'依次点击两个地点建立路线',preview:state.preview!=null?'已高亮该地点及相连路线 · 点空白处退出预览':'点击地点查看关联路线与距离',delete:'点击地点或路线删除'};
     $('#tip').textContent=tips[state.mode];
@@ -181,6 +191,30 @@
     state.places.push({id,x:px,y:py,icon:'📍',name,color:COLORS[(id-1)%COLORS.length]});
     render();openEditor(id);
   }
+  function copySource() {
+    for(const id of [state.editing,state.preview]){const place=id!=null?findPlace(id):null;if(place)return place;}
+    return null;
+  }
+  function findFreeSpot(origin,taken) {
+    const offsets=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+    for(let radius=1;radius<=state.places.length+1;radius++){
+      const step=CELL_SIZE*radius;
+      for(const [dx,dy] of offsets){
+        const x=origin.x+dx*step,y=origin.y+dy*step;
+        if(!taken.has(`${x}|${y}`))return {x,y};
+      }
+    }
+    return null;
+  }
+  function duplicatePlace() {
+    const source=copySource();if(!source)return false;
+    const spot=findFreeSpot(source,new Set(state.places.map(place=>`${place.x}|${place.y}`)));
+    if(!spot){flash('周围已经没有空位置了');return true;}
+    remember();const id=nextPlaceId();
+    state.places.push({id,x:spot.x,y:spot.y,icon:source.icon,name:source.name,color:source.color});
+    render();flash(`已复制「${source.name}」`);
+    return true;
+  }
   function removePlace(id) {
     remember();state.places=state.places.filter(place=>place.id!==id);state.edges=state.edges.filter(([a,b])=>a!==id&&b!==id);
     if(state.pending===id)state.pending=null;if(state.preview===id)state.preview=null;nextPlaceId();render();
@@ -260,7 +294,7 @@
         wheelFrame=0;const delta=wheelDelta,point=wheelPoint;wheelDelta=0;wheelPoint=null;
         if(point&&delta){
           renderer.zoomPreview(state,point.x,point.y,Math.pow(1.12,-delta/100));
-          zoomSettleTimer=setTimeout(()=>{zoomSettleTimer=0;renderer.finishZoom(state);},120);
+          zoomSettleTimer=setTimeout(()=>{zoomSettleTimer=0;renderer.finishZoom(state);},50);
         }
       });
     },{passive:false});
@@ -322,7 +356,7 @@
     if(!active){active=storage.createMap(library,'示例地图',{places:SAMPLE.places,edges:SAMPLE.edges,cellDistance:100});}
     restore(storage.normalize(active));
     state.mapId=active.id;state.mapName=active.name;$('#mapNameInput').value=active.name;
-    bindPointerEvents();bindControls();bindImportDrop();render();renderer.resetView(state);
+    bindPointerEvents();bindControls();bindImportDrop();bindShortcuts();render();renderer.resetView(state);
   }
   app.editor={init};
 })(window.DistanceDrawing = window.DistanceDrawing || {});

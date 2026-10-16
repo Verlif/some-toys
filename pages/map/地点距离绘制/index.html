@@ -25,13 +25,15 @@
     </div>
   </header>
   <div class="tip" id="tip">点击空白网格放置地点 · 拖动画布平移 · 滚轮缩放</div>
-  <button class="center-map" id="centerMap" aria-label="回到地图中心" title="回到地图中心"><span>◎</span><small>地图中心</small></button>
   <div class="bottom">
     <div class="legend"><strong><span class="dot"></span>读图方式</strong><br>地点自动吸附至网格交点<br>距离按网格直线计算，可修改每格距离</div>
     <div class="stats"><b id="placeCount">0</b> 个地点　·　<b id="edgeCount">0</b> 条路线</div>
     <div class="actions"><button class="action" id="undo">↶ 撤回</button><button class="action" id="clear">清空</button><button class="action primary" id="sample">加载示例</button><button class="action" id="export">导出 JSON</button><button class="action" id="exportImage">🖼 导出图片</button><button class="action" id="import">导入 JSON</button></div>
   </div>
-  <button class="history-toggle" id="historyToggle" aria-expanded="false" aria-controls="historyPanel">▤ 加载历史</button>
+  <div class="floaters">
+    <button id="centerMap" aria-label="回到地图中心" title="回到地图中心"><span>◎</span><small>居中</small></button>
+    <button id="historyToggle" aria-expanded="false" aria-controls="historyPanel"><span>▤</span><small>加载历史</small></button>
+  </div>
   <aside class="history-panel" id="historyPanel" aria-label="地图历史记录">
     <div class="history-panel-head"><strong>加载历史</strong><button class="action primary" id="newMap">＋ 新地图</button></div>
     <div class="history-list" id="historyList"></div>

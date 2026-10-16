@@ -103,8 +103,6 @@
       const dim = state.mode === 'preview' && state.preview != null && !selected && !neighbor;
       const baseColor = dim ? gray(place.color) : place.color;
       ctx.save(); ctx.translate(place.x, place.y); if (dim) ctx.globalAlpha = .25;
-      ctx.beginPath(); ctx.arc(0, 0, 31, 0, Math.PI * 2); ctx.globalAlpha *= .09; ctx.fillStyle = baseColor; ctx.fill();
-      ctx.globalAlpha = dim ? .25 : 1;
       ctx.beginPath(); ctx.arc(0, 0, 19, 0, Math.PI * 2);
       ctx.lineWidth = state.pending === place.id || selected ? 3 : neighbor ? 2.5 : 2;
       ctx.strokeStyle = state.pending === place.id || selected ? colors.orange : neighbor ? colors.teal : baseColor;
@@ -118,8 +116,9 @@
       ctx.fillStyle = colors.ink; ctx.font = `11px ${colors.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(place.icon, 0, 1);
       ctx.font = `700 10px ${colors.font}`; ctx.textBaseline = 'alphabetic';
-      ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = colors.paper; ctx.strokeText(place.name, 0, 46);
-      ctx.fillStyle = colors.muted; ctx.fillText(place.name, 0, 46);
+      // 基线 32 = 图标底盘(r=16)下缘再留 8px，避免压住下一格地点的图标
+      ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = colors.paper; ctx.strokeText(place.name, 0, 32);
+      ctx.fillStyle = colors.muted; ctx.fillText(place.name, 0, 32);
       ctx.restore();
     }
   }
@@ -220,7 +219,7 @@
     return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
   }
   function hitTest(clientX, clientY, state) {
-    const point = screenToWorld(clientX, clientY, state), radius = Math.max(31, 18 / state.scale);
+    const point = screenToWorld(clientX, clientY, state), radius = Math.max(22, 18 / state.scale);
     for (let i = state.places.length - 1; i >= 0; i--) {
       const place = state.places[i]; if (Math.hypot(point.x - place.x, point.y - place.y) <= radius) return { placeId: place.id };
     }
