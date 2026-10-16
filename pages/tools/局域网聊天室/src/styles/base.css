@@ -1,0 +1,162 @@
+/* ============================================================
+ * base.css — 设计令牌 / 重置 / 排版 / 图标 / 滚动条
+ * 风格取向：浅色、轻快、简洁 —— 少描边、多留白、柔阴影
+ * ============================================================ */
+
+:root {
+  /* ---------- 颜色 ---------- */
+  --c-bg: #f7f8fa;
+  --c-surface: #ffffff;
+  --c-surface-soft: #f2f4f7;
+  --c-surface-hover: #e9ecf1;
+  --c-sidebar: #ffffff;
+
+  --c-line: #eef0f3;
+  --c-line-strong: #e4e7ec;
+  --c-field: #f6f7f9;
+  --c-field-focus: #ffffff;
+
+  --c-text: #1f2329;
+  --c-text-mid: #5a616b;
+  --c-text-dim: #8b919b;
+  --c-text-weak: #a9aeb6;
+  --c-text-faint: #c8ccd2;
+
+  --c-primary: #3b7cf6;
+  --c-primary-hover: #2f6be4;
+  --c-primary-soft: #eaf1ff;
+  --c-success: #22c55e;
+  --c-success-soft: #e8f9ef;
+  --c-warn: #d9820b;
+  --c-danger: #ef4444;
+
+  --c-bubble-in: #f2f4f7;
+  --c-bubble-out: var(--c-primary);
+
+  --c-overlay: rgba(23, 26, 32, .48);
+  --c-overlay-dark: rgba(17, 19, 23, .86);
+  --c-toast-bg: rgba(31, 35, 41, .93);
+
+  /* ---------- 圆角 ---------- */
+  --r-xs: 6px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-2xl: 20px;
+  --r-pill: 999px;
+
+  /* ---------- 阴影 ---------- */
+  --sh-xs: 0 1px 2px rgba(16, 24, 40, .04);
+  --sh-md: 0 6px 18px rgba(16, 24, 40, .08);
+  --sh-lg: 0 18px 48px rgba(16, 24, 40, .14);
+  --sh-drawer: 4px 0 28px rgba(16, 24, 40, .14);
+  --ring: 0 0 0 3px rgba(59, 124, 246, .16);
+
+  /* ---------- 尺寸 ---------- */
+  --sidebar-w: 268px;
+  --sidebar-w-md: 220px;
+  --header-h: 58px;
+
+  /* ---------- 安全区 ---------- */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  /* ---------- 动效 ---------- */
+  --t-fast: .14s cubic-bezier(.4, 0, .2, 1);
+  --t-base: .22s cubic-bezier(.4, 0, .2, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-text);
+  background: var(--c-bg);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+button { font: inherit; color: inherit; }
+input, textarea, button { font-family: inherit; }
+h1, h2 { font-weight: 600; letter-spacing: -.01em; }
+
+/* ---------- 图标 ---------- */
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  display: block;
+  pointer-events: none;
+}
+
+/* 带图标的文字按钮：图标与文字间距 */
+.btn-primary > .icon,
+.btn-secondary > .icon { margin-right: 6px; }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(31, 35, 41, .14);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--r-pill);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(31, 35, 41, .26); background-clip: padding-box; }
+* { scrollbar-width: thin; scrollbar-color: rgba(31, 35, 41, .18) transparent; }
+
+/* ---------- 通用工具类 ---------- */
+.icon-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--r-md);
+  color: var(--c-text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.icon-btn:hover { background: var(--c-surface-soft); color: var(--c-text); }
+.icon-btn:active { transform: scale(.96); }
+
+.noscript-tip {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: var(--c-bg);
+  color: var(--c-text-dim);
+  z-index: 999;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

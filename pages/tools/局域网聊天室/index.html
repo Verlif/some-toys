@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="局域网聊天室 · 基于 WebRTC DataChannel 的 P2P 点对点聊天，支持手动信令、二维码扫码连接与文件传输">
+<title>局域网聊天 · 手动信令版</title>
+<link rel="stylesheet" href="src/styles/base.css">
+<link rel="stylesheet" href="src/styles/layout.css">
+<link rel="stylesheet" href="src/styles/components.css">
+<link rel="stylesheet" href="src/styles/chat.css">
+</head>
+<body>
+
+<!-- ============================================================
+     SVG 图标雪碧图（stroke 跟随 currentColor，随主题变化）
+     ============================================================ -->
+<svg class="icon-sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="i-menu" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/>
+    </g>
+    <g id="i-close" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M18 6 6 18"/><path d="M6 6l12 12"/>
+    </g>
+    <g id="i-send" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.5 2.5 11 13"/><path d="M21.5 2.5 15 21.5l-4-8.5-8.5-4z"/>
+    </g>
+    <g id="i-paperclip" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.5 11.5 12 20a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/>
+    </g>
+    <g id="i-copy" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="12" height="12" rx="2.5"/>
+      <path d="M5.5 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v.5"/>
+    </g>
+    <g id="i-link" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 13.5a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/>
+      <path d="M14 10.5a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>
+    </g>
+    <g id="i-scan" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8"/>
+      <path d="M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8"/>
+      <path d="M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16"/>
+      <path d="M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16"/>
+      <rect x="8" y="8" width="3.5" height="3.5" rx="1"/>
+      <rect x="12.5" y="12.5" width="3.5" height="3.5" rx="1"/>
+    </g>
+    <g id="i-image" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <circle cx="8.5" cy="8.5" r="1.6"/>
+      <path d="M21 15.5 16.5 11 5 21"/>
+    </g>
+    <g id="i-sun" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/>
+    </g>
+    <g id="i-upload" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 16.5V4"/><path d="M7 8.5 12 3.5l5 5"/><path d="M4 16v2.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V16"/>
+    </g>
+    <g id="i-download" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3.5v11"/><path d="M7.5 10 12 14.5 16.5 10"/><path d="M4 16v2.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V16"/>
+    </g>
+    <g id="i-file" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.5 2.5H7.5A2.5 2.5 0 0 0 5 5v14a2.5 2.5 0 0 0 2.5 2.5h9A2.5 2.5 0 0 0 19 19V8z"/>
+      <path d="M13.5 2.5V8H19"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- 移动端抽屉遮罩 -->
+  <div class="drawer-mask" id="drawerMask" aria-hidden="true"></div>
+
+  <!-- ========== 左侧栏 ========== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="me">
+        <span class="me-label">我</span>
+        <span class="me-name" id="myName" title="点击修改昵称"></span>
+      </div>
+      <div class="btn-row">
+        <button class="btn-new primary" id="btnCreate" type="button">创建连接</button>
+        <button class="btn-new" id="btnAccept" type="button">接受连接</button>
+      </div>
+    </div>
+    <div class="peer-list" id="peerList">
+      <div class="empty-tip">还没有连接<br>点击上方按钮开始</div>
+    </div>
+  </aside>
+
+  <!-- ========== 右侧聊天区 ========== -->
+  <main class="chat" id="chatPane">
+    <div class="chat-header">
+      <button class="icon-btn drawer-toggle" id="drawerToggle" type="button" title="联系人列表" aria-label="联系人列表">
+        <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+      </button>
+      <span class="chat-title no-peer" id="chatTitle">未选择聊天对象</span>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <button class="round-btn attach-btn" id="fileBtn" type="button" disabled title="发送文件" aria-label="发送文件">
+        <svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg>
+      </button>
+      <input type="text" id="msgInput" placeholder="输入消息..." disabled autocomplete="off">
+      <button class="round-btn send-btn" id="sendBtn" type="button" disabled title="发送" aria-label="发送">
+        <svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>
+      </button>
+      <input type="file" id="fileInput" hidden>
+    </div>
+  </main>
+
+  <!-- ========== 拖拽落区提示 ========== -->
+  <div class="dropzone" id="dropzone" hidden>
+    <div class="dropzone-inner">
+      <svg class="dropzone-icon" aria-hidden="true"><use href="#i-upload"/></svg>
+      <p class="dropzone-title">松开即可发送文件</p>
+      <p class="dropzone-hint" id="dropzoneHint">将发送给当前聊天对象</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 创建连接模态框 ========== -->
+<div class="modal-mask" id="createModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+    <div class="modal-head">
+      <h2 id="createModalTitle">创建连接</h2>
+      <button class="icon-btn modal-close" type="button" data-close="createModal" aria-label="关闭">
+        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <p class="subtitle">把「邀请码」发给对方，再把对方回传的「应答码」粘贴或扫码回来，连接就建立好了。</p>
+
+    <section class="step" id="cStep1">
+      <div class="step-title"><span class="step-num"><span>1</span></span> 生成邀请码</div>
+      <div class="hint">点击下方按钮，会自动生成并复制到剪贴板</div>
+      <div class="step-actions">
+        <button class="btn-primary" id="genOfferBtn" type="button">生成邀请码</button>
+      </div>
+    </section>
+
+    <section class="step" id="cStep2" hidden>
+      <div class="step-title"><span class="step-num"><span>2</span></span> 把邀请码发给对方</div>
+      <textarea class="sig-box" id="offerBox" readonly placeholder="（邀请码）"></textarea>
+      <div class="step-actions">
+        <button class="btn-secondary" id="copyOfferBtn" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>复制邀请码
+        </button>
+        <button class="btn-secondary" id="copyOfferLinkBtn" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-link"/></svg>复制链接
+        </button>
+        <span class="code-meta" id="offerMeta"></span>
+      </div>
+      <div class="qr-block" id="offerQrBlock">
+        <div class="qr-block-head">二维码 · 扫码直接打开本页并自动填入</div>
+        <div class="qr-canvas-wrap" id="offerQr"></div>
+        <div class="qr-block-foot">
+          <button class="btn-secondary" id="offerQrZoomBtn" type="button" hidden>放大显示</button>
+          <span class="qr-hint" id="offerQrHint"></span>
+        </div>
+      </div>
+      <div class="hint">通过微信 / 邮件 / 局域网共享等任意方式发给对方</div>
+    </section>
+
+    <section class="step" id="cStep3" hidden>
+      <div class="step-title"><span class="step-num"><span>3</span></span> 读取对方回传的应答码</div>
+      <textarea class="sig-box" id="answerBox" placeholder="在这里粘贴对方的应答码或分享链接，也可点「扫描二维码」自动读取..."></textarea>
+      <div class="step-actions">
+        <button class="btn-secondary" id="scanAnswerBtn" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-scan"/></svg>扫描二维码
+        </button>
+        <button class="btn-primary" id="finishBtn" type="button" disabled>完成连接</button>
+      </div>
+      <p class="hint hint-warn" id="answerBoxHint" hidden></p>
+      <p class="hint" id="createFlowHint" hidden></p>
+    </section>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" type="button" data-close="createModal">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 接受连接模态框 ========== -->
+<div class="modal-mask" id="acceptModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="acceptModalTitle">
+    <div class="modal-head">
+      <h2 id="acceptModalTitle">接受连接</h2>
+      <button class="icon-btn modal-close" type="button" data-close="acceptModal" aria-label="关闭">
+        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <p class="subtitle">粘贴或扫描对方发来的「邀请码」，生成「应答码」后发回给对方，连接就建立好了。</p>
+
+    <section class="step" id="aStep1">
+      <div class="step-title"><span class="step-num"><span>1</span></span> 读取对方的邀请码</div>
+      <textarea class="sig-box" id="incomingOfferBox" placeholder="在这里粘贴对方的邀请码或分享链接，也可点「扫描二维码」自动读取..."></textarea>
+      <div class="step-actions">
+        <button class="btn-secondary" id="scanOfferBtn" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-scan"/></svg>扫描二维码
+        </button>
+        <button class="btn-primary" id="genAnswerBtn" type="button" disabled>生成应答码</button>
+      </div>
+      <p class="hint hint-warn" id="acceptFlowHint" hidden></p>
+    </section>
+
+    <section class="step" id="aStep2" hidden>
+      <div class="step-title"><span class="step-num"><span>2</span></span> 把应答码发回给对方</div>
+      <textarea class="sig-box" id="answerOutBox" readonly placeholder="（应答码）"></textarea>
+      <div class="step-actions">
+        <button class="btn-secondary" id="copyAnswerBtn" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>复制应答码
+        </button>
+        <button class="btn-secondary" id="copyAnswerLinkBtn" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-link"/></svg>复制链接
+        </button>
+        <span class="code-meta" id="answerMeta"></span>
+      </div>
+      <div class="qr-block" id="answerQrBlock">
+        <div class="qr-block-head">二维码 · 扫码直接打开本页并自动填入</div>
+        <div class="qr-canvas-wrap" id="answerQr"></div>
+        <div class="qr-block-foot">
+          <button class="btn-secondary" id="answerQrZoomBtn" type="button" hidden>放大显示</button>
+          <span class="qr-hint" id="answerQrHint"></span>
+        </div>
+      </div>
+      <div class="hint">让对方用「创建连接」第 3 步的「扫描二维码」扫一扫，或直接用手机相机扫</div>
+    </section>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" type="button" data-close="acceptModal">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 二维码放大遮罩 ========== -->
+<div class="qr-zoom" id="qrZoom" hidden>
+  <div class="qr-zoom-inner">
+    <div class="qr-zoom-canvas" id="qrZoomCanvas"></div>
+    <p class="qr-zoom-hint">用手机相机扫一扫，直接打开本页并自动填入</p>
+    <button class="btn-secondary" id="qrZoomClose" type="button">关闭</button>
+  </div>
+</div>
+
+<!-- ========== 扫码遮罩 ========== -->
+<div class="scanner-overlay" id="scannerOverlay" hidden>
+  <div class="scanner-panel" role="dialog" aria-modal="true" aria-labelledby="scannerTitle">
+    <div class="scanner-head">
+      <span id="scannerTitle">扫描二维码</span>
+      <button class="icon-btn" id="scannerClose" type="button" aria-label="关闭">
+        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <div class="scanner-stage" id="scannerStage">
+      <video id="scannerVideo" playsinline muted autoplay></video>
+      <div class="scanner-frame" aria-hidden="true"></div>
+      <div class="scanner-status" id="scannerStatus">正在启动摄像头…</div>
+    </div>
+    <div class="scanner-foot">
+      <button class="btn-secondary" id="scannerUploadBtn" type="button">
+        <svg class="icon" aria-hidden="true"><use href="#i-image"/></svg>从图片识别
+      </button>
+      <button class="btn-secondary" id="scannerTorchBtn" type="button" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg>补光
+      </button>
+      <input type="file" id="scannerFileInput" accept="image/*" hidden>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 图片预览遮罩 ========== -->
+<div class="image-viewer" id="imageViewer" hidden>
+  <div class="image-viewer-bar">
+    <span class="image-viewer-name" id="imageViewerName"></span>
+    <div class="image-viewer-tools">
+      <a class="icon-btn" id="imageViewerDownload" href="#" download title="下载原图" aria-label="下载原图">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      </a>
+      <button class="icon-btn" id="imageViewerClose" type="button" title="关闭" aria-label="关闭">
+        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="image-viewer-stage" id="imageViewerStage">
+    <img class="image-viewer-img" id="imageViewerImg" alt="">
+  </div>
+</div>
+
+<!-- ========== 通用站内对话框（重命名 / 二次确认） ========== -->
+<div class="dialog-mask" id="dialogMask" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <h3 class="dialog-title" id="dialogTitle"></h3>
+    <p class="dialog-message" id="dialogMessage" hidden></p>
+    <div class="dialog-field" id="dialogField" hidden>
+      <input type="text" id="dialogInput" autocomplete="off" spellcheck="false">
+    </div>
+    <p class="dialog-error" id="dialogError" hidden></p>
+    <div class="dialog-actions">
+      <button class="btn-secondary" id="dialogCancel" type="button">取消</button>
+      <button class="btn-primary" id="dialogConfirm" type="button">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript>
+  <div class="noscript-tip">本页面依赖 JavaScript 与 WebRTC，请启用 JavaScript 后重新打开。</div>
+</noscript>
+
+<!-- 二维码依赖库（本地化，离线可用；须在模块脚本之前以普通脚本加载） -->
+<script src="src/vendor/qrcode-generator.min.js"></script>
+<script src="src/vendor/jsqr.min.js"></script>
+<script type="module" src="src/js/main.js"></script>
+</body>
+</html>
