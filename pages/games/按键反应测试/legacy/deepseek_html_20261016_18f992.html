@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>键盘反应测试</title>
+<style>
+  :root {
+    --u: 44px;
+    --gap: 6px;
+    --bg: #0e1117;
+    --panel: #161b26;
+    --line: #232b3b;
+    --text: #e6e9ef;
+    --muted: #8b93a7;
+    --accent: #4f9dff;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(1200px 600px at 50% -10%, #1b2436 0%, #0e1117 55%, #090b10 100%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 26px 16px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 840px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  header h1 {
+    font-size: 23px;
+    margin: 0 0 6px;
+    letter-spacing: .5px;
+  }
+  header .sub {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ---------- 控制面板 ---------- */
+  .panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .panel .tag {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .5px;
+    white-space: nowrap;
+  }
+  .layouts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .layout-btn {
+    background: #1d2534;
+    color: #aab3c5;
+    border: 1px solid #2b3547;
+    border-radius: 9px;
+    padding: 7px 13px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .layout-btn:hover:not(:disabled) { border-color: #3d4b66; color: #dbe2ee; }
+  .layout-btn.active {
+    background: linear-gradient(180deg, #2f6fd0, #2359ad);
+    border-color: #4f9dff;
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(79,157,255,.15);
+  }
+  .layout-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  #startBtn {
+    background: linear-gradient(180deg, #2fbf6b, #1c9e55);
+    border: 1px solid #34d17a;
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 9px 22px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 18px -8px #22c55e;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  #startBtn:hover:not(:disabled) { filter: brightness(1.08); }
+  #startBtn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+  /* ---------- 统计 ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 9px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .stat .label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .5px;
+  }
+  .stat .value {
+    font-size: 19px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.3px;
+  }
+  .stat .value.hot { color: var(--green); }
+
+  /* ---------- 状态条 ---------- */
+  .status {
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: var(--muted);
+    transition: color .2s;
+  }
+  .status.count {
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: 0 0 26px rgba(79,157,255,.55);
+  }
+  .status.go {
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--green);
+    text-shadow: 0 0 22px rgba(34,197,94,.5);
+  }
+
+  /* ---------- 键盘 ---------- */
+  .kb-wrap {
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    padding: 13px;
+    background: #12161f;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 24px 50px -24px #000, inset 0 1px 0 rgba(255,255,255,.03);
+    margin: 0 auto;
+  }
+  .kb-row {
+    display: flex;
+    gap: var(--gap);
+  }
+  .key {
+    height: var(--u);
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #2c3446, #232a38);
+    border: 1px solid #333d52;
+    box-shadow: 0 2px 0 #10131a, inset 0 1px 0 rgba(255,255,255,.06);
+    font-size: calc(var(--u) * 0.30);
+    color: #cdd5e4;
+    user-select: none;
+    transition: background .07s, box-shadow .07s, transform .07s, border-color .07s;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .key.mod {
+    background: linear-gradient(180deg, #232a38, #1c222e);
+    color: #7f8aa0;
+    font-size: calc(var(--u) * 0.24);
+  }
+  .key.spacer {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    height: 0;
+  }
+  .key[data-code="Space"] {
+    font-size: calc(var(--u) * 0.21);
+    letter-spacing: 1px;
+    opacity: .55;
+  }
+
+  /* 用户按下（倒计时期间也会亮） */
+  .key.pressed {
+    background: linear-gradient(180deg, #4e5f80, #3b4861);
+    border-color: #5d719a;
+    transform: translateY(1px);
+    box-shadow: 0 0 0 #10131a, inset 0 1px 0 rgba(255,255,255,.12);
+  }
+
+  /* 目标键 */
+  .key.target {
+    background: linear-gradient(180deg, #3ade87, #17a34a);
+    border-color: #6ef0a4;
+    color: #04170c;
+    font-weight: 700;
+    transform: translateY(1px);
+    animation: pulse .55s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    from { box-shadow: 0 0 0 3px rgba(34,197,94,.18), 0 0 12px rgba(34,197,94,.45); }
+    to   { box-shadow: 0 0 0 6px rgba(34,197,94,.30), 0 0 30px rgba(34,197,94,.85); }
+  }
+
+  /* 按错 */
+  .key.wrong {
+    background: linear-gradient(180deg, #b93a3a, #8d2424);
+    border-color: #ef4444;
+    color: #fff;
+    animation: shake .3s ease;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%     { transform: translateX(-3px); }
+    75%     { transform: translateX(3px); }
+  }
+
+  /* ---------- 结算弹窗 ---------- */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,8,13,.78);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    display: grid;
+    place-items: center;
+    z-index: 50;
+    padding: 20px;
+    animation: fade .22s ease;
+  }
+  .modal[hidden] { display: none; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-card {
+    background: linear-gradient(180deg, #1a2130, #141a25);
+    border: 1px solid #2d3852;
+    border-radius: 20px;
+    padding: 26px 28px 24px;
+    width: min(430px, 94vw);
+    text-align: center;
+    box-shadow: 0 34px 80px -22px #000;
+    animation: pop .28s cubic-bezier(.2,1.3,.5,1);
+  }
+  @keyframes pop {
+    from { transform: scale(.92) translateY(12px); opacity: 0; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .modal-card h2 {
+    margin: 0 0 18px;
+    font-size: 19px;
+    letter-spacing: .5px;
+  }
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .modal-grid > div {
+    background: #10161f;
+    border: 1px solid #232b3b;
+    border-radius: 12px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .modal-grid span {
+    font-size: 11.5px;
+    color: var(--muted);
+    letter-spacing: .5px;
+  }
+  .modal-grid strong {
+    font-size: 21px;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+  .rating {
+    font-size: 15px;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 20px;
+    letter-spacing: .5px;
+  }
+  .rating small {
+    display: block;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 5px;
+    letter-spacing: 0;
+  }
+  #againBtn {
+    width: 100%;
+    background: linear-gradient(180deg, #2f6fd0, #2359ad);
+    border: 1px solid #4f9dff;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 11px;
+    border-radius: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter .15s;
+  }
+  #againBtn:hover { filter: brightness(1.12); }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width: 860px) { :root { --u: 36px; --gap: 5px; } }
+  @media (max-width: 700px) { :root { --u: 28px; --gap: 4px; } }
+  @media (max-width: 540px) {
+    :root { --u: 22px; --gap: 3px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    header h1 { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>⌨️ 键盘反应测试</h1>
+      <p class="sub">选择键盘布局 → 3 秒倒计时 → 随机等待 1~2 秒 → 随机高亮一个按键 → 用最快的速度按下它。共 20 次。</p>
+    </header>
+
+    <div class="panel">
+      <span class="tag">键盘布局</span>
+      <div class="layouts" id="layouts"></div>
+      <button id="startBtn">开始测试</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="label">进度</span><span class="value" id="statProgress">0 / 20</span></div>
+      <div class="stat"><span class="label">上一次</span><span class="value" id="statLast">--</span></div>
+      <div class="stat"><span class="label">平均</span><span class="value" id="statAvg">--</span></div>
+      <div class="stat"><span class="label">失误</span><span class="value" id="statFails">0</span></div>
+    </div>
+
+    <div class="status" id="status">选择布局后，点击「开始测试」</div>
+
+    <div class="kb-wrap">
+      <div class="keyboard" id="keyboard"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card">
+      <h2>🏁 测试完成</h2>
+      <div class="modal-grid">
+        <div><span>平均反应</span><strong id="rAvg">--</strong></div>
+        <div><span>最快</span><strong id="rBest">--</strong></div>
+        <div><span>最慢</span><strong id="rWorst">--</strong></div>
+        <div><span>失误次数</span><strong id="rFails">--</strong></div>
+      </div>
+      <div class="rating" id="rRating"></div>
+      <button id="againBtn">再来一次</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const TOTAL_ROUNDS = 20;
+
+  /* ================= 布局定义 ================= */
+
+  const key  = (code, label, w = 1, mod = false) => ({ code, label, w, mod });
+  const sp   = (w) => ({ spacer: true, w });
+
+  function qwertyRows() {
+    return [
+      [
+        key('Backquote','`'), key('Digit1','1'), key('Digit2','2'), key('Digit3','3'),
+        key('Digit4','4'), key('Digit5','5'), key('Digit6','6'), key('Digit7','7'),
+        key('Digit8','8'), key('Digit9','9'), key('Digit0','0'),
+        key('Minus','-'), key('Equal','='),
+        key('Backspace','⌫', 2, true)
+      ],
+      [
+        key('Tab','Tab', 1.5, true),
+        key('KeyQ','Q'), key('KeyW','W'), key('KeyE','E'), key('KeyR','R'), key('KeyT','T'),
+        key('KeyY','Y'), key('KeyU','U'), key('KeyI','I'), key('KeyO','O'), key('KeyP','P'),
+        key('BracketLeft','['), key('BracketRight',']'),
+        key('Backslash','\\', 1.5, true)
+      ],
+      [
+        key('CapsLock','Caps', 1.75, true),
+        key('KeyA','A'), key('KeyS','S'), key('KeyD','D'), key('KeyF','F'), key('KeyG','G'),
+        key('KeyH','H'), key('KeyJ','J'), key('KeyK','K'), key('KeyL','L'),
+        key('Semicolon',';'), key('Quote',"'"),
+        key('Enter','Enter', 2.25, true)
+      ],
+      [
+        key('ShiftLeft','Shift', 2.25, true),
+        key('KeyZ','Z'), key('KeyX','X'), key('KeyC','C'), key('KeyV','V'), key('KeyB','B'),
+        key('KeyN','N'), key('KeyM','M'),
+        key('Comma',','), key('Period','.'), key('Slash','/'),
+        key('ShiftRight','Shift', 2.75, true)
+      ],
+      [
+        key('ControlLeft','Ctrl', 1.25, true),
+        key('MetaLeft','Win', 1.25, true),
+        key('AltLeft','Alt', 1.25, true),
+        key('Space','Space', 6.25),
+        key('AltRight','Alt', 1.25, true),
+        key('MetaRight','Win', 1.25, true),
+        key('ContextMenu','Menu', 1.25, true),
+        key('ControlRight','Ctrl', 1.25, true)
+      ]
+    ];
+  }
+
+  function tklRows() {
+    const spacerW = 'calc((var(--u) * 2 - var(--gap)) / 3)';
+    const fnRow = [
+      key('Escape','Esc', 1, true),
+      { spacer: true, w: spacerW },
+      key('F1','F1', 1, true), key('F2','F2', 1, true),
+      key('F3','F3', 1, true), key('F4','F4', 1, true),
+      { spacer: true, w: spacerW },
+      key('F5','F5', 1, true), key('F6','F6', 1, true),
+      key('F7','F7', 1, true), key('F8','F8', 1, true),
+      { spacer: true, w: spacerW },
+      key('F9','F9', 1, true), key('F10','F10', 1, true),
+      key('F11','F11', 1, true), key('F12','F12', 1, true)
+    ];
+    return [fnRow, ...qwertyRows()];
+  }
+
+  const AZERTY_MAP = {
+    Backquote:'²', Digit1:'&', Digit2:'é', Digit3:'"', Digit4:"'", Digit5:'(',
+    Digit6:'-', Digit7:'è', Digit8:'_', Digit9:'ç', Digit0:'à', Minus:')', Equal:'=',
+    KeyQ:'A', KeyW:'Z', KeyE:'E', KeyR:'R', KeyT:'T', KeyY:'Y', KeyU:'U',
+    KeyI:'I', KeyO:'O', KeyP:'P', BracketLeft:'^', BracketRight:'$',
+    KeyA:'Q', KeyS:'S', KeyD:'D', KeyF:'F', KeyG:'G', KeyH:'H', KeyJ:'J',
+    KeyK:'K', KeyL:'L', Semicolon:'M', Quote:'ù',
+    KeyZ:'W', KeyX:'X', KeyC:'C', KeyV:'V', KeyB:'B', KeyN:'N', KeyM:',',
+    Comma:';', Period:':', Slash:'!'
+  };
+
+  const DVORAK_MAP = {
+    KeyQ:"'", KeyW:',', KeyE:'.', KeyR:'P', KeyT:'Y', KeyY:'F', KeyU:'G',
+    KeyI:'C', KeyO:'R', KeyP:'L', BracketLeft:'/', BracketRight:'=',
+    KeyA:'A', KeyS:'O', KeyD:'E', KeyF:'U', KeyG:'I', KeyH:'D', KeyJ:'H',
+    KeyK:'T', KeyL:'N', Semicolon:'S', Quote:'-',
+    KeyZ:';', KeyX:'Q', KeyC:'J', KeyV:'K', KeyB:'X', KeyN:'B', KeyM:'M',
+    Comma:'W', Period:'V', Slash:'Z'
+  };
+
+  function relabel(rows, map) {
+    return rows.map(row => row.map(k => {
+      if (k.spacer) return k;
+      const label = map[k.code];
+      return label === undefined ? { ...k } : { ...k, label };
+    }));
+  }
+
+  const LAYOUTS = {
+    qwerty60: { name: 'QWERTY 60%', rows: qwertyRows },
+    tkl:      { name: 'QWERTY TKL', rows: tklRows },
+    azerty:   { name: 'AZERTY',     rows: () => relabel(qwertyRows(), AZERTY_MAP) },
+    dvorak:   { name: 'Dvorak',     rows: () => relabel(qwertyRows(), DVORAK_MAP) }
+  };
+
+  /* ================= DOM ================= */
+
+  const els = {
+    layouts:     document.getElementById('layouts'),
+    startBtn:    document.getElementById('startBtn'),
+    keyboard:    document.getElementById('keyboard'),
+    status:      document.getElementById('status'),
+    statProgress:document.getElementById('statProgress'),
+    statLast:    document.getElementById('statLast'),
+    statAvg:     document.getElementById('statAvg'),
+    statFails:   document.getElementById('statFails'),
+    modal:       document.getElementById('modal'),
+    rAvg:        document.getElementById('rAvg'),
+    rBest:       document.getElementById('rBest'),
+    rWorst:      document.getElementById('rWorst'),
+    rFails:      document.getElementById('rFails'),
+    rRating:     document.getElementById('rRating'),
+    againBtn:    document.getElementById('againBtn')
+  };
+
+  /* ================= 状态 ================= */
+
+  const state = {
+    phase: 'idle',        // idle | countdown | waiting | armed | done
+    results: [],
+    fails: 0,
+    targetCode: null,
+    targetTime: 0,
+    timerId: null
+  };
+
+  let currentLayoutId = 'qwerty60';
+  let currentRows = [];
+  let targetPool = [];
+  let lastTime = null;
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const keyEl = (code) => els.keyboard.querySelector(`[data-code="${code}"]`);
+
+  /* ================= 渲染 ================= */
+
+  function renderKeyboard(rows) {
+    els.keyboard.innerHTML = '';
+    rows.forEach(row => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'kb-row';
+      row.forEach(k => {
+        const el = document.createElement('div');
+        if (k.spacer) {
+          el.className = 'key spacer';
+          el.style.width = k.w;
+        } else {
+          el.className = 'key' + (k.mod ? ' mod' : '');
+          el.dataset.code = k.code;
+          el.style.width = `calc(var(--u) * ${k.w} + var(--gap) * ${k.w - 1})`;
+          el.textContent = k.label;
+        }
+        rowEl.appendChild(el);
+      });
+      els.keyboard.appendChild(rowEl);
+    });
+  }
+
+  function buildPool(rows) {
+    const pool = [];
+    rows.forEach(row => row.forEach(k => {
+      if (!k.spacer && !k.mod) pool.push(k.code);
+    }));
+    return pool;
+  }
+
+  function setLayout(id) {
+    currentLayoutId = id;
+    currentRows = LAYOUTS[id].rows();
+    targetPool = buildPool(currentRows);
+    renderKeyboard(currentRows);
+    resetState();
+    setStatus('准备就绪，点击「开始测试」');
+  }
+
+  /* ================= UI 更新 ================= */
+
+  function setStatus(text, cls) {
+    els.status.textContent = text;
+    els.status.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function updateStats() {
+    const n = state.results.length;
+    els.statProgress.textContent = `${n} / ${TOTAL_ROUNDS}`;
+    els.statLast.textContent = lastTime == null ? '--' : `${Math.round(lastTime)} ms`;
+    els.statLast.classList.toggle('hot', lastTime != null && lastTime < 300);
+
+    if (n > 0) {
+      const avg = state.results.reduce((a, b) => a + b, 0) / n;
+      els.statAvg.textContent = `${Math.round(avg)} ms`;
+      els.statAvg.classList.toggle('hot', avg < 350);
+    } else {
+      els.statAvg.textContent = '--';
+      els.statAvg.classList.remove('hot');
+    }
+
+    els.statFails.textContent = state.fails;
+  }
+
+  function flashKey(code) {
+    const el = keyEl(code);
+    if (!el) return;
+    el.classList.add('pressed');
+    clearTimeout(el._pressTimer);
+    el._pressTimer = setTimeout(() => el.classList.remove('pressed'), 130);
+  }
+
+  /* ================= 流程 ================= */
+
+  function resetState() {
+    clearTimeout(state.timerId);
+    state.timerId = null;
+    state.phase = 'idle';
+    state.results = [];
+    state.fails = 0;
+    state.targetCode = null;
+    state.targetTime = 0;
+    lastTime = null;
+
+    els.keyboard.querySelectorAll('.target, .wrong')
+      .forEach(el => el.classList.remove('target', 'wrong'));
+
+    updateStats();
+    els.modal.hidden = true;
+  }
+
+  function lockControls(locked) {
+    els.startBtn.disabled = locked;
+    els.startBtn.textContent = locked ? '进行中…' : '开始测试';
+    els.layouts.querySelectorAll('button').forEach(b => { b.disabled = locked; });
+  }
+
+  async function startTest() {
+    if (['countdown', 'waiting', 'armed'].includes(state.phase)) return;
+
+    resetState();
+    els.modal.hidden = true;
+    lockControls(true);
+    state.phase = 'countdown';
+
+    for (let i = 3; i >= 1; i--) {
+      setStatus(String(i), 'count');
+      await sleep(1000);
+    }
+    setStatus('准备…', 'go');
+    await sleep(450);
+
+    nextRound();
+  }
+
+  function nextRound() {
+    state.phase = 'waiting';
+    state.targetCode = null;
+    setStatus('等待目标出现…');
+
+    const delay = 1000 + Math.random() * 1000;   // 1s ~ 2s
+
+    state.timerId = setTimeout(() => {
+      state.timerId = null;
+
+      const code = targetPool[Math.floor(Math.random() * targetPool.length)];
+      state.targetCode = code;
+
+      const el = keyEl(code);
+      if (el) el.classList.add('target');
+
+      state.targetTime = performance.now();
+      state.phase = 'armed';
+      setStatus('快按！', 'go');
+    }, delay);
+  }
+
+  function processInput(code) {
+    if (state.phase !== 'armed') return;
+
+    if (code === state.targetCode) {
+      // ✅ 命中
+      const dt = performance.now() - state.targetTime;
+      state.results.push(dt);
+      lastTime = dt;
+
+      const el = keyEl(code);
+      if (el) el.classList.remove('target');
+
+      state.phase = 'between';
+      state.targetCode = null;
+      updateStats();
+
+      if (state.results.length >= TOTAL_ROUNDS) {
+        finish();
+      } else {
+        nextRound();
+      }
+    } else {
+      // ❌ 按错：忽略本次（目标键继续等待），但计入失败
+      state.fails++;
+      updateStats();
+
+      const el = keyEl(code);
+      if (el) {
+        el.classList.add('wrong');
+        clearTimeout(el._wrongTimer);
+        el._wrongTimer = setTimeout(() => el.classList.remove('wrong'), 320);
+      }
+    }
+  }
+
+  function ratingFor(avg) {
+    if (avg < 220) return ['⚡ 闪电反应', '你的手指比大脑还快'];
+    if (avg < 280) return ['🔥 极速', '电竞级别的反应速度'];
+    if (avg < 350) return ['⭐ 优秀', '明显快于常人'];
+    if (avg < 450) return ['👍 良好', '平均水平之上'];
+    if (avg < 600) return ['🙂 一般', '还有不小的提升空间'];
+    return ['🐢 慢热型', '多练几次会明显变快'];
+  }
+
+  function finish() {
+    state.phase = 'done';
+    clearTimeout(state.timerId);
+    lockControls(false);
+
+    const rs = state.results;
+    const avg = rs.reduce((a, b) => a + b, 0) / rs.length;
+    const best = Math.min(...rs);
+    const worst = Math.max(...rs);
+    const [title, desc] = ratingFor(avg);
+
+    els.rAvg.textContent = `${Math.round(avg)} ms`;
+    els.rBest.textContent = `${Math.round(best)} ms`;
+    els.rWorst.textContent = `${Math.round(worst)} ms`;
+    els.rFails.textContent = `${state.fails} 次`;
+    els.rRating.innerHTML = `${title}<small>${desc}</small>`;
+
+    setStatus('测试完成，查看成绩 →');
+    els.modal.hidden = false;
+  }
+
+  /* ================= 事件 ================= */
+
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+
+    // 防止空格 / Tab 等滚动或切焦点
+    if (['Space', 'Tab', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+      e.preventDefault();
+    }
+
+    flashKey(e.code);       // 倒计时期间按下也会高亮
+    processInput(e.code);
+  }, { passive: false });
+
+  els.startBtn.addEventListener('click', startTest);
+  els.againBtn.addEventListener('click', () => {
+    els.modal.hidden = true;
+    startTest();
+  });
+
+  /* ================= 初始化 ================= */
+
+  function initLayoutButtons() {
+    Object.entries(LAYOUTS).forEach(([id, def]) => {
+      const btn = document.createElement('button');
+      btn.className = 'layout-btn' + (id === currentLayoutId ? ' active' : '');
+      btn.textContent = def.name;
+      btn.addEventListener('click', () => {
+        if (['countdown', 'waiting', 'armed'].includes(state.phase)) return;
+        els.layouts.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setLayout(id);
+      });
+      els.layouts.appendChild(btn);
+    });
+  }
+
+  initLayoutButtons();
+  setLayout(currentLayoutId);
+})();
+</script>
+</body>
+</html>

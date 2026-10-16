@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>键盘实验室 · 键盘反应测试</title>
+<link rel="stylesheet" href="css/base.css" />
+<link rel="stylesheet" href="css/main.css" />
+<script>
+  /* 提前落一次主题，避免首屏闪白 */
+  (function () {
+    var theme;
+    try {
+      theme = JSON.parse(localStorage.getItem('keyboard-lab:theme'));
+    } catch (error) { theme = null; }
+    if (theme !== 'light' && theme !== 'dark') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
+</head>
+<body class="page-main">
+  <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
+
+  <div class="app app--main">
+    <header class="hero">
+      <div class="page-head">
+        <span class="hero-badge">KEYBOARD LAB</span>
+        <button class="theme-toggle" id="themeToggle" type="button">
+          <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+          <span class="theme-toggle-text">亮色</span>
+        </button>
+      </div>
+
+      <h1 class="hero-title">⌨️ 键盘反应测试</h1>
+      <p class="hero-desc">四种玩法，一个键盘。自由敲击、录制回放、单键反应、连续挑战 —— 看看你的手指到底有多快。</p>
+
+      <nav class="menu">
+        <a class="menu-btn menu-btn--primary" href="pages/test.html">
+          <span class="menu-icon">▶</span>
+          <span class="menu-text">
+            <strong>开始测试</strong>
+            <small>选择键盘布局与模式，立即开始</small>
+          </span>
+        </a>
+        <a class="menu-btn" href="pages/about.html#modes">
+          <span class="menu-icon">◎</span>
+          <span class="menu-text">
+            <strong>玩法说明</strong>
+            <small>四种模式的规则与操作方式</small>
+          </span>
+        </a>
+        <a class="menu-btn" href="pages/about.html">
+          <span class="menu-icon">i</span>
+          <span class="menu-text">
+            <strong>关于</strong>
+            <small>项目信息、键盘布局与技术说明</small>
+          </span>
+        </a>
+      </nav>
+    </header>
+
+    <section class="hero-board">
+      <div class="hero-board-head">
+        <span class="hero-board-label">布局预览 · <b id="heroLayoutName">QWERTY 60%</b></span>
+        <button class="btn btn--sm" id="heroSwitch" type="button">切换布局</button>
+      </div>
+      <div class="kb-wrap">
+        <div class="keyboard" id="heroKeyboard"></div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <span>版本 1.2.0 · 纯前端实现</span>
+      <span>原生 ES Modules · 无需构建</span>
+    </footer>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

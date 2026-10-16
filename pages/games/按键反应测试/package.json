@@ -1,0 +1,10 @@
+{
+  "name": "keyboard-lab",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "description": "键盘反应测试 —— 自由 / 录制 / 单按键挑战 / 连续挑战",
+  "scripts": {
+    "start": "node tools/serve.mjs"
+  }
+}

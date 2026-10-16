@@ -4,7 +4,7 @@
   const { renderer, storage, exportImage } = app;
   const $ = selector => document.querySelector(selector);
   const svg = renderer.svg;
-  const state = { places: [], edges: [], mode: 'place', pending: null, preview: null, nextId: 1, scale: 1, tx: 0, ty: 0, history: [], editing: null, cellDistance: 100, mapId: null, mapName: '' };
+  const state = { places: [], edges: [], mode: 'place', pending: null, preview: null, nextId: 1, scale: 1, tx: 0, ty: 0, history: [], editing: null, editingColor: null, cellDistance: 100, mapId: null, mapName: '' };
   let library = null;
   let drag = null, moved = false, lastTap = null, tapTimer = null, toastTimer = null;
   let pointerFrame = 0, pendingPointer = null, wheelFrame = 0, wheelDelta = 0, wheelPoint = null, zoomSettleTimer = 0;
@@ -74,7 +74,7 @@
     });
   }
   function updateTip() {
-    const tips={place:'点击空白网格放置地点 · 拖动地点可重新吸附定位',connect:state.pending?'再点一个地点完成连接 · 点起点取消':'依次点击两个地点建立路线',preview:state.preview!=null?'已高亮该地点及相连路线 · 点空白处退出预览':'点击地点查看关联路线与距离',delete:'点击地点或路线删除'};
+    const tips={place:'点击空白网格放置地点 · 拖动地点可重新吸附定位',arrange:'拖动地点可重新吸附定位 · 此模式不会新增地点',connect:state.pending?'再点一个地点完成连接 · 点起点取消':'依次点击两个地点建立路线',preview:state.preview!=null?'已高亮该地点及相连路线 · 点空白处退出预览':'点击地点查看关联路线与距离',delete:'点击地点或路线删除'};
     $('#tip').textContent=tips[state.mode];
   }
   function render() {
@@ -167,6 +167,7 @@
       if (!place) return;
       const point = renderer.screenToWorld(x, y, state), nextX = snap(point.x), nextY = snap(point.y);
       if (state.places.some(other => other.id !== place.id && other.x === nextX && other.y === nextY)) return;
+      if (!drag.layered) { renderer.beginDrag(state, place.id, state.cellDistance); drag.layered = true; }
       renderer.movePlace(state, place.id, nextX, nextY, state.cellDistance);
     } else {
       svg.classList.add('dragging');
@@ -179,11 +180,15 @@
     document.querySelectorAll('.tool').forEach(button=>button.classList.toggle('active',button.dataset.mode===mode));render();
   }
   function openEditor(id) {
-    const place=findPlace(id);if(!place)return;state.editing=id;
-    $('#placeIcon').value=place.icon;$('#placeName').value=place.name;$('#placeEditor').classList.add('show');
+    const place=findPlace(id);if(!place)return;state.editing=id;state.editingColor=place.color;
+    $('#placeIcon').value=place.icon;$('#placeName').value=place.name;$('#placeColor').value=place.color;$('#placeEditor').classList.add('show');
     setTimeout(()=>$('#placeName').focus(),80);
   }
-  function closeEditor() { $('#placeEditor').classList.remove('show');state.editing=null; }
+  function closeEditor() {
+    const place=findPlace(state.editing);
+    if(place&&place.color!==state.editingColor){place.color=state.editingColor;render();}
+    $('#placeEditor').classList.remove('show');state.editing=null;
+  }
   function addPlace(x,y) {
     const px=snap(x),py=snap(y);
     if(state.places.some(place=>place.x===px&&place.y===py)){flash('这个网格位置已有地点');return;}
@@ -229,7 +234,7 @@
     remember();state.edges=state.edges.filter(edge=>edgeKey(...edge)!==key);render();
   }
   function tapPlace(id) {
-    if(state.mode==='place') {
+    if(state.mode==='place'||state.mode==='arrange') {
       const now=Date.now();
       if(lastTap&&lastTap.id===id&&now-lastTap.time<300){clearTimeout(tapTimer);lastTap=null;openEditor(id);}
       else{lastTap={id,time:now};clearTimeout(tapTimer);tapTimer=setTimeout(()=>lastTap=null,310);}
@@ -255,9 +260,10 @@
       if(event.button!==undefined&&event.button!==0)return;
       const hit=renderer.hitTest(event.clientX,event.clientY,state);
       const place=hit?.placeId!=null?findPlace(hit.placeId):null;
-      drag={id:place&&state.mode==='place'?place.id:null,placeId:place?.id??null,edgeKey:hit?.edgeKey??null,
+      const movable=state.mode==='place'||state.mode==='arrange';
+      drag={id:place&&movable?place.id:null,placeId:place?.id??null,edgeKey:hit?.edgeKey??null,
         x:event.clientX,y:event.clientY,tx:state.tx,ty:state.ty,
-        before:place&&state.mode==='place'?snapshot():null};
+        before:place&&movable?snapshot():null};
       moved=false;svg.setPointerCapture(event.pointerId);
     });
     svg.addEventListener('pointermove',event=>{
@@ -273,7 +279,7 @@
       if(pointerFrame){cancelAnimationFrame(pointerFrame);pointerFrame=0;}
       pendingPointer=null;
       applyPointerMove(event.clientX,event.clientY);
-      drag=null;
+      drag=null;renderer.endDrag();
       if(moved){svg.classList.remove('dragging');if(previous.id!=null){storage.flushSave();state.history.push(previous.before);if(state.history.length>HISTORY_LIMIT)state.history.shift();render();}return;}
       if(previous.placeId!=null){tapPlace(previous.placeId);return;}
       if(previous.edgeKey&&state.mode==='delete'){removeEdge(previous.edgeKey);return;}
@@ -282,7 +288,7 @@
       else if(state.mode==='connect'&&state.pending!=null){state.pending=null;render();}
     });
     svg.addEventListener('pointercancel',()=>{
-      drag=null;pendingPointer=null;
+      drag=null;pendingPointer=null;renderer.endDrag();
       if(pointerFrame){cancelAnimationFrame(pointerFrame);pointerFrame=0;}
       svg.classList.remove('dragging');
     });
@@ -315,9 +321,16 @@
     $('#fileInput').onchange=async event=>{const file=event.target.files[0];if(file)await loadJsonFile(file);event.target.value='';};
     $('#closeEditor').onclick=$('#cancelEdit').onclick=closeEditor;
     $('#savePlace').onclick=()=>{
-      const place=findPlace(state.editing);if(place){remember();place.name=$('#placeName').value.trim()||'地点';place.icon=$('#placeIcon').value.trim()||app.firstCharacter(place.name);render();}
+      const place=findPlace(state.editing);
+      if(place){
+        // 先还原成打开面板时的颜色，让撤回快照拿到改动前的值
+        const color=$('#placeColor').value;place.color=state.editingColor;remember();
+        place.name=$('#placeName').value.trim()||'地点';place.icon=$('#placeIcon').value.trim()||app.firstCharacter(place.name);
+        place.color=state.editingColor=color;render();
+      }
       closeEditor();
     };
+    $('#placeColor').addEventListener('input',()=>{const place=findPlace(state.editing);if(place){place.color=$('#placeColor').value;renderer.render(state,state.cellDistance);}});
     $('#deletePlace').onclick=()=>{if(state.editing!=null)removePlace(state.editing);closeEditor();};
     $('#placeName').addEventListener('keydown',event=>{if(event.key==='Enter')$('#savePlace').click();if(event.key==='Escape')closeEditor();});
     $('#mapNameInput').addEventListener('blur',()=>{

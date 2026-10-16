@@ -18,7 +18,7 @@
     <div class="top-controls">
       <label class="scale-box">每格距离 <input id="cellDistance" type="number" min="1" max="100000" step="10" value="100" aria-label="每格距离"><span>米</span></label>
       <div class="tool-switch" role="toolbar" aria-label="绘图工具">
-        <button class="tool active" data-mode="place">＋ 放置</button><button class="tool" data-mode="connect">⌁ 连线</button><button class="tool" data-mode="preview">◉ 预览</button><button class="tool" data-mode="delete">− 删除</button>
+        <button class="tool active" data-mode="place" title="放置">＋ <span>放置</span></button><button class="tool" data-mode="arrange" title="排列">✥ <span>排列</span></button><button class="tool" data-mode="connect" title="连线">⌁ <span>连线</span></button><button class="tool" data-mode="preview" title="预览">◉ <span>预览</span></button><button class="tool" data-mode="delete" title="删除">− <span>删除</span></button>
       </div>
       <div class="zoom-box" aria-label="画布缩放"><button id="zoomOut" aria-label="缩小">−</button><span id="zoomLabel">100%</span><button id="zoomIn" aria-label="放大">+</button><button id="zoomReset" aria-label="重置视图">⌖</button></div>
       <button class="theme-toggle" id="themeToggle" aria-label="切换明暗主题" title="切换明暗主题">☾</button>
@@ -41,6 +41,7 @@
   <div class="place-editor" id="placeEditor" role="dialog" aria-label="编辑地点">
     <div class="modal-head"><span>编辑地点</span><button class="close" id="closeEditor" aria-label="关闭">×</button></div>
     <div class="fields"><input id="placeIcon" maxlength="4" aria-label="地点图标" placeholder="📍"><input id="placeName" maxlength="16" aria-label="地点名称" placeholder="地点名称"></div>
+    <label class="color-field"><span>边框颜色</span><input id="placeColor" type="color" aria-label="地点边框颜色"></label>
     <div class="modal-actions"><button class="action" id="deletePlace">删除地点</button><button class="action" id="cancelEdit">取消</button><button class="action primary" id="savePlace">保存</button></div>
   </div>
   <dialog class="confirm-dialog" id="confirmDialog" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">

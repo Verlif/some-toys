@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>开始测试 · 键盘反应测试</title>
+<link rel="stylesheet" href="../css/base.css" />
+<link rel="stylesheet" href="../css/test.css" />
+<script>
+  /* 提前落一次主题，避免首屏闪白 */
+  (function () {
+    var theme;
+    try {
+      theme = JSON.parse(localStorage.getItem('keyboard-lab:theme'));
+    } catch (error) { theme = null; }
+    if (theme !== 'light' && theme !== 'dark') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
+</head>
+<body class="page-test" data-phase="setup">
+  <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
+
+  <div class="app app--test">
+
+    <header class="topbar">
+      <a class="topbar-back" href="../index.html">← 返回主页</a>
+      <h1 class="topbar-title">键盘反应测试</h1>
+      <span class="topbar-chip" id="layoutTag">QWERTY 60%</span>
+      <button class="theme-toggle" id="themeToggle" type="button">
+        <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+        <span class="theme-toggle-text">亮色</span>
+      </button>
+    </header>
+
+    <!-- 配置阶段 -->
+    <section class="setup-view">
+      <div class="card setup-card" id="setupPanel"></div>
+
+      <aside class="card preview-card">
+        <div class="preview-head">
+          <span class="preview-label">布局预览</span>
+          <span class="preview-name" id="previewName">QWERTY 60%</span>
+        </div>
+        <div class="preview-box">
+          <div class="keyboard keyboard--mini" id="previewKeyboard"></div>
+        </div>
+        <p class="preview-tip">切换左侧的键盘布局，这里会同步更新对应配列的按键排布。</p>
+      </aside>
+    </section>
+
+    <!-- 运行阶段 -->
+    <section class="play-view">
+      <div class="play-head">
+        <div class="play-title">
+          <span class="play-mode" id="playMode">自由模式</span>
+          <span class="play-sub" id="playSub"></span>
+        </div>
+        <div class="play-actions">
+          <button class="btn btn--sm" id="restartBtn" type="button">重新开始</button>
+          <button class="btn btn--sm" id="exitBtn" type="button">返回配置</button>
+        </div>
+      </div>
+
+      <div class="play-body">
+        <div class="status" id="status" hidden></div>
+        <div class="mode-top" id="modeTop"></div>
+        <div class="mode-bar" id="modeBar"></div>
+
+        <div class="kb-wrap">
+          <div class="keyboard" id="keyboard"></div>
+        </div>
+
+        <div class="mode-stage" id="modeStage"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <script type="module" src="../js/test.js"></script>
+</body>
+</html>

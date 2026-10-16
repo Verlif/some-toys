@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>关于 · 键盘反应测试</title>
+<link rel="stylesheet" href="../css/base.css" />
+<link rel="stylesheet" href="../css/about.css" />
+<script>
+  /* 提前落一次主题，避免首屏闪白 */
+  (function () {
+    var theme;
+    try {
+      theme = JSON.parse(localStorage.getItem('keyboard-lab:theme'));
+    } catch (error) { theme = null; }
+    if (theme !== 'light' && theme !== 'dark') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
+</head>
+<body class="page-about">
+  <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
+
+  <div class="app app--about">
+
+    <header class="topbar">
+      <a class="topbar-back" href="../index.html">← 返回主页</a>
+      <h1 class="topbar-title">关于本项目</h1>
+      <a class="topbar-chip topbar-chip--link" href="test.html">开始测试 →</a>
+      <button class="theme-toggle" id="themeToggle" type="button">
+        <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+        <span class="theme-toggle-text">亮色</span>
+      </button>
+    </header>
+
+    <div class="prose">
+      <section class="section">
+        <h2><span class="section-no">01</span><span>项目简介</span></h2>
+        <p>键盘实验室是一个纯前端的键盘测试玩具，用来观察按键、反应速度与敲击节奏。整个项目不需要后端，也不依赖任何框架与构建工具 —— 拆成多目录的模块化 ES Modules，用浏览器直接加载。</p>
+        <p>所有布局共用同一套物理键位定义（<code>KeyboardEvent.code</code>），切换布局只替换键帽上的字符，因此 QWERTY / AZERTY / Dvorak 之间可以直接横向对比。</p>
+      </section>
+
+      <section class="section" id="modes">
+        <h2><span class="section-no">02</span><span>四种模式</span></h2>
+        <p>点击主页的「开始测试」后，先选择键盘布局与模式，再按「开始」进入玩法。两种挑战模式可以在菜单里调节难度参数，四种模式的结束都会给出详细的数据统计。</p>
+      </section>
+
+      <div id="modeList"></div>
+
+      <section class="section" id="layouts">
+        <h2><span class="section-no">03</span><span>键盘布局</span></h2>
+        <p>切换布局时右侧预览会同步变化；挑战模式出题只会用到字母与数字键，保证每道题都是单个易识别的字符。</p>
+        <div id="layoutList"></div>
+      </section>
+
+      <section class="section" id="record">
+        <h2><span class="section-no">04</span><span>录制文件格式</span></h2>
+        <p>录制模式进入后即处于待命状态，按下第一个按键就开始录制（该按键同样会被记录）。导出的 JSON 结构如下，字段稳定，可以自己写脚本生成后再拖回页面加载：</p>
+        <pre class="code-block">{
+  "type": "keyboard-lab-recording",
+  "version": 1,
+  "createdAt": "2026-10-16T08:47:34.000Z",
+  "layout": "qwerty60",
+  "layoutName": "QWERTY 60%",
+  "duration": 5321,
+  "events": [
+    { "code": "KeyA", "label": "A", "t": 0,    "gap": 0 },
+    { "code": "KeyS", "label": "S", "t": 214,  "gap": 214 },
+    { "code": "Space", "label": "Space", "t": 690, "gap": 476 }
+  ]
+}</pre>
+        <ul>
+          <li><code>t</code> —— 相对录制起点（第一个按键）的毫秒数</li>
+          <li><code>gap</code> —— 与上一次按键之间的间隔毫秒数，首条为 0</li>
+          <li>回放严格按 <code>t</code> 的时间轴点亮按键，起手额外等待 0.5 秒，速度可切换 0.5× / 1× / 2×</li>
+        </ul>
+      </section>
+
+      <section class="section" id="ops">
+        <h2><span class="section-no">05</span><span>操作与提示</span></h2>
+        <ul>
+          <li>测试过程中 <kbd>Space</kbd> / <kbd>Tab</kbd> / <kbd>Enter</kbd> / 方向键会被拦截，避免页面滚动或焦点跳转。</li>
+          <li>挑战模式中按错键只计入失误，不会中断当前这一轮。</li>
+          <li>右上角「返回配置」可随时退出并重新选布局与模式；「重新开始」会重置当前挑战。</li>
+          <li>主题默认跟随系统，右上角可手动切换亮色 / 暗色，选择会被记住。</li>
+          <li>主页面与配置阶段的键盘同样会响应真实按键（只高亮，不拦截浏览器默认行为）。</li>
+          <li>连续挑战连续命中会触发键盘震动与连击计数，按错或停顿 1.5 秒断连。</li>
+          <li>上次选择的布局、模式与参数会保存在浏览器本地，下次进入自动带出。</li>
+        </ul>
+      </section>
+
+      <section class="section" id="structure">
+        <h2><span class="section-no">06</span><span>目录结构</span></h2>
+        <pre class="code-block">keyboard-lab/
+├─ index.html            主页面
+├─ pages/
+│  ├─ test.html          测试页（选择菜单 + 键盘舞台）
+│  └─ about.html         关于页
+├─ css/
+│  ├─ base.css           主题变量 / 通用组件 / 键盘样式
+│  ├─ main.css           主页面
+│  ├─ test.css           测试页
+│  └─ about.css          关于页
+├─ js/
+│  ├─ main.js            主页面入口
+│  ├─ test.js            测试页入口（阶段与玩法调度）
+│  ├─ about.js           关于页入口（由元数据渲染）
+│  ├─ core/              布局定义 / 键盘渲染 / 统计 / 模式元数据
+│  ├─ modes/             自由 / 录制 / 单按键挑战 / 连续挑战
+│  ├─ ui/                选择菜单 / 组件 / 结算浮层 / 主题 / 背景碰撞 / 预览自适应 / 连击反馈
+│  └─ utils/             DOM / 时间 / 数值 / JSON / 本地存储
+├─ tools/serve.mjs       零依赖静态服务器
+└─ assets/               静态资源</pre>
+        <p>因为使用了 ES Modules，需要通过 HTTP 打开：在项目根目录执行 <code>node tools/serve.mjs</code>（或 <code>npm start</code>），浏览器访问 <code>http://localhost:5173/</code>。</p>
+      </section>
+
+      <section class="section">
+        <h2><span class="section-no">07</span><span>版本</span></h2>
+        <ul>
+          <li>版本 1.2.0</li>
+          <li>技术栈：原生 HTML / CSS / JavaScript（ES Modules），零依赖</li>
+          <li>兼容：Chrome / Edge / Firefox / Safari 桌面版</li>
+        </ul>
+      </section>
+    </div>
+
+    <footer class="site-footer">
+      <span>键盘实验室 · keyboard-lab</span>
+      <a href="test.html">开始测试 →</a>
+    </footer>
+
+  </div>
+
+  <script type="module" src="../js/about.js"></script>
+</body>
+</html>

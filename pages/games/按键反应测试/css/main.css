@@ -1,0 +1,134 @@
+/* ============================================================
+   main.css —— 主页面
+   ============================================================ */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.hero-badge {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--muted-2);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 5px 14px;
+}
+
+.hero-title {
+  margin: 4px 0 0;
+  font-size: 34px;
+  letter-spacing: .5px;
+}
+
+.hero-desc {
+  margin: 0;
+  max-width: 580px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+/* ---------- 主菜单 ---------- */
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-top: 18px;
+}
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: all .15s;
+}
+.menu-btn:hover {
+  border-color: var(--muted-2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+.menu-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--panel-3);
+  border: 1px solid var(--line-2);
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.menu-text { display: flex; flex-direction: column; gap: 3px; }
+.menu-text strong { font-size: 14.5px; }
+.menu-text small { font-size: 11.5px; color: var(--muted); }
+
+.menu-btn--primary {
+  background: linear-gradient(180deg, var(--accent-soft), transparent);
+  border-color: var(--accent);
+}
+.menu-btn--primary .menu-icon {
+  background: linear-gradient(180deg, #2f6fd0, #2359ad);
+  border-color: #4f9dff;
+  color: #fff;
+}
+
+/* ---------- 主页面键盘预览 ---------- */
+
+.hero-board {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.hero-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-board-label { font-size: 12px; letter-spacing: .6px; color: var(--muted); }
+
+/* ---------- 页脚 ---------- */
+
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--muted-2);
+}
+
+@media (max-width: 560px) {
+  .hero-title { font-size: 26px; }
+  .hero-desc { font-size: 13px; }
+  .menu { grid-template-columns: 1fr; }
+}

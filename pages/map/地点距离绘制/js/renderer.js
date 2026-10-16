@@ -4,7 +4,7 @@
   const $ = selector => document.querySelector(selector);
   const canvas = $('#map'), context = canvas.getContext('2d', { alpha: false, desynchronized: true });
   const surface = canvas;
-  let colors = {}, dpr = 1, width = 0, height = 0, lastState = null, lastMeters = 100, zoomGesture = null;
+  let colors = {}, dpr = 1, width = 0, height = 0, lastState = null, lastMeters = 100, zoomGesture = null, dragLayer = null;
 
   function readColors() {
     const style = getComputedStyle(document.documentElement);
@@ -63,10 +63,11 @@
     }
     ctx.restore();
   }
-  function drawEdges(ctx, state, metersPerCell, view, placeById) {
+  function drawEdges(ctx, state, metersPerCell, view, placeById, mask) {
     const active = state.mode !== 'preview' || state.preview == null;
     for (const [aId, bId] of state.edges) {
       const a = placeById.get(aId), b = placeById.get(bId); if (!a || !b) continue;
+      if (mask && !mask.edges(aId, bId)) continue;
       const selected = active || aId === state.preview || bId === state.preview;
       ctx.save(); ctx.globalAlpha = selected ? 1 : .16;
       ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
@@ -92,56 +93,59 @@
     const v = Math.round(.299 * r + .587 * g + .114 * b);
     return `rgb(${v} ${v} ${v})`;
   }
-  function drawPlaces(ctx, state) {
+  function drawPlaces(ctx, state, mask) {
     const neighbors = new Set();
     if (state.mode === 'preview' && state.preview != null) {
       for (const [a, b] of state.edges) { if (a === state.preview) neighbors.add(b); if (b === state.preview) neighbors.add(a); }
     }
     for (const place of state.places) {
+      if (mask && !mask.places(place)) continue;
       const selected = state.preview === place.id;
       const neighbor = neighbors.has(place.id);
       const dim = state.mode === 'preview' && state.preview != null && !selected && !neighbor;
       const baseColor = dim ? gray(place.color) : place.color;
       ctx.save(); ctx.translate(place.x, place.y); if (dim) ctx.globalAlpha = .25;
-      ctx.beginPath(); ctx.arc(0, 0, 19, 0, Math.PI * 2);
-      ctx.lineWidth = state.pending === place.id || selected ? 3 : neighbor ? 2.5 : 2;
+      // 彩色外框自动贴着底盘外沿：外沿 = 底盘半径 + 边框厚度，底盘一收整体跟着收，也不会露缝
+      const disc = 12, ring = state.pending === place.id || selected ? 6 : neighbor ? 5.5 : 5;
+      ctx.beginPath(); ctx.arc(0, 0, disc + ring / 2, 0, Math.PI * 2);
+      ctx.lineWidth = ring;
       ctx.strokeStyle = state.pending === place.id || selected ? colors.orange : neighbor ? colors.teal : baseColor;
       ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.beginPath(); ctx.arc(0, 0, disc, 0, Math.PI * 2);
       ctx.fillStyle = neighbor ? colors.tealSoft : colors.panel;
       if (state.pending === place.id || selected) {
         ctx.fillStyle = colors.panel; ctx.fill(); ctx.globalAlpha *= .18; ctx.fillStyle = colors.orange; ctx.fill(); ctx.globalAlpha = dim ? .25 : 1;
       } else ctx.fill();
       ctx.strokeStyle = colors.lineStrong; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = colors.ink; ctx.font = `11px ${colors.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = colors.ink; ctx.font = `14px ${colors.font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(place.icon, 0, 1);
       ctx.font = `700 10px ${colors.font}`; ctx.textBaseline = 'alphabetic';
-      // 基线 32 = 图标底盘(r=16)下缘再留 8px，避免压住下一格地点的图标
-      ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = colors.paper; ctx.strokeText(place.name, 0, 32);
-      ctx.fillStyle = colors.muted; ctx.fillText(place.name, 0, 32);
+      // 基线 27 = 图标区外沿(r=17)下缘再留 2px（10px 字顶边 ≈19.5），与底盘/外框同缩同移
+      ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = colors.paper; ctx.strokeText(place.name, 0, 27);
+      ctx.fillStyle = colors.muted; ctx.fillText(place.name, 0, 27);
       ctx.restore();
     }
   }
-  function paint(ctx, state, metersPerCell, view) {
+  function paint(ctx, state, metersPerCell, view, mask) {
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.width, view.height);
     ctx.fillStyle = colors.paper; ctx.fillRect(0, 0, view.width, view.height);
     drawGrid(ctx, view);
     ctx.save(); ctx.setTransform(view.dpr * view.scale, 0, 0, view.dpr * view.scale, view.dpr * view.tx, view.dpr * view.ty);
     const placeById = new Map(state.places.map(place => [place.id, place]));
-    drawEdges(ctx, state, metersPerCell, view, placeById);
-    drawPlaces(ctx, state);
+    drawEdges(ctx, state, metersPerCell, view, placeById, mask);
+    drawPlaces(ctx, state, mask);
     ctx.restore();
   }
+  const viewOf = state => ({ width, height, dpr, scale: state.scale, tx: state.tx, ty: state.ty });
+  const setText = (selector, value) => { const node = $(selector), text = String(value); if (node.textContent !== text) node.textContent = text; };
   function render(state, metersPerCell) {
-    zoomGesture = null;
+    zoomGesture = null; dragLayer = null;
     lastState = state; lastMeters = metersPerCell;
     ensureSize();
-    paint(context, state, metersPerCell, { width, height, dpr, scale: state.scale, tx: state.tx, ty: state.ty });
-    $('#placeCount').textContent = state.places.length;
-    $('#edgeCount').textContent = state.edges.length;
-    $('#zoomLabel').textContent = `${Math.round(state.scale * 100)}%`;
-    $('#undo').disabled = !state.history.length;
+    paint(context, state, metersPerCell, viewOf(state));
+    setText('#placeCount', state.places.length); setText('#edgeCount', state.edges.length); setText('#zoomLabel', `${Math.round(state.scale * 100)}%`);
+    const undo = $('#undo'), disabled = !state.history.length; if (undo.disabled !== disabled) undo.disabled = disabled;
   }
   function applyView(state) { render(state, lastMeters); }
   function resetView(state) {
@@ -179,7 +183,7 @@
     state.scale = nextScale; applyView(state);
   }
   function zoomPreview(state, clientX, clientY, factor) {
-    ensureSize();
+    ensureSize(); dragLayer = null;
     if (!zoomGesture) {
       const image = document.createElement('canvas');
       image.width = canvas.width; image.height = canvas.height;
@@ -209,9 +213,30 @@
     const rect = canvas.getBoundingClientRect();
     zoom(state, rect.left + rect.width / 2, rect.top + rect.height / 2, factor);
   }
+  // 拖拽底色：拖开始前把"除被拖地点及其连线"之外的整幅画面烘进离屏 canvas，
+  // 拖拽期间每帧只 1:1 贴回这张位图 + 补画被拖的地点/连线，避免整屏重绘（84 地点级别的地图会卡）。
+  function beginDrag(state, id, metersPerCell) {
+    ensureSize();
+    const layer = document.createElement('canvas');
+    layer.width = canvas.width; layer.height = canvas.height;
+    paint(layer.getContext('2d', { alpha: false }), state, metersPerCell, viewOf(state),
+      { places: place => place.id !== id, edges: (a, b) => a !== id && b !== id });
+    dragLayer = { layer, id };
+  }
+  function endDrag() { dragLayer = null; }
   function movePlace(state, id, x, y, metersPerCell) {
     const place = state.places.find(item => item.id === id); if (!place) return;
-    place.x = x; place.y = y; render(state, metersPerCell);
+    if (place.x === x && place.y === y) return;
+    place.x = x; place.y = y;
+    if (!dragLayer || dragLayer.id !== id) { render(state, metersPerCell); return; }
+    const view = viewOf(state), placeById = new Map(state.places.map(item => [item.id, item]));
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.drawImage(dragLayer.layer, 0, 0);
+    context.save();
+    context.setTransform(view.dpr * view.scale, 0, 0, view.dpr * view.scale, view.dpr * view.tx, view.dpr * view.ty);
+    drawEdges(context, state, metersPerCell, view, placeById, { edges: (a, b) => a === id || b === id });
+    drawPlaces(context, state, { places: place => place.id === id });
+    context.restore();
   }
   function segmentDistance(x, y, ax, ay, bx, by) {
     const dx = bx - ax, dy = by - ay, length = dx * dx + dy * dy;
@@ -248,5 +273,5 @@
     return output;
   }
   window.addEventListener('resize', () => { if (lastState) render(lastState, lastMeters); });
-  app.renderer = { applyView, resetView, centerMap, screenToWorld, zoom, zoomPreview, finishZoom, zoomCenter, render, movePlace, hitTest, createExportCanvas, svg: surface };
+  app.renderer = { applyView, resetView, centerMap, screenToWorld, zoom, zoomPreview, finishZoom, zoomCenter, render, movePlace, beginDrag, endDrag, hitTest, createExportCanvas, svg: surface };
 })(window.DistanceDrawing = window.DistanceDrawing || {});
