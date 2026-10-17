@@ -39,7 +39,9 @@ export function openScanner(options) {
     lastAt: 0,
     torchTrack: null,
     torchOn: false,
-    busy: false
+    busy: false,
+    startedAt: performance.now(),
+    hinted: false
   };
 
   setText($('scannerTitle'), (options && options.title) || '扫描二维码');
@@ -115,8 +117,11 @@ async function startCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
+        // 优先要更高分辨率：模块像素越多，识别越稳（ideal 只是偏好，不支持会自动降级）
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        // 手机近距离拍屏幕很容易失焦，尽量要求连续对焦；不支持的设备会忽略
+        advanced: [{ focusMode: 'continuous' }]
       },
       audio: false
     });
@@ -205,26 +210,67 @@ function decodeVideoFrame() {
   const video = $('scannerVideo');
   if (!video || video.readyState < 2 || !video.videoWidth) return;
 
-  const frame = prepareFrame(video, SCANNER.decodeMaxEdge);
-  frame.ctx.drawImage(video, 0, 0, frame.w, frame.h);
+  const frame = drawVideoFrame(video);
+  if (!frame) return;
 
   let result = null;
   try {
-    const image = frame.ctx.getImageData(0, 0, frame.w, frame.h);
-    result = getScanLib()(image.data, frame.w, frame.h, { inversionAttempts: 'dontInvert' });
+    const image = frame.ctx.getImageData(0, 0, frame.size, frame.size);
+    result = getScanLib()(image.data, frame.size, frame.size, { inversionAttempts: 'dontInvert' });
   } catch (e) {
     return;
   }
 
-  if (result && result.data) handleHit(result.data);
+  if (result && result.data) {
+    handleHit(result.data);
+    return;
+  }
+
+  // 一直没识别到就给一句操作提示
+  if (!session.hinted && performance.now() - session.startedAt > SCANNER.hintAfterMs) {
+    session.hinted = true;
+    setStatus('还没识别到？靠近一些让二维码充满取景框，或点二维码「放大显示」后再扫');
+  }
 }
 
-/** 把任意图像源缩放到受控尺寸后画进离屏 canvas */
-function prepareFrame(source, maxEdge) {
-  const sw = source.videoWidth || source.naturalWidth || source.width || 0;
-  const sh = source.videoHeight || source.naturalHeight || source.height || 0;
+/**
+ * 视频帧：只取画面中心的正方形区域，并尽量保持原生分辨率
+ *
+ * 不整帧缩放的原因：二维码本来就只占画面一部分，整帧缩到固定尺寸会把
+ * 本就不多的模块像素再稀释一遍，还会引入降采样模糊，直接拖垮识别率。
+ * 中心裁剪 + 不缩放，等于把有效分辨率还回来。
+ */
+function drawVideoFrame(video) {
+  const sw = video.videoWidth;
+  const sh = video.videoHeight;
+  if (!sw || !sh) return null;
 
-  const scale = Math.min(1, maxEdge / Math.max(sw, sh, 1));
+  const side = Math.min(sw, sh);
+  const sx = Math.round((sw - side) / 2);
+  const sy = Math.round((sh - side) / 2);
+
+  // 只有传感器分辨率超过上限时才缩小，常见的 720p / 1080p 都不触发
+  const scale = Math.min(1, SCANNER.decodeMaxEdge / side);
+  const size = Math.max(1, Math.round(side * scale));
+
+  if (workCanvas.width !== size) workCanvas.width = size;
+  if (workCanvas.height !== size) workCanvas.height = size;
+
+  const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
+  return { ctx, size };
+}
+
+/**
+ * 图片帧：按整图识别
+ * 图片里的二维码位置不确定，不能只裁剪中心，只能按最长边限制上限
+ */
+function drawImageFrame(img) {
+  const sw = img.naturalWidth || img.width || 0;
+  const sh = img.naturalHeight || img.height || 0;
+  if (!sw || !sh) return null;
+
+  const scale = Math.min(1, SCANNER.imageMaxEdge / Math.max(sw, sh));
   const w = Math.max(1, Math.round(sw * scale));
   const h = Math.max(1, Math.round(sh * scale));
 
@@ -232,7 +278,8 @@ function prepareFrame(source, maxEdge) {
   if (workCanvas.height !== h) workCanvas.height = h;
 
   const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
-  return { canvas: workCanvas, ctx, w, h };
+  ctx.drawImage(img, 0, 0, w, h);
+  return { ctx, w, h };
 }
 
 /**
@@ -271,8 +318,8 @@ async function onPickImage(event) {
     url = URL.createObjectURL(file);
     const img = await loadImage(url);
 
-    const frame = prepareFrame(img, SCANNER.imageMaxEdge);
-    frame.ctx.drawImage(img, 0, 0, frame.w, frame.h);
+    const frame = drawImageFrame(img);
+    if (!frame) throw new Error('图片尺寸异常');
 
     const image = frame.ctx.getImageData(0, 0, frame.w, frame.h);
     // 图片可以慢慢识别，允许反色尝试，提高成功率

@@ -92,7 +92,7 @@ export function createSingleMode(rt) {
       rt.keyboard.setTarget(target);
       armedAt = now();
       phase = 'armed';
-      rt.setStatus('快按！', 'go');
+      rt.setStatus('按下', 'go');
 
       await waitForRound();
       if (cancelled) return;

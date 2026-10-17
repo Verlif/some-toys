@@ -13,6 +13,7 @@
   <!-- 站点信息：由生成脚本从 site.config.json 注入，供 i18n 与页面脚本读取 -->
   <script>window.SITE = {"siteTitle":"someToys","owner":"Verlif","repo":"someToys","branch":"main","docsDir":"docs","bio":"单页面与项目文件夹作品集","githubUrl":"https://github.com/Verlif","repoUrl":"https://github.com/Verlif/someToys","avatarUrl":"https://avatars.githubusercontent.com/Verlif"};</script>
   <script src="assets/i18n.js"></script>
+  <script src="assets/qrcode.js"></script>
 
   <!-- 尽早应用主题，避免首屏闪烁 -->
   <script>
@@ -62,7 +63,7 @@
       <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="foot-link">
         <i class="fab fa-github"></i><span>GitHub</span>
       </a>
-      <p class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> 2026-10-16 10:57:33 UTC</p>
+      <p class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> <time class="gen-time" datetime="2026-10-17T02:53:00.680Z">2026-10-17 10:53</time></p>
     </div>
   </aside>
 
@@ -140,9 +141,10 @@
       <span class="card-title">someToys · 单页面与项目文件夹导航站</span>
     </span>
     <span class="card-desc">不挑来源的作品导航站：单个 HTML 文件、多文件项目文件夹，放进 pages/ 推送即自动生成导航页。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>44.3 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>45.4 KB</span><span class="meta-item meta-date" data-iso="2026-10-14"><i class="fas fa-clock"></i>2026-10-14</span></span>
   </a>
-  
+
+
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
 <section class="group" id="nav-1" data-group="nav-1" data-count="5">
@@ -156,64 +158,192 @@
   </h2>
   <div class="group-body" id="nav-1-body">
     <div class="cards-grid">
-      <div class="card has-more" data-name="键盘实验室 · 键盘反应测试 布局预览 · qwerty 60% 按键反应测试" data-kind="project">
+      <div class="card has-more" data-name="键盘实验室 · 键盘反应测试 看按键亮起来，然后快点按下去。 按键反应测试 看按键亮起来，然后快点按下去。" data-kind="project">
   <a class="card-link" href="pages/games/%E6%8C%89%E9%94%AE%E5%8F%8D%E5%BA%94%E6%B5%8B%E8%AF%95/index.html" target="_blank" rel="noopener" title="键盘实验室 · 键盘反应测试">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">键盘实验室 · 键盘反应测试</span>
     </span>
-    <span class="card-desc">布局预览 · QWERTY 60%</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>151 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":4}'>共 4 页</span></span></span>
+    <span class="card-desc">看按键亮起来，然后快点按下去。</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>156 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":4}'>共 4 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/games/%E6%8C%89%E9%94%AE%E5%8F%8D%E5%BA%94%E6%B5%8B%E8%AF%95/README.md"><h4 id="键盘实验室-键盘反应测试" class="md-h1">键盘实验室 · 键盘反应测试</h4><blockquote>看按键亮起来，然后快点按下去。</blockquote><p>一个纯前端的键盘测试玩具：四种配列随心切换，四种玩法从「随手试手感」到「拼反应」，全程不需要后端、不需要账号。</p><p>项目使用原生 ES Module 拆分多文件，没有任何框架与构建步骤。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>ES Module 必须通过 HTTP 打开，项目自带零依赖静态服务器：</p><pre class="md-pre" data-lang="bash"><code>node tools/serve.mjs          # 默认 5173 端口
+node tools/serve.mjs 8080     # 指定端口
+# 或
+npm start</code></pre><p>然后访问 <code>http://localhost:5173/</code>。</p><hr><h5 id="四种配列" class="md-h2">四种配列</h5><p>主页展示当前配列的大键盘，点「切换配列」轮换：</p><div class="md-table"><table><thead><tr><th>配列</th><th>说明</th></tr></thead><tbody><tr><td>QWERTY TKL</td><td>带 F1–F12 功能行的 87 键</td></tr><tr><td>AZERTY</td><td>法语区常用配列</td></tr><tr><td>Dvorak</td><td>效率优先的英文配列</td></tr></tbody></table></div><p>所有配列共用同一套<strong>物理键位定义</strong>（<code>code</code> + 显示文本 + 键宽 + 是否修饰键），切换配列只是换标签，键位几何不变。所以 AZERTY 与 Dvorak 看起来不同，按下的物理键完全一致。</p><hr><h5 id="四种玩法" class="md-h2">四种玩法</h5><div class="md-table"><table><thead><tr><th>模式</th><th>玩法</th><th>结束统计</th></tr></thead><tbody><tr><td>录制模式</td><td>从第一个按键开始记录「按键 + 与上次的间隔」，可回放、导出 / 导入 JSON</td><td>按键序列与节奏</td></tr><tr><td>单按键挑战</td><td>3 秒倒计时后，每轮随机等待 0.5~2 秒亮一个键，尽快按下；按错计失误但不中断</td><td>平均 / 最快 / 最慢反应时间</td></tr><tr><td>连续挑战</td><td>随机生成一整排按键，从右往左依次敲掉，按错计失误</td><td>总用时 / 平均每键耗时</td></tr></tbody></table></div><p>挑战模式可以调难度：单按键挑战选完成次数（5 / 10 / 20 / 30 / 50），连续挑战选序列长度（5 / 10 / 20）。出题只会用到字母与数字键，保证每题都是单个易识别的字符。</p><h6 id="录制文件" class="md-h3">录制文件</h6><p>导出的是字段稳定的 JSON，可以自己写脚本生成后再拖回页面复现：</p><pre class="md-pre" data-lang="json"><code>{
+  &quot;version&quot;: 1,
+  &quot;createdAt&quot;: &quot;2026-10-16T08:47:34.000Z&quot;,
+  &quot;layout&quot;: &quot;qwerty60&quot;,
+  &quot;layoutName&quot;: &quot;QWERTY 60%&quot;,
+  &quot;duration&quot;: 5321,
+  &quot;events&quot;: [
+    { &quot;code&quot;: &quot;KeyA&quot;, &quot;label&quot;: &quot;A&quot;, &quot;t&quot;: 0, &quot;gap&quot;: 0 },
+    { &quot;code&quot;: &quot;KeyS&quot;, &quot;label&quot;: &quot;S&quot;, &quot;t&quot;: 214, &quot;gap&quot;: 214 },
+    { &quot;code&quot;: &quot;Space&quot;, &quot;label&quot;: &quot;Space&quot;, &quot;t&quot;: 690, &quot;gap&quot;: 476 }
+  ]
+}</code></pre><p><code>t</code> 是相对起点的毫秒数，<code>gap</code> 是与上一次按键的间隔（首条为 0）。回放严格按 <code>t</code> 的时间轴点亮，起手额外等 0.5 秒，速度可切 0.5× / 1× / 2×。支持点击选择文件，也支持直接把 <code>.json</code> 拖到页面里。</p><hr><h5 id="操作" class="md-h2">操作</h5><div class="md-table"><table><thead><tr><th>场景</th><th>操作</th></tr></thead><tbody><tr><td>切换配列</td><td>主页「切换配列」按钮，选择会记住</td></tr><tr><td>主题</td><td>右上角主题按钮，亮 / 暗切换并记住</td></tr><tr><td>挑战中</td><td><code>Space</code> <code>Tab</code> <code>Enter</code> <code>Backspace</code> 与方向键会被拦截，避免滚动页面或切走焦点</td></tr><tr><td>返回</td><td>游戏内的返回按钮回到选择菜单</td></tr></tbody></table></div><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>keyboard-lab/
+├─ index.html              主页面（键盘预览 + 配列切换）
+├─ pages/
+│  ├─ test.html             测试页（选择菜单 + 键盘舞台）
+│  └─ about.html            关于页（由元数据渲染）
+├─ css/                     base / main / test / about
+├─ js/
+│  ├─ main.js               主页面入口
+│  ├─ test.js               测试页入口（阶段与玩法调度）
+│  ├─ about.js              关于页入口
+│  ├─ core/                 配列定义、键盘渲染、统计、模式元数据
+│  ├─ modes/                自由 / 录制 / 单按键挑战 / 连续挑战
+│  ├─ ui/                   选择菜单、组件、结算浮层、主题、背景键流、预览自适应
+│  └─ utils/                DOM / 时间 / 数值 / JSON / 本地存储
+├─ tools/serve.mjs          零依赖静态服务器
+└─ assets/                  静态资源</code></pre><p>模块之间只通过导出函数与 DOM 契约协作：<code>core/</code> 不认识界面，<code>modes/</code> 只给出「一局怎么进行」，页面级调度在 <code>test.js</code> 里串起来。</p><hr><h5 id="实现要点" class="md-h2">实现要点</h5><ul><li><strong>键宽即数据</strong>：每个键定义 <code>w</code>（以 1 单位键帽为基准的宽度），特殊键（<code>Shift</code> / <code>Space</code> / <code>Enter</code>）自然排布，不用为每种配列写死像素。</li><li><strong>键盘是画出来的 DOM</strong>，不是图片，因此可以任意缩放、随主题换肤、按键高亮零延迟。</li><li><strong>背景键流</strong>：主页背景有一层缓慢飘落的键帽，与真实按键的高亮互不干扰。</li><li><strong>预览自适应</strong>：选择菜单右侧的键盘预览按容器宽度等比缩放，窄屏会收起。</li><li><strong>状态都收在 utils/storage</strong>：配列、主题、录制设置统一走同一层本地存储，读不到就用默认值。</li></ul><hr><h5 id="兼容性" class="md-h2">兼容性</h5><ul><li>Chrome / Edge / Firefox / Safari 桌面版。</li><li>需要支持 ES Module 与 <code>KeyboardEvent.code</code>（现代浏览器均满足）。</li></ul><hr><h5 id="版本" class="md-h2">版本</h5><ul><li>1.2.0 · 技术栈：原生 HTML / CSS / JavaScript（ES Modules），零依赖。</li></ul></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
-<div class="card has-more" data-name="回声躲猫猫 · echo hide &amp; seek 只用声波“看”世界的非对称躲猫猫：全黑空间、声波反射、ai 追捕与躲藏。 回声躲猫猫" data-kind="project">
+<div class="card has-more" data-name="回声躲猫猫 · echo hide &amp; seek 只用声波“看”世界的非对称躲猫猫：全黑空间、声波反射、ai 追捕与躲藏。 回声躲猫猫 全黑的房间里，你唯一的信息来源是自己发出的声音。" data-kind="project">
   <a class="card-link" href="pages/games/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB/index.html" target="_blank" rel="noopener" title="回声躲猫猫 · Echo Hide &amp; Seek">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">回声躲猫猫 · Echo Hide &amp; Seek</span>
     </span>
     <span class="card-desc">只用声波“看”世界的非对称躲猫猫：全黑空间、声波反射、AI 追捕与躲藏。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>349 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>364 KB</span><span class="meta-item meta-date" data-iso="2026-10-02"><i class="fas fa-clock"></i>2026-10-02</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/games/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB/README.md"><h4 id="回声躲猫猫-echo-hide-seek" class="md-h1">回声躲猫猫 · Echo Hide &amp; Seek</h4><blockquote>全黑的房间里，你唯一的信息来源是自己发出的声音。</blockquote><p>一款纯前端的非对称对抗潜行游戏。世界一片漆黑，角色只能靠移动或主动发声产生的声波感知环境：声波在墙上反射，勾勒出地形轮廓，同时也把自己的位置卖给对手。</p><p>你可以扮演<strong>搜捕者</strong>，在限定时间内抓光所有躲藏者；也可以扮演<strong>躲藏者</strong>，在黑暗里苟到时间结束。单人模式对抗 AI，双人模式两人同阵营协作。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>原生 ES Module，<strong>不能用 <code>file://</code> 直接双击打开</strong>，需要静态服务器：</p><pre class="md-pre" data-lang="bash"><code># 在项目目录下任选一种
+npx --yes serve .
+python -m http.server 8080</code></pre><p>然后访问服务地址即可开始对局。也可以从仓库根目录的导航页点进来（同源，无需额外操作）。</p><hr><h5 id="怎么玩" class="md-h2">怎么玩</h5><h6 id="双方目标" class="md-h3">双方目标</h6><div class="md-table"><table><thead><tr><th>角色</th><th>默认数量</th><th>目标</th><th>特点</th></tr></thead><tbody><tr><td>躲藏者</td><td>6（可调 3–10）</td><td>至少一人存活到时间结束</td><td>只能靠静步与墙体遮蔽</td></tr></tbody></table></div><ul><li>搜捕者获胜：所有躲藏者被抓。</li><li>躲藏者获胜：时间耗尽时仍有至少一人存活。</li></ul><h6 id="声波是唯一的感官" class="md-h3">声波是唯一的感官</h6><div class="md-table"><table><thead><tr><th>行为</th><th>声波半径</th><th>射线数</th><th>代价</th></tr></thead><tbody><tr><td>快步移动（按住 Shift）</td><td>440 px</td><td>8</td><td>全速前进，等于开灯</td></tr><tr><td>主动噪声（空格 / Enter）</td><td>660 px</td><td>16</td><td>4 秒冷却，几乎等于自报坐标</td></tr></tbody></table></div><p>声波以约 10 格/秒向前推进，遇到墙壁反射。墙体轮廓由<strong>自己与同阵营队友</strong>的声波共同点亮——分头探图时，队友跑出来的地形你同样看得见；敌人的声波不会给你任何地形信息。</p><h6 id="几条容易忽略的规则" class="md-h3">几条容易忽略的规则</h6><ul><li><strong>探测闪烁是双向的</strong>：声波扫到角色时接触点会闪橙红，发射方和被打到的人都看得见。</li><li><strong>近身即现形</strong>：距离小于 3 格时双方互相显形，拐角撞见谁也装不了看不见；搜捕者之间则始终互相可见。</li><li><strong>抓到人会僵直 2.5 秒</strong>：搜捕者抓人后不能动也不能连抓（AI 搜捕者没有这个冷却）。</li><li><strong>道具每 20 秒刷新一个</strong>，全图可见，谁捡到谁受益，效果永远作用在<strong>对方阵营</strong>：</li></ul><div class="md-table"><table><thead><tr><th>道具</th><th>效果</th><th>持续</th></tr></thead><tbody><tr><td>凝滞之锁</td><td>对方全体定格（不能动、不能抓人）</td><td>2 秒</td></tr><tr><td>喧嚣之铃</td><td>对方全体立刻发出一次噪声（无视冷却）</td><td>即时</td></tr><tr><td>疾行之羽</td><td>自己加速 ×1.6</td><td>5 秒</td></tr></tbody></table></div><p>道具 30 秒后自动消失，刷新点会避开角色与已有道具 90px 以内。</p><h6 id="开局设置" class="md-h3">开局设置</h6><div class="md-table"><table><thead><tr><th>项目</th><th>选项</th></tr></thead><tbody><tr><td>躲藏者数量</td><td>3 / 5 / 6 / 8 / 10</td></tr><tr><td>地图大小</td><td>小 / 中 / 大</td></tr><tr><td>游戏时长</td><td>30 秒 / 1 / 2 / 3 / 5 分钟</td></tr></tbody></table></div><hr><h5 id="操作" class="md-h2">操作</h5><div class="md-table"><table><thead><tr><th>操作</th><th>单人</th><th>玩家 1（双人）</th><th>玩家 2（双人）</th></tr></thead><tbody><tr><td>快步</td><td>按住 <code>Shift</code></td><td>左 <code>Shift</code></td><td>右 <code>Shift</code></td></tr><tr><td>主动噪声</td><td><code>空格</code></td><td><code>空格</code></td><td><code>Enter</code></td></tr><tr><td>暂停 / 继续</td><td><code>Esc</code></td><td><code>Esc</code></td><td><code>Esc</code></td></tr><tr><td>重新开始</td><td>连按两次 <code>R</code></td><td>同左</td><td>同左</td></tr></tbody></table></div><p>双人模式的两位玩家扮演<strong>同一角色</strong>，各自拥有独立的噪声冷却；一人被抓、另一人仍存活时对局继续。</p><hr><h5 id="ai-在做什么" class="md-h2">AI 在做什么</h5><ul><li><strong>搜捕者 AI</strong>：巡逻 → 听见敌对声波后前往调查 → 记忆可疑区域 → 追击已确认目标；带视线平滑的寻路，不会贴着墙反复横跳。</li><li><strong>躲藏者 AI</strong>：远离搜捕者与噪声源，靠近墙体与角落，被追时向反方向逃离并寻找可切断视线的拐角。</li><li><strong>敌我识别</strong>：声波照常传播，但 AI 只把<strong>敌对阵营</strong>的声音当作情报，队友的噪声不会让它惊慌。</li><li><strong>道具意识</strong>：巡逻与休息时会把附近的道具当作临时目标。</li></ul><p>AI 是吃配置的：<code>js/core/config.js</code> 里的 <code>SHARE_TEAM_VISION</code> / <code>SHARE_TEAM_WALL_MEMORY</code> 可以关掉队友视野与墙体共享，难度会明显上升。</p><hr><h5 id="工程结构" class="md-h2">工程结构</h5><pre class="md-pre"><code>js/
+├─ core/     配置、全局状态、事件、随机数、计时、队伍、视野判定
+├─ world/    地图生成、实体、道具、格子碰撞、寻路
+├─ sim/      规则推进：移动、碰撞解算、声波、战斗、道具效果、统计、录像回放
+├─ ai/       搜捕者与躲藏者 AI
+├─ input/    键盘输入 → 可序列化指令
+├─ net/      会话 / 传输 / 协议 / 快照（WebSocket 联机预留）
+├─ render/   渲染层：场景、视野、声波视觉
+├─ ui/       HUD、面板、设置、结算、回放界面
+└─ main.js   装配并驱动固定步长主循环
+tests/       无头测试（DOM 桩，无需浏览器）</code></pre><p>几条贯穿全局的设计：</p><ul><li><strong>模拟与界面解耦</strong>：模拟层只吃「指令 + 固定步长」，不碰 DOM；界面只读快照。</li><li><strong>可播种随机</strong>：给定种子与指令序列，同一局必然复现，回放与测试都依赖这一点。</li><li><strong>配置唯一来源</strong>：所有可调数值集中在 <code>js/core/config.js</code>，其它模块不硬编码同类常量。</li></ul><hr><h5 id="自检脚本" class="md-h2">自检脚本</h5><p>不需要浏览器，用 <code>tests/dom-stub.mjs</code> 把游戏直接跑在 Node 里：</p><pre class="md-pre" data-lang="bash"><code># 碰撞手感：贴墙滑动 / 进通道 / 穿模 / 随机压力
+node --experimental-default-type=module tests/collision.mjs
+
+# 道具 + 联机会话（房主 / 客户端走回环传输）
+node --experimental-default-type=module tests/features.mjs
+
+# 端到端冒烟：倒计时 → 对局 → 道具 → 抓捕 → 结算 → 回放
+node --experimental-default-type=module tests/smoke.mjs
+
+# AI 行为测量：可见晃动 / 卡顿（局数 每局秒数 轨迹条数）
+node --experimental-default-type=module tests/jitter.mjs 5 40 0</code></pre><p>改完逻辑先跑一遍，比手点快得多。</p><hr><h5 id="延伸阅读" class="md-h2">延伸阅读</h5><ul><li><a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB_%E7%AD%96%E5%88%92%E8%AF%B4%E6%98%8E%E4%B9%A6.md" target="_blank" rel="noopener">策划说明书</a>：完整规则、数值表、AI 设计与变更记录。</li><li><a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB_Steam%E5%95%86%E5%BA%97%E4%BB%8B%E7%BB%8D.md" target="_blank" rel="noopener">Steam 商店介绍</a>：面向玩家的卖点与特色描述。</li><li><a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E5%9B%9E%E5%A3%B0%E8%BA%B2%E7%8C%AB%E7%8C%AB/tests/README.md" target="_blank" rel="noopener">无头测试说明</a>：每个脚本测什么、怎么加参数。</li></ul></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
-<div class="card has-more" data-name="人生模拟 · 左右抉择 人生模拟 · 左右抉择 —— 一张卡牌一个人生岔路口，平衡六项属性，活到八十岁。 人生类抉择" data-kind="project">
+<div class="card has-more" data-name="人生模拟 · 左右抉择 人生模拟 · 左右抉择 —— 一张卡牌一个人生岔路口，平衡六项属性，活到八十岁。 人生类抉择 左右滑动，做一生的决定。" data-kind="project">
   <a class="card-link" href="pages/games/%E4%BA%BA%E7%94%9F%E7%B1%BB%E6%8A%89%E6%8B%A9/index.html" target="_blank" rel="noopener" title="人生模拟 · 左右抉择">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">人生模拟 · 左右抉择</span>
     </span>
     <span class="card-desc">人生模拟 · 左右抉择 —— 一张卡牌一个人生岔路口，平衡六项属性，活到八十岁。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>757 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>788 KB</span><span class="meta-item meta-date" data-iso="2026-10-14"><i class="fas fa-clock"></i>2026-10-14</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/games/%E4%BA%BA%E7%94%9F%E7%B1%BB%E6%8A%89%E6%8B%A9/README.md"><h4 id="人生模拟-左右抉择" class="md-h1">人生模拟 · 左右抉择</h4><blockquote>左右滑动，做一生的决定。每一项都别太满，也别见底。</blockquote><p>一个纯前端、零依赖的卡牌式人生模拟小游戏。你从 6 岁开始，每张卡牌都是一个人生岔路口——左滑或右滑作出选择，每个选择消耗一年人生。六项属性中任意一项归零或爆表，人生就此落幕；活到 80 岁，则收获「圆满人生」。</p><p>设计参考《王权》(Reigns) 的卡牌抉择手感，叠加《模拟人生》的底层数值模型。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><pre class="md-pre" data-lang="bash"><code>npm run dev       # 启动本地服务器（零依赖，用 Node 内置模块实现）
+# 打开 http://localhost:5173</code></pre><blockquote>⚠️ 本项目使用原生 ES Modules + <code>fetch</code> 加载剧本，<strong>不能用 <code>file://</code> 直接双击打开</strong>。直接打开时页面会给出明确提示。也可以用 <code>python -m http.server 5173</code> 代替。</blockquote><p>自检脚本（加载剧本 + 校验数据 + 跑通一局 + 验证可复现）：</p><pre class="md-pre" data-lang="bash"><code>npm run check</code></pre><hr><h5 id="怎么玩" class="md-h2">怎么玩</h5><div class="md-table"><table><thead><tr><th>操作</th><th>说明</th></tr></thead><tbody><tr><td>点击卡面下方两个按钮</td><td>同上，等价于左右滑</td></tr><tr><td>悬停 / 按住按钮或方向键</td><td>预览该侧浮窗，看清选项文本</td></tr><tr><td>键盘 <code>←</code> / <code>→</code></td><td>同上，桌面端最快</td></tr><tr><td>底部四个标签</td><td>档案 / 履历 / 声音 / 重开，点击后从底部上浮出浮窗</td></tr></tbody></table></div><p>滑动时卡片两侧会浮出<strong>选项浮窗</strong>：透明度与大小跟着手指距离走，达到可触发距离时整块高亮反色并提示「松手即选」，不用猜自己滑够了没有。</p><h6 id="界面构成" class="md-h3">界面构成</h6><ul><li><strong>属性条</strong>：六项属性各占一格，条上加高、带高光，并画出警戒刻度线（黄线=提醒区间，红线=危险区间）</li><li><strong>常驻旁白条</strong>：固定高度、不会把下方卡片顶上顶下。开局播报「你出生了」，选择后播报「你选择了 X」和各项变化，其余时刻播报里程碑、危险告警或阶段状态</li><li><strong>卡片区</strong>：手机上贴着屏幕底部，方便单手操作；平板与 PC 上则与右侧「大事记 / 心愿」栏并排</li><li><strong>底部标签栏</strong>：游戏页常驻屏幕底部，四个并列按钮都带文字。点「档案 / 履历」从底部上浮出浮窗，按住浮窗顶部的抓手往下拉即可关闭</li></ul><h6 id="六项属性" class="md-h3">六项属性</h6><div class="md-table"><table><thead><tr><th>属性</th><th>含义</th><th>归零(0)结局</th><th>爆表(100)结局</th></tr></thead><tbody><tr><td>😄 心情</td><td>精神状态</td><td>心灰意冷</td><td>乐极生悲</td></tr><tr><td>💰 金钱</td><td>物质基础</td><td>一贫如洗</td><td>富贵险中求</td></tr><tr><td>⚡ 精力</td><td>行动力</td><td>油尽灯枯</td><td>躺平成仙</td></tr><tr><td>👥 社交</td><td>人际关系</td><td>孤岛余生</td><td>热闹过载</td></tr><tr><td>💼 事业</td><td>社会成就</td><td>职场出局</td><td>高处不胜寒</td></tr></tbody></table></div><p><strong>唯一的通关条件是「平衡」</strong>：任何一项都别让它见底，也别让它顶满。</p><h6 id="隐藏系统" class="md-h3">隐藏系统</h6><ul><li><strong>性格特质</strong>：开局随机抽两项（乐天派 / 工作狂 / 社恐 / 节俭 / 健身狂 / 吃货 / 学霸 / 冒险家），会改变属性变化的结算系数</li><li><strong>五项技能</strong>：学识 / 厨艺 / 运动 / 魅力 / 手巧，随抉择累积，是部分事件的触发门槛</li><li><strong>三段羁绊</strong>：亲情 / 友情 / 爱情，影响婚姻、生育、养老等事件链</li><li><strong>人生心愿</strong>：开局四选一（财富自由 / 家庭美满 / 事业有成 / 长命百岁），达成后额外加心情并写入大事记</li><li><strong>大事记</strong>：结婚、生子、买房、创业、退休…… 会实时记入侧栏与结局时间轴</li></ul><h6 id="结算" class="md-h3">结算</h6><p>结局页会给出六维终值、一生大事记时间轴，以及一个综合评分：</p><pre class="md-pre"><code>人生得分 = 六项属性之和 + 大事记条数 × 6 + 终年年龄</code></pre><ul><li>≥ 430 传奇的一生</li><li>≥ 350 美满的一生</li><li>≥ 280 有滋有味的一生</li><li>其他 平凡的一生</li></ul><p>评分下方有一个<strong>「人生履历」</strong>按钮，点开是和游戏内同一个底部浮窗：逐条列出每一次抉择的卡面、你的选择，以及这次选择到底改了什么（心情 +3、事业 -2……）。</p><hr><h5 id="剧本即数据" class="md-h2">剧本即数据</h5><p>游戏里<strong>没有任何硬编码的内容数据</strong>。属性、特质、心愿、结局、1026 条抉择全部是 <code>data/</code> 下的 JSON：</p><pre class="md-pre"><code>data/
+├── manifest.json        启动清单（登记要加载哪些文件）
+├── init/                初始设置
+│   ├── meters.json      六项属性 / 人生阶段 / 五项技能 / 三段羁绊
+│   ├── config.json      初始数值 / 调参 / 评分区间 / 状态名 / 人生标记
+│   ├── traits.json      8 种性格特质
+│   ├── aspirations.json 4 种人生心愿
+│   └── endings.json     13 种结局文案
+└── choices/             1026 条抉择，按阶段与主题分成 23 个文件
+    ├── childhood.json   童年 6-11     66 条
+    ├── youth.json       少年 12-18    72 条
+    ├── adulthood.json   青年 18-40    89 条
+    ├── prime.json       中年 22-60    111 条
+    ├── senior.json      知命 50-79    79 条
+    ├── elder.json       晚年 65-85    81 条
+    ├── common.json      全年龄通吃    56 条
+    ├── trait.json       特质专属      36 条
+    ├── gated.json       技能 / 状态门槛 44 条
+    ├── pet.json         宠物链        35 条  ← 组合卡牌
+    ├── family.json      家庭链        54 条  ← 组合卡牌
+    ├── career.json      事业链        49 条  ← 组合卡牌
+    ├── life.json        生活支线      46 条  ← 组合卡牌
+    ├── friends.json     朋友类型链    30 条  ← 6 种朋友各有专属事件池
+    ├── school.json      校园 + 辍学   26 条  ← 辍学后是另一条支线
+    ├── jobs.json        职业时间线    39 条  ← 6 条职业线各有专属事件池
+    ├── car.json         汽车链        25 条  ← 驾照 → 买车 → 用车 → 事故 → 收束
+    ├── family-plus.json 家庭补充      24 条
+    ├── money-line.json  钱与房        16 条
+    ├── health-line.json 健康线        12 条
+    ├── divorce.json     离婚之后      10 条
+    ├── biz-line.json    事业上下半场  16 条
+    └── fame.json        名声线        10 条</code></pre><p><strong>所有事件默认 <code>once: true</code></strong>——同一局里每张卡只会出现一次，不会中途重复刷同一张脸。<code>npm run check</code> 会跑 40 局随机试玩来核对这一点，只有校验通过才算改对了。</p><h6 id="组合卡牌链" class="md-h3">组合卡牌链</h6><p>一部分卡牌只在<strong>你先做出过某个选择</strong>之后才会出现，用人生标记（flag）串联：</p><div class="md-table"><table><thead><tr><th>链</th><th>入口</th><th>解锁的后续</th></tr></thead><tbody><tr><td>💍 家庭</td><td>心动 → <code>metLove</code>，求婚 → <code>married</code>，生孩子 → <code>hasChild</code></td><td>表白、见家长、同居、婚房、夜哭、学区房、空巢、抱孙辈、金婚、离婚、再遇</td></tr><tr><td>💼 事业</td><td>下海 → <code>biz</code>，盈利 → <code>bizSuccess</code>，失败 → <code>bizFail</code></td><td>合伙人、天使轮、上线、上市、东山再起、过劳、返聘、收购、股权</td></tr><tr><td>🚗 生活</td><td>买车 → <code>car</code>，买房 → <code>house</code>，搬家 → <code>moved</code>，留学 → <code>study</code></td><td>保养、违章、自驾、物业、漏水、月供、新城市、论文、答辩</td></tr><tr><td>🌱 支线</td><td>种菜 → <code>garden</code>，志愿 → <code>volunteer</code>，爆火 → <code>fame</code>，借钱 → <code>debt</code></td><td>丰收、投诉、感谢信、被认出、网暴、催债、结清</td></tr></tbody></table></div><p>也就是说，<strong>养了狗之后才会遇到与狗狗相关的抉择</strong>；没创业就永远不会碰到融资。<code>npm run check</code> 会校验每条链都「入口能拿到标记、后续卡牌依赖它」，防止写出永远走不到的死链。</p><p>启动时 <code>core/loader.js</code> 读 <code>manifest.json</code>，把清单里的文件全部 <code>fetch</code> 进来合并，交给 <code>core/registry.js</code> 装进运行时数据库。<strong>加一个新文件只需在 manifest 里登记一行，不用改代码</strong>。</p><p>想加事件、改数值、换文案，直接编辑对应的 JSON 刷新即可。详见 <a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E4%BA%BA%E7%94%9F%E7%B1%BB%E6%8A%89%E6%8B%A9/docs/05-%E5%89%A7%E6%9C%AC%E6%96%87%E4%BB%B6%E7%BC%96%E5%86%99%E8%A7%84%E8%8C%83.md" target="_blank" rel="noopener">docs/05-剧本文件编写规范.md</a>。</p><blockquote>卡面不使用任何外部图片，头部是纯 CSS + 内联 SVG 绘制的人物标识——游戏可以在完全离线的环境下运行。</blockquote><hr><h5 id="调试入口" class="md-h2">调试入口</h5><div class="md-table"><table><thead><tr><th>URL</th><th>作用</th></tr></thead><tbody><tr><td><code>#end</code></td><td>直接查看「圆满人生」结局页</td></tr><tr><td><code>#end2</code></td><td>直接查看「油尽灯枯」离世结局页</td></tr><tr><td><code>?seed=123</code></td><td>固定随机序列，相同种子下整局可完整复现</td></tr><tr><td><code>__LIFE.state</code></td><td>浏览器控制台查看当前局完整状态</td></tr><tr><td><code>__LIFE.db</code></td><td>查看加载后的全部剧本数据</td></tr><tr><td><code>__LIFE.resolve(&#39;left&#39;)</code></td><td>控制台执行一次抉择</td></tr></tbody></table></div><hr><h5 id="项目结构" class="md-h2">项目结构</h5><pre class="md-pre"><code>人生类抉择/
+├── index.html              页面骨架（只放 DOM 结构）
+├── README.md               你正在看的这份游戏介绍
+├── package.json            脚本入口（dev / check）
+├── data/                   剧本：全部游戏内容，纯 JSON
+├── docs/                   开发文档（7 篇）
+├── src/
+│   ├── styles/             样式：基础→布局→组件→视图→响应式
+│   └── js/
+│       ├── main.js         入口：加载剧本 → boot → 调试参数
+│       ├── app.js          控制器（串联引擎与 UI）
+│       ├── core/           loader / registry / config / rng / state / storage / rules / engine
+│       └── ui/             dom / icons / audio / toast / statusBar / card / drawers / views / ending
+└── tools/
+    ├── serve.mjs           零依赖本地静态服务器
+    └── check.mjs           剧本 + 逻辑自检脚本</code></pre><p>详见 <a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E4%BA%BA%E7%94%9F%E7%B1%BB%E6%8A%89%E6%8B%A9/docs/02-%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84.md" target="_blank" rel="noopener">docs/02-目录结构.md</a>。</p><hr><h5 id="技术选型" class="md-h2">技术选型</h5><ul><li><strong>原生 ES Modules</strong>，无构建步骤、无框架、无第三方依赖</li><li><strong>剧本数据 JSON 化</strong>，运行时 <code>fetch</code> 加载，内容与代码彻底分离</li><li><strong>CSS 自定义属性</strong>做设计令牌，媒体查询集中在一个文件</li><li><strong>三档响应式</strong>：手机（卡片贴底单栏）/ 平板（双栏）/ PC（更宽容器与侧栏）</li><li><strong>底部标签栏 + 上浮浮窗</strong>：移动端友好的底部导航与底部弹层，支持下拉关闭</li><li><strong>WebAudio 现场合成音效</strong>，不加载任何音频文件</li><li><strong>零外部图片</strong>，卡面人物标识由内联 SVG 绘制</li><li><strong>localStorage</strong> 存档，自动续玩</li></ul><p>整个项目可以直接丢到任意静态托管上（GitHub Pages / Vercel / OSS），不需要构建。</p><p>唯一的外链是标题字体（<code>ZCOOL KuaiLe</code> / <code>Noto Sans SC</code>），加载失败时会自动回退到系统字体，不影响游玩。</p></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
-<div class="card has-more" data-name="扫雷小队 · 迷宫竞速 组队扫雷迷宫竞速：最多 5 支小队、每队 5 人同场出发，扫描迷雾、标记并排除地雷，抢先抵达右侧出口，赛后可倍速回放复盘。 扫雷小队" data-kind="project">
+<div class="card has-more" data-name="扫雷小队 · 迷宫竞速 组队扫雷迷宫竞速：最多 5 支小队、每队 5 人同场出发，扫描迷雾、标记并排除地雷，抢先抵达右侧出口，赛后可倍速回放复盘。 扫雷小队 迷宫里到处都是雷，但你有队友。" data-kind="project">
   <a class="card-link" href="pages/games/%E6%89%AB%E9%9B%B7%E5%B0%8F%E9%98%9F/index.html" target="_blank" rel="noopener" title="扫雷小队 · 迷宫竞速">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">扫雷小队 · 迷宫竞速</span>
     </span>
     <span class="card-desc">组队扫雷迷宫竞速：最多 5 支小队、每队 5 人同场出发，扫描迷雾、标记并排除地雷，抢先抵达右侧出口，赛后可倍速回放复盘。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>194 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>205 KB</span><span class="meta-item meta-date" data-iso="2026-10-05"><i class="fas fa-clock"></i>2026-10-05</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/games/%E6%89%AB%E9%9B%B7%E5%B0%8F%E9%98%9F/README.md"><h4 id="扫雷小队-迷宫竞速" class="md-h1">扫雷小队 · 迷宫竞速</h4><blockquote>迷宫里到处都是雷，但你有队友。</blockquote><p>一款实时合作扫雷迷宫竞速游戏。你和 AI 队友从迷宫左侧出发，穿过布满地雷、伸手不见五指的通道，抵达右侧的绿色出口。扫描、排雷、夺旗都会让全队最终用时变短。</p><p><strong>先到的不一定赢，总耗时最短的队伍才赢。</strong></p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>ES Module 不能用 <code>file://</code> 直接打开，起一个静态服务器：</p><pre class="md-pre" data-lang="bash"><code># 在项目目录下（或仓库根目录加子路径）
+npx --yes serve .
+python -m http.server 8080</code></pre><p>从导航页点进来也可以，同源直接玩。</p><hr><h5 id="玩法" class="md-h2">玩法</h5><h6 id="一场比赛由什么组成" class="md-h3">一场比赛由什么组成</h6><div class="md-table"><table><thead><tr><th>要素</th><th>说明</th></tr></thead><tbody><tr><td>地图</td><td>57 × 27 格迷宫，左侧 4 列是出发区，多个入口任选</td></tr><tr><td>迷雾</td><td>初始全覆盖，走过 / 扫过才会散；还会随时间缓慢恢复</td></tr><tr><td>地雷</td><td>80% 即爆雷，20% 延迟雷（给你 1 秒逃命）；爆炸波及中心与上下左右四格</td></tr><tr><td>出口</td><td>迷宫右侧，第一个到达的队伍会触发 60 秒倒计时</td></tr></tbody></table></div><h6 id="三个关键动作" class="md-h3">三个关键动作</h6><div class="md-table"><table><thead><tr><th>动作</th><th>规则</th></tr></thead><tbody><tr><td>排雷</td><td>扫描结束后继续按住 ≥0.5 秒自动开始，耗时 2 秒，<strong>中途松开即取消</strong></td></tr><tr><td>前进</td><td><code>WASD</code> 自由移动，撞墙就走不动；倒地 5 秒后原地复活并带 2.5 秒无敌</td></tr></tbody></table></div><p>爆炸不是纯亏：它会清掉波及格上的地雷，并把结果同步给<strong>所有队伍</strong>的认知——用一条命换一片已知安全区。</p><h6 id="减秒与计分" class="md-h3">减秒与计分</h6><div class="md-table"><table><thead><tr><th>奖励</th><th>数值</th></tr></thead><tbody><tr><td>每排掉一颗雷</td><td>该队<strong>每人</strong>最终用时 −1 秒</td></tr><tr><td>队伍成绩</td><td>队员用时之和，越小越靠前</td></tr></tbody></table></div><p>减秒在结算里统一折算（<code>js/sim/scoring.js</code>），不会改动实时计时。</p><h6 id="双人本地对战" class="md-h3">双人本地对战</h6><p>两位玩家可以自由选择阵容：</p><ul><li><strong>各带一队</strong>：P1 带红队、P2 带蓝队，各自记分，总用时更短的一队获胜。</li><li><strong>并肩同队</strong>：两人同属红队，共用视野与情报，夺旗 / 排雷减秒共享，成绩合并计算。</li></ul><p>并肩同队要求每队至少 2 人，否则该选项自动置灰并退回「各带一队」。</p><hr><h5 id="操作" class="md-h2">操作</h5><div class="md-table"><table><thead><tr><th>操作</th><th>单人</th><th>玩家 1</th><th>玩家 2</th></tr></thead><tbody><tr><td>扫描</td><td>轻按 <code>空格</code></td><td>轻按 <code>空格</code></td><td>轻按 <code>Ctrl</code></td></tr><tr><td>排雷</td><td>按住 <code>空格</code> 2 秒</td><td>按住 <code>空格</code> 2 秒</td><td>按住 <code>Ctrl</code> 2 秒</td></tr><tr><td>暂停</td><td><code>Esc</code></td><td><code>Esc</code></td><td><code>Esc</code></td></tr></tbody></table></div><p>回放页里：<code>空格</code> 播放 / 暂停，<code>←</code> <code>→</code> 快进快退 2 秒，<code>Esc</code> 返回结算。</p><hr><h5 id="ai-队友在干什么" class="md-h2">AI 队友在干什么</h5><p>每队都配 AI 队友，三种职责按局势切换（<code>js/core/config.js</code> 的 <code>AI_ROLES</code>）：</p><div class="md-table"><table><thead><tr><th>职责</th><th>行为倾向</th></tr></thead><tbody><tr><td>夺旗手</td><td>绕路抢旗，超过允许绕路格数就放弃</td></tr><tr><td>排雷手</td><td>在队伍前进路线上清雷，顺手扩大已知安全区</td></tr></tbody></table></div><p>AI 会在关键节点「思考」后行动，而不是每帧反应；决策优先级写在 <code>js/sim/ai.js</code>，开发文档第 6 章有完整表。</p><hr><h5 id="录像与回放" class="md-h2">录像与回放</h5><p>每局结束都能回放复盘：</p><ul><li>对局中以 <strong>30Hz</strong> 采样实体状态、<strong>5Hz</strong> 采样地形快照（已知信息 / 迷雾 / 路径）。</li><li>独立回放页：0.5×–4× 倍速、±2 秒快进退、进度拖拽、时间显示，播完自动循环。</li><li>回放只做数据，渲染层不区分实时对局与回放，所以两边表现完全一致。</li></ul><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>index.html              页面骨架 + 各屏幕容器
+css/                    base / menu / options / game / overlay / result / replay
+js/
+├─ core/                配置、状态、画布、工具
+├─ world/               迷宫生成、地雷、旗帜、队伍容器、碰撞、寻路
+├─ sim/                 规则推进：扫描、排雷、爆炸、AI、计分、录像、回放
+├─ render/              只读场景渲染：地块、实体、旗帜、特效
+├─ ui/                  菜单、设置、HUD、结算、回放、自适应
+├─ input/               键盘映射
+└─ main.js              装配 + 主循环
+扫雷小队_游戏介绍.md     面向玩家的介绍
+扫雷小队_开发文档.md     分层约定、规则细节、算法说明</code></pre><p>分层依赖只允许向下，无循环引用：</p><pre class="md-pre"><code>core → world → sim → render/ui → input → main</code></pre><hr><h5 id="几个实现细节" class="md-h2">几个实现细节</h5><ul><li><strong>画布不糊</strong>：逻辑分辨率固定，按设备像素比放大画布实际尺寸，缩放时重绘而不是拉伸位图。</li><li><strong>布局等比铺满</strong>：可视区按比例适配，超宽 / 超窄屏都不会露出画布外的空白。</li><li><strong>模拟层不依赖界面</strong>：<code>stepMatch(dt)</code> 同时服务正式对局与主菜单背景演示局；一局结束由 <code>ui/flow.js</code> 接手。</li><li><strong>配置唯一来源</strong>：网格、配色、按键、时长、采样率全在 <code>js/core/config.js</code>，其它模块不重复定义。</li></ul><hr><h5 id="延伸阅读" class="md-h2">延伸阅读</h5><ul><li><a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E6%89%AB%E9%9B%B7%E5%B0%8F%E9%98%9F/%E6%89%AB%E9%9B%B7%E5%B0%8F%E9%98%9F_%E6%B8%B8%E6%88%8F%E4%BB%8B%E7%BB%8D.md" target="_blank" rel="noopener">游戏介绍</a>：卖点、模式与操作速览。</li><li><a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E6%89%AB%E9%9B%B7%E5%B0%8F%E9%98%9F/%E6%89%AB%E9%9B%B7%E5%B0%8F%E9%98%9F_%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener">开发文档</a>：目录结构、分层约定、核心规则、AI 优先级、回放实现。</li></ul></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
-<div class="card has-more" data-name="木头人 黑板前的回头博弈：写字人背身写「田」，木头人趁他不注意摸到后背就赢。支持单人、本地双人，以及 1/2/4/8 名木头人混战。 田字木头人" data-kind="project">
+<div class="card has-more" data-name="木头人 黑板前的回头博弈：写字人背身写「田」，木头人趁他不注意摸到后背就赢。支持单人、本地双人，以及 1/2/4/8 名木头人混战。 田字木头人 「他写字的时候，往前走；" data-kind="project">
   <a class="card-link" href="pages/games/%E7%94%B0%E5%AD%97%E6%9C%A8%E5%A4%B4%E4%BA%BA/index.html" target="_blank" rel="noopener" title="木头人">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">木头人</span>
     </span>
     <span class="card-desc">黑板前的回头博弈：写字人背身写「田」，木头人趁他不注意摸到后背就赢。支持单人、本地双人，以及 1/2/4/8 名木头人混战。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>102 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>110 KB</span><span class="meta-item meta-date" data-iso="2026-10-04"><i class="fas fa-clock"></i>2026-10-04</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/games/%E7%94%B0%E5%AD%97%E6%9C%A8%E5%A4%B4%E4%BA%BA/README.md"><h4 id="木头人-田字木头人" class="md-h1">木头人 · 田字木头人</h4><blockquote>「他写字的时候，往前走；他回头的时候，不许动。」</blockquote><p>一款「回头抓人」的实时小游戏。写字人背对众人，在黑板上写一个「田」字；木头人趁他背身时一点点靠近，摸到他的后背就赢。写字人每回一次头，都要付出 3 秒。</p><p>支持单人对抗 AI、本地双人对战，以及最多 8 名木头人的混战——人数不够时由 AI 补齐，一群木头人里混着几个不要命的 AI，反而更难预判。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>原生 ES Module，需要 HTTP 打开（浏览器禁止 <code>file://</code> 加载模块）：</p><pre class="md-pre" data-lang="bash"><code># 项目目录下任选一种
+npx --yes serve .
+python -m http.server 8000</code></pre><p>然后访问 <code>http://localhost:8000/</code>。也可以从仓库根目录的导航页点进来。</p><p>手机、平板可以直接玩，触屏虚拟按钮会自动出现。</p><hr><h5 id="玩法" class="md-h2">玩法</h5><h6 id="一局的流程" class="md-h3">一局的流程</h6><ol><li>选择模式与木头人总数（<code>1 / 2 / 4 / 8</code>）。</li><li>3-2-1 倒计时后所有人同时出发，站在同一起点。</li><li>写字人按住写字键，笔尖沿 5 画推进「田」字；木头人一点一点靠近。</li><li>写字人回头时，所有<strong>正在移动</strong>的木头人被抓；已停下的木头人安全。</li><li>木头人摸到写字人后背即获胜；写字人写完全部 5 画，或抓光所有木头人则获胜；时间耗尽算木头人赢。</li></ol><p>写字人每回一次头 <strong>−3 秒</strong>，所以「回头看」既是防守也是成本。进度过半后，回头还会额外拖慢写字节奏。</p><h6 id="五种模式" class="md-h3">五种模式</h6><div class="md-table"><table><thead><tr><th>模式</th><th>说明</th></tr></thead><tbody><tr><td>你是写字人 · AI 木头人</td><td>单人。按住按键写「田」字，松开回头抓 AI</td></tr><tr><td>P1 写字人 · P2 木头人</td><td>双人对战</td></tr><tr><td>P1 木头人 · P2 写字人</td><td>双人对战（换边）</td></tr><tr><td>P1 + P2 双木头人 vs AI</td><td>双人合作，先摸到者胜</td></tr></tbody></table></div><h6 id="关键数值" class="md-h3">关键数值</h6><div class="md-table"><table><thead><tr><th>项目</th><th>数值</th></tr></thead><tbody><tr><td>「田」字笔画</td><td>5 画，每画约 2 秒</td></tr><tr><td>回头惩罚</td><td>−3 秒</td></tr><tr><td>人类回头宽限</td><td>0.3 秒（刚回头不判定）</td></tr><tr><td>木头人最近距离上限</td><td>58 px（不会站进写字人身体）</td></tr><tr><td>制造声响冷却</td><td>6 秒</td></tr></tbody></table></div><hr><h5 id="操作" class="md-h2">操作</h5><div class="md-table"><table><thead><tr><th>角色</th><th>操作</th><th>按键</th></tr></thead><tbody><tr><td>木头人 P2</td><td>靠近 / 制造声响</td><td><code>←</code> <code>→</code> / <code>↑</code></td></tr><tr><td>写字人 P1</td><td>写字（按住）</td><td><code>空格</code></td></tr><tr><td>写字人 P2</td><td>写字（按住）</td><td><code>↑</code> 或 <code>↓</code></td></tr><tr><td>通用</td><td>暂停 / 继续</td><td><code>Esc</code></td></tr></tbody></table></div><p><strong>制造声响</strong>是一次主动博弈：按下的瞬间，写字人立刻进入警觉，AI 写字人约 0.1 秒内就会回头。所以正确用法是「先站定，再按」——站着按只赚一次 −3 秒，边走边按就是把自己送上去。</p><hr><h5 id="ai-在想什么" class="md-h2">AI 在想什么</h5><p>AI 不是按固定间隔随机回头，而是每帧算一次「回头期望概率」，综合距离、你在不在动、时间压力与书写进度：</p><ul><li><strong>离得越近越想回头</strong>，贴脸时概率直接加 0.6；</li><li><strong>有人在动就更警觉</strong>（最近的 +0.18，其他 +0.08）；</li><li><strong>时间越少越舍不得回头</strong>（回头要扣 3 秒），但<strong>快写完时优先写完</strong>（进度 &gt; 75% 概率 ×0.55）；</li><li>回头持续时长与危险度正相关，所有木头人都停住就提前转回去。</li></ul><p>AI 木头人则有「预判暂停」：写字人当前笔画进度处于 0.72~1 时，它会以每秒约 1.8 次的频率突然停一下，像是在赌「他快回头了」。写字人回头看它的瞬间，它还有 0.12~0.46 秒反应时间以 55% 速度滑行——反应结束时若还在被看，就算被抓。</p><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>index.html              入口（按顺序加载 ES Module）
+css/                    base / menu / start / dialog / overlay / result / touch
+js/
+├─ core/                配置、工具、视口、合成音效
+├─ game/                状态机、模拟推进、写字人、木头人、实体
+├─ input/               键盘 / 触屏输入归一化
+├─ render/              背景、黑板笔迹、角色、HUD
+├─ ui/                  界面流程、遮罩、菜单
+└─ main.js              装配 + 主循环
+田字木头人_游戏介绍.md    面向玩家的介绍
+田字木头人_开发文档.md    分层约定、算法细节、配置常量</code></pre><p>几条实现要点：</p><ul><li><strong>逻辑分辨率固定 1440 × 560</strong>，等比缩放居中，适配任意窗口比例。</li><li><strong>音效实时合成</strong>：全部走 Web Audio，仓库里没有任何音频文件。</li><li><strong>笔迹是几何</strong>：「田」字五画用归一化坐标描述，绘制时乘黑板尺寸；写字人的手跟着笔尖走。</li><li><strong>配置唯一来源</strong>：所有数值集中在 <code>js/core/config.js</code>。</li></ul><hr><h5 id="延伸阅读" class="md-h2">延伸阅读</h5><ul><li><a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E7%94%B0%E5%AD%97%E6%9C%A8%E5%A4%B4%E4%BA%BA/%E7%94%B0%E5%AD%97%E6%9C%A8%E5%A4%B4%E4%BA%BA_%E6%B8%B8%E6%88%8F%E4%BB%8B%E7%BB%8D.md" target="_blank" rel="noopener">游戏介绍</a>：模式、特色与完整操作说明。</li><li><a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E7%94%B0%E5%AD%97%E6%9C%A8%E5%A4%B4%E4%BA%BA/%E7%94%B0%E5%AD%97%E6%9C%A8%E5%A4%B4%E4%BA%BA_%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener">开发文档</a>：分层规则、状态机、AI 决策与回头惩罚的代码级细节。</li></ul></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
     </div>
@@ -230,28 +360,73 @@
   </h2>
   <div class="group-body" id="nav-2-body">
     <div class="cards-grid">
-      <div class="card has-more" data-name="地点距离绘制 点击空白网格放置地点 · 拖动画布平移 · 滚轮缩放 读图方式 地点自动吸附至网格交点 距离按网格直线计算，可修改每… 地点距离绘制" data-kind="project">
+      <div class="card has-more" data-name="地点距离绘制 在网格上摆地点，连起来，距离自己算。 地点距离绘制 在网格上摆地点，连起来，距离自己算。" data-kind="project">
   <a class="card-link" href="pages/map/%E5%9C%B0%E7%82%B9%E8%B7%9D%E7%A6%BB%E7%BB%98%E5%88%B6/index.html" target="_blank" rel="noopener" title="地点距离绘制">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">地点距离绘制</span>
     </span>
-    <span class="card-desc">点击空白网格放置地点 · 拖动画布平移 · 滚轮缩放 读图方式 地点自动吸附至网格交点 距离按网格直线计算，可修改每…</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>72.8 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-desc">在网格上摆地点，连起来，距离自己算。</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>78.0 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/map/%E5%9C%B0%E7%82%B9%E8%B7%9D%E7%A6%BB%E7%BB%98%E5%88%B6/README.md"><h4 id="地点距离绘制" class="md-h1">地点距离绘制</h4><blockquote>在网格上摆地点，连起来，距离自己算。</blockquote><p>一个用 Canvas 画「地点关系图」的小工具：在地图上放置地点、填写名称与图标、把需要的地点连成道路，每条道路会按「每格距离 × 格数」实时标出直线距离（米 / 千米自动切换）。</p><p>适合画通勤示意图、游戏地图、街区尺度草图——不需要 GIS，也不需要联网。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>经典 <code>&lt;script&gt;</code> 加载，不依赖服务器，<strong>双击 <code>index.html</code> 即可使用</strong>：</p><pre class="md-pre" data-lang="bash"><code># 或者用本地服务器
+python -m http.server 8080</code></pre><p>手机 / 平板同样可用，界面会自动压缩成适配的布局。</p><hr><h5 id="功能" class="md-h2">功能</h5><h6 id="画图" class="md-h3">画图</h6><div class="md-table"><table><thead><tr><th>操作</th><th>说明</th></tr></thead><tbody><tr><td>连线</td><td>选两个地点生成道路，道路中间自动标注距离</td></tr><tr><td>拖动</td><td>拖动地点，相连道路实时跟随</td></tr><tr><td>删除</td><td>选中地点或道路后删除</td></tr><tr><td>撤回</td><td>撤销上一步操作</td></tr><tr><td>缩放 / 平移</td><td>滚轮或双指缩放，空白处拖动平移，<code>⊙</code> 一键复位视图</td></tr><tr><td>每格距离</td><td>顶部输入「每格距离」，整张图的距离标注随之换算</td></tr></tbody></table></div><h6 id="多地图与自动保存" class="md-h3">多地图与自动保存</h6><ul><li>左上角是<strong>地图名称</strong>，点击即可改名，失焦保存。</li><li>右下角「加载历史」列出浏览器里保存的所有地图，支持<strong>新建 / 加载 / 重命名 / 删除</strong>。</li><li>删除前有二次确认，确认框里会画出该地图的 <strong>SVG 预览</strong>，不会删错。</li><li>当前地图编辑内容<strong>实时保存</strong>（拖动时短暂节流，松手立即落盘）。</li></ul><h6 id="导入导出" class="md-h3">导入导出</h6><ul><li><strong>导出 JSON</strong>：完整地图数据（地点、道路、每格距离、名称）。</li><li><strong>导入 JSON</strong>：选文件或直接拖进窗口。</li><li><strong>导出图片</strong>：把当前画布导出为 PNG，所见即所得。</li><li><strong>载入示例</strong>：内置一张「家 / 工作室 / 咖啡馆 / 公园 / 书店」的示例地图。</li></ul><h6 id="其他" class="md-h3">其他</h6><ul><li>亮 / 暗两套主题，一键切换。</li><li>顶栏实时显示地点数与道路数。</li><li>所有操作都有 toast 提示，误删可撤回。</li></ul><hr><h5 id="数据与存储" class="md-h2">数据与存储</h5><p>浏览器里用两个 key 分开存：</p><div class="md-table"><table><thead><tr><th>key</th><th>内容</th></tr></thead><tbody><tr><td><code>place-distance-drawing:v1</code></td><td>旧版单地图数据，首次加载时自动迁移</td></tr></tbody></table></div><p>地图数据结构：</p><pre class="md-pre" data-lang="js"><code>{
+  places: [{ id, x, y, icon, name, color }],
+  edges: [[fromId, toId]],
+  nextId: 6,
+  cellDistance: 100
+}</code></pre><p><code>x / y</code> 是以格为单位的相对坐标，渲染时乘 <code>CELL_SIZE</code>（44px）映射到画布，所以换设备、换缩放距离都不变。</p><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>index.html            入口 + 全部界面骨架（顶部栏 / 画布 / 浮动操作 / 弹窗）
+css/
+├─ theme.css          主题变量与基础排版
+├─ layout.css         顶栏、画布、浮动按钮布局
+├─ map.css            画布内的地点、道路、标注样式（含预览图）
+└─ responsive.css     手机 / 平板 / 横屏适配
+js/
+├─ config.js          每格大小、缩放范围、配色、示例地图
+├─ renderer.js        画布渲染：网格、地点、道路、距离标注、命中检测
+├─ storage.js         多地图库、旧数据迁移、节流保存
+├─ export-image.js    PNG 导出
+├─ theme.js           亮暗主题切换
+├─ editor.js          放置 / 连线 / 拖动 / 删除 / 撤回 / 编辑弹窗
+└─ main.js            引导与事件装配</code></pre><p>脚本用 IIFE 挂到 <code>window.DistanceDrawing</code> 上，按 <code>config → renderer → storage → export-image → theme → editor → main</code> 顺序加载。</p><hr><h5 id="实现要点" class="md-h2">实现要点</h5><ul><li><strong>距离标注</strong>：<code>hypot(dx, dy) / CELL_SIZE × 每格距离</code>，≥1000 米显示 km（保留 1~2 位小数并去掉尾零），否则显示整米。</li><li><strong>坐标与缩放分离</strong>：地点存世界坐标，视图变换（平移 + 缩放 + 高 DPI）只作用于绘制，导出的 PNG 与屏幕所见一致。</li><li><strong>实时保存不能卡</strong>：拖拽过程中不写 localStorage，松手或停顿后再落盘。</li><li><strong>预览不影响当前编辑</strong>：删除确认框里的缩略图直接用目标地图数据另起一份渲染，不切换当前画布状态。</li><li><strong>纯 Canvas</strong>：没有图形库，命中检测用图形包围盒与线段距离自己算。</li></ul><hr><h5 id="已知取舍" class="md-h2">已知取舍</h5><ul><li>距离是<strong>直线距离</strong>，不计算绕行路径长度。</li><li>地图数据存在浏览器本地，换设备 / 清缓存会丢，重要地图请导出 JSON 备份。</li></ul></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
-<div class="card has-more" data-name="城市地图 · 编辑器 + 路线 地 图 编 辑 器 0 地点 · 0 道路 点击空白处放置地点 · 双击编辑 · 长按拖动 松 手 导 入 地 图 … 地图连线" data-kind="project">
+<div class="card has-more" data-name="城市地图 · 编辑器 + 路线 自己画一座城，再沿着自己画的路走一圈。 地图连线 自己画一座城，再沿着自己画的路走一圈。" data-kind="project">
   <a class="card-link" href="pages/map/%E5%9C%B0%E5%9B%BE%E8%BF%9E%E7%BA%BF/index.html" target="_blank" rel="noopener" title="城市地图 · 编辑器 + 路线">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-map"></i></span>
       <span class="card-title">城市地图 · 编辑器 + 路线</span>
     </span>
-    <span class="card-desc">地 图 编 辑 器 0 地点 · 0 道路 点击空白处放置地点 · 双击编辑 · 长按拖动 松 手 导 入 地 图 …</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>101 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-desc">自己画一座城，再沿着自己画的路走一圈。</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>109 KB</span><span class="meta-item meta-date" data-iso="2026-10-14"><i class="fas fa-clock"></i>2026-10-14</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/map/%E5%9C%B0%E5%9B%BE%E8%BF%9E%E7%BA%BF/README.md"><h4 id="城市地图-编辑器-路线" class="md-h1">城市地图 · 编辑器 + 路线</h4><blockquote>自己画一座城，再沿着自己画的路走一圈。</blockquote><p>一个「编辑地图 → 连线成路 → 规划闭环路线」的小工具：在画布上摆地点、连道路、随手改配色与图标，然后从「家」出发，依次点选相邻地点，绕回起点完成一圈。</p><p>纯前端、零依赖，脚本用经典 <code>&lt;script&gt;</code> 加载（不是 ES Module），所以<strong>双击 <code>index.html</code> 就能用</strong>，离线也没问题。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p><strong>方式 A：直接双击</strong> <code>index.html</code>（导入导出、自动保存都正常工作）。</p><p><strong>方式 B：本地服务器</strong>（想用 <code>http://</code> 访问时）：</p><pre class="md-pre" data-lang="bash"><code>python -m http.server 8080
+# 打开 http://localhost:8080</code></pre><hr><h5 id="编辑器怎么用" class="md-h2">编辑器怎么用</h5><p>界面分两个屏幕，底部「开始游戏」按钮切换。</p><h6 id="三种模式" class="md-h3">三种模式</h6><div class="md-table"><table><thead><tr><th>模式</th><th>操作</th></tr></thead><tbody><tr><td>🔗 连线</td><td>先点一个地点作起点（高亮），再点另一个地点连成道路；再点起点可取消</td></tr><tr><td>🗑️ 删除</td><td>点击地点或道路删除</td></tr></tbody></table></div><h6 id="编辑细节" class="md-h3">编辑细节</h6><ul><li><strong>双击</strong>地点打开编辑框：改图标（任意字符 / emoji）、改名称、删除地点。新建地点后自动弹出。</li><li><strong>长按</strong>地点进入拖动模式，相连道路实时跟随。</li><li><strong>拖动空白处</strong>平移地图，<strong>滚轮 / 双指捏合</strong>缩放，顶部提示条会随模式给出指引。</li></ul><h6 id="底部操作区" class="md-h3">底部操作区</h6><div class="md-table"><table><thead><tr><th>按钮</th><th>作用</th></tr></thead><tbody><tr><td>清空</td><td>清空整张地图</td></tr><tr><td>加载示例</td><td>一键载入内置示例地图</td></tr><tr><td>⬇ 导出 JSON</td><td>下载 <code>map-&lt;时间戳&gt;.json</code></td></tr><tr><td>⬆ 导入 JSON</td><td>选择文件，或直接把 <code>.json</code> 拖进窗口</td></tr><tr><td>🖼 导出图片</td><td>按所有地点计算边界导出 PNG，四周留约 80px 白边，地点大小统一归一化</td></tr><tr><td>开始游戏</td><td>至少 2 个地点、1 条道路时可用</td></tr></tbody></table></div><p>编辑器会<strong>自动把地图存进 localStorage</strong>，刷新或重开都会恢复。</p><hr><h5 id="路线游戏怎么玩" class="md-h2">路线游戏怎么玩</h5><ol><li>进入后<strong>起点（家）</strong>已选中，路径面板显示已走步数。</li><li>点与当前地点<strong>有道路相连</strong>的地点前进，可走项会有蓝色高亮。</li><li>点路径中的<strong>上一个地点</strong>即可回退一步。</li><li>走过至少 3 个不同地点后，点<strong>起点（家）</strong>完成闭环，地图与面板变绿。</li><li>右侧 <code>+</code> / <code>−</code> / <code>⊙</code> 缩放、复位；底部「清空重来」重新开始。</li><li>底部面板右上角的<strong>导出图片</strong>会按当前画布所见即所得导出（含已走路线与高亮）。</li></ol><p>缩得很小时地点名称会自动隐藏，避免拥挤。</p><hr><h5 id="数据格式" class="md-h2">数据格式</h5><p>导出的 JSON 字段稳定，可以自己写脚本生成后再导入：</p><pre class="md-pre" data-lang="json"><code>{
+  &quot;version&quot;: 1,
+  &quot;places&quot;: [
+    { &quot;id&quot;: 1, &quot;x&quot;: 700, &quot;y&quot;: 520, &quot;icon&quot;: &quot;🏠&quot;, &quot;name&quot;: &quot;家&quot;, &quot;color&quot;: &quot;#e88b3a&quot; }
+  ],
+  &quot;edges&quot;: [[1, 2], [1, 4]]
+}</code></pre><ul><li><code>places</code>：地点数组，<code>x/y</code> 是<strong>世界坐标</strong>，与屏幕像素无关。</li><li><code>edges</code>：道路数组，每项是两个地点 id 的无序对（A-B 与 B-A 视为同一条）。</li></ul><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>index.html            入口：DOM 与 SVG defs，按顺序引入 css/js
+css/
+├─ variables.css      主题变量（配色 / 字体 / 圆角 / 阴影）
+├─ base.css           重置、应用外壳、道路与地点共享样式
+├─ editor.css         编辑器 UI：模式栏、提示条、底部操作、地点编辑框
+├─ game.css           游戏 UI：标题、缩放控件、路线面板、路径链
+└─ responsive.css     平板 / 桌面卡 / 横屏压缩 / 粗指针适配
+js/
+├─ config.js          预设图标、示例地图、阈值与限制
+├─ utils.js           选择器、夹取、哈希、贝塞尔路径、转义
+├─ viewport.js        平移缩放变换（编辑器与游戏共用）
+├─ storage.js         JSON 导出 / 读取 / localStorage
+├─ editor.js          放置 / 连线 / 删除 / 拖动 / 撤回 / 导入导出
+├─ game.js            路线规则、渲染与提示
+└─ main.js            引导、屏幕切换、开始游戏、resize
+docs/
+├─ 使用说明.md
+└─ 开发文档.md</code></pre><p>模块挂在全局命名空间 <code>window.App</code> 上，按依赖顺序加载：<code>config → utils → viewport → storage → editor → game → main</code>。</p><hr><h5 id="实现要点" class="md-h2">实现要点</h5><ul><li><strong>道路是弯的</strong>：两端点中点沿法线偏移生成两段三次贝塞尔，偏移方向由 id 哈希决定（确定性），偏移量取 <code>min(长度 × 0.13, 60)</code>——避免正反向两条边重叠，也让直角连线更像「路」。</li><li><strong>视口变换</strong>：世界层 <code>translate + scale</code>，地点额外施加补偿缩放 <code>clamp(1/scale^0.8, 0.5, 3.6)</code>，缩放时地点视觉大小基本恒定。</li><li><strong>手势判定</strong>：位移超过 10px 算拖动，按住 480ms 未移动进入长按拖动，两次点击间隔 &lt; 280ms 算双击。</li><li><strong>闭环判定</strong>：<code>tryConnect</code> 里先查邻接表，点起点且已走过 ≥3 个不同地点才算完成。</li><li><strong>无第三方依赖</strong>：没有 CDN、没有构建步骤，图形全部是 SVG + DOM。</li></ul><hr><h5 id="延伸阅读" class="md-h2">延伸阅读</h5><ul><li><a href="https://github.com/Verlif/someToys/blob/main/pages/map/%E5%9C%B0%E5%9B%BE%E8%BF%9E%E7%BA%BF/docs/%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.md" target="_blank" rel="noopener">使用说明</a>：逐屏操作、快捷操作与常见问题。</li><li><a href="https://github.com/Verlif/someToys/blob/main/pages/map/%E5%9C%B0%E5%9B%BE%E8%BF%9E%E7%BA%BF/docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener">开发文档</a>：模块职责、数据模型、关键算法与扩展指引。</li></ul></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
     </div>
@@ -268,16 +443,43 @@
   </h2>
   <div class="group-body" id="nav-3-body">
     <div class="cards-grid">
-      <div class="card has-more" data-name="图片主题色替换 原图 — 滚轮缩放 · 拖拽移动 · 单击找色 · 双击重置 主要颜色 0 容差范围 10 / 255 按 rgb 单通道差值 计算，范围 0 – 255。 图片主题色编辑器" data-kind="project">
+      <div class="card has-more" data-name="图片主题色替换 提取一张图的主色，然后一个颜色一个颜色地换掉。 图片主题色编辑器 提取一张图的主色，然后一个颜色一个颜色地换掉。" data-kind="project">
   <a class="card-link" href="pages/picture/%E5%9B%BE%E7%89%87%E4%B8%BB%E9%A2%98%E8%89%B2%E7%BC%96%E8%BE%91%E5%99%A8/index.html" target="_blank" rel="noopener" title="图片主题色替换">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-image"></i></span>
       <span class="card-title">图片主题色替换</span>
     </span>
-    <span class="card-desc">原图 — 滚轮缩放 · 拖拽移动 · 单击找色 · 双击重置 主要颜色 0 容差范围 10 / 255 按 RGB 单通道差值 计算，范围 0 – 255。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>75.0 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-desc">提取一张图的主色，然后一个颜色一个颜色地换掉。</span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>80.0 KB</span><span class="meta-item meta-date" data-iso="2026-10-14"><i class="fas fa-clock"></i>2026-10-14</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/picture/%E5%9B%BE%E7%89%87%E4%B8%BB%E9%A2%98%E8%89%B2%E7%BC%96%E8%BE%91%E5%99%A8/README.md"><h4 id="图片主题色替换" class="md-h1">图片主题色替换</h4><blockquote>提取一张图的主色，然后一个颜色一个颜色地换掉。</blockquote><p>一个纯前端的图片换色工具，适合改主题色、统一配色、批量看「换个色调会怎样」。选图后自动抽取最多 10 个主色，每个主色都能单独指定新颜色，配合容差与「合并相近颜色」，相近像素会跟着一起替换。</p><p>全程在浏览器本地完成，图片不会上传到任何服务器。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>双击 <code>index.html</code> 即可（经典 <code>&lt;script&gt;</code> 加载，不依赖服务器）。</p><p>想用 <code>http://</code> 访问也可以：</p><pre class="md-pre" data-lang="bash"><code>python -m http.server 8080</code></pre><hr><h5 id="用法" class="md-h2">用法</h5><h6 id="1-载入图片" class="md-h3">1. 载入图片</h6><p>三种方式，随便挑一种：</p><ul><li>点击上传区选择文件；</li><li>把图片直接<strong>拖拽</strong>进页面；</li><li>复制图片后 <code>Ctrl / ⌘ + V</code> 粘贴。</li></ul><h6 id="2-调主色" class="md-h3">2. 调主色</h6><p>右侧「主要颜色」是从图里抽出来的色板（最多 10 色，按像素数排序，会显示占比）：</p><div class="md-table"><table><thead><tr><th>操作</th><th>说明</th></tr></thead><tbody><tr><td>重置单色</td><td>单个颜色恢复原色，不影响其它</td></tr><tr><td>屏蔽颜色</td><td>该颜色不参与替换（保留原样）</td></tr><tr><td>重置全部</td><td>一键回到初始状态</td></tr><tr><td>点击找色</td><td>在画布上单击某个像素，自动定位并高亮它所属的色板条目</td></tr></tbody></table></div><h6 id="3-调容差与合并" class="md-h3">3. 调容差与合并</h6><div class="md-table"><table><thead><tr><th>参数</th><th>说明</th></tr></thead><tbody><tr><td>合并相近颜色</td><td>把容差内相邻的主色合并成一组处理，色板更干净，改动也更统一</td></tr></tbody></table></div><p>容差是全局参数，松开滑块才会刷新色板，避免拖动过程中反复重算。</p><h6 id="4-看效果存结果" class="md-h3">4. 看效果、存结果</h6><ul><li>左右两个画布：原图 / 预览效果，各自支持<strong>滚轮缩放、拖拽平移、双击复位</strong>。</li><li>「像素预览」开关：放大查看时保持像素硬边，方便检查锯齿与边缘残留。</li><li>右下角显示本次处理<strong>耗时</strong>与颜色数量。</li><li>「下载图片」导出 PNG，文件名带尺寸：<code>换色-1920x1080.png</code>。</li></ul><h6 id="5-其他" class="md-h3">5. 其他</h6><ul><li>中文 / English 双语切换，亮 / 暗主题切换，都会记住选择。</li><li>「更换图片」不用刷新页面，直接换一张继续调。</li></ul><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>index.html                 页面骨架 + 内联防闪烁主题脚本 + 按序加载 js
+assets/
+├─ css/
+│  ├─ tokens.css           颜色与尺寸变量
+│  ├─ base.css             重置与基础排版
+│  ├─ components.css       按钮、开关、色板、弹窗等组件
+│  ├─ layout.css           双栏画布布局
+│  └─ responsive.css       窄屏堆叠
+├─ locales/
+│  ├─ zh-CN.js             中文语言包
+│  └─ en-US.js             英文语言包
+└─ js/
+   ├─ core/
+   │  ├─ config.js         可调参数唯一来源（画布上限、色数上限、合并距离…）
+   │  ├─ utils.js          选择器、夹取、颜色工具
+   │  ├─ i18n.js           语言切换与 {{var}} 插值
+   │  ├─ theme.js          主题切换与持久化
+   │  └─ state.js          全局状态（源图、输出图、色板、容差）
+   ├─ features/
+   │  ├─ viewer.js         画布查看器：缩放、平移、命中换算
+   │  ├─ palette.js        4bit 分箱统计 → 合并相近色 → 取前 N 色
+   │  ├─ processor.js      按色板 + 容差逐像素替换
+   │  ├─ colorList.js      色板渲染、改色、屏蔽、点击找色
+   │  ├─ uploader.js       点击 / 拖拽 / 粘贴上传
+   │  └─ downloader.js     PNG 导出
+   └─ app.js               装配模块、绑定事件
+scripts/validate.js        静态校验脚本（不启动页面）</code></pre><p>模块统一挂在 <code>window.App</code> 下，加载顺序：<code>core → locales → features → app</code>。</p><hr><h5 id="实现要点" class="md-h2">实现要点</h5><ul><li><strong>主色提取</strong>：先把每个像素按 RGB 高 4 位分箱统计（16³ 个桶），桶内求平均色；再按欧氏距离预合并相近色，最后按像素数排序取前 10。比逐像素聚类快得多，10 万像素量级几乎无感。</li><li><strong>替换判定</strong>：对每个像素，遍历色板求「单通道差值最大值 ≤ 容差」的颜色，命中就替换成目标色；被屏蔽的颜色跳过。复杂度 O(像素 × 色数)，色数上限 10，足够实时。</li><li><strong>大图保护</strong>：处理画布边长上限 1400px，超出等比缩小，避免移动端内存爆掉。</li><li><strong>缩放与取色</strong>：视图变换单独保存，像素坐标由屏幕坐标反算，缩放平移后单击找色依然准确。</li><li><strong>主题不闪</strong>：首屏内联脚本先落 <code>data-theme</code>，再加载样式与模块。</li></ul><hr><h5 id="静态校验" class="md-h2">静态校验</h5><p>项目自带一个不启动页面的检查脚本，覆盖资源引用、<code>App.*</code> 调用完整性、双语 key 对齐、DOM id 与 CSS class 引用：</p><pre class="md-pre" data-lang="bash"><code>node scripts/validate.js</code></pre><hr><h5 id="已知取舍" class="md-h2">已知取舍</h5><ul><li>输出尺寸跟随处理画布（≤1400px 长边），不会导出原始超大分辨率。</li><li>容差按单通道差值判定，不做感知色差（Lab / ΔE）匹配，极端渐变图上可能略显生硬。</li></ul></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
     </div>
@@ -294,7 +496,7 @@
   </h2>
   <div class="group-body" id="nav-4-body">
     <div class="cards-grid">
-      <div class="card has-more" data-name="局域网聊天 · 手动信令版 局域网聊天室 · 基于 webrtc datachannel 的 p2p 点对点聊天，支持手动信令、二维码扫码连接与文件传输 局域网聊天室" data-kind="project">
+      <div class="card has-more" data-name="局域网聊天 · 手动信令版 局域网聊天室 · 基于 webrtc datachannel 的 p2p 点对点聊天，支持手动信令、二维码扫码连接与文件传输 局域网聊天室 基于 webrtc datachannel 的点对点聊天工具。" data-kind="project">
   <a class="card-link" href="pages/tools/%E5%B1%80%E5%9F%9F%E7%BD%91%E8%81%8A%E5%A4%A9%E5%AE%A4/index.html" target="_blank" rel="noopener" title="局域网聊天 · 手动信令版">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
@@ -304,30 +506,133 @@
     <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>301 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/tools/%E5%B1%80%E5%9F%9F%E7%BD%91%E8%81%8A%E5%A4%A9%E5%AE%A4/README.md"><h4 id="局域网聊天室" class="md-h1">局域网聊天室</h4><p>基于 <strong>WebRTC DataChannel</strong> 的点对点聊天工具。<strong>不需要服务器、不需要账号、不上云</strong>：连接双方通过手动交换一段「邀请码 / 应答码」（或直接扫二维码）完成握手，之后消息与文件都在两台设备之间直连传输。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>ES Module 必须通过 HTTP 协议加载，<strong>不能直接双击 <code>index.html</code></strong>。用自带的零依赖静态服务器启动：</p><pre class="md-pre" data-lang="bash"><code>node tools/serve.mjs          # 默认 http://localhost:5173
+node tools/serve.mjs 8080     # 指定端口</code></pre><p>启动后终端会同时打印本机地址与局域网地址，两台设备各自打开同一个页面即可开始连接。</p><hr><h5 id="使用流程" class="md-h2">使用流程</h5><h6 id="一方创建另一方接受" class="md-h3">一方创建，另一方接受</h6><div class="md-table"><table><thead><tr><th>步骤</th><th>发起方（创建连接）</th><th>接收方（接受连接）</th></tr></thead><tbody><tr><td>2</td><td>把邀请码发给对方（文本、链接或二维码）</td><td>把应答码发回给对方（文本、链接或二维码）</td></tr><tr><td>3</td><td>粘贴 / 扫码拿到应答码，点「完成连接」</td><td>——</td></tr></tbody></table></div><p>连接建立后左侧会自动出现联系人，选中即可聊天、传文件。第一个连接会自动选中。</p><h6 id="昵称会同步给所有已连接的对方" class="md-h3">昵称会同步给所有已连接的对方</h6><p>点自己的昵称改名后，会<strong>立即广播给所有在线的连接</strong>，对方的侧栏、聊天标题会同步更新，并在会话里留下一条「A 改名为 B」的系统提示。改名时如果没有任何在线连接，会明确提示「当前没有在线连接可同步」。</p><p>此外，每次连接建立的那一刻双方会再对一次昵称，所以「对方生成了邀请码之后才改名」这种时序差也能收敛到最新名字。</p><h6 id="图片可以直接预览" class="md-h3">图片可以直接预览</h6><p>发送或接收图片（<code>image/*</code>，或扩展名属于 png / jpg / jpeg / gif / webp / bmp / avif / svg / ico）时：</p><ul><li>传输过程中显示常规文件卡片与进度条，<strong>传完才换成缩略图</strong>，所以不会有布局跳动</li><li>缩略图限制在 300px 高以内，保持原始比例不裁剪</li><li>点击缩略图打开全屏预览，右上角可下载原图；点图片、点空白或按 Esc 关闭</li></ul><p>对端如果是不带 MIME 的旧版本，接收侧会按文件扩展名兜底判断，因此新旧版本互传图片同样能预览。</p><h6 id="码输入框的容错" class="md-h3">码输入框的容错</h6><p>两个粘贴框对粘贴内容做了归一化，下面这些都是<strong>可以直接粘贴且按钮立刻可用</strong>的：</p><ul><li>裸码：<code>SIG1:H4sIAAAA...</code></li><li>分享链接：<code>http://192.168.x.x:5173/#code=SIG1%3AH4sIAAAA...</code></li><li>带说明文字的码：<code>邀请码：SIG1:H4sIAAAA...</code></li><li>被 IM 换行 / 加了尾注的码：<code>SIG1:H4sIAAAA...\n共 812 字符</code></li></ul><p>粘贴后输入框会<strong>自动改写成裸码</strong>。如果内容确实不是有效的码，下方会出现一条黄色提示说明原因，不会让你对着一个不亮的按钮猜。</p><h6 id="依赖原生对话框的地方已全部替换" class="md-h3">依赖原生对话框的地方已全部替换</h6><p>昵称修改、大文件发送确认原本用的是浏览器的 <code>prompt</code> / <code>confirm</code>，现在统一走站内对话框（<code>ui/dialog.js</code>），样式与整体一致，移动端观感也统一，并且不会阻塞页面渲染。</p><h6 id="二维码与分享链接" class="md-h3">二维码与分享链接</h6><p>二维码里编码的是 <strong>「当前页面地址 + <code>#code=信令码</code>」</strong>，所以它有两种被扫到的场景：</p><div class="md-table"><table><thead><tr><th>谁扫</th><th>结果</th></tr></thead><tbody><tr><td><strong>本页内置的「扫描二维码」</strong></td><td>只把其中的信令码提取出来填入输入框，不做任何跳转</td></tr></tbody></table></div><ul><li><strong>生成时</strong>：每生成一个邀请码或应答码，面板下方会同步渲染二维码，可点「放大显示」铺满屏幕。</li><li><strong>读取时</strong>：粘贴框旁边就是「扫描二维码」，点开调用摄像头实时识别，成功后自动填码并放开下一步按钮。</li><li><strong>降级</strong>：摄像头不可用时（无权限 / 非 HTTPS / 无摄像头），扫码遮罩里可切到「从图片识别」选一张二维码图片识别；也可以直接手动粘贴。</li><li>除了二维码，还有 <strong>「复制链接」</strong> 按钮：把链接发给对方，点开同样直达并自动填码。</li></ul><blockquote><strong>关于应答码的链接</strong>：邀请码链接可以直接打开（打开者就是要接受连接的一方）。但应答码只有<strong>对应的发起方</strong>能用 —— 而它依赖的协商上下文保存在发起方<strong>当前这个页面的内存里</strong>。所以如果一个全新的页面通过链接拿到应答码，是无法完成连接的，界面上会明确提示；正确做法是回到发起连接的那个页面，用「扫描二维码」读取。</blockquote><blockquote>信号码长度约 700~1200 字符，加上链接前缀后二维码矩阵通常在 110×110 模块左右，属于「比较密」的码。手机上尽量让二维码充满取景框、光线均匀、屏幕亮度调高，识别率最高。若极端情况下超过二维码容量上限，会自动回退为「纯码二维码」并在界面上说明。</blockquote><h6 id="拖拽发送文件" class="md-h3">拖拽发送文件</h6><p>把文件直接拖到窗口任意位置即可发送给当前聊天对象，支持一次拖入多个文件（按顺序逐个传输）。拖拽期间会出现落区提示；未选择聊天对象或对方不在线时会给出提示而不发送。</p><hr><h5 id="分辨率适配" class="md-h2">分辨率适配</h5><div class="md-table"><table><thead><tr><th>断点</th><th>形态</th></tr></thead><tbody><tr><td><strong>平板</strong> 768 ~ 1023px</td><td>侧栏收窄至 220px 常驻，内边距与气泡宽度同步压缩</td></tr><tr><td><strong>手机</strong> &lt; 768px</td><td>侧栏变为抽屉：左上角 ☰ 滑出，点选联系人后自动收起；模态框改为底部弹层（带把手）；输入区适配键盘与安全区</td></tr></tbody></table></div><p>同时处理了横屏矮屏、<code>100dvh</code> 移动端地址栏、iOS 聚焦缩放（输入框 16px）、<code>safe-area-inset</code> 等细节。</p><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>局域网聊天室/
+├── index.html                  # 页面骨架：SVG 图标雪碧图 + 语义结构，样式与逻辑全部外链
+├── tools/
+│   ├── serve.mjs               # 零依赖本地静态服务器
+│   └── check.mjs               # 零依赖静态校验
+└── src/
+    ├── styles/
+    │   ├── base.css            # 设计令牌、重置、排版、图标、滚动条
+    │   ├── layout.css          # 应用外壳 + 三档响应式断点 + 拖拽落区
+    │   ├── components.css      # 按钮、表单、模态框、Toast、二维码、扫码遮罩
+    │   └── chat.css            # 侧栏、消息气泡、输入区
+    ├── vendor/                 # 本地化的第三方库（离线可用）
+    │   ├── qrcode-generator.min.js
+    │   └── jsqr.min.js
+    └── js/
+        ├── main.js             # 入口：只做模块装配
+        ├── config.js           # 所有可调常量集中于此
+        ├── state.js            # 运行时状态 + 昵称持久化
+        ├── utils/              # dom / bus / format / clipboard / toast / binary
+        ├── core/               # 纯逻辑，不碰 DOM（可直接在 node 下 import 验证）
+        │   ├── signaling.js    # 信令码编解码（含链接/杂质容错）、ICE 等待、分享链接
+        │   ├── connection.js   # offer / answer / 完成连接，绑定 DataChannel
+        │   ├── peers.js        # 联系人注册表、消息仓库、昵称广播
+        │   ├── inbound.js      # 入站消息路由
+        │   ├── chat.js         # 文本发送
+        │   └── file-transfer.js# 文件分块收发、流控、图片类型判定
+        ├── qr/
+        │   ├── qr-render.js    # 生成二维码（高分辨率 canvas + 放大遮罩）
+        │   └── qr-scan.js      # 摄像头实时扫码 + 图片识别降级
+        └── ui/
+            ├── sidebar.js      # 昵称、联系人列表、移动端抽屉
+            ├── chat-view.js    # 标题、消息列表（增量渲染）、输入区、图片缩略图
+            ├── dropzone.js     # 拖拽文件发送
+            ├── image-preview.js# 图片全屏预览
+            ├── dialog.js       # 站内对话框（输入 / 二次确认）
+            ├── modal.js        # 模态框开关与统一绑定
+            └── connect-modals.js # 两个连接向导的完整流程 + 链接自动填码</code></pre><p><strong>分层规则</strong>：<code>utils → core → ui</code>，依赖单向。<code>core</code> 层通过 <code>utils/bus.js</code> 事件总线把状态变化广播给 <code>ui</code> 层，因此核心逻辑不依赖任何 DOM —— 25 个模块都能直接在 node 下 <code>import</code> 验证，便于单独复用与替换界面。</p><h6 id="datachannel-消息协议" class="md-h3">DataChannel 消息协议</h6><p>一条连接上跑的都是 JSON 文本帧，用 <code>type</code> 区分：</p><div class="md-table"><table><thead><tr><th>type</th><th>载荷</th><th>说明</th></tr></thead><tbody><tr><td><code>name</code></td><td><code>{ name }</code></td><td>昵称变更 / 握手时的昵称对齐</td></tr><tr><td><code>file-start</code></td><td><code>{ fileId, name, size, mime, totalChunks }</code></td><td>文件头，<code>mime</code> 为后加字段</td></tr><tr><td><code>file-chunk</code></td><td><code>{ fileId, index, data }</code></td><td>分片，<code>data</code> 为 base64</td></tr><tr><td><code>file-end</code></td><td><code>{ fileId }</code></td><td>传输结束</td></tr></tbody></table></div><p>后加字段都做了向后兼容：旧版本收到不认识的 <code>type</code> 直接忽略，收到缺少 <code>mime</code> 的 <code>file-start</code> 会按扩展名兜底判断。</p><h6 id="消息渲染为什么是增量的" class="md-h3">消息渲染为什么是增量的</h6><p>一条消息<strong>只创建一次 DOM 节点</strong>，之后一直复用：</p><ul><li>新节点才挂 <code>.is-new</code> 播放入场动画，<code>animationend</code> 后立刻摘掉标记类</li><li>文件传输中的进度更新只改 <code>.file-meta</code> 文字与 <code>.progress-fill</code> 的宽度，不重建节点</li><li>切换会话时才整屏重建，并释放旧会话的节点引用</li><li>只有「贴底」或「自己发了新消息」时才自动滚到底部，翻看历史时不会被进度更新拽走</li></ul><p>这样发送消息、上传进度、点击下载都不会引起整屏闪烁，也不会打断正在进行的下载。</p><hr><h5 id="静态校验" class="md-h2">静态校验</h5><pre class="md-pre" data-lang="bash"><code>node tools/check.mjs</code></pre><p>七项检查，全部零依赖、无需浏览器：</p><ol><li>逐文件 <code>node --check</code> 校验 ES Module 语法</li><li>校验 <code>index.html</code> 中引用的 CSS / JS / vendor 资源是否存在</li><li>校验所有 <code>import</code> 相对路径能否解析到真实文件</li><li>交叉校验 JS 里用到的 DOM id 是否都在 <code>index.html</code> 中存在</li><li>检查 CSS 括号配平</li><li>检查 CSS 变量的引用是否都有定义</li><li>检查 <code>&lt;use href=&quot;#i-xxx&quot;&gt;</code> 图标引用是否都能在雪碧图里找到</li></ol><hr><h5 id="已知限制" class="md-h2">已知限制</h5><ul><li><strong>摄像头扫码需要安全上下文</strong>。浏览器只在 <code>localhost</code> 或 HTTPS 下允许 <code>getUserMedia</code>。用局域网 IP 以 http 打开时会自动提示并降级为「从图片识别」或手动粘贴。  临时方案：Chrome 打开 <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>，把局域网地址加进白名单并重启浏览器。</li><li>应答码链接无法在全新页面完成连接（见上文「关于应答码的链接」），这是手动信令协议的固有限制。</li><li>手动信令为<strong>非 trickle 模式</strong>，需等 ICE 收集完成（默认最多 4 秒）才出码，双方交换一次即可，之后不支持中途改网络环境。</li><li>位于对称 NAT / 严格企业防火墙后的两台设备可能无法直连（仅配置了公共 STUN，没有 TURN 中继）。</li><li>文件传输基于 DataChannel 单通道，未做断点续传；单文件超过 500MB 会二次确认。</li><li>信令码格式 <code>SIG0:</code> / <code>SIG1:</code> 与旧版单文件实现<strong>完全一致</strong>，新旧版本之间可以互相连接。</li></ul><hr><h5 id="兼容性" class="md-h2">兼容性</h5><p>依赖 <code>RTCPeerConnection</code>、<code>RTCDataChannel</code>、<code>CompressionStream</code>（无则自动降级为 <code>SIG0</code>）、<code>URLSearchParams</code>、CSS <code>dvh</code> / <code>clamp()</code> / <code>aspect-ratio</code>。推荐 Chrome / Edge / Safari 的最新版本。iOS Safari 需 14.3+ 才支持 <code>CompressionStream</code>，更低版本会走 <code>SIG0</code> 降级（码更长，二维码会更密）。</p><hr><h5 id="原始版本" class="md-h2">原始版本</h5><p>同目录下的 <code>deepseek_html_20261016_6010c6.html</code> 是重构前的单文件版本，保留作为对照，可随时删除。</p></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
-<div class="card has-more" data-name="随机抽奖系统 支持权重、滚动动画与历史统计的随机抽奖工具 随机抽奖" data-kind="project">
+<div class="card has-more" data-name="随机抽奖系统 支持权重、滚动动画与历史统计的随机抽奖工具 随机抽奖 名单丢进去，剩下的交给动画。" data-kind="project">
   <a class="card-link" href="pages/tools/%E9%9A%8F%E6%9C%BA%E6%8A%BD%E5%A5%96/index.html" target="_blank" rel="noopener" title="随机抽奖系统">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">随机抽奖系统</span>
     </span>
     <span class="card-desc">支持权重、滚动动画与历史统计的随机抽奖工具</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>72.9 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>76.5 KB</span><span class="meta-item meta-date" data-iso="2026-10-13"><i class="fas fa-clock"></i>2026-10-13</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/tools/%E9%9A%8F%E6%9C%BA%E6%8A%BD%E5%A5%96/README.md"><h4 id="随机抽奖系统" class="md-h1">随机抽奖系统</h4><blockquote>名单丢进去，剩下的交给动画。</blockquote><p>一个带权重、滚动动画与历史统计的抽奖小工具。适合年会抽奖、课堂点名、直播抽选——打开就能用，数据存在浏览器本地。</p><p>纯前端、零依赖、原生 ES Module，拆成模块化的小文件。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p>ES Module 需要 HTTP 环境：</p><pre class="md-pre" data-lang="bash"><code># 项目目录下
+npx --yes serve .
+python -m http.server 8080</code></pre><p>也可以从仓库根目录的导航页点进来。</p><hr><h5 id="功能" class="md-h2">功能</h5><h6 id="项目与权重" class="md-h3">项目与权重</h6><ul><li>输入内容 + 权重（正整数）添加项目；内容为空或权重非法会被忽略。</li><li>权重越大，在抽奖池里出现的次数越多，中奖概率越高。</li><li>列表里可以直接调整权重、删除单项。</li><li>首次打开会填三条示例数据，删掉即可开始正式使用。</li></ul><h6 id="抽奖" class="md-h3">抽奖</h6><div class="md-table"><table><thead><tr><th>操作</th><th>说明</th></tr></thead><tbody><tr><td>连抽</td><td>「开始」右侧的下拉可选 3 / 5 / 10 / 20 / 50 / 100 次，逐个出结果</td></tr><tr><td>速度</td><td>1–8 档，数字越大滚动越快，设置会记住</td></tr><tr><td>点滚动区</td><td>也可以直接点击滚动区开始 / 继续</td></tr></tbody></table></div><p>结果区会同时显示<strong>最近一次结果</strong>与<strong>历史上最常抽中</strong>的项目（并列时全部列出）。</p><h6 id="历史记录" class="md-h3">历史记录</h6><ul><li>每次结果都会入库，记录内容与时间。</li><li>支持两种排序：按时间、按出现次数。</li><li>可单条删除，也可清空全部（会二次确认）。</li></ul><h6 id="配置管理" class="md-h3">配置管理</h6><ul><li>「保存配置」把当前名单与权重存成一份命名配置。</li><li>「读取配置」列出本地所有配置，可加载或删除。</li><li>临时状态（名单、历史、速度）自动保存在 <code>localStorage</code> 的 <code>drawAppState</code>，刷新不丢。</li></ul><h6 id="其他" class="md-h3">其他</h6><ul><li>亮 / 暗主题切换，选择会记住。</li><li>响应式布局，手机竖屏也能正常抽。</li></ul><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>index.html            页面骨架：添加表单 / 结果 / 操作 / 历史 / 滚动舞台
+css/
+├─ base/              reset、主题变量、响应式
+├─ components/        按钮、下拉、表单、列表、历史、结果、弹窗、滚动舞台
+├─ layout/            页头与整体布局
+└─ main.css           汇总入口
+js/
+├─ core/              dom 缓存、全局 state、localStorage 读写
+├─ modules/           items、scroll、history、result、config-panel、modal、theme
+├─ utils/             array（洗牌）、debounce、stats（最常抽中）
+└─ main.js            装配模块、绑定事件、启动</code></pre><p>依赖方向单一：<code>utils → core → modules → main</code>，没有环形引用。</p><hr><h5 id="实现要点" class="md-h2">实现要点</h5><ul><li><strong>加权池</strong>：项目按权重展开成一个数组（<code>weighted</code>），抽奖时从池里等概率取——权重逻辑就变成了一次数组取样。</li><li><strong>滚动是动画不是概率</strong>：轨道由打乱后的池重复铺满 20 份，动画按速度滚动到某个位置停下，落点对应的项目就是结果；概率已由池的构成决定。</li><li><strong>状态集中</strong>：所有可变数据在 <code>state.js</code>，持久化只在 <code>storage.js</code>，界面模块不直接碰 <code>localStorage</code>。</li><li><strong>纯函数统计</strong>：<code>utils/stats.js</code> 只根据历史算出「并列第一」，避免 result 与 history 互相依赖。</li><li><strong>下拉交互</strong>：悬停展开、移开 180ms 收起，跨过按钮与面板之间的间隙不会闪退。</li></ul><hr><h5 id="数据" class="md-h2">数据</h5><pre class="md-pre" data-lang="js"><code>// localStorage[&#39;drawAppState&#39;]
+{ items: [{ content, weight }], history: [{ result, timestamp }], scrollSpeed: 3 }
+
+// localStorage[&#39;drawConfig_&lt;名称&gt;&#39;]
+{ items: [{ content, weight }] }</code></pre><p>换设备或清缓存会丢数据，重要名单建议保存成命名配置后再导出备份。</p></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
-<div class="card has-more" data-name="答案之书 · 星夜 答案之书 · 星夜 —— 一页星空，一句答案。 星辰答案之书" data-kind="project">
+<div class="card has-more" data-name="答案之书 · 星夜 答案之书 · 星夜 —— 一页星空，一句答案。 星辰答案之书 一页星空，一句答案。纯前端 canvas 项目，无任何依赖、无构建步骤。" data-kind="project">
   <a class="card-link" href="pages/tools/%E6%98%9F%E8%BE%B0%E7%AD%94%E6%A1%88%E4%B9%8B%E4%B9%A6/index.html" target="_blank" rel="noopener" title="答案之书 · 星夜">
     <span class="card-head">
       <span class="card-icon"><i class="fas fa-cube"></i></span>
       <span class="card-title">答案之书 · 星夜</span>
     </span>
     <span class="card-desc">答案之书 · 星夜 —— 一页星空，一句答案。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>89.4 KB</span><span class="meta-item meta-date" data-iso="2026-10-16"><i class="fas fa-clock"></i>2026-10-16</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>89.4 KB</span><span class="meta-item meta-date" data-iso="2026-10-13"><i class="fas fa-clock"></i>2026-10-13</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":1}'>共 1 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
+  <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/tools/%E6%98%9F%E8%BE%B0%E7%AD%94%E6%A1%88%E4%B9%8B%E4%B9%A6/README.md"><h4 id="答案之书-星夜" class="md-h1">答案之书 · 星夜</h4><p>一页星空，一句答案。纯前端 Canvas 项目，无任何依赖、无构建步骤。</p><p>画面由四层叠加而成：CSS 星云 → Canvas 星辰 / 流星 / 黑洞 → CSS 暗角 → 中心答案文本。答案每 8~12 秒换一句；黑洞是一个中心纯黑、边缘渐变到透明的小球，它经过时星辰会先被引力拽动、带着惯性加速冲过去，然后被吸积流拖进轨道绕行、拖出一条尾流，最后被吞没。</p><p>尾流不是&quot;进入黑洞才长出来&quot;的特效，而是<strong>运动本身的痕迹</strong>：只按固定时间间隔记录位置点，所以快的东西尾巴长、慢的尾巴短，静止时自然收缩成一点。星辰和流星用的都是同一套实现。</p><p>流星的速度刻意压得很慢 —— 真实流星在屏幕上只存在零点几秒，看到的只是一道一闪而过的划痕；这里取 240~500 px/s，横穿画面要好几秒，角度才读得出来。</p><hr><h5 id="快速开始" class="md-h2">快速开始</h5><p><strong>方式一：直接打开（零依赖）</strong></p><p>双击 <code>index.html</code> 即可。</p><blockquote><code>file://</code> 协议下浏览器会拦截 <code>fetch</code>，页面会自动使用内置文案副本（<code>src/data/texts.fallback.js</code>），效果完全一致，只是不会热更新 <code>data/texts.txt</code>。</blockquote><p><strong>方式二：本地服务器（推荐，改文案即时生效）</strong></p><pre class="md-pre" data-lang="bash"><code>npx --yes serve .
+# 或
+python -m http.server 8080</code></pre><p>然后访问 <code>http://localhost:8080</code>。</p><hr><h5 id="目录结构" class="md-h2">目录结构</h5><pre class="md-pre"><code>星辰答案之书/
+├─ index.html                    页面骨架 + 脚本加载顺序（唯一入口）
+├─ package.json                  构建脚本快捷方式
+├─ README.md                     本文件
+│
+├─ data/
+│  └─ texts.txt                  ★ 文案库：一行一段，# 为注释
+│
+├─ docs/
+│  └─ DEVELOPMENT.md             开发文档：架构、渲染原理、扩展指南
+│
+├─ scripts/
+   ├─ build-texts.mjs            从 texts.txt 生成内置文案副本
+   ├─ check-syntax.mjs            全量语法静态校验（npm run check 的第一步）
+   └─ audit-config.mjs            配置键引用审计（拼错键名会静默失效，靠它抓）
+│
+├─ styles/
+│  ├─ base.css                   变量、重置、页面骨架
+│  ├─ sky.css                    星云 / 画布 / 暗角
+│  └─ text.css                   答案文本排版与淡入淡出
+│
+└─ src/
+   ├─ config.js                  ★ 所有可调参数集中于此
+   ├─ main.js                    入口：装配模块并驱动主循环
+   │
+   ├─ utils/
+   │  ├─ math.js                 clamp / lerp / smoothstep / len
+   │  └─ random.js               rand / randInt / randSign
+   │
+   ├─ core/
+   │  ├─ viewport.js             画布尺寸与高 DPI 适配
+   │  └─ loop.js                 requestAnimationFrame 主循环
+   │
+   ├─ data/
+   │  ├─ texts.js                文案加载器（fetch + 回退）
+   │  └─ texts.fallback.js       【自动生成】勿手工编辑
+   │
+   ├─ scene/
+   │  ├─ sprites.js              星点光晕预渲染贴图
+   │  ├─ trail.js                ★ 通用尾流：按时间采样位置点
+   │  ├─ stars.js                星辰层：惯性积分 + 尾流
+   │  ├─ meteors.js              流星层：角度 + 入射边 + 寿命由几何定
+   │  └─ blackhole.js            黑洞层：引力 + 吸积流耦合 + 渐变黑球
+   │
+   └─ ui/
+      └─ answer-text.js          答案文本的展示调度</code></pre><hr><h5 id="常见改动" class="md-h2">常见改动</h5><p><strong>换文案</strong> —— 编辑 <code>data/texts.txt</code>（一行一段，<code>#</code> 开头为注释），然后：</p><pre class="md-pre" data-lang="bash"><code>npm run build:texts      # 等价于 node scripts/build-texts.mjs</code></pre><p>这一步只是刷新 <code>file://</code> 下的内置副本。若你用本地服务器访问，改完 txt 刷新页面即可。</p><p><strong>调节奏</strong> —— <code>src/config.js</code> 的 <code>text</code> 段：</p><div class="md-table"><table><thead><tr><th>参数</th><th>含义</th><th>当前值</th></tr></thead><tbody><tr><td><code>holdMinMs</code> / <code>holdMaxMs</code></td><td>完全显现后的停留时长</td><td><code>5000</code> / <code>8000</code></td></tr><tr><td><code>gapMinMs</code> / <code>gapMaxMs</code></td><td>两条之间的空档</td><td><code>300</code> / <code>600</code></td></tr></tbody></table></div><p><strong>调黑洞</strong> —— <code>src/config.js</code> 的 <code>blackhole</code> 段：</p><div class="md-table"><table><thead><tr><th>参数</th><th>含义</th></tr></thead><tbody><tr><td><code>edgeSoft</code></td><td>边缘渐变带宽度（占 R）。中心到 <code>(1−edgeSoft)·R</code> 是纯黑，往外化开</td></tr><tr><td><code>influence</code></td><td>引力作用半径 = 黑球半径 × 该值</td></tr><tr><td><code>gm</code></td><td>引力强度。与半径联动，见 <code>docs/DEVELOPMENT.md</code> 4.7</td></tr><tr><td><code>soften</code> / <code>taper</code></td><td>引力软化尺度 / 作用半径处的收尾位置</td></tr><tr><td><code>flowCoupling</code></td><td>吸积流耦合速率。<strong>越大越快被拽进轨道、轨道越小</strong></td></tr><tr><td><code>flowRange</code> / <code>flowInner</code></td><td>耦合的作用范围 / 满强度位置（单位：黑球半径）</td></tr><tr><td><code>flowInflow</code></td><td>目标速度占圆轨道速度的比例。&lt;1 才会缓慢内落</td></tr><tr><td><code>intervalMinMs</code> / <code>intervalMaxMs</code></td><td>两次出现的间隔</td></tr></tbody></table></div><blockquote>改 <code>radiusMin/Max</code> 时请连带看 <code>docs/DEVELOPMENT.md</code> 4.7 —— <code>influence</code>、<code>gm</code>、<code>flowInner/Range</code> 都是以 R 为单位或与 R 挂钩的，只改半径会让引力场在像素尺度上一起缩水，观感会完全变样。</blockquote><p><strong>调流星</strong> —— <code>src/config.js</code> 的 <code>meteors</code> 段：</p><div class="md-table"><table><thead><tr><th>参数</th><th>含义</th></tr></thead><tbody><tr><td><code>angleMinDeg</code> / <code>angleMaxDeg</code></td><td>与水平方向的夹角范围。陡的从上边进入、缓的从侧边进入</td></tr><tr><td><code>spawnPad</code></td><td>起点在画面外的余量（像素）</td></tr><tr><td><code>trailSpan</code></td><td>尾流覆盖时长（秒）。<strong>尾流长度 = 速度 × 该值</strong></td></tr><tr><td><code>trailAlpha</code> / <code>trailWidth</code></td><td>尾流亮度 / 粗细</td></tr><tr><td><code>intervalMinMs</code> / <code>intervalMaxMs</code></td><td>两次出现的间隔</td></tr></tbody></table></div><p><strong>调星辰与尾流</strong> —— <code>src/config.js</code> 的 <code>stars</code> 段：</p><div class="md-table"><table><thead><tr><th>参数</th><th>含义</th></tr></thead><tbody><tr><td><code>relaxSec</code></td><td>脱离引力井后速度回归基线的时间常数。越小越黏</td></tr><tr><td><code>trailSpan</code></td><td>尾流覆盖时长（秒）。<strong>尾流长度 = 速度 × 该值</strong></td></tr><tr><td><code>trailSteps</code></td><td>采样点数，越多折线越平滑</td></tr><tr><td><code>trailMinSpeed</code> / <code>trailFullSpeed</code></td><td>低于前者完全无尾流，达到后者满亮度</td></tr><tr><td><code>trailAlpha</code> / <code>trailWidth</code></td><td>尾流亮度 / 粗细</td></tr></tbody></table></div><p>其余参数见 <code>src/config.js</code> 内的逐项注释。</p><hr><h5 id="浏览器要求" class="md-h2">浏览器要求</h5><p>Chrome / Edge / Safari / Firefox 近两年版本。依赖 Canvas 2D、CSS 自定义属性、<code>Promise</code>、<code>async</code> 风格时序控制；<code>prefers-reduced-motion</code> 下会关闭星云漂移动画。</p><hr><h5 id="许可" class="md-h2">许可</h5><p>MIT</p></template>
   <button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>
 </div>
     </div>
@@ -349,7 +654,7 @@
         <a href="https://github.com/Verlif/someToys/blob/main/docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener" data-i18n="nav.devDocLink">开发文档</a>
         <a href="https://github.com/Verlif" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
       </nav>
-      <span class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> 2026-10-16 10:57:33 UTC</span>
+      <span class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> <time class="gen-time" datetime="2026-10-17T02:53:00.680Z">2026-10-17 10:53</time></span>
     </footer>
   </div>
 </div>
@@ -369,13 +674,36 @@
         </div>
       </div>
       <p class="modal-desc" id="modalDesc"></p>
-      <div class="modal-actions">
-        <a class="btn btn-primary" id="modalOpen" href="#" target="_blank" rel="noopener">
-          <i class="fas fa-arrow-up-right-from-square"></i><span data-i18n="nav.openPage">打开页面</span>
-        </a>
-        <button class="btn" id="modalCopy" type="button">
-          <i class="fas fa-link"></i><span data-i18n="nav.copyLink">复制链接</span>
-        </button>
+      <div class="modal-readme" id="modalReadme" hidden>
+        <div class="modal-readme-head">
+          <span class="modal-readme-label">
+            <i class="fas fa-book-open"></i><span data-i18n="nav.readmeTitle">项目说明</span>
+          </span>
+          <a class="modal-readme-source" id="modalReadmeSource" href="#" target="_blank" rel="noopener" hidden>
+            <span data-i18n="nav.readmeSource">查看 README</span><i class="fas fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+        <div class="md-body" id="modalReadmeBody"></div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-actions">
+          <a class="btn btn-primary" id="modalOpen" href="#" target="_blank" rel="noopener">
+            <i class="fas fa-arrow-up-right-from-square"></i><span data-i18n="nav.openPage">打开页面</span>
+          </a>
+          <button class="btn" id="modalCopy" type="button">
+            <i class="fas fa-link"></i><span data-i18n="nav.copyLink">复制链接</span>
+          </button>
+        </div>
+        <figure class="modal-qr" id="modalQr">
+          <div class="modal-qr-box">
+            <canvas id="modalQrCanvas" width="132" height="132" role="img"
+                    data-i18n-aria-label="nav.scanOpen" aria-label="扫码打开"></canvas>
+          </div>
+          <figcaption>
+            <span data-i18n="nav.scanOpen">扫码打开</span>
+            <span class="modal-qr-note" id="modalQrNote" data-i18n="nav.scanLocalNet" hidden>本地地址，需同一网络访问</span>
+          </figcaption>
+        </figure>
       </div>
     </div>
   </div>
@@ -617,6 +945,25 @@
       }
       refreshDates();
 
+      /** 构建时写的是北京时间，这里统一改写成访问者本地时间 */
+      function syncGeneratedAt() {
+        function pad(n) { return n < 10 ? '0' + n : String(n); }
+        [].forEach.call(document.querySelectorAll('time.gen-time'), function (el) {
+          var date = new Date(el.getAttribute('datetime'));
+          if (isNaN(date.getTime())) return;
+          el.textContent = date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+            ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+          try {
+            el.title = date.toLocaleString(undefined, {
+              dateStyle: 'medium', timeStyle: 'short', timeZoneName: 'short'
+            });
+          } catch (e) {
+            el.title = el.textContent;
+          }
+        });
+      }
+      syncGeneratedAt();
+
       // ---------- 窄屏抽屉 ----------
 
       function isDrawerMode() {
@@ -824,9 +1171,62 @@
       var modalTitle = document.getElementById('modalTitle');
       var modalMeta = document.getElementById('modalMeta');
       var modalDesc = document.getElementById('modalDesc');
+      var modalReadme = document.getElementById('modalReadme');
+      var modalReadmeBody = document.getElementById('modalReadmeBody');
+      var modalReadmeSource = document.getElementById('modalReadmeSource');
       var modalOpen = document.getElementById('modalOpen');
       var modalCopy = document.getElementById('modalCopy');
+      var modalQr = document.getElementById('modalQr');
+      var modalQrCanvas = document.getElementById('modalQrCanvas');
+      var modalQrNote = document.getElementById('modalQrNote');
       var lastCard = null;
+
+      /** 本地打开时二维码扫不通，给个说明（线上地址不显示） */
+      function qrNotice(url) {
+        if (/^file:/i.test(url)) return 'nav.scanLocalFile';
+        if (/^(https?:)?\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:|\/|$)/i.test(url)) return 'nav.scanLocalNet';
+        return '';
+      }
+
+      function drawQr(url) {
+        var ok = false;
+        if (window.QRCode && modalQrCanvas) {
+          try {
+            ok = window.QRCode.render(modalQrCanvas, url, { pixels: 480, quiet: 3 });
+          } catch (e) {
+            ok = false;
+          }
+        }
+        modalQr.hidden = !ok;
+        if (!ok) return;
+
+        var key = qrNotice(url);
+        modalQrNote.hidden = !key;
+        if (key) {
+          modalQrNote.setAttribute('data-i18n', key);
+          modalQrNote.textContent = t(key);
+        }
+      }
+
+      /** 项目 README 在生成期就渲染成了 HTML，放在 <template> 里，弹窗打开时搬进来 */
+      function fillReadme(card) {
+        var tpl = card.querySelector('template.card-readme');
+        var html = tpl ? tpl.innerHTML.trim() : '';
+        var panel = modal.querySelector('.modal-panel');
+        if (!html) {
+          modalReadme.hidden = true;
+          modalReadmeBody.innerHTML = '';
+          if (panel) panel.classList.remove('has-readme');
+          return;
+        }
+        modalReadmeBody.innerHTML = html;
+        modalReadmeBody.scrollTop = 0;
+        modalReadme.hidden = false;
+        if (panel) panel.classList.add('has-readme');
+        var source = tpl.getAttribute('data-source') || '';
+        modalReadmeSource.hidden = !source;
+        if (source) modalReadmeSource.href = source;
+      }
 
       function openModal(card) {
         lastCard = card;
@@ -845,7 +1245,11 @@
           desc ? t('nav.chars', { n: desc.textContent.length }) : '',
         ].filter(Boolean).join(' · ');
         modalDesc.textContent = desc ? desc.textContent : t('nav.noDesc');
-        modalOpen.href = link ? link.getAttribute('href') : '#';
+        fillReadme(card);
+        var href = link ? link.getAttribute('href') : '';
+        modalOpen.href = href || '#';
+        if (href) drawQr(modalOpen.href);
+        else modalQr.hidden = true;
         modal.hidden = false;
         document.body.classList.add('modal-open');
         document.getElementById('modalClose').focus();

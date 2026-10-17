@@ -56,7 +56,8 @@ export function initConnectModals() {
   listen($('genOfferBtn'), 'click', generateOffer);
   listen($('copyOfferBtn'), 'click', () => copyWithToast(offerCode, '邀请码'));
   listen($('copyOfferLinkBtn'), 'click', () => copyShareLink(offerCode, '邀请码'));
-  listen($('offerQrZoomBtn'), 'click', () => openQRZoom());
+  listen($('offerQrZoomBtn'), 'click', () => zoomQr($('offerQrBlock')));
+  listen($('offerQr'), 'click', () => zoomQr($('offerQrBlock')));
   listen($('scanAnswerBtn'), 'click', () => {
     startScan('扫描对方的应答码', 'answerBox', '应答码', $('answerBoxHint'), refreshFinishState);
   });
@@ -66,7 +67,8 @@ export function initConnectModals() {
   listen($('genAnswerBtn'), 'click', generateAnswer);
   listen($('copyAnswerBtn'), 'click', () => copyWithToast(answerCode, '应答码'));
   listen($('copyAnswerLinkBtn'), 'click', () => copyShareLink(answerCode, '应答码'));
-  listen($('answerQrZoomBtn'), 'click', () => openQRZoom());
+  listen($('answerQrZoomBtn'), 'click', () => zoomQr($('answerQrBlock')));
+  listen($('answerQr'), 'click', () => zoomQr($('answerQrBlock')));
   listen($('scanOfferBtn'), 'click', () => {
     startScan('扫描对方的邀请码', 'incomingOfferBox', '邀请码', $('acceptFlowHint'), refreshAnswerState);
   });
@@ -236,6 +238,13 @@ function startScan(title, targetId, label, hintEl, afterFill) {
       if (typeof afterFill === 'function') afterFill();
     }
   });
+}
+
+/** 放大二维码面板里的码；没渲染出来时不做任何事 */
+function zoomQr(blockEl) {
+  const text = blockEl && blockEl.dataset.qrText;
+  if (!text) return;
+  openQRZoom(text);
 }
 
 async function copyWithToast(text, label) {

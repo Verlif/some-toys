@@ -46,15 +46,32 @@ export const PROGRESS_THROTTLE = 100;
 
 /** 二维码绘制参数 */
 export const QR = {
-  /** 纠错等级：L 容量最大，能容纳更长的 SDP */ errorCorrectionLevel: 'L',
-  /** 静默区宽度（模块数） */ quietZone: 2,
-  /** canvas 目标边长上限（像素） */ maxCanvasSize: 1400,
-  /** 单个模块的最小像素边长 */ minModuleSize: 2
+  /** 纠错等级：L 容量最大，容纳更长的 SDP（提高等级会让矩阵更密，反而更难扫） */
+  errorCorrectionLevel: 'L',
+  /** 静默区宽度（模块数） */
+  quietZone: 2,
+  /** 主面板里的最大显示边长（CSS px） */
+  maxDisplaySize: 340,
+  /** 窄屏时显示边长占视口宽度的比例 */
+  displayViewportRatio: 0.78,
+  /** 放大遮罩里的最大显示边长 */
+  maxZoomSize: 720,
+  /** 模块数超过该值时提示用户放大后再扫 */
+  denseThreshold: 100
 };
 
 /** 摄像头扫描参数 */
 export const SCANNER = {
-  /** 送入识别前把画面缩到的最长边（越小越快） */ decodeMaxEdge: 720,
-  /** 每秒最多识别次数 */ fps: 8,
-  /** 图片识别的最大边长 */ imageMaxEdge: 1600
+  /**
+   * 中心裁剪后送入识别的最长边。
+   * 取 1080 后，常见的 720p / 1080p 摄像头裁剪出来都不需要再缩放，
+   * 避免整帧缩放把本就不多的模块像素进一步稀释。
+   */
+  decodeMaxEdge: 1080,
+  /** 每秒最多识别次数 */
+  fps: 12,
+  /** 图片识别的最大边长（图片里二维码位置不确定，按整图识别） */
+  imageMaxEdge: 1600,
+  /** 连续多久没识别到就给一句操作提示（毫秒） */
+  hintAfterMs: 3000
 };

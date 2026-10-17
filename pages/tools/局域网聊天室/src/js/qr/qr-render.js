@@ -17,10 +17,17 @@ let zoomText = '';
 
 /**
  * 依据文本生成一张二维码 canvas
+ *
+ * 关键点：按「目标显示尺寸 × devicePixelRatio」反算每个模块的像素边长，
+ * 取整后以 1:1 的设备像素绘制，再据此设置 CSS 尺寸。
+ * 这样画布和设备像素完全对齐，浏览器不会做任何重采样 ——
+ * 模块宽度绝对均匀，摄像头扫描时栅格拟合才稳。
+ *
  * @param {string} text
+ * @param {number} [targetCssSize] 期望显示边长（CSS px），默认按面板自适应
  * @returns {{canvas: HTMLCanvasElement, moduleCount: number}}
  */
-export function createQRCanvas(text) {
+export function createQRCanvas(text, targetCssSize) {
   const qrcode = getQRCodeLib();
 
   // typeNumber = 0 表示按内容自动选择最小可用版本
@@ -30,17 +37,24 @@ export function createQRCanvas(text) {
 
   const count = qr.getModuleCount();
   const total = count + QR.quietZone * 2;
-  const unit = Math.max(QR.minModuleSize, Math.floor(QR.maxCanvasSize / total));
-  const size = total * unit;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const cssSize = targetCssSize > 0 ? targetCssSize : defaultDisplaySize();
+
+  // 取整到整数个设备像素/模块；四舍五入让最终尺寸尽量贴近目标值
+  const unit = Math.max(1, Math.round((cssSize * dpr) / total));
+  const pixelSize = total * unit;
 
   const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
   canvas.className = 'qr-canvas';
+  canvas.width = pixelSize;
+  canvas.height = pixelSize;
+  canvas.style.width = pixelSize / dpr + 'px';
+  canvas.style.height = pixelSize / dpr + 'px';
 
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, size, size);
+  ctx.fillRect(0, 0, pixelSize, pixelSize);
 
   ctx.fillStyle = '#000000';
   for (let row = 0; row < count; row++) {
@@ -59,6 +73,25 @@ export function createQRCanvas(text) {
   return { canvas, moduleCount: count };
 }
 
+/** 面板里二维码的默认显示边长 */
+function defaultDisplaySize() {
+  return Math.min(
+    QR.maxDisplaySize,
+    window.innerWidth * QR.displayViewportRatio,
+    // 矮屏（手机横放）时别让二维码把弹窗撑得要滚动
+    window.innerHeight * 0.52
+  );
+}
+
+/** 放大遮罩里二维码的显示边长 */
+function zoomDisplaySize() {
+  return Math.min(
+    window.innerHeight * 0.72,
+    window.innerWidth * 0.9,
+    QR.maxZoomSize
+  );
+}
+
 /**
  * 把二维码渲染进一个二维码面板
  * @param {HTMLElement} blockEl  面板根节点（.qr-block）
@@ -72,6 +105,7 @@ export function renderQRBlock(blockEl, code, refs) {
 
   wrap.innerHTML = '';
   blockEl.classList.remove('is-error');
+  delete blockEl.dataset.qrText;
   setHidden(refs.zoomBtn, true);
   setText(refs.hint, '');
   zoomText = '';
@@ -91,14 +125,13 @@ export function renderQRBlock(blockEl, code, refs) {
       const { canvas, moduleCount } = createQRCanvas(attempt.text);
       wrap.appendChild(canvas);
       zoomText = attempt.text;
+      blockEl.dataset.qrText = attempt.text;
 
       setHidden(refs.zoomBtn, false);
-      setText(
-        refs.hint,
-        attempt.mode === 'url'
-          ? '扫码直达本页 · 矩阵 ' + moduleCount + '×' + moduleCount
-          : '纯码形式（链接超容量已回退）· 矩阵 ' + moduleCount + '×' + moduleCount
-      );
+      const prefix = attempt.mode === 'url' ? '扫码直达本页' : '纯码形式（链接超容量已回退）';
+      const dense = moduleCount > QR.denseThreshold ? ' · 码较密，建议放大后再扫' : '';
+      setText(refs.hint, prefix + ' · 矩阵 ' + moduleCount + '×' + moduleCount + dense);
+
       return { ok: true, mode: attempt.mode, moduleCount };
     } catch (e) {
       lastError = e;
@@ -127,7 +160,7 @@ export function openQRZoom(text) {
 
   stage.innerHTML = '';
   try {
-    stage.appendChild(createQRCanvas(source).canvas);
+    stage.appendChild(createQRCanvas(source, zoomDisplaySize()).canvas);
   } catch (e) {
     return;
   }

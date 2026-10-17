@@ -1,0 +1,49 @@
+/* =========================================================
+   主题变量与页面基础样式
+   ========================================================= */
+:root {
+  --bg: #0b1210;
+  --panel-bg: rgba(12, 18, 24, 0.9);
+  --panel-border: rgba(110, 190, 255, 0.22);
+  --text: #e8f2ff;
+  --text-dim: #8fb2cc;
+  --text-mute: #6e8ba1;
+  --gold: #ffd166;
+  --mint: #5cf2a8;
+  --accent-a: #1e7fd4;
+  --accent-b: #17b98a;
+  --font-ui: -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#game {
+  display: block;
+}
+
+/* 面板容器：不拦截指针，让 canvas 保持可交互 */
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  pointer-events: none;
+}

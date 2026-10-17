@@ -13,6 +13,7 @@
   <!-- 站点信息：由生成脚本从 site.config.json 注入，供 i18n 与页面脚本读取 -->
   {{siteConfig}}
   <script src="assets/i18n.js"></script>
+  <script src="assets/qrcode.js"></script>
 
   <!-- 尽早应用主题，避免首屏闪烁 -->
   <script>
@@ -162,13 +163,36 @@
         </div>
       </div>
       <p class="modal-desc" id="modalDesc"></p>
-      <div class="modal-actions">
-        <a class="btn btn-primary" id="modalOpen" href="#" target="_blank" rel="noopener">
-          <i class="fas fa-arrow-up-right-from-square"></i><span data-i18n="nav.openPage">打开页面</span>
-        </a>
-        <button class="btn" id="modalCopy" type="button">
-          <i class="fas fa-link"></i><span data-i18n="nav.copyLink">复制链接</span>
-        </button>
+      <div class="modal-readme" id="modalReadme" hidden>
+        <div class="modal-readme-head">
+          <span class="modal-readme-label">
+            <i class="fas fa-book-open"></i><span data-i18n="nav.readmeTitle">项目说明</span>
+          </span>
+          <a class="modal-readme-source" id="modalReadmeSource" href="#" target="_blank" rel="noopener" hidden>
+            <span data-i18n="nav.readmeSource">查看 README</span><i class="fas fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+        <div class="md-body" id="modalReadmeBody"></div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-actions">
+          <a class="btn btn-primary" id="modalOpen" href="#" target="_blank" rel="noopener">
+            <i class="fas fa-arrow-up-right-from-square"></i><span data-i18n="nav.openPage">打开页面</span>
+          </a>
+          <button class="btn" id="modalCopy" type="button">
+            <i class="fas fa-link"></i><span data-i18n="nav.copyLink">复制链接</span>
+          </button>
+        </div>
+        <figure class="modal-qr" id="modalQr">
+          <div class="modal-qr-box">
+            <canvas id="modalQrCanvas" width="132" height="132" role="img"
+                    data-i18n-aria-label="nav.scanOpen" aria-label="扫码打开"></canvas>
+          </div>
+          <figcaption>
+            <span data-i18n="nav.scanOpen">扫码打开</span>
+            <span class="modal-qr-note" id="modalQrNote" data-i18n="nav.scanLocalNet" hidden>本地地址，需同一网络访问</span>
+          </figcaption>
+        </figure>
       </div>
     </div>
   </div>
@@ -410,6 +434,25 @@
       }
       refreshDates();
 
+      /** 构建时写的是北京时间，这里统一改写成访问者本地时间 */
+      function syncGeneratedAt() {
+        function pad(n) { return n < 10 ? '0' + n : String(n); }
+        [].forEach.call(document.querySelectorAll('time.gen-time'), function (el) {
+          var date = new Date(el.getAttribute('datetime'));
+          if (isNaN(date.getTime())) return;
+          el.textContent = date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+            ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+          try {
+            el.title = date.toLocaleString(undefined, {
+              dateStyle: 'medium', timeStyle: 'short', timeZoneName: 'short'
+            });
+          } catch (e) {
+            el.title = el.textContent;
+          }
+        });
+      }
+      syncGeneratedAt();
+
       // ---------- 窄屏抽屉 ----------
 
       function isDrawerMode() {
@@ -617,9 +660,62 @@
       var modalTitle = document.getElementById('modalTitle');
       var modalMeta = document.getElementById('modalMeta');
       var modalDesc = document.getElementById('modalDesc');
+      var modalReadme = document.getElementById('modalReadme');
+      var modalReadmeBody = document.getElementById('modalReadmeBody');
+      var modalReadmeSource = document.getElementById('modalReadmeSource');
       var modalOpen = document.getElementById('modalOpen');
       var modalCopy = document.getElementById('modalCopy');
+      var modalQr = document.getElementById('modalQr');
+      var modalQrCanvas = document.getElementById('modalQrCanvas');
+      var modalQrNote = document.getElementById('modalQrNote');
       var lastCard = null;
+
+      /** 本地打开时二维码扫不通，给个说明（线上地址不显示） */
+      function qrNotice(url) {
+        if (/^file:/i.test(url)) return 'nav.scanLocalFile';
+        if (/^(https?:)?\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:|\/|$)/i.test(url)) return 'nav.scanLocalNet';
+        return '';
+      }
+
+      function drawQr(url) {
+        var ok = false;
+        if (window.QRCode && modalQrCanvas) {
+          try {
+            ok = window.QRCode.render(modalQrCanvas, url, { pixels: 480, quiet: 3 });
+          } catch (e) {
+            ok = false;
+          }
+        }
+        modalQr.hidden = !ok;
+        if (!ok) return;
+
+        var key = qrNotice(url);
+        modalQrNote.hidden = !key;
+        if (key) {
+          modalQrNote.setAttribute('data-i18n', key);
+          modalQrNote.textContent = t(key);
+        }
+      }
+
+      /** 项目 README 在生成期就渲染成了 HTML，放在 <template> 里，弹窗打开时搬进来 */
+      function fillReadme(card) {
+        var tpl = card.querySelector('template.card-readme');
+        var html = tpl ? tpl.innerHTML.trim() : '';
+        var panel = modal.querySelector('.modal-panel');
+        if (!html) {
+          modalReadme.hidden = true;
+          modalReadmeBody.innerHTML = '';
+          if (panel) panel.classList.remove('has-readme');
+          return;
+        }
+        modalReadmeBody.innerHTML = html;
+        modalReadmeBody.scrollTop = 0;
+        modalReadme.hidden = false;
+        if (panel) panel.classList.add('has-readme');
+        var source = tpl.getAttribute('data-source') || '';
+        modalReadmeSource.hidden = !source;
+        if (source) modalReadmeSource.href = source;
+      }
 
       function openModal(card) {
         lastCard = card;
@@ -638,7 +734,11 @@
           desc ? t('nav.chars', { n: desc.textContent.length }) : '',
         ].filter(Boolean).join(' · ');
         modalDesc.textContent = desc ? desc.textContent : t('nav.noDesc');
-        modalOpen.href = link ? link.getAttribute('href') : '#';
+        fillReadme(card);
+        var href = link ? link.getAttribute('href') : '';
+        modalOpen.href = href || '#';
+        if (href) drawQr(modalOpen.href);
+        else modalQr.hidden = true;
         modal.hidden = false;
         document.body.classList.add('modal-open');
         document.getElementById('modalClose').focus();

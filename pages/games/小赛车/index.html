@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>双人赛车 · 随机赛道对战</title>
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/panels.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="overlay">
+
+  <!-- 主菜单 -->
+  <div class="panel" id="panelMain">
+    <h1>双人赛车</h1>
+    <p class="sub">单人竞速 · 双人同屏 · 硬墙碰撞</p>
+    <button class="btn primary" id="btnStart">开 始 游 戏</button>
+    <p class="hint">
+      单人：<b>WASD</b> 或 <b>方向键</b> 均可驾驶<br>
+      双人合作：两人分工控制同一台车<br>
+      双人对抗：P1 <b>WASD</b> · P2 <b>方向键</b><br>
+      观战：AI 全自动 · <b>空格</b> 鸟瞰总览 · <b>A/D</b> 切换跟随<br>
+      Esc / P 暂停比赛
+    </p>
+  </div>
+
+  <!-- 模式选择 -->
+  <div class="panel hidden" id="panelSetup">
+    <h2>模 式 选 择</h2>
+
+    <div class="field">
+      <div class="field-label">游戏模式</div>
+      <div class="seg" id="segMode">
+        <button type="button" data-v="solo" class="active">单 人</button>
+        <button type="button" data-v="team">双 人</button>
+        <button type="button" data-v="spectate">观 战</button>
+      </div>
+      <div class="field-note" id="modeNote">WASD 与方向键都可以驾驶同一台车</div>
+    </div>
+
+    <div class="collapse" id="fieldTeam">
+      <div class="collapse-inner">
+        <div class="field">
+          <div class="field-label">双人玩法</div>
+          <div class="seg" id="segTeam">
+            <button type="button" data-v="coop" class="active">合 作</button>
+            <button type="button" data-v="versus">对 抗</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapse" id="fieldScheme">
+      <div class="collapse-inner">
+        <div class="field">
+          <div class="field-label">合作操作方式</div>
+          <div class="seg" id="segScheme">
+            <button type="button" data-v="1" class="active">方案 A</button>
+            <button type="button" data-v="2">方案 B</button>
+          </div>
+          <div class="keypad" id="keypad"></div>
+          <div class="field-note" id="schemeNote"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        赛道预览
+        <button type="button" class="btn-mini" id="btnReroll">重新随机</button>
+      </div>
+      <canvas class="preview" id="trackPreview"></canvas>
+      <div class="field-note" id="trackNote"></div>
+    </div>
+    <div class="field">
+      <div class="field-label"><span id="lblNpcTitle" class="lbl-title">AI 对手数量</span> <span id="lblNpc">3</span></div>
+      <input type="range" id="rngNpc" min="0" max="6" step="1" value="3">
+    </div>
+
+    <div class="field">
+      <div class="field-label">AI 智能程度 <span id="lblAi">普通</span></div>
+      <div class="seg seg-5" id="segAi">
+        <button type="button" data-v="1">新 手</button>
+        <button type="button" data-v="2">入 门</button>
+        <button type="button" data-v="3" class="active">普 通</button>
+        <button type="button" data-v="4">老 练</button>
+        <button type="button" data-v="5">赛车手</button>
+      </div>
+      <div class="field-note" id="aiNote"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">比赛圈数 <span id="lblLap">3</span></div>
+      <input type="range" id="rngLap" min="1" max="9" step="1" value="3">
+    </div>
+
+    <div class="row">
+      <button class="btn" id="btnBack">返 回</button>
+      <button class="btn primary" id="btnGo">开始比赛</button>
+    </div>
+  </div>
+
+  <!-- 暂停 -->
+  <div class="panel hidden" id="panelPause">
+    <h2>已 暂 停</h2>
+    <button class="btn primary" id="btnResume">继续比赛</button>
+    <button class="btn" id="btnQuit">退出到主菜单</button>
+    <p class="hint">按 <b>Esc</b> / <b>P</b> 继续<br>继续后会重新倒计时 3 · 2 · 1</p>
+  </div>
+
+  <!-- 结算 -->
+  <div class="panel hidden" id="panelResult">
+    <h2>比 赛 结 束</h2>
+    <div class="res-winner" id="resWinner">冠 军</div>
+    <div class="podium" id="resPodium"></div>
+    <div class="res-board" id="resBoard"></div>
+    <p class="res-meta" id="resMeta"></p>
+    <div class="row">
+      <button class="btn" id="btnAgain">再来一局</button>
+      <button class="btn primary" id="btnMenu">返回主菜单</button>
+    </div>
+  </div>
+
+  <!-- 赛道生成进度：生成耗时较长时补位，避免画面空等 -->
+  <div class="loader hidden" id="loader">
+    <div class="loader-box">
+      <div class="loader-row">
+        <span id="loaderLabel">正在生成赛道</span>
+        <span class="loader-pct" id="loaderPct">0%</span>
+      </div>
+      <div class="loader-track"><div class="loader-bar" id="loaderBar"></div></div>
+      <div class="loader-hint">程序化实时生成 · 每一条都不一样</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 核心 -->
+<script src="src/core/constants.js"></script>
+<script src="src/core/car-models.js"></script>
+<script src="src/core/math.js"></script>
+<script src="src/core/input.js"></script>
+<!-- 世界 -->
+<script src="src/world/track.js"></script>
+<script src="src/world/camera.js"></script>
+<!-- 实体 -->
+<script src="src/entities/particles.js"></script>
+<script src="src/entities/car.js"></script>
+<script src="src/entities/ai-throttle.js"></script>
+<script src="src/entities/ai-steer.js"></script>
+<script src="src/entities/ai.js"></script>
+<!-- 系统 -->
+<script src="src/systems/collision.js"></script>
+<script src="src/systems/race.js"></script>
+<!-- 渲染 -->
+<script src="src/render/draw-utils.js"></script>
+<script src="src/render/direction-hints.js"></script>
+<script src="src/render/track-render.js"></script>
+<script src="src/render/minimap.js"></script>
+<script src="src/render/car-render.js"></script>
+<script src="src/render/hud.js"></script>
+<script src="src/render/renderer.js"></script>
+<!-- 界面与主控 -->
+<script src="src/ui/panels.js"></script>
+<script src="src/game.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

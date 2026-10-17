@@ -121,6 +121,7 @@ function buildSite(config) {
   const branch = merged.branch || DEFAULT_SITE.branch;
   const docsDir = String(merged.docsDir || DEFAULT_SITE.docsDir).replace(/^\/+|\/+$/g, '');
   const docsBase = owner && repo ? `${repoUrl}/blob/${branch}/${docsDir}/` : '';
+  const rawBase = owner && repo ? `https://raw.githubusercontent.com/${owner}/${repo}` : '';
 
   return {
     owner,
@@ -133,6 +134,7 @@ function buildSite(config) {
     repoUrl,
     avatarUrl,
     docsBase,
+    rawBase,
   };
 }
 
@@ -239,6 +241,373 @@ function extractDescription(content) {
   return body.length > 58 ? `${body.slice(0, 58)}…` : body;
 }
 
+// ---------- README ----------
+
+/** 项目根目录里的 README.md（大小写不敏感）；没有就返回空 */
+function readReadme(dirPath) {
+  let names = [];
+  try {
+    names = fs.readdirSync(dirPath);
+  } catch (e) {
+    return '';
+  }
+  const hit = names.find(name => /^readme\.md$/i.test(name));
+  if (!hit) return '';
+  try {
+    return fs.readFileSync(path.join(dirPath, hit), 'utf8').replace(/^\uFEFF/, '');
+  } catch (e) {
+    console.warn(`  无法读取 ${path.join(dirPath, hit)}：${e.message}`);
+    return '';
+  }
+}
+
+/** README 里的第一段正文，用于没有 meta description 时补一句卡片简介 */
+function readmeSummary(markdown) {
+  const lines = String(markdown).replace(/\r\n?/g, '\n').split('\n');
+  const para = [];
+  let inCode = false;
+
+  const flush = () => {
+    const text = para.join(' ').replace(/[`*_>#]/g, '').replace(/\s+/g, ' ').trim();
+    para.length = 0;
+    return text.length >= 12 ? text : '';
+  };
+
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      inCode = !inCode;
+      if (!inCode && para.length) continue;
+      continue;
+    }
+    if (inCode) continue;
+    const trimmed = line.trim();
+    if (!trimmed) {
+      const text = flush();
+      if (text) return shorten(text, 96);
+      continue;
+    }
+    // 标题、列表、表格、引用、图片、分割线都不算正文段落
+    if (/^(#{1,6}\s|\||-{3,}|\*{3,}|_{3,})/.test(trimmed)) continue;
+    if (/^([-*+]\s|\d+\.\s)/.test(trimmed)) continue;
+    if (/^!\[/.test(trimmed)) continue;
+    para.push(trimmed);
+  }
+  const text = flush();
+  return text ? shorten(text, 96) : '';
+}
+
+/** 截到句末标点，读起来更像一句介绍 */
+function shorten(text, limit) {
+  const stop = text.search(/[。！？!?；;]/);
+  if (stop >= 10 && stop < limit) return text.slice(0, stop + 1);
+  return text.length > limit ? `${text.slice(0, limit)}…` : text;
+}
+
+/** 中文之间不留空格，其余按空格连接（README 里中文常常硬换行） */
+function smartJoin(parts) {
+  const cjk = /[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]/;
+  let out = '';
+  for (const part of parts) {
+    if (!out) {
+      out = part;
+      continue;
+    }
+    if (cjk.test(out.slice(-1)) || cjk.test(part.charAt(0))) out += part;
+    else out += ` ${part}`;
+  }
+  return out;
+}
+
+function slugify(text) {
+  return String(text)
+    .replace(/`/g, '')
+    .replace(/\*\*?([^*]+)\*\*?/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\u4e00-\u9fa5-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * 简易 Markdown → HTML。
+ * 只覆盖 README 里常见的语法：标题 / 段落 / 列表 / 表格 / 代码块 / 引用 / 分割线 /
+ * 行内代码 / 粗体 / 斜体 / 链接 / 图片。相对链接按项目目录改写。
+ *
+ * @param {string} markdown 原文
+ * @param {{dir: string, repoUrl: string, rawBase: string, branch: string}} ctx
+ */
+function renderMarkdown(markdown, ctx) {
+  const lines = String(markdown)
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n');
+
+  const projectDir = ctx.dir.replace(/^\/+|\/+$/g, '');
+
+  /** 归一化相对路径：去掉 ./、处理 ../ */
+  function resolvePath(href) {
+    if (href.startsWith('/')) return href.slice(1);
+    const stack = projectDir.split('/').filter(Boolean);
+    for (const seg of href.split('/')) {
+      if (!seg || seg === '.') continue;
+      if (seg === '..') stack.pop();
+      else stack.push(seg);
+    }
+    return stack.join('/');
+  }
+
+  function githubBlob(fullPath) {
+    return `${ctx.repoUrl}/blob/${ctx.branch}/${fullPath.split('/').map(encodeURIComponent).join('/')}`;
+  }
+
+  function githubRaw(fullPath) {
+    return `${ctx.rawBase}/${ctx.branch}/${fullPath.split('/').map(encodeURIComponent).join('/')}`;
+  }
+
+  function attr(value) {
+    return escapeHtml(String(value).replace(/&amp;/g, '&'));
+  }
+
+  function resolveLink(href) {
+    const clean = href.replace(/&amp;/g, '&');
+    if (/^[a-z][a-z0-9+.-]*:/i.test(clean) || clean.startsWith('//')) return { href: clean, external: true };
+    if (clean.startsWith('#')) {
+      const slug = slugify(decodeURIComponent(clean.slice(1)));
+      return { href: slug ? `#${slug}` : '', external: false };
+    }
+    const target = resolvePath(clean.split('#')[0]);
+    const hash = clean.includes('#') ? clean.slice(clean.indexOf('#')) : '';
+    if (ctx.repoUrl && /\.(md|markdown)$/i.test(target)) {
+      return { href: githubBlob(target) + hash, external: true };
+    }
+    if (ctx.repoUrl) return { href: githubBlob(target) + hash, external: true };
+    return { href: `${ctx.pageBase}/${target}${hash}`, external: false };
+  }
+
+  function resolveImage(src) {
+    const clean = src.replace(/&amp;/g, '&');
+    if (/^[a-z][a-z0-9+.-]*:/i.test(clean) || clean.startsWith('//') || clean.startsWith('data:')) return clean;
+    const target = resolvePath(clean);
+    if (ctx.rawBase) return githubRaw(target);
+    return `${ctx.pageBase}/${target}`;
+  }
+
+  function inline(text) {
+    let html = escapeHtml(text);
+    const stash = [];
+    const keep = value => {
+      stash.push(value);
+      return `\u0000${stash.length - 1}\u0000`;
+    };
+
+    html = html.replace(/`([^`]+)`/g, (m, code) => keep(`<code>${code}</code>`));
+
+    html = html.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+["']([^"']*)["'])?\)/g, (m, alt, src, title) =>
+      keep(
+        `<img src="${attr(resolveImage(src))}" alt="${alt}"${title ? ` title="${title}"` : ''} loading="lazy">`
+      )
+    );
+
+    html = html.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+["']([^"']*)["'])?\)/g, (m, label, href, title) => {
+      const link = resolveLink(href);
+      if (!link.href) return keep(label);
+      const ext = link.external ? ' target="_blank" rel="noopener"' : '';
+      return keep(`<a href="${attr(link.href)}"${title ? ` title="${title}"` : ''}${ext}>${label}</a>`);
+    });
+
+    html = html.replace(/(^|[\s(])(https?:\/\/[^\s<>()"']+)/g, (m, pre, url) => `${pre}${keep(`<a href="${attr(url)}" target="_blank" rel="noopener">${url}</a>`)}`);
+
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    html = html.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+    return html.replace(/\u0000(\d+)\u0000/g, (m, idx) => stash[Number(idx)]);
+  }
+
+  const blocks = [];
+  const headingIds = Object.create(null);
+  const listBuffer = [];
+  let paragraph = [];
+
+  function flushParagraph() {
+    if (!paragraph.length) return;
+    blocks.push(`<p>${inline(smartJoin(paragraph))}</p>`);
+    paragraph = [];
+  }
+
+  function parseListEntries(entries, start, indent) {
+    const ordered = entries[start].ordered;
+    const items = [];
+    let i = start;
+    while (i < entries.length) {
+      const entry = entries[i];
+      if (entry.indent < indent) break;
+      if (entry.indent > indent) {
+        i++;
+        continue;
+      }
+      if (entry.ordered !== ordered) break;
+      let content = inline(entry.text);
+      i++;
+      if (i < entries.length && entries[i].indent > indent) {
+        const sub = parseListEntries(entries, i, entries[i].indent);
+        content += sub.html;
+        i = sub.index;
+      }
+      items.push(`<li>${content}</li>`);
+    }
+    const tag = ordered ? 'ol' : 'ul';
+    return { html: `<${tag}>${items.join('')}</${tag}>`, index: i };
+  }
+
+  function flushList() {
+    if (!listBuffer.length) return;
+    blocks.push(parseListEntries(listBuffer, 0, listBuffer[0].indent).html);
+    listBuffer.length = 0;
+  }
+
+  function tableCells(line) {
+    return line
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map(cell => cell.trim());
+  }
+
+  function renderTable(rows) {
+    const head = tableCells(rows[0]);
+    const body = rows.slice(2).map(tableCells);
+    const th = head.map(cell => `<th>${inline(cell)}</th>`).join('');
+    const trs = body
+      .map(cells => `<tr>${head.map((_, idx) => `<td>${inline(cells[idx] || '')}</td>`).join('')}</tr>`)
+      .join('');
+    return `<div class="md-table"><table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`;
+  }
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // 代码块
+    if (/^```/.test(trimmed)) {
+      flushParagraph();
+      flushList();
+      const lang = trimmed.slice(3).trim();
+      const code = [];
+      i++;
+      while (i < lines.length && !/^```/.test(lines[i].trim())) {
+        code.push(lines[i]);
+        i++;
+      }
+      i++;
+      blocks.push(
+        `<pre class="md-pre"${lang ? ` data-lang="${escapeHtml(lang)}"` : ''}><code>${escapeHtml(
+          code.join('\n')
+        )}</code></pre>`
+      );
+      continue;
+    }
+
+    // 空行
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      i++;
+      continue;
+    }
+
+    // 分割线
+    if (/^([-*_])\s*(\1\s*){2,}$/.test(trimmed)) {
+      flushParagraph();
+      flushList();
+      blocks.push('<hr>');
+      i++;
+      continue;
+    }
+
+    // 标题
+    const heading = trimmed.match(/^(#{1,6})\s+(.+?)\s*#*$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      const level = Math.min(heading[1].length + 3, 6);
+      let id = slugify(heading[2]) || `section-${i}`;
+      if (headingIds[id]) {
+        headingIds[id] += 1;
+        id = `${id}-${headingIds[id]}`;
+      } else {
+        headingIds[id] = 1;
+      }
+      blocks.push(`<h${level} id="${escapeHtml(id)}" class="md-h${Math.min(heading[1].length, 4)}">${inline(heading[2])}</h${level}>`);
+      i++;
+      continue;
+    }
+
+    // 表格
+    if (trimmed.includes('|') && i + 1 < lines.length && /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(lines[i + 1])) {
+      flushParagraph();
+      flushList();
+      const rows = [line];
+      i += 2;
+      while (i < lines.length && lines[i].trim().includes('|') && lines[i].trim()) {
+        rows.push(lines[i]);
+        i++;
+      }
+      blocks.push(renderTable(rows));
+      continue;
+    }
+
+    // 引用
+    if (/^>\s?/.test(trimmed)) {
+      flushParagraph();
+      flushList();
+      const quote = [];
+      while (i < lines.length && /^>\s?/.test(lines[i].trim())) {
+        quote.push(lines[i].trim().replace(/^>\s?/, ''));
+        i++;
+      }
+      blocks.push(`<blockquote>${inline(smartJoin(quote))}</blockquote>`);
+      continue;
+    }
+
+    // 列表
+    const listItem = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+    if (listItem) {
+      flushParagraph();
+      listBuffer.push({
+        indent: listItem[1].replace(/\t/g, '    ').length,
+        ordered: /\d/.test(listItem[2]),
+        text: listItem[3],
+      });
+      i++;
+      continue;
+    }
+
+    // 列表项的续行
+    if (listBuffer.length) {
+      const last = listBuffer[listBuffer.length - 1];
+      last.text = smartJoin([last.text, trimmed]);
+      i++;
+      continue;
+    }
+
+    paragraph.push(trimmed);
+    i++;
+  }
+
+  flushParagraph();
+  flushList();
+
+  return blocks.join('');
+}
+
 /** 格式化文件大小 */
 function formatSize(bytes) {
   if (!bytes) return '';
@@ -257,6 +626,38 @@ function formatSize(bytes) {
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
+
+/**
+ * 构建时间：静态文本写北京时间（构建机可能是 UTC），
+ * 页面加载后由模板脚本改写成访问者本地时间。
+ */
+function beijingStamp(date) {
+  const pad = n => String(n).padStart(2, '0');
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(date)
+      .reduce((acc, p) => Object.assign(acc, { [p.type]: p.value }), {});
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+  } catch (e) {
+    const shifted = new Date(date.getTime() + 8 * 3600 * 1000);
+    return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())} ${pad(
+      shifted.getUTCHours()
+    )}:${pad(shifted.getUTCMinutes())}`;
+  }
+}
+
+const buildTime = new Date();
+const generatedAtHtml = `<time class="gen-time" datetime="${buildTime.toISOString()}">${beijingStamp(
+  buildTime
+)}</time>`;
 
 /** 取某个路径最近一次 git 提交日期；拿不到就用今天 */
 function lastCommitDate(absolutePath) {
@@ -339,8 +740,22 @@ function buildProject(dirPath, dirName, urlDirPath) {
   const indexPath = path.join(dirPath, 'index.html');
   const content = readHtml(indexPath, indexPath);
 
+  const readme = readReadme(dirPath);
+  const hasRepo = Boolean(site.owner && site.repo);
+  const readmeHtml = readme
+    ? renderMarkdown(readme, {
+        dir: urlDirPath,
+        pageBase: encodeUrl(urlDirPath),
+        repoUrl: hasRepo ? site.repoUrl : '',
+        rawBase: hasRepo ? site.rawBase : '',
+        branch: site.branch,
+      })
+    : '';
+
   const description =
-    readMeta(content, ['description', 'og:description']) || extractDescription(content);
+    readMeta(content, ['description', 'og:description']) ||
+    readmeSummary(readme) ||
+    extractDescription(content);
 
   return {
     kind: 'project',
@@ -352,6 +767,10 @@ function buildProject(dirPath, dirName, urlDirPath) {
     size: totalSize(dirPath),
     date: lastCommitDate(indexPath),
     pages: countPages(dirPath, true),
+    readmeHtml,
+    readmeSource:
+      readmeHtml && hasRepo ? `${site.repoUrl}/blob/${site.branch}/${encodeUrl(urlDirPath)}/README.md` : '',
+    readmeText: readmeHtml ? readmeSummary(readme) : '',
   };
 }
 
@@ -440,12 +859,14 @@ function renderCard(item) {
     );
   }
 
-  const searchKey = [item.name, item.description, item.rawName, item.tags]
+  const searchKey = [item.name, item.description, item.rawName, item.tags, item.readmeText]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
 
-  return `<div class="card${item.description ? ' has-more' : ''}" data-name="${escapeHtml(searchKey)}" data-kind="${item.kind}">
+  const hasMore = Boolean(item.description || item.readmeHtml);
+
+  return `<div class="card${hasMore ? ' has-more' : ''}" data-name="${escapeHtml(searchKey)}" data-kind="${item.kind}">
   <a class="card-link" href="${item.url}" target="_blank" rel="noopener" title="${escapeHtml(item.name)}">
     <span class="card-head">
       <span class="card-icon"><i class="fas ${item.icon}"></i></span>
@@ -455,7 +876,8 @@ function renderCard(item) {
     <span class="card-meta">${meta.join('')}</span>
   </a>
   ${item.kind === 'project' ? `<span class="card-tag" data-i18n="nav.projectTag">项目</span>` : ''}
-  ${item.description ? `<button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>` : ''}
+  ${item.readmeHtml ? `<template class="card-readme"${item.readmeSource ? ` data-source="${escapeHtml(item.readmeSource)}"` : ''}>${item.readmeHtml}</template>` : ''}
+  ${hasMore ? `<button class="card-more" type="button" data-i18n-title="nav.viewMore" data-i18n-aria-label="nav.viewMore" title="查看完整介绍" aria-label="查看完整介绍"><i class="fas fa-ellipsis"></i></button>` : ''}
 </div>`;
 }
 
@@ -578,28 +1000,33 @@ const siteConfigScript = `<script>window.SITE = ${JSON.stringify({
 }).replace(/</g, '\\u003c')};</script>`;
 
 let template = fs.readFileSync(templatePath, 'utf8');
-template = template
-  .replace(/\{\{siteTitle\}\}/g, escapeHtml(site.siteTitle))
-  .replace(/\{\{ownerText\}\}/g, escapeHtml(site.owner))
-  .replace(/\{\{bio\}\}/g, escapeHtml(site.bio))
-  .replace(/\{\{githubUrl\}\}/g, site.githubUrl)
-  .replace(/\{\{avatarUrl\}\}/g, site.avatarUrl)
-  .replace(/\{\{siteConfig\}\}/g, siteConfigScript)
-  .replace(/\{\{sideNav\}\}/g, sideNav)
-  .replace(/\{\{railNav\}\}/g, railNav)
-  .replace(/\{\{content\}\}/g, content)
-  .replace(/\{\{introUrl\}\}/g, introUrl)
-  .replace(/\{\{docDevUrl\}\}/g, docDevUrl)
-  .replace(/\{\{docUserUrl\}\}/g, docUserUrl)
-  .replace(/\{\{generatedAt\}\}/g, new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC')
-  .replace(/\{\{statProjects\}\}/g, String(totalProjects))
-  .replace(/\{\{statPages\}\}/g, String(totalPages))
-  .replace(/\{\{statGroups\}\}/g, String(sideIndex.length));
+/** 用函数形式替换：README 里出现 $& / $' 之类不会被当成替换模式 */
+const put = (pattern, value) => template.replace(pattern, () => value);
+template = put(/\{\{siteTitle\}\}/g, escapeHtml(site.siteTitle));
+template = put(/\{\{ownerText\}\}/g, escapeHtml(site.owner));
+template = put(/\{\{bio\}\}/g, escapeHtml(site.bio));
+template = put(/\{\{githubUrl\}\}/g, site.githubUrl);
+template = put(/\{\{avatarUrl\}\}/g, site.avatarUrl);
+template = put(/\{\{siteConfig\}\}/g, siteConfigScript);
+template = put(/\{\{sideNav\}\}/g, sideNav);
+template = put(/\{\{railNav\}\}/g, railNav);
+template = put(/\{\{content\}\}/g, content);
+template = put(/\{\{introUrl\}\}/g, introUrl);
+template = put(/\{\{docDevUrl\}\}/g, docDevUrl);
+template = put(/\{\{docUserUrl\}\}/g, docUserUrl);
+template = put(/\{\{generatedAt\}\}/g, generatedAtHtml);
+template = put(/\{\{statProjects\}\}/g, String(totalProjects));
+template = put(/\{\{statPages\}\}/g, String(totalPages));
+template = put(/\{\{statGroups\}\}/g, String(sideIndex.length));
 
-if (/\{\{\w+\}\}/.test(template)) {
-  const left = template.match(/\{\{\w+\}\}/g);
-  console.warn(`警告：模板里还有未替换的占位符：${[...new Set(left)].join(', ')}`);
-}
+// 模板占位符必须全部替换；只检查模板自己定义过的那些（README 正文里出现的 {{var}} 不算）
+const KNOWN_PLACEHOLDERS = [
+  'siteTitle', 'ownerText', 'bio', 'githubUrl', 'avatarUrl', 'siteConfig',
+  'sideNav', 'railNav', 'content', 'introUrl', 'docDevUrl', 'docUserUrl',
+  'generatedAt', 'statProjects', 'statPages', 'statGroups',
+];
+const left = KNOWN_PLACEHOLDERS.filter(name => template.includes(`{{${name}}}`));
+if (left.length) console.warn(`警告：模板里还有未替换的占位符：${left.join(', ')}`);
 
 fs.writeFileSync(outputFile, template, 'utf8');
 
