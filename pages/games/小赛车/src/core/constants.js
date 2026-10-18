@@ -53,7 +53,7 @@ window.DRC = window.DRC || {};
     aiFollowHead: 0.40,      // 跟车安全距的车头时距 s（由挡位写入）
     aiBrakeReact: 0.10,      // 急刹判断余量·按接近速度折算的秒数（由挡位写入）：判断越准值越小
     aiBrakeBuffer: 72,       // 急刹判断余量·固定缓冲 px（由挡位写入）：约一个车身长 + 余量
-    aiRankBoost: 0.20,       // 位次速度加成上限：最后一名 +20%，按名次线性递减，第一名 0
+    aiRankStep: 0.02,        // 位次速度补偿：每落后一位 +2% 基准最大速度，第一名 0
     aiLineBias: 0.35,        // 每台车的基础走线偏好幅度（相对半宽）：不全场压中线，各有各的线
     aiThrottleDelay: [0.09, 0.15],   // 前后驾驶员的反应间隔（秒）
     aiSteerDelay: [0.07, 0.13],      // 转向驾驶员的反应间隔（秒）
@@ -61,7 +61,7 @@ window.DRC = window.DRC || {};
     aiLevel: 3,              // 默认智能程度挡位（1~5，见 DRC.AI_LEVELS）
     aiSafety: true,          // 安全覆盖总开关（由挡位写入：急刹/倒车避让/贴墙降速/横向分离）
     aiSharedSense: true,     // 两位驾驶员是否共享感知（由挡位写入；false = 各管各的）
-    aiSkill: [0.85, 0.95],   // AI 技能系数区间（由挡位写入）
+    aiSkill: [0.85, 0.95],   // AI 过弯技能系数区间（由挡位写入）：只乘在弯道限速上，不影响直道尾速
 
     // 流程
     countdownStep: 0.9,      // 3 / 2 / 1 / GO 每一步时长
@@ -167,6 +167,52 @@ window.DRC = window.DRC || {};
       skill: [0.93, 1.05],
     },
   ];
+
+  /**
+   * 把某个挡位的参数写进 CONFIG（ai*.js 全部直接读 CONFIG，不逐层传参）。
+   * 一场比赛里可以同时存在不同挡位的车——NPC 用设置页选的挡位，玩家车
+   * 上接管座位的那位 AI 驾驶员用自己的挡位。做法是"思考某台车之前先把
+   * 它那套参数套进 CONFIG"（见 Game.useAiLevel），而不是让 ai*.js 逐层
+   * 收参数。
+   * @param {number} level 1~5
+   * @returns {object} 该挡位的定义（DRC.AI_LEVELS 里的那一项）
+   */
+  DRC.applyAiLevel = function (level) {
+    const C = DRC.CONFIG;
+    const lvl = DRC.AI_LEVELS[(level || 3) - 1] || DRC.AI_LEVELS[2];
+
+    C.aiThrottleDelay = lvl.throttleDelay;
+    C.aiSteerDelay = lvl.steerDelay;
+    C.aiSteerGain = lvl.steerGain;
+    C.aiCornerMargin = lvl.cornerMargin;
+    C.aiOvertakeGap = lvl.overtakeGap;
+    C.aiDodgeRange = lvl.dodgeRange;
+    C.aiLookAhead = lvl.lookAhead;
+    C.aiSafety = lvl.safety;
+    C.aiSharedSense = lvl.sharedSense;
+    C.aiSkill = lvl.skill;
+    C.aiOvertake = lvl.overtake;
+    C.aiFollowBase = lvl.follow[0];
+    C.aiFollowHead = lvl.follow[1];
+    // 新手 / 入门没有安全覆盖，这两项读不到；照样写成常量，
+    // 免得换车时残留上一台车的数值
+    C.aiBrakeReact = lvl.brake ? lvl.brake[0] : 0.10;
+    C.aiBrakeBuffer = lvl.brake ? lvl.brake[1] : 72;
+
+    return lvl;
+  };
+
+  /**
+   * 驾驶方式：每台车有前后（油门 / 刹车）与方向两位驾驶员。
+   * 玩家可以自己开两边，也可以只坐一个座位、把另一边交给 AI 队友。
+   *   own  = 玩家自己负责的那一轴
+   *   role = 接管位 AI 在 ai.js 里扮演的角色
+   */
+  DRC.DRIVE_SEATS = {
+    0: { label: '自主驾驶', short: '自主', own: 'both', role: 'both' },
+    1: { label: '前后位', short: '前后位', own: 'throttle', role: 'steer' },
+    2: { label: '方向位', short: '方向位', own: 'steer', role: 'throttle' },
+  };
 
   /** 两名玩家固定配色 */
   DRC.PLAYER_COLORS = ['#3aa0ff', '#ff5d6c'];

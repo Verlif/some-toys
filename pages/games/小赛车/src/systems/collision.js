@@ -107,6 +107,7 @@
         const my = (a.y + b.y) * 0.5;
         effects.sparks(mx, my, Math.atan2(hit.ny, hit.nx), 8 + Math.round(power * 16), power);
         cam.shake(2 + power * 12);
+        DRC.Sound.hit(power, mx, my, a.isPlayer || b.isPlayer);
       }
     }
   }
@@ -193,6 +194,7 @@
         // 火花从实际发生碰撞的那个角飞溅
         effects.sparks(cx, cy, Math.atan2(-ny, -nx), 6 + Math.round(power * 14), power);
         cam.shake(2 + power * 14);
+        DRC.Sound.hit(power, cx, cy, car.isPlayer);
       }
     } else {
       // 贴墙滑行时的轻微摩擦

@@ -3,6 +3,9 @@
    场景：menu | setup | race(running / countdown) | paused | result
    模式：solo | coop | versus | spectate（观战：全场 AI，
         空格切鸟瞰总览，A/D 或 ←/→ 切换跟随车辆）
+   驾驶方式（solo / versus）：每台车有前后与方向两位驾驶员，
+        玩家可自主驾驶（两边都自己开），也可以只坐一个座位，
+        另一个座位由指定挡位的 AI 接管（见 seatOf / useAiLevel）
    ========================================================= */
 (function (DRC) {
   'use strict';
@@ -24,6 +27,10 @@
         phase: 'idle',       // idle | countdown | running
         mode: 'solo',        // solo | coop | versus | spectate
         coopScheme: 1,       // 1 = W/S + ←/→，2 = ↑/↓ + A/D
+        // 驾驶方式（单人 / 双人对抗）：0 自主 / 1 前后位 / 2 方向位，
+        // 下标 = 玩家序号；选了座位就把另一个座位交给 AI 队友
+        seats: [0, 0],
+        seatAi: 5,           // 接管位 AI 的挡位（1~5，与 NPC 的 aiLevel 互相独立）
         npcCount: 3,
         totalLaps: 3,
         aiLevel: 3,           // AI 智能程度挡位 1~5（DRC.AI_LEVELS）
@@ -32,6 +39,7 @@
         countdownKind: 'start',  // start = 开赛，resume = 暂停恢复
         goFlash: 0,              // GO! 淡出计时
         grace: 0,
+        sound: true,             // 音效总开关（设置页可关）
         // 观战模式：跟随车辆在 cars 里的下标；overview = 鸟瞰总览开关
         spectate: { follow: 0, overview: false },
       };
@@ -45,6 +53,9 @@
       this.players = [];
       this.order = [];
       this.animTime = 0;
+      this._aiLevel = 0;        // 当前套在 CONFIG 里的 AI 挡位（见 useAiLevel）
+      this._cdNum = 0;         // 倒计时音效已响到哪一步（3 / 2 / 1）
+      this._chime = 0;         // 玩家冲线时刻（结算和弦据此顺延）
     }
 
     /* ==================== 视口 ==================== */
@@ -133,27 +144,14 @@
       st.grace = 0;
       st.countdown = CONFIG.countdownStep * COUNTDOWN_STEPS;
       st.spectate = { follow: 0, overview: false };
+      this._cdNum = 0;          // 倒计时音效的当前步（0 = 尚未响）
+      this._chime = 0;          // 玩家冲线时刻（结算音效据此顺延）
 
       // 应用 AI 智能程度挡位：把所选挡位的参数写进 CONFIG，
-      // ai.js / ai-throttle.js / ai-steer.js 直接读，无需逐层传参
-      const lvl = DRC.AI_LEVELS[(st.aiLevel || 3) - 1] || DRC.AI_LEVELS[2];
-      CONFIG.aiThrottleDelay = lvl.throttleDelay;
-      CONFIG.aiSteerDelay = lvl.steerDelay;
-      CONFIG.aiSteerGain = lvl.steerGain;
-      CONFIG.aiCornerMargin = lvl.cornerMargin;
-      CONFIG.aiOvertakeGap = lvl.overtakeGap;
-      CONFIG.aiDodgeRange = lvl.dodgeRange;
-      CONFIG.aiLookAhead = lvl.lookAhead;
-      CONFIG.aiSafety = lvl.safety;
-      CONFIG.aiSharedSense = lvl.sharedSense;
-      CONFIG.aiSkill = lvl.skill;
-      CONFIG.aiOvertake = lvl.overtake;
-      CONFIG.aiFollowBase = lvl.follow[0];
-      CONFIG.aiFollowHead = lvl.follow[1];
-      if (lvl.brake) {
-        CONFIG.aiBrakeReact = lvl.brake[0];
-        CONFIG.aiBrakeBuffer = lvl.brake[1];
-      }
+      // ai.js / ai-throttle.js / ai-steer.js 直接读，无需逐层传参。
+      // 这里只用来 roll 每台 AI 的固有技能系数；正式跑起来时每台车
+      // 会在思考前套用自己的挡位（见 useAiLevel），NPC 与接管位互不干扰
+      DRC.applyAiLevel(st.aiLevel);
 
       // 使用选择页里预览的那条赛道，不再重新生成
       this.effects.clear();
@@ -190,6 +188,9 @@
         if (i === 0 && playerCount === 1) lat = 0;   // 只有一台玩家车时居中发车
         const isPlayer = i < playerCount;
         const isCoop = st.mode === 'coop';
+        // 驾驶方式：只有单人 / 双人对抗能拆座位（合作模式两人本来就各占一席）
+        const seatMode = isPlayer && (st.mode === 'solo' || st.mode === 'versus');
+        const seat = seatMode ? (st.seats[i] | 0) : 0;
 
         const car = new DRC.Car(
           sm.x + sm.nx * lat,
@@ -208,6 +209,9 @@
         car.nearIdx = idx;
         car.lat = lat;
         car.skill = isPlayer ? 1 : DRC.rnd(CONFIG.aiSkill[0], CONFIG.aiSkill[1]);
+        // 每台车的 AI 挡位：NPC 用设置页选的挡位，玩家车的接管位用自己的挡位，
+        // 自主驾驶的玩家车没有 AI 上车（0）。思考前由 useAiLevel 套进 CONFIG
+        car.aiLevel = isPlayer ? (seat ? st.seatAi : 0) : st.aiLevel;
         // 每台车 roll 一条自己的走线偏好（相对半宽）：有的偏内有的偏外，
         // 不是全场压着中线跑
         car.lineBias = isPlayer ? 0 : DRC.rnd(-CONFIG.aiLineBias, CONFIG.aiLineBias);
@@ -217,6 +221,7 @@
       }
 
       this.order = DRC.Race.updateRanks(this.cars);
+      this._aiLevel = 0;              // 新一局：下帧思考前重新套用挡位
       this.cam.reset();
       DRC.Input.reset();
       DRC.UI.hideAll();
@@ -252,6 +257,7 @@
       st.countdownKind = 'resume';
       st.countdown = CONFIG.countdownStep * COUNTDOWN_STEPS;
       st.goFlash = 0;
+      this._cdNum = 0;          // 恢复也重播 3-2-1，音效同步从头开始
 
       DRC.Input.reset();
       DRC.UI.hideAll();
@@ -261,6 +267,10 @@
       const st = this.state;
       st.scene = 'result';
       st.phase = 'idle';
+
+      // 结算和弦：刚播过冲线音就顺延半秒，两段不叠在一起
+      const gap = this._chime ? st.time - this._chime : 99;
+      DRC.Sound.result(gap < 1.2 ? 0.6 : 0);
 
       this.order = DRC.Race.updateRanks(this.cars);
 
@@ -331,9 +341,44 @@
     modeLabel() {
       const st = this.state;
       if (st.mode === 'spectate') return '观战';
-      if (st.mode === 'solo') return '单人';
       if (st.mode === 'coop') return '双人合作 · ' + DRC.COOP_SCHEMES[st.coopScheme].label;
-      return '双人对抗';
+      if (st.mode === 'solo') {
+        const s = this.seatOfPlayer(0);
+        return '单人' + (s ? ' · 协作（' + DRC.DRIVE_SEATS[s].label + '）' : '');
+      }
+      // 双人对抗：两人各自独立选座位，只把选了座位的写进 meta
+      const a = this.seatOfPlayer(0);
+      const b = this.seatOfPlayer(1);
+      if (!a && !b) return '双人对抗';
+      return '双人对抗 · ' +
+        'P1 ' + (a ? DRC.DRIVE_SEATS[a].label : '自主') + ' / ' +
+        'P2 ' + (b ? DRC.DRIVE_SEATS[b].label : '自主');
+    }
+
+    /**
+     * 玩家车的驾驶方式：0 自主 / 1 前后位 / 2 方向位。
+     * 合作模式两人本来就各占一席，不参与拆分
+     */
+    seatOfPlayer(index) {
+      const st = this.state;
+      if (st.mode !== 'solo' && st.mode !== 'versus') return 0;
+      return ((st.seats || [])[index] | 0);
+    }
+
+    seatOf(car) {
+      return car.isPlayer ? this.seatOfPlayer(car.playerIndex) : 0;
+    }
+
+    /**
+     * 思考某台车前套用它的 AI 挡位。CONFIG 里的 ai* 参数是全局的，
+     * 一场比赛里 NPC 与玩家接管位可能不同挡，所以按车切换——
+     * 同一挡位连续思考时不必重复写
+     */
+    useAiLevel(car) {
+      const lvl = car.aiLevel || 3;
+      if (this._aiLevel === lvl) return;
+      this._aiLevel = lvl;
+      DRC.applyAiLevel(lvl);
     }
 
     /** 按当前模式读取玩家操作意图 */
@@ -357,10 +402,12 @@
           // 倒计时期间车辆锁定，只推进特效计时
           st.countdown -= dt;
           for (let i = 0; i < this.cars.length; i++) this.cars[i].tick(dt);
+          this.tickCountdownSound(st);
           if (st.countdown <= 0) {
             st.countdown = 0;
             st.phase = 'running';
             st.goFlash = CONFIG.countdownStep;
+            DRC.Sound.countdown(0);          // GO
           }
         } else if (st.phase === 'running') {
           if (st.goFlash > 0) st.goFlash = Math.max(0, st.goFlash - dt);
@@ -370,6 +417,21 @@
       }
 
       this.updateCamera(dt);
+
+      // 只刷新音效的听者位置（撞击按距离衰减、按左右做声像）
+      if (st.scene === 'race') DRC.Sound.update(this);
+    }
+
+    /**
+     * 3-2-1 每跨过一步响一声。挡位由剩余时间算出，
+     * 与 HUD 的倒计时用同一套相位，不会错拍
+     */
+    tickCountdownSound(st) {
+      const step = CONFIG.countdownStep;
+      const num = DRC.clamp(Math.ceil(Math.max(0, st.countdown) / step), 0, COUNTDOWN_STEPS);
+      if (num === this._cdNum) return;
+      this._cdNum = num;
+      if (num > 0) DRC.Sound.countdown(num);
     }
 
     stepRace(dt) {
@@ -384,10 +446,27 @@
 
         if (!c.finished) {
           if (c.isPlayer) {
+            const seat = this.seatOf(c);
             const inp = this.playerInput(c.playerIndex);
-            throttle = inp.throttle;
-            steer = inp.steer;
+
+            if (!seat) {
+              // 自主驾驶：两个轴都来自键盘
+              throttle = inp.throttle;
+              steer = inp.steer;
+            } else {
+              // 协作驾驶：自己那一轴来自键盘，另一个座位由 AI 队友出
+              this.useAiLevel(c);
+              const ai = DRC.AI.think(c, this.track, cars, dt, DRC.DRIVE_SEATS[seat].role);
+              if (seat === 1) {          // 玩家管前后，AI 管方向
+                throttle = inp.throttle;
+                steer = ai.steer;
+              } else {                   // 玩家管方向，AI 管前后
+                throttle = ai.throttle;
+                steer = inp.steer;
+              }
+            }
           } else {
+            this.useAiLevel(c);
             const inp = DRC.AI.think(c, this.track, cars, dt);
             throttle = inp.throttle;
             steer = inp.steer;
@@ -409,9 +488,22 @@
       // 4) 圈数与排名
       DRC.Race.updateProgress(cars, this.track, st.totalLaps, st.time);
       this.order = DRC.Race.updateRanks(cars);
+      this.checkChime();
 
       // 5) 结束判定
       this.checkFinish(dt);
+    }
+
+    /** 玩家车刚冲线：响一声冲线音，并记下时刻供结算音效顺延 */
+    checkChime() {
+      const players = this.players;
+      for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        if (!p.finished || p.finishChime) continue;
+        p.finishChime = true;
+        this._chime = this.state.time;
+        DRC.Sound.finish();
+      }
     }
 
     checkFinish(dt) {

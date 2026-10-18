@@ -23,6 +23,11 @@
   });
   DRC.UI.show('panelMain');
 
+  // 浏览器要求用户手势之后才允许出声：第一次点击 / 按键时解锁音频上下文
+  function unlockSound() { DRC.Sound.unlock(); }
+  window.addEventListener('pointerdown', unlockSound, { once: true });
+  window.addEventListener('keydown', unlockSound, { once: true });
+
   // 窗口失焦 / 切到别的标签页时自动暂停，回来先看 3-2-1 再继续
   window.addEventListener('blur', function () { game.pause(); });
   document.addEventListener('visibilitychange', function () {

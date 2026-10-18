@@ -473,6 +473,36 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: 0;
 }
 
+/* ---------------- 驾驶方式（每个玩家一行） ---------------- */
+.seat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seat-who {
+  flex: 0 0 28px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.seat-row .seg {
+  flex: 1;
+}
+
+.seat-row .seg button {
+  padding: 9px 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.5px;
+}
+
 /* ---------------- 合作操作的按键预览 ---------------- */
 .keypad {
   display: flex;
@@ -567,6 +597,11 @@ kbd {
 
 .collapse .field {
   margin-bottom: 0;
+}
+
+/* 一个折叠区里放两块设置项时留出间距 */
+.collapse .field + .field {
+  margin-top: 18px;
 }
 
 /* ---------------- 赛道预览 ---------------- */

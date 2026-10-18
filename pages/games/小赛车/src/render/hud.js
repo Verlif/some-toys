@@ -16,6 +16,14 @@
     ctx.stroke();
   }
 
+  /** 协作驾驶的座位小标：'AI 方向' / 'AI 前后'（自主驾驶返回空串） */
+  function seatTag(st, idx) {
+    if (st.mode !== 'solo' && st.mode !== 'versus') return '';
+    const s = (st.seats || [])[idx] | 0;
+    if (!s) return '';
+    return s === 1 ? 'AI 方向' : 'AI 前后';
+  }
+
   /** 左上：两名玩家的圈数与名次 */
   function drawPlayers(ctx, game) {
     const st = game.state;
@@ -45,6 +53,20 @@
       ctx.fillStyle = '#e8f2ff';
       ctx.font = '800 15px ' + FONT;
       ctx.fillText(p.name, x + 32, top + 22);
+      const nameW = ctx.measureText(p.name).width;
+
+      // 座位小标：名字后面挂一枚，一眼看出哪一半是 AI 在开
+      const tag = seatTag(st, p.playerIndex);
+      if (tag) {
+        ctx.font = '800 9.5px ' + FONT;
+        const tw = ctx.measureText(tag).width;
+        const bx = x + 32 + nameW + 8;
+        ctx.fillStyle = 'rgba(255, 209, 102, 0.16)';
+        DRC.roundRect(ctx, bx, top + 8, tw + 12, 15, 7.5);
+        ctx.fill();
+        ctx.fillStyle = '#ffd166';
+        ctx.fillText(tag, bx + 6, top + 19);
+      }
 
       const lap = Math.min(p.lap + 1, st.totalLaps);
       const modelName = p.model ? p.model.name : '';
@@ -188,12 +210,22 @@
     }
   }
 
-  /** 左下操作提示，随模式变化 */
+  /** 左下操作提示，随模式与座位变化 */
   function hintText(st) {
-    if (st.mode === 'solo') return 'WASD 或 ↑/←/↓/→ 驾驶';
+    if (st.mode === 'solo') {
+      const s = (st.seats || [])[0] | 0;
+      if (s === 1) return '你管前后（W/S 或 ↑/↓）· AI 管方向';
+      if (s === 2) return '你管方向（A/D 或 ←/→）· AI 管前后';
+      return 'WASD 或 ↑/←/↓/→ 驾驶';
+    }
     if (st.mode === 'coop') return DRC.COOP_SCHEMES[st.coopScheme].hint;
     if (st.mode === 'spectate') return '空格 鸟瞰总览 · A/D 或 ←/→ 切换跟随';
-    return 'P1  W/A/S/D       P2  ↑/←/↓/→';
+
+    // 双人对抗：只列玩家真正用得上的键（座位决定），没座位就是全套
+    const seats = st.seats || [];
+    const p1 = seats[0] === 1 ? 'W/S' : (seats[0] === 2 ? 'A/D' : 'W/A/S/D');
+    const p2 = seats[1] === 1 ? '↑/↓' : (seats[1] === 2 ? '←/→' : '↑/←/↓/→');
+    return 'P1  ' + p1 + '       P2  ' + p2;
   }
 
   function drawHints(ctx, game) {

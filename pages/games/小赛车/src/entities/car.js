@@ -40,6 +40,7 @@
       this.rank = 1;
       this.finished = false;
       this.finishTime = 0;
+      this.finishChime = false;   // 冲线音效是否已播（纯表现层状态）
 
       // 本场数据统计（结算页用）
       this.lapTimes = [];
@@ -51,6 +52,7 @@
 
       // AI：前后 / 左右两个"驾驶员"各自的决策缓存与反应节奏
       this.skill = 1;
+      this.aiLevel = 0;      // 该车 AI 所用挡位（0 = 没有 AI 在开；玩家接管位见 game.useAiLevel）
       this.stuckTimer = 0;
       this.reverseTimer = 0;
       this.lastSteer = 0;
@@ -62,8 +64,8 @@
       this.spinTimer = 0;    // 车头持续偏离赛道方向的时长（触发倒车回正）
       // 上一帧的并排侧偏距离（算横向接近速度用：null = 身旁没有车）
       this.nbSide = null;
-      // 位次速度加成（橡皮筋）：最后一名最高 +10%，ai.js 每帧按名次刷新，
-      // phys 的限速随之放宽——追不上时白给一点尾速，比赛始终有悬念
+      // 位次速度补偿（橡皮筋）：名次越低越高（每落后一位 +2%），
+      // ai.js 每帧按名次刷新，phys 的限速随之放宽——追不上时白给一点尾速
       this.boost = 1;
       // 主动超车：otSide = 绕行方向（-1 左 / +1 右 / 0 不绕），
       // otTimer = 本次绕行剩余时间，otCooldown = 回正冷却
@@ -110,14 +112,11 @@
         else this.speed -= Math.sign(this.speed) * f;
       }
 
-      // 限速（位次加成会放宽上限，玩家车恒为 1）
+      // 限速：硬上限，油门顶不出这个值（软阻尼会让全油门稳态超出上限
+      // 10% 以上，把位次补偿的 2% 差异完全吃掉）
       const vmax = C.maxSpeed * this.boost;
-      if (this.speed > vmax) {
-        this.speed -= (this.speed - vmax) * Math.min(1, 5 * dt);
-      }
-      if (this.speed < -C.reverseMax) {
-        this.speed -= (this.speed + C.reverseMax) * Math.min(1, 5 * dt);
-      }
+      if (this.speed > vmax) this.speed = vmax;
+      if (this.speed < -C.reverseMax) this.speed = -C.reverseMax;
 
       this.x += Math.cos(this.angle) * this.speed * dt;
       this.y += Math.sin(this.angle) * this.speed * dt;

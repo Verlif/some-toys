@@ -34,10 +34,10 @@
        （接近速度²/(2·刹车)）现场算，不是"自己一路跑过的距离"
 
    还有两条"胜负心"：
-     · 位次速度加成（橡皮筋）：名次越靠后 boost 越高（最后一名
-       +10%），物理限速同步放宽，追不上也白给一点尾速
+     · 位次速度补偿（橡皮筋）：名次越低 boost 越高（第一名 0，
+       之后每落后一位 +2% 基准最大速度），物理限速同步放宽
      · 主动超车：被前车压住就选一侧绕出去（瞄准点外移 + 油门
-      不低于前车速度+余量），绕行期间锁定目标车直到明显超过它
+       不低于前车速度+余量），绕行期间锁定目标车直到明显超过它
       （目标退到身侧时靠 pass 续上），不做稳定跟跑按部就班的车
    ========================================================= */
 (function (DRC) {
@@ -253,16 +253,17 @@
   }
 
   /**
-   * 位次速度加成（橡皮筋）：名次越靠后给得越多，最后一名 +10%，
-   * 按名次线性递减，第一名不加。rank 由上一帧的 updateRanks 写好；
+   * 位次速度补偿（橡皮筋）：名次越低给得越多——第一名不加，
+   * 之后每落后一位多 2% 基准最大速度（第 2 名 +2%、第 3 名 +4%…）。
+   * rank 由上一帧的 updateRanks 写好（1 = 领先）。
    * boost 阻尼平滑——超掉一台或被超一台时速度目标渐变，不会突然窜。
    * 物理上限（phys 的限速）随之放宽，这是"可以获得"的额外尾速。
    */
-  function updateRankBoost(car, cars, dt) {
-    const n = cars.length;
-    const t = n > 1 ? (n - car.rank) / (n - 1) : 0;
-    const want = 1 + C.aiRankBoost * DRC.clamp(t, 0, 1);
-    car.boost = DRC.damp(car.boost, want, 2, dt);
+  function updateRankBoost(car, dt) {
+    const want = 1 + C.aiRankStep * Math.max(0, car.rank - 1);
+    // 丢掉名次时补偿涨得慢一点（避免刚被超就窜），
+    // 抢到名次时收回得快一点（否则新领跑者还带着上一名的尾速优势）
+    car.boost = DRC.damp(car.boost, want, want < car.boost ? 6 : 2, dt);
   }
 
   /** 绕行方向：优先前车反侧；那一侧太窄就换到宽的一侧 */
@@ -340,9 +341,16 @@
    * @param {object} track
    * @param {Array} cars 全部车辆（含自己）
    * @param {number} dt
+   * @param {string} [role] 'both'（默认，整车 AI）| 'throttle'（只接管前后）
+   *   | 'steer'（只接管方向）。玩家车选了协作驾驶时，只出自己那一半，
+   *   另一半由玩家键盘输入（见 game.stepRace）
    * @returns {{throttle:number, steer:number}}
    */
-  function think(car, track, cars, dt) {
+  function think(car, track, cars, dt, role) {
+    // 只坐一个座位的两种互补情形：接管方向 / 接管前后
+    const steerOnly = role === 'steer';
+    const throttleOnly = role === 'throttle';
+
     // 感知：中高挡位共享一次，两位驾驶员看同一个世界；
     // 最低挡不共享——各算各的，且各自对赛道形状有随机理解偏差
     let ctxT, ctxS;
@@ -361,22 +369,27 @@
       car.blockTime = Math.max(0, car.blockTime - dt * 1.5);
     }
 
-    // 位次速度加成：名次越靠后尾速越高（最后一名 +10%）
-    updateRankBoost(car, cars, dt);
+    // 位次速度补偿：名次越低尾速越高，每落后一位 +2% 基准最大速度。
+    // 玩家车的接管位同样算"车上有 AI 在开"，照吃这份补偿
+    updateRankBoost(car, dt);
 
-    updateStuck(car, ctxT, dt);
+    // 倒车脱困与掉头恢复都要靠油门执行：AI 不管油门时整段跳过，
+    // 否则会出现「玩家踩着油门，AI 却按倒车逻辑打方向」的错乱
+    if (!steerOnly) {
+      updateStuck(car, ctxT, dt);
 
-    // 掉头 / 打横恢复：车头偏离赛道方向超过约 86° 且速度起不来时，
-    // 倒车把车头摆回来——硬着头皮开只会横向滑墙
-    if (car.reverseTimer > 0) {
-      car.spinTimer = 0;
-    } else {
-      if (Math.abs(ctxT.angleDiff) > 1.5 && ctxT.spd < 160) car.spinTimer += dt;
-      else car.spinTimer = 0;
-      if (car.spinTimer > 0.35) {
+      // 掉头 / 打横恢复：车头偏离赛道方向超过约 86° 且速度起不来时，
+      // 倒车把车头摆回来——硬着头皮开只会横向滑墙
+      if (car.reverseTimer > 0) {
         car.spinTimer = 0;
-        car.reverseTimer = 0.75;
-        car.throttlePlan = -1;
+      } else {
+        if (Math.abs(ctxT.angleDiff) > 1.5 && ctxT.spd < 160) car.spinTimer += dt;
+        else car.spinTimer = 0;
+        if (car.spinTimer > 0.35) {
+          car.spinTimer = 0;
+          car.reverseTimer = 0.75;
+          car.throttlePlan = -1;
+        }
       }
     }
 
@@ -387,24 +400,29 @@
     if (car.reverseTimer > 0) {
       let thr = DRC.AIThrottle.decide(car, ctxT);
       if (C.aiSafety && ctxS.rear !== null && ctxS.wallGap >= 26) thr = 0;
-      return { throttle: thr, steer: DRC.AISteer.decide(car, ctxS) };
+      return { throttle: thr, steer: throttleOnly ? 0 : DRC.AISteer.decide(car, ctxS) };
     }
 
-    // 超车状态机（倒车时不琢磨超车，先脱困）
+    // 超车状态机（倒车时不琢磨超车，先脱困）。只坐一个座位时照样跑：
+    // 接管方向的一方会把线往要超的那侧带，接管前后的一方会给足油
     updateOvertake(car, ctxT, dt);
 
     // 前后驾驶员：按自己的反应间隔刷新决策
-    car.throttleClock -= dt;
-    if (car.throttleClock <= 0) {
-      car.throttleClock = DRC.rnd(C.aiThrottleDelay[0], C.aiThrottleDelay[1]);
-      car.throttlePlan = DRC.AIThrottle.decide(car, ctxT);
+    if (!steerOnly) {
+      car.throttleClock -= dt;
+      if (car.throttleClock <= 0) {
+        car.throttleClock = DRC.rnd(C.aiThrottleDelay[0], C.aiThrottleDelay[1]);
+        car.throttlePlan = DRC.AIThrottle.decide(car, ctxT);
+      }
     }
 
     // 转向驾驶员：独立节奏，与前后不同步
-    car.steerClock -= dt;
-    if (car.steerClock <= 0) {
-      car.steerClock = DRC.rnd(C.aiSteerDelay[0], C.aiSteerDelay[1]);
-      car.steerPlan = DRC.AISteer.decide(car, ctxS);
+    if (!throttleOnly) {
+      car.steerClock -= dt;
+      if (car.steerClock <= 0) {
+        car.steerClock = DRC.rnd(C.aiSteerDelay[0], C.aiSteerDelay[1]);
+        car.steerPlan = DRC.AISteer.decide(car, ctxS);
+      }
     }
 
     // 紧急制动（安全覆盖）：前车近到"现在不刹就停不住"时，立即覆盖油门计划，
@@ -419,7 +437,8 @@
     // 绕行超车中横向门控与常规一致：车偏在外线（侧偏 40+）时前车
     // 已经不可能被追尾，为它刹车只会把超车掐死在并排阶段；收回内线
     // 时侧偏掉到 40 以内，门控自然重新生效，照样刹得住
-    if (C.aiSafety && ctxT.blocker) {
+    // 接管方向的 AI 不碰油门，这条覆盖留给玩家自己判断（钻缝就撞，自己负责）
+    if (!steerOnly && C.aiSafety && ctxT.blocker) {
       const b = ctxT.blocker;
       const closing = ctxT.spd - b.speed;
       const lateral = car.otTimer > 0 ? 44 : 42;

@@ -22,6 +22,7 @@
       单人：<b>WASD</b> 或 <b>方向键</b> 均可驾驶<br>
       双人合作：两人分工控制同一台车<br>
       双人对抗：P1 <b>WASD</b> · P2 <b>方向键</b><br>
+      协作驾驶：单人或对抗时只坐一个座位，另一个座位交给 AI<br>
       观战：AI 全自动 · <b>空格</b> 鸟瞰总览 · <b>A/D</b> 切换跟随<br>
       Esc / P 暂停比赛
     </p>
@@ -49,6 +50,27 @@
             <button type="button" data-v="coop" class="active">合 作</button>
             <button type="button" data-v="versus">对 抗</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapse" id="fieldSeat">
+      <div class="collapse-inner">
+        <div class="field">
+          <div class="field-label">驾驶方式</div>
+          <div class="seat-list" id="seatList"></div>
+          <div class="field-note" id="seatNote"></div>
+        </div>
+        <div class="field" id="fieldSeatAi">
+          <div class="field-label">接管位 AI 强度 <span id="lblSeatAi">赛车手</span></div>
+          <div class="seg seg-5" id="segSeatAi">
+            <button type="button" data-v="1">新 手</button>
+            <button type="button" data-v="2">入 门</button>
+            <button type="button" data-v="3">普 通</button>
+            <button type="button" data-v="4">老 练</button>
+            <button type="button" data-v="5" class="active">赛车手</button>
+          </div>
+          <div class="field-note">与「AI 智能程度」互不影响：那一挡只管坐进你另一个座位的队友</div>
         </div>
       </div>
     </div>
@@ -97,6 +119,15 @@
       <input type="range" id="rngLap" min="1" max="9" step="1" value="3">
     </div>
 
+    <div class="field">
+      <div class="field-label">音效</div>
+      <div class="seg" id="segSound">
+        <button type="button" data-v="1" class="active">开 启</button>
+        <button type="button" data-v="0">关 闭</button>
+      </div>
+      <div class="field-note">撞击、倒计时、冲线与结算提示音（无行驶噪声）</div>
+    </div>
+
     <div class="row">
       <button class="btn" id="btnBack">返 回</button>
       <button class="btn primary" id="btnGo">开始比赛</button>
@@ -143,6 +174,8 @@
 <script src="src/core/car-models.js"></script>
 <script src="src/core/math.js"></script>
 <script src="src/core/input.js"></script>
+<!-- 音频 -->
+<script src="src/audio/sound.js"></script>
 <!-- 世界 -->
 <script src="src/world/track.js"></script>
 <script src="src/world/camera.js"></script>

@@ -2,8 +2,11 @@
    ai-throttle.js — NPC 的"前后驾驶员"
    只负责油门 / 刹车 / 倒车，不碰方向。
    风格激进：弯道按转向能力的物理上限给油，跟车距离可以压缩，
-   绕行超车时不低于前车速度，油门刹车切换果断，不在半油门区间犹豫。
-   位次加成（car.boost）同时抬升目标速度与物理限速。
+   绕行超车时不低于前车速度，直道目标就是尾速满值——离目标远就
+   全油门，只有贴近目标时才按差距给"羽油门"，不会在目标附近
+   来回全油 / 重刹地抖。
+   技能系数只乘在弯道限速上：新手是"入弯收得早"，不是直道踩不到底。
+   位次补偿（car.boost）同时抬升目标速度与物理限速。
    跟车安全距由挡位决定（aiFollowBase / aiFollowHead）：挡位越高
    跟得越近、越晚减速；绕行超车期间速度目标锁定正在超的那台车
    （含身侧与略后方），不会半程松油门。
@@ -23,13 +26,16 @@
     // 1) 弯道限速：过弯速度由转向能力决定 v = ω_max × R，
     //    按 aiCornerMargin 留余量给转向惯性与贴墙修正；
     //    车头还没对准弯道时再额外收一点，避免一边修正一边冲。
-    //    位次加成只放大直道尾速——弯道物理上限是抓地力决定的，
+    //    位次补偿只放大直道尾速——弯道物理上限是抓地力决定的，
     //    跟着名次一起放大会让车入弯太快、转向跟不上外抛蹭墙
     let target = C.maxSpeed * car.boost;
     let vCorner = Infinity;
     if (ctx.minRAhead < Infinity) {
       const align = 1 - 0.22 * DRC.clamp(Math.abs(ctx.angleDiff) / 0.8, 0, 1);
-      vCorner = C.turnRate * ctx.minRAhead * C.aiCornerMargin * align;
+      // 技能系数只作用在弯道：新手"不敢压极限"是入弯收油，
+      // 不是直道也跑不到全速。乘在整个 target 上会让低挡位的车
+      // 在直路上永远只到全速的 72%~88%，看起来就是不敢踩
+      vCorner = C.turnRate * ctx.minRAhead * C.aiCornerMargin * align * car.skill;
       if (vCorner < target) target = vCorner;
     }
 
@@ -76,14 +82,15 @@
       if (vWall < target) target = vWall;
     }
 
-    // boost 已在第 1 步计入直道尾速；skill 是每台车的固有差异
-    target *= car.skill;
-
-    // 4) 激进风格：低于目标全油门，超出 3% 立即重刹，
-    //    死区压到 ±3%，不拖泥带水
-    if (car.speed < target * 0.97) return 1;
-    if (car.speed > target * 1.03) return -1;
-    return 0.35;
+    // 4) 落地：离目标远就全油；接近目标时按差距给"羽油门"。
+    //    旧写法在目标附近是「低于 97% 全油 / 高于 103% 重刹」的二值切换，
+    //    而一次决策要持 0.14~0.24s——全油段能冲上去上百，重刹段又会掉
+    //    回来，肉眼就能看到车速在目标附近来回跳。改成比例输出后，
+    //    目标附近的修正幅度只有十几，速度贴着目标走
+    const err = target - car.speed;
+    if (err > 90) return 1;
+    if (err >= 0) return Math.max(0.08, err / 90);      // 差一点：轻给油
+    return DRC.clamp(err / 200, -1, -0.05);             // 超一点：轻收油
   }
 
   DRC.AIThrottle = { decide: decide };
