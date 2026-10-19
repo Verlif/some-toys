@@ -13,6 +13,16 @@ import { state } from './state.js';
 import { expForLevel, MAX_LEVEL, titleOf, unlockedPlotCount } from '../data/progression.js';
 import { notify } from './notify.js';
 
+/** 没加到经验时的返回值（等级保持不变） */
+function noGain() {
+  return {
+    levelBefore: state.player.level,
+    levelAfter: state.player.level,
+    leveledUp: false,
+    unlockedPlots: 0,
+  };
+}
+
 /* ---------- 内存 mutator（不落盘） ---------- */
 
 /** 加金币，下限 0 */
@@ -33,6 +43,8 @@ export function spendCoins(amount) {
  * @returns {{levelBefore: number, levelAfter: number, leveledUp: boolean, unlockedPlots: number}}
  */
 export function addExpRaw(amount) {
+  if (!Number.isFinite(amount) || amount <= 0) return noGain();
+
   const player = state.player;
   const levelBefore = player.level;
   const plotsBefore = unlockedPlotCount(levelBefore);

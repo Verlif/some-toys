@@ -12,6 +12,7 @@ let root = null;
 let titleEl = null;
 let coinsEl = null;
 let body = null;
+let footEl = null;
 let current = null;
 
 /** 子页面是否处于打开状态 */
@@ -22,11 +23,24 @@ export function syncCoins() {
   if (coinsEl) coinsEl.textContent = state.player.coins;
 }
 
-/** 重绘当前子页面（数据变化时调用） */
+/**
+ * 重绘当前子页面（数据变化时调用）
+ * 底栏（固定在底部、不随内容滚动）由页面通过 setFoot 声明。
+ */
 export function renderCurrent() {
   if (!current || !isOpen()) return;
   const page = subpages[current];
-  page?.render(body, { syncCoins });
+  page?.render(body, { syncCoins, setFoot });
+}
+
+/**
+ * 设置子页面底栏。内容不参与滚动，固定在底部。
+ * @param {string} html
+ */
+export function setFoot(html) {
+  if (!footEl) return;
+  footEl.innerHTML = html || '';
+  footEl.hidden = !html;
 }
 
 /**
@@ -39,6 +53,7 @@ export function openSubpage(key) {
   titleEl.textContent = SUBPAGE_TITLES[key] || '功能';
   syncCoins();
   body.scrollTop = 0;
+  setFoot('');
   // 必须先加 .show 再渲染：renderCurrent 内部有 isOpen() 判断，
   // 顺序反了的话内容永远不会被渲染出来。
   root.classList.add('show');
@@ -57,6 +72,7 @@ export function mountSubpage() {
   titleEl = byId('subpageTitle');
   coinsEl = byId('subCoins');
   body = byId('subpageBody');
+  footEl = byId('subpageFoot');
 
   byId('subBack').addEventListener('click', closeSubpage);
   dragToClose(root, { onClose: closeSubpage, scrollArea: body });
@@ -66,6 +82,15 @@ export function mountSubpage() {
     const handler = page?.actions?.[el.dataset.action];
     if (!handler) return;
     event.preventDefault();
-    Promise.resolve(handler(el, { closeSubpage, renderCurrent, syncCoins })).then(renderCurrent);
+    Promise.resolve(handler(el, { closeSubpage, renderCurrent, syncCoins, setFoot })).then(renderCurrent);
+  });
+
+  // 底栏里的按钮同样走动作分发
+  delegate(footEl, 'click', '[data-action]', (el, event) => {
+    const page = subpages[current];
+    const handler = page?.actions?.[el.dataset.action];
+    if (!handler) return;
+    event.preventDefault();
+    Promise.resolve(handler(el, { closeSubpage, renderCurrent, syncCoins, setFoot })).then(renderCurrent);
   });
 }

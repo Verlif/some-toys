@@ -44,13 +44,3 @@ export const SEED_FILTERS = [
   { key: 'affordable', label: '买得起' },
   { key: 'all', label: '全部' },
 ];
-
-/**
- * 播种弹窗的筛选档位。145 种作物全列出来在手机上要滚很久，
- * 所以默认只列出有存货的。
- */
-export const SEED_MODAL_FILTERS = [
-  { key: 'owned', label: '有存货' },
-  { key: 'plantable', label: '现在能种' },
-  { key: 'all', label: '全部' },
-];

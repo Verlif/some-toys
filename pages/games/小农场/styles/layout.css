@@ -11,7 +11,11 @@
   color: #fff;
   border-radius: 0 0 22px 22px;
   box-shadow: 0 6px 20px rgba(50, 127, 55, .22);
+  transition: border-radius .2s ease;
 }
+/* 展开时把底部的圆角收成直角，详情面板才能严丝合缝地接上来，
+   否则中间会露出一条缝 */
+.hud.open { border-radius: 0; }
 
 /* 收起态的一行：整行可点开详情 */
 .hud-bar {
@@ -66,18 +70,21 @@
 .hud-bar.open .hud-caret { transform: rotate(180deg); }
 
 /* 展开层：盖在内容之上，不占据布局流 */
+/* 详情面板：绝对定位盖在内容之上，不挤压下方土地区域。
+   顶部与顶栏贴合（无圆角、无间隙），配色用同色系的浅绿，
+   避免「绿底 + 纯白面板」的割裂感。 */
 .hud-detail {
   position: absolute;
   left: 0;
   right: 0;
   top: 100%;
-  background: #fff;
+  margin-top: -1px;
+  background: linear-gradient(180deg, #f2f9ef 0%, #eaf5e6 100%);
   color: var(--text);
-  border-radius: 0 0 18px 18px;
+  border-radius: 0 0 20px 20px;
   box-shadow: 0 12px 28px rgba(30, 60, 30, .18);
   padding: 14px 15px 12px;
   animation: fade .18s ease;
-  border-top: 1px solid var(--line);
 }
 .hud-detail[hidden] { display: none; }
 
@@ -87,8 +94,9 @@
   gap: 9px;
 }
 .hud-cell {
-  background: #f7faf4;
+  background: #fff;
   border-radius: 11px;
+  box-shadow: 0 1px 3px rgba(40, 80, 40, .06);
   padding: 9px 11px;
   display: flex;
   flex-direction: column;
@@ -112,7 +120,7 @@
 .hud-detail-tip {
   text-align: center;
   font-size: 10.5px;
-  color: #a8b3a5;
+  color: #8fa189;
   margin-top: 11px;
 }
 
@@ -171,6 +179,23 @@
 }
 .tabbar button span { font-size: 19px; line-height: 1; }
 .tabbar button.active { color: var(--green-d); background: #eef7e9; }
+
+/* 主页面是文档滚动（农场 / 邻居），没法在容器上做遮罩，
+   所以在底部导航上方压一条渐隐带。高度取 26px、底边藏进导航条里，
+   只露出十几像素的过渡，提示「下面还有内容」。
+   z-index 低于 tabbar（60），高于内容，不会挡住点击。 */
+.app::after {
+  content: '';
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 900px);
+  bottom: calc(56px + env(safe-area-inset-bottom));
+  height: 26px;
+  background: linear-gradient(180deg, rgba(238, 243, 233, 0), var(--bg));
+  pointer-events: none;
+  z-index: 55;
+}
 
 /* ============================================================
    三个浮层（底部浮窗 / 子页面 / 模态弹窗）共用同一套交互：
@@ -259,16 +284,18 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* 浮起来一点，四个圆角才都看得见 */
+  bottom: calc(8px + env(safe-area-inset-bottom));
   max-width: 640px;
   margin: 0 auto;
   background: #fff;
-  border-radius: 24px 24px 0 0;
-  padding: 0 16px calc(20px + env(safe-area-inset-bottom));
-  transform: translateY(100%);
+  border-radius: 24px;
+  padding: 0 16px 20px;
+  /* 收起时要完全移出屏幕：位移要算上 bottom 的偏移量，否则刘海屏上会露出一条 */
+  transform: translateY(calc(100% + 8px + env(safe-area-inset-bottom)));
   transition: transform .3s cubic-bezier(.2, .9, .3, 1);
   box-shadow: 0 -8px 30px rgba(0, 0, 0, .12);
-  max-height: 82vh;
+  max-height: calc(100% - var(--sheet-top) - 8px - env(safe-area-inset-bottom));
   overflow-y: auto;
   touch-action: pan-y;
 }
@@ -279,12 +306,15 @@
   position: fixed;
   left: 0;
   right: 0;
+  /* 不再顶满屏幕：顶部留一条缝，四个角都做圆角 */
+  top: var(--sheet-top);
   bottom: 0;
-  top: 0;
   margin: 0 auto;
   max-width: 640px;
   z-index: 110;
   background: var(--bg);
+  border-radius: 24px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
@@ -295,17 +325,32 @@
 }
 #subpage.show { transform: translateY(0); }
 
+/* 标题栏：高度固定、整行垂直居中，标题与右侧金币、关闭按钮同一基线 */
 .subpage-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 2px 14px 12px;
+  height: 52px;
+  padding: 0 14px;
   background: #fff;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
   touch-action: none;
 }
-.subpage-head h3 { flex: 1; font-size: 15px; font-weight: 700; }
+.subpage-head h3 {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 52px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sub-coins {
+  line-height: 1;
+  align-self: center;
+}
 .sub-coins {
   font-size: 13px;
   font-weight: 700;
@@ -318,6 +363,9 @@
   padding-bottom: 40px;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  /* 列表首尾渐隐：滚动条已经全局隐藏，靠它提示「上下还有内容」 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
 }
 
 /* ---------- 模态弹窗 ---------- */
@@ -341,34 +389,60 @@
 }
 #modal.show .modal-mask { opacity: 1; }
 
+/* 弹窗卡片：整体是一张浮起来的圆角卡片，顶部与屏幕留出 --sheet-top 的距离。
+   卡片本身不滚动，滚动交给 .modal-body —— 这样把手和卡片背景
+   都不会被「边缘渐隐」的遮罩淡掉。 */
 .modal-card {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(8px + env(safe-area-inset-bottom));
   max-width: 640px;
   margin: 0 auto;
   background: #fff;
-  border-radius: 24px 24px 0 0;
-  padding: 0 17px calc(18px + env(safe-area-inset-bottom));
+  border-radius: 24px;
+  padding: 0;
   box-shadow: 0 -10px 40px rgba(0, 0, 0, .2);
-  max-height: 86vh;
-  overflow-y: auto;
-  transform: translateY(100%);
+  max-height: calc(100vh - var(--sheet-top) - 8px - env(safe-area-inset-bottom));
+  max-height: calc(100dvh - var(--sheet-top) - 8px - env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* 收起时要完全移出屏幕：位移要算上 bottom 的偏移量，否则刘海屏上会露出一条 */
+  transform: translateY(calc(100% + 8px + env(safe-area-inset-bottom)));
   transition: transform .3s cubic-bezier(.2, .9, .3, 1);
-  touch-action: pan-y;
 }
 #modal.show .modal-card { transform: translateY(0); }
 
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 17px 18px;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  /* 底部 18px 渐隐：content 还有得往下滚时给个提示，
+     正好落在 padding 区里，不会削到最后一行的内容 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
+}
+
+/* 弹窗标题栏：同样的垂直居中处理 */
 .modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 13px;
+  min-height: 40px;
+  margin-bottom: 12px;
   touch-action: none;
 }
-.modal-head h3 { font-size: 15.5px; font-weight: 700; }
+.modal-head h3 {
+  font-size: 15.5px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.4;
+}
 .close {
   border: none;
   background: #f2f5ee;

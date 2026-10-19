@@ -2,6 +2,7 @@
  * 底部主导航：农场 / 邻居 / 商店，以及打开「更多功能」浮窗。
  */
 import { byId, delegate } from '../core/dom.js';
+import { on, EVENTS } from '../core/bus.js';
 import { renderFarm } from './views/farm.js';
 import { renderShop } from './views/shop.js';
 import { enterFriendsPage } from './views/friends.js';
@@ -44,4 +45,8 @@ export function mountTabs() {
     }
     activatePage(btn.dataset.page);
   });
+
+  // 别处（比如播种弹窗里的「商店」按钮）可以通过事件总线请求切页，
+  // 这样视图之间不必互相 import，也就不会绕出循环依赖
+  on(EVENTS.NAVIGATE, (page) => activatePage(page));
 }

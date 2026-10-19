@@ -5,10 +5,14 @@
 /**
  * 把毫秒时长格式化成中文短文本。
  * 例：45000 → "45秒"，90000 → "1分30秒"，5400000 → "1小时30分"
+ *
+ * 非有限值（NaN / Infinity）一律显示为「—」，
+ * 避免存档里某个字段缺失时界面上冒出 "NaN小时"。
  * @param {number} ms
  * @returns {string}
  */
 export function fmtDuration(ms) {
+  if (!Number.isFinite(ms)) return '—';
   const s = Math.max(0, Math.ceil(ms / 1000));
   if (s < 60) return `${s}秒`;
   const m = Math.floor(s / 60);
@@ -17,6 +21,18 @@ export function fmtDuration(ms) {
   const h = Math.floor(m / 60);
   const mi = m % 60;
   return `${h}小时${mi ? `${mi}分` : ''}`;
+}
+
+/**
+ * 把任意值转成一个有限数字，拿不到就返回兜底值。
+ * 用于清洗存档里可能缺失或为 undefined 的字段。
+ * @param {unknown} value
+ * @param {number} [fallback]
+ * @returns {number}
+ */
+export function safeNum(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
 }
 
 /**

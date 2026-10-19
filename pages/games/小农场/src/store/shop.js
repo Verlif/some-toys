@@ -23,23 +23,26 @@ export const isSeedUnlocked = (cropId) => state.player.level >= CROPS[cropId].lv
 
 /**
  * 购买种子
+ * @param {string} cropId
+ * @param {number} [n] 数量，默认 1
  * @returns {Promise<boolean>}
  */
-export async function buySeed(cropId) {
+export async function buySeed(cropId, n = 1) {
   const crop = CROPS[cropId];
+  const qty = Math.max(1, Math.floor(n));
   if (!crop) return false;
   if (!isSeedUnlocked(cropId)) {
     notify(`需要 Lv.${crop.lv} 才能种植${crop.name}`);
     return false;
   }
-  if (!player.spendCoins(crop.seed)) {
+  if (!player.spendCoins(crop.seed * qty)) {
     notify('金币不足 😥');
     return false;
   }
 
-  inventory.add(seedId(cropId), 1);
+  inventory.add(seedId(cropId), qty);
   await persist();
-  notify(`购买 ${crop.emoji}${crop.name}种子 ×1`);
+  notify(`购买 ${crop.emoji}${crop.name}种子 ×${qty}`);
   return true;
 }
 

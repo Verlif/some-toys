@@ -7,9 +7,11 @@
 import { openDatabase } from './core/db.js';
 import { on, EVENTS } from './core/bus.js';
 import { initState } from './store/state.js';
+import { autoSignIn } from './store/signin.js';
 
 import { mountToast } from './ui/toast.js';
 import { mountModal } from './ui/modal.js';
+import { mountSignCelebrate } from './ui/sign-celebrate.js';
 import { mountHud, renderHud } from './ui/hud.js';
 import { mountSubpage, renderCurrent, syncCoins } from './ui/subpage.js';
 import { mountSheet } from './ui/sheet.js';
@@ -28,6 +30,7 @@ async function boot() {
   // 1. 先挂载，2. 再首帧渲染，顺序反了会漏掉事件
   mountToast();
   mountModal();
+  mountSignCelebrate();
   mountHud();
   mountSubpage();
   mountSheet();
@@ -62,6 +65,14 @@ async function boot() {
     renderFarm();
     renderCurrent();
   });
+
+  // 打开页面就结算今天的签到：已签过什么都不做，未签则发奖并播庆祝画面。
+  // 签到写库失败不该拦住进游戏，下次打开会再试一次
+  try {
+    await autoSignIn();
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function showFatal(error) {

@@ -24,7 +24,9 @@ const MAX_SHIFT = 420;
 
 /**
  * @param {HTMLElement} panel 承载面板（其 CSS 负责定义收起/展开的 transform）
- * @param {{onClose: () => void, scrollArea?: HTMLElement}} options
+ * @param {{onClose: () => void, scrollArea?: HTMLElement | (() => HTMLElement|null)}} options
+ *   scrollArea 可以是元素，也可以是取值函数 —— 弹窗内容每次打开都会重建，
+ *   滚动容器是新建的，传函数才能总是拿到当前那个
  * @returns {() => void} 解绑函数
  */
 export function dragToClose(panel, { onClose, scrollArea = null }) {
@@ -47,7 +49,8 @@ export function dragToClose(panel, { onClose, scrollArea = null }) {
   /** 是否可以从当前位置开始接管手势 */
   function canStart() {
     // 内部已滚动说明用户想看内容而不是关掉它
-    return !(scrollArea && scrollArea.scrollTop > 0);
+    const scroller = typeof scrollArea === 'function' ? scrollArea() : scrollArea;
+    return !(scroller && scroller.scrollTop > 0);
   }
 
   function begin(clientY) {

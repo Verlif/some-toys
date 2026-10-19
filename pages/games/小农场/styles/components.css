@@ -130,6 +130,35 @@
 .plot-fold-icon { font-size: 17px; opacity: .65; }
 .plot-fold-text b { color: #6b7a68; font-weight: 700; }
 
+/* ---------- 缺水 / 生虫的警示按钮 ---------- */
+.icon-btn.warn {
+  background: #fdeceb;
+  border-color: #f2b8b2;
+  color: #d1483f;
+  animation: carePulse 1.6s ease-in-out infinite;
+}
+.icon-btn.warn:hover { background: #fbdedb; border-color: #e79c95; }
+
+.btn.small.warn {
+  background: #fdeceb;
+  border-color: #f2b8b2;
+  color: #c73f36;
+}
+.btn.small.warn:hover { background: #fbdedb; }
+
+.warn-text {
+  color: var(--danger);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.boost-text {
+  color: var(--green-d);
+  font-weight: 700;
+}
+
+/* 成熟地块上如果还有缺水/生虫，警示按钮排在收获按钮上面 */
+.ripe-acts { margin-top: 0; }
+
 /* ---------- 商店筛选切换 ---------- */
 .filter-chip {
   border: 1px solid var(--line);
@@ -217,6 +246,9 @@
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  /* 左右边缘渐隐，提示还能横向翻页 */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
 }
 .shop-panels::-webkit-scrollbar { display: none; }
 .shop-panel {
@@ -227,6 +259,17 @@
 .shop-panel .list { padding: 0 13px; }
 
 .si-own { color: #8a978a; font-weight: 400; font-size: 11px; }
+
+/* 种子行整行可点，右侧只剩价格与箭头 */
+.shop-item.seed-item { cursor: pointer; }
+.shop-item.seed-item:active { transform: scale(.995); }
+.si-chevron {
+  color: #b6c0b3;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.shop-item.seed-item:hover .si-chevron { color: var(--green-d); }
 
 /* ---------- 土地类型标签 ---------- */
 .soil-tag {
@@ -302,30 +345,12 @@
 .si-meta { font-size: 11px; color: var(--muted); line-height: 1.5; }
 .si-price { font-size: 12.5px; font-weight: 700; color: var(--gold); white-space: nowrap; }
 
-/* ---------- 种子选择卡（弹窗内） ---------- */
+/* ---------- 弹窗内的小网格（土地升级选地块） ---------- */
 .seed-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
   gap: 9px;
 }
-.seed-card {
-  background: #fafcf7;
-  border: 1px solid #e8efe2;
-  border-radius: 13px;
-  padding: 11px 7px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transition: .16s;
-}
-.seed-card:hover { border-color: #c4e0b8; background: #f5fbf1; }
-.seed-card.locked { opacity: .44; filter: grayscale(.6); }
-.seed-emoji { font-size: 26px; }
-.seed-name { font-size: 12.5px; font-weight: 600; }
-.seed-meta { font-size: 10px; color: var(--muted); line-height: 1.5; }
-.seed-lock { font-size: 10.5px; color: #b08a3a; font-weight: 600; }
 
 /* ---------- 邻居卡片 ---------- */
 .friend-card {
@@ -384,7 +409,21 @@
   font-variant-numeric: tabular-nums;
 }
 .friend-chip.ripe { background: #fdf0d4; color: #a07818; }
+.friend-chip.care { background: #fdeceb; color: #c73f36; }
 .friend-chip.online { background: #e2f3dd; color: var(--green-d); }
+
+/* 邻居页顶部的排序条：横向可滑，筛选档不会把宽度撑爆 */
+.friend-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px 9px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.friend-sort .filter-chip { flex-shrink: 0; }
+.friend-sort .shop-filter-count { margin-left: auto; padding-left: 8px; }
+.friend-list { padding: 0 13px; }
 
 /* 邻居动态流水 */
 .friend-log {
@@ -473,17 +512,21 @@
 }
 .npc-plots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
   gap: 8px;
+  /* 同一行的卡片高度由 grid 自动拉伸对齐 */
+  align-items: stretch;
 }
 /* 所有地块卡片共用同一套骨架，用 flex + margin-top:auto 把按钮顶到底部，
    这样「偷完之后少了按钮」也不会让同一行看起来参差不齐 */
+/* 统一高度：所有邻居地格子都是这个高度，
+   按钮用 margin-top:auto 顶到底部，多几个按钮也不会把卡片撑高 */
 .npc-plot {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  min-height: 104px;
+  height: 132px;
   padding: 10px 6px;
   background: #fafcf7;
   border: 1px solid #e8efe2;
@@ -497,7 +540,20 @@
 .npc-plot .np-meta { font-size: 10px; color: var(--muted); line-height: 1.4; }
 .npc-plot.ripe .np-meta { color: #a07818; font-weight: 700; }
 .npc-plot .np-time { font-size: 10px; color: #a8b3a5; font-variant-numeric: tabular-nums; }
-.npc-plot .btn { margin-top: auto; width: 100%; }
+.npc-plot .btn { margin-top: auto; }
+/* 一格里可能要同时出现「偷」和「浇水 / 捉虫」，按钮要并排且等宽 */
+.np-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-top: auto;
+  width: 100%;
+}
+.np-acts .btn { flex: 1 1 auto; min-width: 0; padding-left: 6px; padding-right: 6px; }
+.np-acts .icon-btn { flex: 0 0 auto; width: 27px; height: 27px; font-size: 13px; }
+.npc-plot.care { border-color: #f2b8b2; background: #fffaf9; }
+.npc-plot .np-meta.ripe-meta { color: #a07818; font-weight: 700; }
 
 .npc-foot {
   margin-top: 14px;
@@ -526,6 +582,100 @@
 }
 .toast.out { animation: toastOut .28s ease forwards; }
 .toast.gold { background: linear-gradient(135deg, #f5a623, #e8871e); }
+
+/* ---------- 签到庆祝 ---------- */
+.sign-celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: 0 24px;
+  background: rgba(28, 40, 26, .32);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+  animation: fade .2s ease;
+}
+.sign-celebrate.out { animation: scOut .32s ease forwards; }
+
+.sc-card {
+  position: relative;
+  width: min(78vw, 300px);
+  padding: 28px 20px 20px;
+  background: linear-gradient(180deg, #fffdf5, #fff7e2);
+  border: 1px solid #f2e2c4;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(120, 90, 20, .26);
+  animation: scPop .45s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+/* 金圈从图标后面扩散出去，一次性播完 */
+.sc-ring {
+  position: absolute;
+  left: 50%;
+  top: 52px;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  border: 2px solid rgba(240, 169, 46, .6);
+  border-radius: 50%;
+  animation: scRing .9s ease-out .12s both;
+  pointer-events: none;
+}
+.sc-emoji {
+  font-size: 44px;
+  line-height: 1;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.sc-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #8a6a22;
+  margin-top: 10px;
+  letter-spacing: 1px;
+}
+.sc-sub { font-size: 11.5px; color: #a89060; font-weight: 600; margin-top: 4px; }
+
+.sc-rewards {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+.sc-reward {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  background: #fff;
+  border: 1px solid #f4e8cd;
+  border-radius: 13px;
+  padding: 9px 6px;
+}
+.sc-reward span { font-size: 14px; }
+.sc-reward b {
+  font-size: 19px;
+  color: #b9820f;
+  font-variant-numeric: tabular-nums;
+}
+.sc-reward small { font-size: 10px; color: #a89060; font-weight: 600; }
+
+.sc-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  margin-top: 11px;
+}
+.sc-item {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #8a6a22;
+  background: #fdf6e4;
+  border-radius: 99px;
+  padding: 3px 9px;
+}
 
 /* ---------- 新手引导 ---------- */
 .guide-progress {
@@ -766,3 +916,267 @@
 .cal-legend .dot.signed { background: #d6ecd0; border: 1px solid #bfe0b6; }
 .cal-legend .dot.today { background: #fff; border: 2px solid var(--green); }
 .cal-legend .dot.big { background: #f5b942; }
+/* ---------- 子页面底栏（固定，不随内容滚动） ---------- */
+.subpage-foot {
+  flex-shrink: 0;
+  background: #fff;
+  border-top: 1px solid var(--line);
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 14px rgba(40, 70, 40, .06);
+}
+.subpage-foot[hidden] { display: none; }
+.foot-row { display: flex; gap: 8px; align-items: center; }
+.foot-row .btn { flex: 1; }
+.foot-row .btn.small.ghost { flex: 0 0 auto; }
+
+/* ---------- 仓库的勾选框 ---------- */
+.shop-item.pickable { padding-left: 8px; }
+.shop-item.pickable.on { background: #f4faf1; border-color: #c4e0b8; }
+.pick-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1.5px solid #cfdcc9;
+  background: #fff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: .15s;
+  font-family: inherit;
+}
+.shop-item.pickable.on .pick-box {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+/* ---------- 种子条状卡片 ---------- */
+.seed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0 2px;
+}
+.seed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 9px 11px;
+}
+.seed-row-emoji {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 34px;
+  text-align: center;
+}
+.seed-row-body { flex: 1; min-width: 0; }
+.seed-row-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.seed-row-name { font-size: 13.5px; font-weight: 700; }
+.seed-row-kind {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: #f0f4ec;
+  color: #6b7a68;
+}
+.seed-row-kind.kind-exp { background: #e8f0fd; color: #3f6bb5; }
+.seed-row-kind.kind-eco { background: #fdf0d4; color: #a07818; }
+.seed-row-kind.kind-slow { background: #f3e8fd; color: #7b4bb5; }
+.seed-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.seed-row-gain {
+  font-size: 10.5px;
+  color: #7c8a78;
+  margin-top: 3px;
+}
+.seed-row-gain b { color: var(--green-d); }
+.seed-row-act { flex-shrink: 0; }
+
+/* ---------- 种子详情弹窗 ---------- */
+.sd-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 13px;
+}
+.sd-emoji {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: #f4faf1;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  flex-shrink: 0;
+}
+.sd-id { flex: 1; min-width: 0; }
+.sd-name { font-size: 16px; font-weight: 700; }
+.sd-tags {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.sd-lv { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.sd-owned {
+  font-size: 10.5px;
+  color: var(--muted);
+  flex-shrink: 0;
+  text-align: right;
+  line-height: 1.5;
+}
+.sd-owned b { display: block; font-size: 14px; color: var(--green-d); }
+
+.sd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.sd-cell {
+  background: #f7faf4;
+  border-radius: 11px;
+  padding: 8px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.sd-cell span { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.sd-cell b {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #40503c;
+  font-variant-numeric: tabular-nums;
+}
+
+.sd-gain { font-size: 11px; color: #7c8a78; margin: 10px 0 0; }
+.sd-gain b { color: var(--green-d); }
+.sd-lock {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a07818;
+  background: #fdf6e4;
+  border-radius: 10px;
+  padding: 8px 11px;
+  margin-top: 12px;
+}
+
+.sd-buybar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.qty {
+  display: flex;
+  align-items: center;
+  background: #f2f6ee;
+  border-radius: 13px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.qty-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  color: #40503c;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 3px rgba(40, 80, 40, .08);
+  transition: .14s;
+  /* 按住连发时不能被浏览器的纵向手势抢走 */
+  touch-action: none;
+}
+.qty-btn:hover:not(:disabled) { color: var(--green-d); }
+.qty-btn:active:not(:disabled) { transform: scale(.92); }
+.qty-btn:disabled { opacity: .35; cursor: not-allowed; }
+.qty-num {
+  min-width: 42px;
+  text-align: center;
+  font-size: 14.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sd-buy {
+  flex: 1;
+  padding: 11px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.sd-tip {
+  text-align: center;
+  font-size: 10.5px;
+  color: #a8b3a5;
+  margin-top: 8px;
+}
+
+/* 弹窗标题栏右侧的一组动作（商店按钮 + 关闭） */
+.modal-head-acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.modal-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: -4px 0 11px;
+}
+
+/* ---------- 邻居信息区：2×2 网格，状态文本放得下 ---------- */
+.npc-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 12px 0;
+}
+.npc-stat {
+  background: #f7faf4;
+  border-radius: 11px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.npc-stat span {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.npc-stat b {
+  font-size: 13px;
+  color: #40503c;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

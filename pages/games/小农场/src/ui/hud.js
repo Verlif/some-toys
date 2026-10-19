@@ -25,6 +25,7 @@ let els = null;
 function collect() {
   els = {
     bar: byId('hudToggle'),
+    hud: byId('hudToggle')?.closest('.hud'),
     detail: byId('hudDetail'),
     name: byId('nameText'),
     level: byId('lvText'),
@@ -80,6 +81,8 @@ export function toggleHudDetail(force) {
   els.detail.hidden = !open;
   els.bar.setAttribute('aria-expanded', String(open));
   els.bar.classList.toggle('open', open);
+  // 顶栏本体也要收掉底部圆角，详情面板才能严丝合缝地接上来
+  els.hud?.classList.toggle('open', open);
 }
 
 /**

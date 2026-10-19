@@ -7,6 +7,14 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  /* 全站隐藏滚动条：文字游戏里滚动条既占宽又破坏画面，
+     「还有更多内容」由列表边缘的渐隐提示（见 docs/09-UI规范.md） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 :root {
@@ -21,6 +29,9 @@
   --line: #e3e9dd;
   --radius: 16px;
   --danger: #e05a4e;
+  /* 浮层距离屏幕顶部的留白：既保留「下拉关闭」的手感，
+     又不至于真的顶满整屏 */
+  --sheet-top: max(4vh, 28px);
   /* 顶栏实际高度由 ui/hud.js 量出来写回，这里给一个兜底值，
      避免 JS 尚未执行时依赖它的吸附定位失效 */
   --hud-h: 64px;

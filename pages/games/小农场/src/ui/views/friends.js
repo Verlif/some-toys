@@ -14,10 +14,24 @@ import { CROPS } from '../../data/crops.js';
 import { PERSONALITIES } from '../../data/friends.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
-import { closeModal, openModal } from '../modal.js';
+import { openModal } from '../modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
 
 let settling = false;
+
+/**
+ * 排序 / 筛选档位。
+ * 「可偷摘」「可帮忙」是**筛选**而不是排序 —— 玩家点这两个，想要的是
+ * 「只看现在有事可做的」，而不是把它们排到前面。再点一次回到等级正序。
+ */
+const SORTS = [
+  { key: 'lv-asc', label: '等级 ↑' },
+  { key: 'lv-desc', label: '等级 ↓' },
+  { key: 'steal', label: '可偷摘' },
+  { key: 'care', label: '可帮忙' },
+];
+
+let sortMode = 'lv-asc';
 
 /* ---------- 卡片 ---------- */
 
@@ -47,6 +61,7 @@ function escapeText(text) {
 
 function cardHTML(friend, now) {
   const ripe = social.stealableCount(friend, now);
+  const care = social.careCount(friend, now);
   const { online, inMs } = social.presenceOf(friend, now);
 
   return `
@@ -61,6 +76,7 @@ function cardHTML(friend, now) {
         <div class="friend-stats">
           <span class="friend-chip">💰 ${formatCoins(friend.coins)}</span>
           ${ripe > 0 ? `<span class="friend-chip ripe">🟡 ${ripe} 块可偷</span>` : ''}
+          ${care > 0 ? `<span class="friend-chip care">💧 ${care} 块待照料</span>` : ''}
           <span class="friend-chip ${online ? 'online' : ''}">
             ${online ? '在线' : `${fmtDuration(inMs)}后上线`}
           </span>
@@ -70,14 +86,44 @@ function cardHTML(friend, now) {
     </div>`;
 }
 
+/**
+ * 按当前档位挑出并排序邻居
+ * @returns {object[]} 新数组，不改动 state.friends
+ */
+function friendsShown(now) {
+  const list = [...state.friends];
+  if (sortMode === 'steal') {
+    return list
+      .filter((f) => social.stealableCount(f, now) > 0)
+      .sort((a, b) => b.level - a.level);
+  }
+  if (sortMode === 'care') {
+    return list
+      .filter((f) => social.needsHelp(f, now))
+      .sort((a, b) => b.level - a.level);
+  }
+  return sortMode === 'lv-desc'
+    ? list.sort((a, b) => b.level - a.level)
+    : list.sort((a, b) => a.level - b.level);
+}
+
 /** 重绘邻居列表 */
 export function renderFriends() {
   const now = Date.now();
-  const cards = state.friends.map((friend) => cardHTML(friend, now)).join('');
+  const list = friendsShown(now);
+  const chips = SORTS.map((s) => `
+    <button class="filter-chip ${s.key === sortMode ? 'active' : ''}"
+            data-action="sort-friends" data-id="${s.key}">${s.label}</button>`).join('');
 
   setHTML(byId('friends'), `
     <div class="section-title">👥 邻居农场</div>
-    <div style="padding:0 13px">${cards}</div>`);
+    <div class="friend-sort">
+      ${chips}
+      <span class="shop-filter-count">${list.length} / ${state.friends.length}</span>
+    </div>
+    <div class="friend-list">${list.length
+      ? list.map((friend) => cardHTML(friend, now)).join('')
+      : '<div class="empty-tip">🌾<br>这个档位下暂时没有邻居<br>换个筛选看看</div>'}</div>`);
 }
 
 /* ---------- 离线结算 ---------- */
@@ -117,7 +163,12 @@ export async function enterFriendsPage() {
 
 /* ---------- 拜访弹窗 ---------- */
 
-/** 弹窗里一块地的卡片。三种状态共用同一个高度骨架 */
+/**
+ * 弹窗里一块地的卡片。
+ *
+ * 缺水 / 生虫的地会多出对应的操作按钮 —— 玩家必须在**具体那块地**上
+ * 点一下才能拿到经验，没有「一键打理」这种捷径。
+ */
 function plotCardHTML(friend, index, now) {
   const plot = friend.plots[index];
   const base = (extra) => `<div class="npc-plot ${extra.cls || ''}">${extra.body}</div>`;
@@ -127,6 +178,18 @@ function plotCardHTML(friend, index, now) {
   }
 
   const crop = CROPS[plot.cropId];
+  const wantWater = social.needsWater(plot, now);
+  const wantPest = social.needsPest(plot, now);
+  const boost = plot.boost ? `<div class="np-meta">产量 +${Math.round(plot.boost * 100)}%</div>` : '';
+
+  // 照料按钮：只有真的缺水 / 生虫时才出现
+  // 做成小图标按钮，这样一格里能同时放下「偷」和两个照料按钮，格子高度才统一
+  const care = [
+    wantWater ? `<button class="icon-btn warn" data-action="npc-water" data-id="${friend.id}"
+      data-plot="${index}" title="帮忙浇水（+经验）">💧</button>` : '',
+    wantPest ? `<button class="icon-btn warn" data-action="npc-pest" data-id="${friend.id}"
+      data-plot="${index}" title="帮忙捉虫（+经验）">🐛</button>` : '',
+  ].join('');
 
   if (social.isStealable(plot, now)) {
     const left = crop.harvests - (plot.harvested || 0);
@@ -135,28 +198,38 @@ function plotCardHTML(friend, index, now) {
       body: `
         <div class="np-emoji">${crop.emoji}</div>
         <div class="np-name">${crop.name}</div>
-        <div class="np-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>
-        <button class="btn small harvest" data-action="steal" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>`,
+        <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>
+        ${boost}
+        <div class="np-acts">
+          <button class="btn small harvest" data-action="steal" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>
+          ${care}
+        </div>`,
     });
   }
 
   if (now >= plot.readyAt) {
+    const stolen = plot.stolenCount || 0;
     return base({
       cls: 'stolen',
       body: `
         <div class="np-emoji">${crop.emoji}</div>
         <div class="np-name">${crop.name}</div>
-        <div class="np-meta">刚被顺走过</div>`,
+        <div class="np-meta">${stolen ? '已被顺走过，产量减半' : '刚被顺走过'}</div>
+        ${boost}
+        <div class="np-acts">${care}</div>`,
     });
   }
 
   const stage = stageOf(plot, crop, now);
   return base({
+    cls: wantWater || wantPest ? 'care' : '',
     body: `
       <div class="np-emoji">${stageEmoji(crop, stage)}</div>
       <div class="np-name">${crop.name}</div>
       <div class="np-meta">${stageName(stage)}</div>
-      <div class="np-time">${fmtDuration(plot.readyAt - now)}</div>`,
+      <div class="np-time">${fmtDuration(plot.readyAt - now)}</div>
+      ${boost}
+      ${care ? `<div class="np-acts">${care}</div>` : ''}`,
   });
 }
 
@@ -200,12 +273,11 @@ function openFriendModal(friendId) {
       ${friend.plots.map((_, i) => plotCardHTML(friend, i, now)).join('')}
     </div>
 
-    <div class="npc-foot">
-      <button class="btn ghost" data-action="help" data-id="${friend.id}" style="width:100%">
-        🤝 帮忙打理（+经验）
-      </button>
-      <p class="npc-tip">偷菜会让邻居不高兴，但也是一种社交方式。</p>
-    </div>
+    <p class="npc-tip">
+      ${social.needsHelp(friend, now)
+        ? '有地缺水或生虫了 —— 在对应的地块上点 💧 或 🐛 帮忙，能拿到经验。'
+        : '偷菜会让邻居不高兴，但也是一种社交方式。'}
+    </p>
   `, async (action, el) => {
     if (action === 'steal') {
       await social.steal(el.dataset.id, Number(el.dataset.plot));
@@ -213,9 +285,14 @@ function openFriendModal(friendId) {
       if (getFriend(el.dataset.id)) openFriendModal(el.dataset.id);
       return;
     }
-    if (action === 'help') {
-      const helped = await social.helpTend(el.dataset.id);
-      if (helped) closeModal();
+    if (action === 'npc-water') {
+      await social.waterNeighborPlot(el.dataset.id, Number(el.dataset.plot));
+      if (getFriend(el.dataset.id)) openFriendModal(el.dataset.id);
+      return;
+    }
+    if (action === 'npc-pest') {
+      await social.catchPestNeighborPlot(el.dataset.id, Number(el.dataset.plot));
+      if (getFriend(el.dataset.id)) openFriendModal(el.dataset.id);
     }
   });
 }
@@ -225,19 +302,27 @@ function openFriendModal(friendId) {
 /** 列表项动作。整行可点，所以用委托而不是给每张卡塞按钮 */
 const FRIEND_ACTIONS = {
   visit: (el) => openFriendModal(el.dataset.id),
+  'sort-friends': (el) => {
+    // 再点一次已选中的筛选档就回到等级正序，避免「筛完出不来」
+    sortMode = sortMode === el.dataset.id && (sortMode === 'steal' || sortMode === 'care')
+      ? 'lv-asc'
+      : el.dataset.id;
+    renderFriends();
+  },
 };
 
 export function mountFriends() {
   const root = byId('friends');
 
-  const enter = (el) => FRIEND_ACTIONS.visit(el);
-  delegate(root, 'click', '[data-action="visit"]', enter);
+  delegate(root, 'click', '[data-action]', (el) => {
+    FRIEND_ACTIONS[el.dataset.action]?.(el);
+  });
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const card = event.target.closest('[data-action="visit"]');
     if (!card) return;
     event.preventDefault();
-    enter(card);
+    FRIEND_ACTIONS.visit(card);
   });
 
   on(EVENTS.FRIENDS, renderFriends);

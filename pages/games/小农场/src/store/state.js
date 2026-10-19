@@ -10,7 +10,7 @@ import { loadSave, saveFriend } from '../core/storage.js';
 import { INITIAL_COINS, TOTAL_PLOTS } from '../data/progression.js';
 import { NPCS, VISIT_GAP_MAX, VISIT_GAP_MIN, generateNpcPlots } from '../data/friends.js';
 import { normalizeNpc } from './npc-sim.js';
-import { randInt } from '../core/utils.js';
+import { randInt, safeNum } from '../core/utils.js';
 
 /** @type {{player: object, plots: object[], bag: Record<string, number>, friends: object[], pet: object}} */
 export const state = {
@@ -52,11 +52,14 @@ export function createPlot(id) {
     readyAt: 0,
     total: 0,
     soil: 'normal',
-    watered: false,
     fert: false,
     organic: false,
-    weed: false,
-    pest: false,
+    /** 产量加成，捉一次虫 +10% */
+    boost: 0,
+    /** 下次需要浇水的时间戳 */
+    waterAt: 0,
+    /** 下次需要捉虫的时间戳 */
+    pestAt: 0,
   };
 }
 
@@ -84,6 +87,15 @@ function createNpc(def, now) {
 /** 补齐后来新增的字段，兼容旧存档 */
 function normalizePlot(plot) {
   if (plot.harvested === undefined) plot.harvested = 0;
+  if (plot.boost === undefined) plot.boost = 0;
+  // 时间戳必须逐个清洗成有限数：IndexedDB 用结构化克隆保存，
+  // undefined 会被原样存下来，界面上就会冒出 "NaN小时" 这种东西。
+  for (const key of ['plantedAt', 'readyAt', 'total', 'waterAt', 'pestAt', 'stolenAt']) {
+    plot[key] = safeNum(plot[key], 0);
+  }
+  // 杂草机制已废弃（从来不会真的滋长），清掉残留字段
+  delete plot.weed;
+  delete plot.watered;
   return plot;
 }
 

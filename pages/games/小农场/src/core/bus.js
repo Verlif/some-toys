@@ -25,6 +25,8 @@ export const EVENTS = {
   PETS: 'state:pets',
   /** 领域层请求弹一条提示，由 UI 层的 toast 组件消费 */
   NOTIFY: 'ui:notify',
+  /** 请求切换主页面，payload 为页面名（farm / friends / shop） */
+  NAVIGATE: 'ui:navigate',
 };
 
 /**

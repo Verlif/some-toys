@@ -49,12 +49,6 @@ export const VISITS_PER_DAY = 2;
 export const VISIT_GAP_MIN = 8 * HOUR;
 export const VISIT_GAP_MAX = 16 * HOUR;
 
-/** 邻居的作物成熟得比玩家慢得多，这是「去偷菜」有意义的前提 */
-export const NPC_GROW_SLOWDOWN = 4;
-
-/** 同一块地被偷过之后的恢复时间 */
-export const STEAL_COOLDOWN = 10 * 60_000;
-
 /** 上线时触发「冒险」的概率 */
 export const ADVENTURE_CHANCE = 0.16;
 
@@ -74,13 +68,18 @@ export const DETAILED_WINDOW = DETAILED_WINDOW_DAYS * DAY;
 /** 单个 NPC 单次结算的会话数上限（兜底，正常远达不到） */
 export const MAX_VISITS_PER_NPC = 4000;
 
+/* ---------- 偷菜规则 ---------- */
+
+/**
+ * 玩家偷走一个作物后，这块地本轮产量对邻居减半的比例。
+ * 偷是有代价的：邻居只能收一半。
+ */
+export const STEAL_YIELD_PENALTY = 0.5;
+
+/** 剩余产量低于原版产量的这个比例时，就不能再偷了 */
+export const STEAL_MIN_REMAIN_RATIO = 0.5;
+
 /* ---------- 玩家与邻居互动 ---------- */
-
-/** 偷菜获得的经验 */
-export const STEAL_EXP = 30;
-
-/** 帮忙打理一次获得的经验 */
-export const HELP_EXP = 60;
 
 /** 守护犬在位时，偷菜被当场抓住的概率 */
 export const DOG_CATCH_CHANCE = 0.5;
@@ -91,6 +90,26 @@ export const DOG_GUARD_DURATION = 30 * 60_000;
 /** 每个 NPC 保留的动态条数 */
 export const LOG_LIMIT = 6;
 
+/* ---------- 照料（浇水 / 捉虫）---------- */
+
+/** 作物多久会「缺水」，需要玩家或 NPC 浇水 */
+export const WATER_INTERVAL = 6 * HOUR;
+
+/** 作物多久会「生虫」，需要玩家或 NPC 捉虫 */
+export const PEST_INTERVAL = 12 * HOUR;
+
+/** 照料触发时间的随机浮动区间：实际是 interval × (1 ± 30%) */
+export const CARE_JITTER = 0.3;
+
+/** 浇水一次，当前阶段剩余时间缩减的比例 */
+export const WATER_SPEEDUP = 0.1;
+
+/** 捉虫一次，产量增加的比例 */
+export const PEST_YIELD_BONUS = 0.1;
+
+/** 产量加成的上限（最多 +100%） */
+export const BOOST_CAP = 1;
+
 /* ---------- 农场生成 ---------- */
 
 /** 邻居的地块数量随等级增长 */
@@ -98,26 +117,72 @@ export function npcPlotCount(level) {
   return Math.min(12, 4 + Math.floor(level / 8));
 }
 
-/** 该等级能种的作物 id */
-export function cropsForLevel(level) {
-  return Object.keys(CROPS).filter((id) => CROPS[id].lv <= level);
+/**
+ * 邻居挑作物时的等级窗口：只看「自己等级往下这么多级」的作物。
+ * 70 级的村长还在种小麦并不合理，所以池子要跟着等级往上收窄。
+ * 但高等级的作物分布稀疏，窗口里可能只剩两三种，一座农场就会
+ * 整齐划一像复制粘贴 —— 所以池子里作物太少时继续往下放宽。
+ */
+const CROP_WINDOW = 10;
+
+/** 池子里至少保留这么多种作物，保证一座农场看起来是「杂着种」的 */
+const CROP_POOL_MIN = 8;
+
+/**
+ * 该等级附近的作物 id
+ * @param {number} level
+ * @returns {string[]}
+ */
+export function cropsNearLevel(level) {
+  const usable = Object.keys(CROPS)
+    .filter((id) => CROPS[id].lv <= level)
+    // 按等级从高到低，放宽窗口时是从「最接近等级」的那一端往外拿
+    .sort((a, b) => CROPS[b].lv - CROPS[a].lv);
+
+  const near = usable.filter((id) => CROPS[id].lv > level - CROP_WINDOW);
+  return near.length >= CROP_POOL_MIN ? near : usable.slice(0, CROP_POOL_MIN);
+}
+
+/**
+ * Fisher–Yates 洗牌（返回新数组，不改动入参）
+ * @template T
+ * @param {T[]} list
+ * @returns {T[]}
+ */
+export function shuffled(list) {
+  const out = list.slice();
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * 邻居作物的成熟时长。
+ *
+ * 与玩家**完全一致** —— 同样的作物、同样的等待时间，
+ * 没有额外的倍率也没有上限。邻居就是「另一个玩家」：
+ * 他们种什么、什么时候收、拿到多少经验，都和玩家一样。
+ */
+export function npcGrowMs(crop) {
+  return crop.grow * 1000;
 }
 
 /**
  * 生成一座邻居农场的初始状态。
- * 生成时让每块地的生长进度各不相同，这样玩家一进去就有得看。
+ *
+ * 地块**全部种满**且尽量不重样：一座满地空地的农场，玩家没有拜访的欲望。
+ * 每块地的生长进度各不相同，这样玩家一进去就有得看。
  */
 export function generateNpcPlots(npc, at = Date.now()) {
-  const pool = cropsForLevel(npc.level);
+  const pool = shuffled(cropsNearLevel(npc.level));
   const count = npcPlotCount(npc.level);
 
-  return Array.from({ length: count }, () => {
-    // 约 15% 的地是空的，其余已种下
-    if (Math.random() > 0.85) return emptyNpcPlot();
-
-    const cropId = pool[Math.floor(Math.random() * pool.length)];
+  return Array.from({ length: count }, (_, i) => {
+    const cropId = pool[i % pool.length];
     const crop = CROPS[cropId];
-    const total = crop.grow * 1000 * NPC_GROW_SLOWDOWN;
+    const total = npcGrowMs(crop);
     // 已生长 0~90%，其中一部分已经成熟可偷
     const elapsed = Math.random() * total * 0.9;
     return {
@@ -127,6 +192,11 @@ export function generateNpcPlots(npc, at = Date.now()) {
       readyAt: at - elapsed + total,
       total,
       stolenAt: 0,
+      stolen: false,
+      stolenCount: 0,
+      boost: 0,
+      waterAt: 0,
+      pestAt: 0,
     };
   });
 }
@@ -139,4 +209,11 @@ export const emptyNpcPlot = () => ({
   readyAt: 0,
   total: 0,
   stolenAt: 0,
+  /** 本轮是否已被偷过（重新种下后刷新） */
+  stolen: false,
+  /** 本轮被偷走了多少个 */
+  stolenCount: 0,
+  boost: 0,
+  waterAt: 0,
+  pestAt: 0,
 });

@@ -22,7 +22,9 @@ export function openModal(html, onAction) {
   if (!root) mountModal();
 
   actionHandler = onAction || null;
-  card.innerHTML = `<div class="sheet-handle"></div>${html}`;
+  // handle 留在卡片上（拖动时它不能跟着内容滚走），内容包进可滚动的 body。
+  // body 自己才是滚动容器，这样能在它身上做「边缘渐隐」而不会把卡片背景也淡掉。
+  card.innerHTML = `<div class="sheet-handle"></div><div class="modal-body">${html}</div>`;
   root.classList.add('show');
 
   unbindAction?.();
@@ -47,5 +49,9 @@ export function mountModal() {
   card = root.querySelector('.modal-card');
 
   delegate(root, 'click', '[data-close]', () => closeModal());
-  dragToClose(card, { onClose: closeModal, scrollArea: card });
+  // 内容每次打开都会重建，所以这里传一个取值函数而不是元素本身
+  dragToClose(card, {
+    onClose: closeModal,
+    scrollArea: () => card.querySelector('.modal-body'),
+  });
 }

@@ -12,8 +12,9 @@ import { state } from './state.js';
 import { addCoins, addExpRaw } from './player.js';
 import { add } from './inventory.js';
 import { CYCLE_DAYS, daysLeftInCycle, rewardFor } from '../data/signin.js';
+import { CROPS } from '../data/crops.js';
+import { expForProgress } from '../data/progression.js';
 import { dayKey, isSameDay } from '../core/utils.js';
-import { notify } from './notify.js';
 
 const DAY_MS = 86_400_000;
 
@@ -53,25 +54,53 @@ export const currentStreak = () => state.player.signStreak;
 /** 距离本轮结束还差几天 */
 export const leftInCycle = () => daysLeftInCycle(state.player.signStreak);
 
+/**
+ * 把「倍数」换算成实际数额。
+ *
+ * 基准是玩家当前等级的一次正常收获：
+ *   金币 ≈ 该等级最贵作物的售价 × 3
+ *   经验 ≈ 升到下一级所需经验 × 倍数
+ * 这样 200 级时签到依然有意义，1 级时也不会一次送掉几十级。
+ */
+function resolveReward(mul, now) {
+  const level = state.player.level;
+  const best = Object.values(CROPS)
+    .filter((c) => c.lv <= level)
+    .reduce((max, c) => Math.max(max, c.sell), 12);
+
+  return {
+    coins: Math.max(10, Math.round(best * 3 * mul.coins)),
+    exp: Math.max(1, Math.round(expForProgress(level) * mul.exp)),
+    items: mul.items,
+  };
+}
+
 /** 今天签到能拿到什么（用于按钮上的预告） */
 export function todayReward(now = Date.now()) {
-  return rewardFor(todayStreakDay(now));
+  return resolveReward(rewardFor(todayStreakDay(now)), now);
 }
 
 /**
  * 每日签到
- * @returns {Promise<boolean>} 今天已签过则返回 false
+ *
+ * 提示不在这里发 —— 签到成功的庆祝画面由 UI 层订阅 SIGN 事件时播放，
+ * 所以这里把「今天拿到了什么」一起带出去。
+ *
+ * @param {number} [now]
+ * @returns {Promise<null|{day:number, streak:number, coins:number, exp:number, items:object}>}
+ *   今天已签过则返回 null
  */
 export async function signIn(now = Date.now()) {
   ensureSignFields();
-  if (signedToday(now)) return false;
+  if (signedToday(now)) return null;
 
   // 昨天签过就续上，否则从第 1 天重新开始
   state.player.signStreak = streakBroken(now) ? 1 : state.player.signStreak + 1;
   state.player.lastSign = now;
   state.player.signTotal += 1;
 
-  const reward = rewardFor(state.player.signStreak);
+  const day = todayStreakDay(now);
+  const reward = todayReward(now);
   addCoins(reward.coins);
   addExpRaw(reward.exp);
   for (const [itemId, n] of Object.entries(reward.items)) add(itemId, n);
@@ -79,29 +108,27 @@ export async function signIn(now = Date.now()) {
   await commit({ player: state.player }, { bag: state.bag });
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
-  emit(EVENTS.SIGN);
 
-  const extras = Object.entries(reward.items)
-    .map(([id, n]) => `${itemName(id)}×${n}`)
-    .join(' ');
-  notify(
-    `📅 第 ${todayStreakDay(now)} 天签到　+${reward.coins} 💰 +${reward.exp} 经验${extras ? `　${extras}` : ''}`,
-    'gold',
-  );
-  return true;
+  const payload = {
+    day,
+    streak: state.player.signStreak,
+    coins: reward.coins,
+    exp: reward.exp,
+    items: reward.items,
+  };
+  emit(EVENTS.SIGN, payload);
+  return payload;
+}
+
+/**
+ * 打开游戏时自动结算今天的签到，已签过就什么都不做。
+ * @returns {Promise<null|object>} 同 signIn
+ */
+export async function autoSignIn(now = Date.now()) {
+  return signedToday(now) ? null : signIn(now);
 }
 
 /* ---------- 日历 ---------- */
-
-/** 道具 id → 中文名，用于签到提示 */
-const ITEM_NAMES = {
-  fertilizer: '普通化肥',
-  organic: '有机化肥',
-  herbicide: '除草剂',
-  pesticide: '杀虫剂',
-  dogFood: '狗粮',
-};
-const itemName = (id) => ITEM_NAMES[id] || id;
 
 /**
  * 生成当月日历

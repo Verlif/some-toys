@@ -12,24 +12,30 @@
  * 这个模块是纯计算，不碰存储也不碰 DOM：
  * 它只负责把 NPC 对象从旧状态推到新状态，由调用方决定何时落盘。
  */
-import { CROPS } from '../data/crops.js';
+import { CROPS, expOf } from '../data/crops.js';
 import { expForLevel, MAX_LEVEL } from '../data/progression.js';
-import { randInt } from '../core/utils.js';
+import { randInt, safeNum } from '../core/utils.js';
 import {
   ACTIONS_PER_VISIT,
   ADVENTURE_CHANCE,
   ADVENTURE_SUCCESS,
+  BOOST_CAP,
+  CARE_JITTER,
   DETAILED_WINDOW,
   LOG_LIMIT,
   MAX_VISITS_PER_NPC,
-  NPC_GROW_SLOWDOWN,
   PERSONALITIES,
-  STEAL_COOLDOWN,
+  PEST_INTERVAL,
+  PEST_YIELD_BONUS,
+  STEAL_YIELD_PENALTY,
   VISIT_GAP_MAX,
   VISIT_GAP_MIN,
-  cropsForLevel,
+  WATER_INTERVAL,
+  cropsNearLevel,
   emptyNpcPlot,
+  npcGrowMs,
   npcPlotCount,
+  shuffled,
 } from '../data/friends.js';
 
 const HOUR = 3600_000;
@@ -66,11 +72,23 @@ function log(npc, at, emoji, text) {
 export function normalizeNpc(npc, fallback) {
   const personality = PERSONALITIES[npc.personality] ? npc.personality : fallback.personality;
   npc.personality = personality;
-  npc.coins ??= fallback.coins;
-  npc.exp ??= 0;
+  npc.coins = safeNum(npc.coins, fallback.coins);
+  npc.exp = safeNum(npc.exp, 0);
+  npc.level = safeNum(npc.level, fallback.level);
+  npc.lastVisitAt = safeNum(npc.lastVisitAt, 0);
+  npc.nextVisitAt = safeNum(npc.nextVisitAt, 0);
   npc.log ??= [];
-  npc.level ??= fallback.level;
-  npc.plots = (npc.plots || []).map((p) => ({ ...emptyNpcPlot(), ...p }));
+
+  npc.plots = (npc.plots || []).map((p) => {
+    const plot = { ...emptyNpcPlot(), ...p };
+    // 同样要逐个清洗时间戳：存档里可能是 undefined
+    for (const key of ['plantedAt', 'readyAt', 'total', 'waterAt', 'pestAt', 'stolenAt']) {
+      plot[key] = safeNum(plot[key], 0);
+    }
+    plot.boost = safeNum(plot.boost, 0);
+    plot.harvested = safeNum(plot.harvested, 0);
+    return plot;
+  });
   return npc;
 }
 
@@ -85,11 +103,6 @@ function gainExp(npc, amount) {
     npc.level += 1;
   }
   if (npc.level >= MAX_LEVEL) npc.exp = 0;
-}
-
-/** 一块成熟作物能给的经验（与玩家侧口径一致） */
-function harvestExp(npc, crop) {
-  return Math.floor(crop.exp * randFloat() * 0.8) + 1;
 }
 
 /* ============================================================
@@ -107,9 +120,16 @@ function actHarvest(npc, at) {
     const crop = CROPS[plot.cropId];
 
     const amount = randInt(crop.yield[0], crop.yield[1]);
-    totalValue += amount * crop.sell;
+    // 邻居捉过虫的地也有产量加成
+    let boosted = Math.floor(amount * (1 + (plot.boost || 0)));
+    // 被偷过的地，剩余产量对邻居减半
+    if (plot.stolenCount) {
+      boosted = Math.floor(boosted * (1 - STEAL_YIELD_PENALTY));
+    }
+    totalValue += boosted * crop.sell;
     count += 1;
-    gainExp(npc, harvestExp(npc, crop) * amount);
+    // 与玩家完全一致的经验公式：总时间/4×等级 + 等级×个数
+    gainExp(npc, expOf(plot.total / 1000, crop.lv, boosted));
 
     // 多次收获作物进入再生轮次，否则清空这块地
     plot.harvested = (plot.harvested || 0) + 1;
@@ -131,49 +151,65 @@ function actHarvest(npc, at) {
 
 /** 在空地上播种 */
 function actPlant(npc, at) {
-  const pool = cropsForLevel(npc.level);
-  if (!pool.length) return null;
-
   const empties = npc.plots.filter((p) => !p.cropId);
   if (!empties.length) return null;
 
-  // 越靠后的地块种越好的作物，简单制造一点「经营感」
-  const plot = empties[randInt(0, empties.length - 1)];
-  const cropId = Math.random() < 0.35
-    ? pool[pool.length - 1 - randInt(0, Math.min(3, pool.length - 1))]
-    : pick(pool);
-  const crop = CROPS[cropId];
-  const total = crop.grow * 1000 * NPC_GROW_SLOWDOWN;
+  const pool = cropsNearLevel(npc.level);
+  if (!pool.length) return null;
 
-  plot.cropId = cropId;
-  plot.harvested = 0;
-  plot.plantedAt = at;
-  plot.total = total;
-  plot.readyAt = at + total;
-  plot.stolenAt = 0;
+  // 已经在长的作物先占位，尽量让整座农场不重样
+  const used = new Set(npc.plots.filter((p) => p.cropId).map((p) => p.cropId));
+  let bag = shuffled(pool.filter((id) => !used.has(id)));
 
-  gainExp(npc, 4);
-  return { emoji: crop.emoji, text: `种下了 ${crop.name}`, exp: 0 };
+  const names = [];
+  for (const plot of empties) {
+    if (!bag.length) bag = shuffled(pool);
+    const cropId = bag.pop();
+    const crop = CROPS[cropId];
+    const total = npcGrowMs(crop);
+
+    plot.cropId = cropId;
+    plot.harvested = 0;
+    plot.plantedAt = at;
+    plot.total = total;
+    plot.readyAt = at + total;
+    plot.stolenAt = 0;
+    plot.stolen = false;
+    plot.stolenCount = 0;
+    plot.boost = 0;
+    // 邻居也会遇到缺水与生虫，这是玩家能插手的地方
+    plot.waterAt = at + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+    plot.pestAt = at + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+    names.push(`${crop.emoji}${crop.name}`);
+  }
+
+  gainExp(npc, 4 * names.length);
+  const head = names.slice(0, 2).join('、');
+  return { emoji: '🌱', text: `种下了 ${names.length} 块地：${head}${names.length > 2 ? ' 等' : ''}`, exp: 0 };
 }
 
-/** 打理：清除杂草与害虫，顺便浇水 */
+/** 打理：给缺水的地浇水、给生虫的地捉虫 */
 function actTend(npc, at) {
   let tended = 0;
   for (const plot of npc.plots) {
     if (!plot.cropId) continue;
-    if (plot.weed || plot.pest) {
-      plot.weed = false;
-      plot.pest = false;
+    if (at >= (plot.waterAt || 0)) {
+      plot.waterAt = at + WATER_INTERVAL;
+      tended += 1;
+    }
+    if (at >= (plot.pestAt || 0)) {
+      plot.pestAt = at + PEST_INTERVAL;
+      plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
       tended += 1;
     }
   }
   if (!tended) return null;
 
   gainExp(npc, 6 * tended);
-  return { emoji: '🧹', text: `打理了 ${tended} 块地，清掉杂草和虫子`, exp: 0 };
+  return { emoji: '🧹', text: `打理了 ${tended} 块地，浇了水也除了虫`, exp: 0 };
 }
 
-/** 去别的邻居那儿偷菜 */
+/** 去别的邻居那儿偷菜。规则和玩家一样：每块地每轮只能被偷一次 */
 function actSteal(npc, neighbours, at) {
   if (neighbours.length < 2) return null;
   if (Math.random() > 0.6) return null;
@@ -181,12 +217,14 @@ function actSteal(npc, neighbours, at) {
   const victims = neighbours.filter((n) => n !== npc);
   const victim = pick(victims);
   const ripe = victim.plots.filter(
-    (p) => p.cropId && at >= p.readyAt && (!p.stolenAt || at - p.stolenAt > STEAL_COOLDOWN),
+    (p) => p.cropId && at >= p.readyAt && !p.stolen,
   );
   if (!ripe.length) return null;
 
   const plot = pick(ripe);
   const crop = CROPS[plot.cropId];
+  plot.stolen = true;
+  plot.stolenCount = (plot.stolenCount || 0) + 1;
   plot.stolenAt = at;
 
   npc.coins += crop.sell;
@@ -276,19 +314,19 @@ function bulkAdvance(npc, until) {
   const perVisitCoins = plotValue * 0.6;
   npc.coins += Math.round(perVisitCoins * visits);
 
-  // 经验按同等级可种作物的平均值估算
-  const pool = cropsForLevel(npc.level);
+  // 经验按同等级区间的作物平均值估算
+  const pool = cropsNearLevel(npc.level);
   const avgExp = pool.length
     ? pool.reduce((sum, id) => sum + CROPS[id].exp, 0) / pool.length
     : 10;
   gainExp(npc, Math.round(avgExp * npc.plots.length * 0.5 * visits));
 
-  // 地里作物按随机进度重建，保证状态看起来是「正在长的」
-  const poolNow = cropsForLevel(npc.level);
-  for (const plot of npc.plots) {
-    if (!poolNow.length) break;
-    const cropId = pick(poolNow);
-    const total = CROPS[cropId].grow * 1000 * NPC_GROW_SLOWDOWN;
+  // 地里作物按随机进度重建，保证状态看起来是「正在长的」，且尽量不重样
+  const poolNow = shuffled(cropsNearLevel(npc.level));
+  npc.plots.forEach((plot, i) => {
+    if (!poolNow.length) return;
+    const cropId = poolNow[i % poolNow.length];
+    const total = npcGrowMs(CROPS[cropId]);
     const elapsed = randFloat() * total;
     Object.assign(plot, {
       cropId,
@@ -297,8 +335,13 @@ function bulkAdvance(npc, until) {
       readyAt: until - elapsed + total,
       total,
       stolenAt: 0,
+      stolen: false,
+      stolenCount: 0,
+      boost: 0,
+      waterAt: until + WATER_INTERVAL * (1 - CARE_JITTER + randFloat() * CARE_JITTER * 2),
+      pestAt: until + PEST_INTERVAL * (1 - CARE_JITTER + randFloat() * CARE_JITTER * 2),
     });
-  }
+  });
 
   npc.lastVisitAt = until;
   npc.nextVisitAt = until + rollGap();

@@ -143,6 +143,66 @@ const FLAVOUR = {
   pungent: { time: 0.90, value: 1.05 },
 };
 
+/**
+ * 作物分三类，形成玩家的取舍：
+ *
+ *   exp   经验作物 —— 长得慢，单次经验多，但每小时的金币收入低
+ *   eco   经济作物 —— 长得快、卖价高，每小时的金币收入高
+ *   normal 普通作物 —— 两头都不突出
+ *
+ * 关键在于**每小时的金币产出**才是真正的取舍点：
+ * 经验公式里 (总时间/4)×等级 这一项与成熟时间成正比，
+ * 而一轮能收获的次数与成熟时间成反比，两者正好抵消 ——
+ * 所以不论种哪一类，每小时的经验吞吐是一样的，
+ * 区别在于你愿意用多少时间来换金币。
+ *
+ *   每小时金币 = 每次数量 × 售价 ÷ 每次等待时间
+ *   slow 作物 1.0 / 3.5 = 0.29 倍
+ *   exp  作物 0.75 / 1.5 = 0.50 倍
+ *   normal 作物 1.0 / 1.0 = 1.00 倍
+ *   eco  作物 1.35 / 0.9 = 1.50 倍
+ *
+ * 分类按生长形态自动判定，玩家很快就能学会「粮食=经验、水果=金币」。
+ */
+const KIND = {
+  exp: { time: 1.50, value: 0.75, label: '经验作物' },
+  eco: { time: 0.90, value: 1.35, label: '经济作物' },
+  normal: { time: 1.00, value: 1.00, label: '普通作物' },
+};
+
+/**
+ * 「厚积薄发」作物：等得特别久，但单次经验给得特别多。
+ *
+ * 这批是「最长收获时间不一定和等级挂钩」的主角 ——
+ * 一株 Lv12 的茶树要等一整天，但经验比周围高等级的作物都多，
+ * 代价是每小时的金币收入只有普通作物的三成。
+ *
+ * 它们的倍率是**覆盖**形态倍率的，不是叠加。
+ */
+const SLOW_CROPS = new Set([
+  '石榴', '荔枝', '龙眼', '杨梅', '菠萝', '芒果',
+  '茶树', '咖啡豆', '可可豆', '甘蔗', '薰衣草', '兰花', '葵花籽', '芦笋',
+]);
+
+/** 厚积薄发作物的倍率 */
+const SLOW = { time: 3.5, value: 1.0 };
+
+/** 形态 → 作物分类 */
+const FORM_KIND = {
+  grain: 'exp', fiber: 'exp', cane: 'exp', root: 'exp', fungus: 'exp', tree: 'exp',
+  fruit: 'eco',
+};
+
+/** 形态 → 产量倍率（同样按形态，符合直觉：谷物一茬收得多，根茎只有一个） */
+const FORM_YIELD = {
+  grain: 1.60, fruit: 1.45, pod: 1.30, legume: 1.25, fiber: 1.20, cane: 1.10,
+  leaf: 1.00, seed: 1.00, shoot: 0.95, stem: 0.95, root: 0.95, flower: 0.90,
+  fungus: 0.90, tree: 0.80,
+};
+
+/** 该形态属于哪一类作物 */
+const kindOf = (form) => FORM_KIND[form] || 'normal';
+
 /** 阶段形态 → 生长阶段序列 */
 const STAGE_PATHS = {
   root: ['seed', 'sprout', 'grow', 'ripe'],
@@ -165,30 +225,61 @@ const STAGE_PATHS = {
    2. 派生公式
    ============================================================ */
 
-/** 成熟时间（秒），分三段保证曲线平滑 */
-function growSeconds(level, flavour) {
-  let base;
-  if (level <= 20) base = 40 + (level - 1) * 18;
-  else if (level <= 60) base = 380 * (level / 20) ** 0.55;
-  else base = 760 * (level / 60) ** 0.45;
-  return Math.round(base * FLAVOUR[flavour].time);
+/**
+ * 成熟时间（秒）。
+ *
+ * 参照《阳光牧场》的节奏：最短一小时，最长几天。
+ * 之所以要这么慢，是为了让「缺水 / 虫害」这两个每 6 / 12 小时出现一次的
+ * 照料操作有意义 —— 如果作物 40 秒就熟，玩家根本遇不到需要浇水的时候。
+ *
+ * 经验作物的时间会再乘 2.4，所以**成熟时间不再随等级严格单调**：
+ * 低等级里也能遇到「要等好几天，但经验给得也多」的作物。
+ */
+function growSeconds(level, flavour, kind = 'normal', slow = false) {
+  const hours = level ** 0.7;          // Lv1 = 1h，Lv200 ≈ 41h
+  const mul = slow ? SLOW.time : KIND[kind].time;
+  return Math.round(hours * 3600 * FLAVOUR[flavour].time * mul);
 }
+/** 成熟时间（小时），经验曲线要用 */
+const growHoursAt = (level) => level ** 0.7;
 
 /** 种子价格 */
 const seedPrice = (level) => Math.round(10 * level ** 1.75);
 
 /** 卖出单价：越高级的单次回报越厚，但成本回收倍率增长放缓 */
-const sellPrice = (level, flavour) =>
-  Math.round(seedPrice(level) * (1.2 + level * 0.016) * FLAVOUR[flavour].value);
+const sellPrice = (level, flavour, kind = 'normal', slow = false) =>
+  Math.round(seedPrice(level) * (1.2 + level * 0.016) * FLAVOUR[flavour].value
+    * (slow ? SLOW.value : KIND[kind].value));
 
-/** 产量区间 */
-function yieldRange(level) {
-  const min = 2 + Math.floor(level / 25);
-  return [min, min + 2 + Math.floor(level / 40)];
+/**
+ * 产量区间。基础 10~16 个起，再按作物形态加成。
+ */
+function yieldRange(level, form) {
+  const baseMin = 10 + Math.floor(level / 25);
+  const baseMax = baseMin + 6 + Math.floor(level / 40);
+  const mul = FORM_YIELD[form] ?? 1;
+  const min = Math.max(10, Math.round(baseMin * mul));
+  const max = Math.max(min + 3, Math.round(baseMax * mul));
+  return [min, max];
 }
 
-/** 每次收获的基础经验 */
-const baseExp = (level) => Math.round(5 * level ** 1.45);
+/**
+ * 一次收获的经验（玩家的公式，NPC 也用同一套）：
+ *
+ *     经验 = 总时间 / 4 × 作物等级 + 作物等级 × 收获个数
+ *
+ * 「总时间」是这一轮实际要等的秒数，所以再生轮（时间更短）给的经验自然更少。
+ */
+function expOf(growSecondsValue, level, amount) {
+  return Math.floor(growSecondsValue / 4 * level) + Math.floor(level * amount);
+}
+
+/** 该等级典型作物的单次经验（用于反推经验曲线） */
+function typicalExp(level) {
+  const grow = growSeconds(level, 'plain', 'normal');
+  const amount = (yieldRange(level, 'grain')[0] + yieldRange(level, 'grain')[1]) / 2;
+  return expOf(grow, level, amount);
+}
 
 /** 该等级典型作物的可收获次数 */
 function harvestsAt(level) {
@@ -220,20 +311,37 @@ function soilExpMulAt(level) {
   return SOILS.filter((s) => s.unlock <= level).pop().expMul;
 }
 
-/** 升一级希望需要几轮成熟 */
-function roundsAt(level) {
-  if (level <= 10) return 1.2;
-  if (level <= 25) return 2.0;
-  if (level <= 60) return 2.5;
-  if (level <= 120) return 3.0;
-  return 3.5;
+/**
+ * 升一级希望花掉多少**小时**。
+ *
+ * 作物现在要长几小时到几天，所以升级节奏按「真实等待多久」来定。
+ * 早期一小时一级，后期四小时一级。
+ */
+function targetHoursAt(level) {
+  if (level <= 10) return 1.0;
+  if (level <= 30) return 1.5;
+  if (level <= 80) return 2.0;
+  if (level <= 150) return 3.0;
+  return 4.0;
 }
 
-/** 升一级所需经验（反推） */
+/**
+ * 升一级所需经验。
+ *
+ * 这里用的是「每小时经验」而不是「每轮经验」：
+ * 经验公式里 (总时间/4)×等级 这一项与成熟时间成正比，
+ * 而一轮能收获的次数与成熟时间成反比，两者正好抵消，
+ * 所以稳态下**每小时的经验只取决于地块数和等级**：
+ *
+ *     每小时经验 = 地块数 × 等级 × 900
+ *
+ * 这正是「经验作物与经济作物按小时算收益相同」的原因 ——
+ * 它们的区别在单次收益与金币，不在升级速度。
+ */
 function expNeeded(level) {
-  const perRound =
-    plotsAt(level) * baseExp(level) * soilExpMulAt(level) * harvestFactor(harvestsAt(level));
-  return Math.max(20, Math.round(perRound * roundsAt(level)));
+  const perHour =
+    plotsAt(level) * level * 900 * soilExpMulAt(level) * harvestFactor(harvestsAt(level));
+  return Math.max(100, Math.round(perHour * targetHoursAt(level)));
 }
 
 /* ============================================================
@@ -274,28 +382,40 @@ if (plan.length < CATALOG.length) throw new Error('解锁计划覆盖不了全�
 
 const crops = CATALOG.map(([name, emoji, form, flavour], index) => {
   const level = plan[index];
+  const kind = kindOf(form);
+  const slow = SLOW_CROPS.has(name);
   return {
     name,
     emoji,
     form,
+    kind,
+    slow,
     stages: STAGE_PATHS[form],
     lv: level,
     seed: seedPrice(level),
-    sell: sellPrice(level, flavour),
-    grow: growSeconds(level, flavour),
+    sell: sellPrice(level, flavour, kind, slow),
+    grow: growSeconds(level, flavour, kind, slow),
     regrow: regrowOf(level),
     harvests: harvestsAt(level),
-    yield: yieldRange(level),
-    exp: baseExp(level),
+    yield: yieldRange(level, form),
   };
 });
 
 /**
- * 售价强制单调：风味加成只允许把价格往上推，不允许出现
- * 「等级更高的作物反而更便宜」这种反直觉的情况。
+ * 售价强制单调：**只在同一分类内**强制。
+ * 分类之间本来就该有价差（经济作物更贵、经验作物更便宜），
+ * 全局强制单调会把分类的差异抹平，取舍就没了。
  */
-for (let i = 1; i < crops.length; i += 1) {
-  crops[i].sell = Math.max(crops[i].sell, crops[i - 1].sell + 1);
+for (const kind of ['exp', 'eco', 'normal']) {
+  const list = crops.filter((c) => c.kind === kind);
+  for (let i = 1; i < list.length; i += 1) {
+    list[i].sell = Math.max(list[i].sell, list[i - 1].sell + 1);
+  }
+}
+// 「厚积薄发」作物是特例：它们的单价要能配得上超长的等待时间
+const slowList = crops.filter((c) => c.slow);
+for (let i = 1; i < slowList.length; i += 1) {
+  slowList[i].sell = Math.max(slowList[i].sell, slowList[i - 1].sell + 1);
 }
 
 /* ============================================================
@@ -322,11 +442,75 @@ for (let i = 1; i < crops.length; i += 1) {
   const a = crops[i - 1];
   const b = crops[i];
   check(b.lv >= a.lv, `等级未单调：${a.name} Lv${a.lv} → ${b.name} Lv${b.lv}`);
-  check(b.sell > a.sell, `售价未单调：${a.name} ${a.sell} → ${b.name} ${b.sell}`);
   check(b.seed >= a.seed, `种子价未单调：${a.name} ${a.seed} → ${b.name} ${b.seed}`);
-  check(b.exp >= a.exp, `经验未单调：${a.name} ${a.exp} → ${b.name} ${b.exp}`);
-  // 成熟时间允许因风味上下波动，但相邻作物不能差出一倍，否则观感上像是数据出错
-  check(b.grow < a.grow * 2, `成熟时间跳变过大：${a.name} ${a.grow}s → ${b.name} ${b.grow}s`);
+  // 成熟时间**刻意**允许非单调：
+  // 「厚积薄发」作物的等待时间是普通作物的 3.5 倍，
+  // 于是「Lv12 的茶树要等一整天」这种反直觉的情况会出现，
+  // 这正是「最长收获时间不一定和等级挂钩」的设计意图。
+  // 但相邻不能差出 5 倍，否则观感上像是数据出错。
+  check(b.grow < a.grow * 5, `成熟时间跳变过大：${a.name} ${a.grow}s → ${b.name} ${b.grow}s`);
+  check(b.grow > a.grow / 5, `成熟时间跳变过大：${a.name} ${a.grow}s → ${b.name} ${b.grow}s`);
+}
+
+// 售价在**同一分类内**必须单调（分类之间的价差是设计要的）
+for (const kind of ['exp', 'eco', 'normal']) {
+  const list = crops.filter((c) => c.kind === kind);
+  for (let i = 1; i < list.length; i += 1) {
+    check(list[i].sell > list[i - 1].sell,
+      `${KIND[kind].label}内售价未单调：${list[i - 1].name} ${list[i - 1].sell} → ${list[i].name} ${list[i].sell}`);
+  }
+}
+const slowByLv = crops.filter((c) => c.slow);
+for (let i = 1; i < slowByLv.length; i += 1) {
+  check(slowByLv[i].sell > slowByLv[i - 1].sell, '厚积薄发的作物售价未单调');
+}
+
+// 同一形态内，产量与等级应当单调（产量由形态决定，形态之间不比较）
+for (const form of Object.keys(FORM_YIELD)) {
+  const list = crops.filter((c) => c.form === form);
+  for (let i = 1; i < list.length; i += 1) {
+    check(list[i].yield[0] >= list[i - 1].yield[0],
+      `${form} 内产量未单调：${list[i - 1].name} → ${list[i].name}`);
+  }
+}
+
+// 三类作物都要有，不能只有某一类
+for (const kind of ['exp', 'eco', 'normal']) {
+  check(crops.some((c) => c.kind === kind), `没有${KIND[kind].label}`);
+}
+check(crops.filter((c) => c.slow).length >= 10, '厚积薄发的作物太少了');
+// 产量下限不低于 10
+check(crops.every((c) => c.yield[0] >= 10), '存在产量下限低于 10 的作物');
+
+// 每小时金币产出才是真正的取舍点：数量 × 售价 ÷ 等待时间。
+// 比较必须**同等级**进行 —— 售价随等级指数增长、产量只线性增长，
+// 跨等级取平均会被高等级作物完全带偏。
+const perHourCoin = (c) => (c.yield[0] + c.yield[1]) / 2 * c.sell / c.grow;
+const avg = (list, f) => list.reduce((s, c) => s + f(c), 0) / list.length;
+
+for (const lv of [1, 3, 5, 10, 20, 30, 45, 60, 80, 120, 160, 200]) {
+  const at = (kind) => crops.filter((c) => c.lv === lv && c.kind === kind && !c.slow);
+  const normal = at('normal');
+  const exp = at('exp');
+  const eco = at('eco');
+  const slow = crops.filter((c) => c.lv === lv && c.slow);
+
+  if (normal.length && eco.length) {
+    check(avg(eco, (c) => c.sell) > avg(normal, (c) => c.sell),
+      `Lv${lv} 经济作物没有比普通作物贵`);
+    check(avg(eco, perHourCoin) > avg(normal, perHourCoin) * 1.2,
+      `Lv${lv} 经济作物的每小时金币收入没有明显更高`);
+  }
+  if (normal.length && exp.length) {
+    check(avg(exp, (c) => c.sell) < avg(normal, (c) => c.sell),
+      `Lv${lv} 经验作物没有比普通作物便宜`);
+    check(avg(exp, perHourCoin) < avg(normal, perHourCoin) * 0.8,
+      `Lv${lv} 经验作物的每小时金币收入没有明显更低`);
+  }
+  if (normal.length && slow.length) {
+    check(avg(slow, (c) => c.grow) > avg(normal, (c) => c.grow) * 2,
+      `Lv${lv} 厚积薄发的作物没有明显更慢`);
+  }
 }
 
 check(PLOTS.unlock.length === TOTAL_PLOTS, '地块数不等于 40');
@@ -364,6 +548,7 @@ fs.writeFileSync(
  * 作物表：${crops.length} 种，覆盖 Lv1-${MAX_LEVEL}。
  *
  * form      生长形态，决定阶段序列与阶段 emoji
+ * kind      作物分类：exp 经验作物 / eco 经济作物 / normal 普通作物
  * lv        解锁等级
  * seed      种子售价
  * sell      单个农产品售价
@@ -371,20 +556,60 @@ fs.writeFileSync(
  * regrow    再生系数，后续每次成熟 = grow × regrow
  * harvests  可收获总次数，1 表示一次性作物
  * yield     单次产量区间
- * exp       单次收获的基础经验（土地与再生次数会再乘）
  */
 export const CROPS = {
 ${crops.map((c) => `  ${JSON.stringify(c.name)}: {
     name: ${JSON.stringify(c.name)}, emoji: '${c.emoji}', form: '${c.form}',
+    kind: '${c.kind}', slow: ${c.slow},
     stages: ${JSON.stringify(c.stages).replace(/"/g, "'")},
     lv: ${c.lv}, seed: ${c.seed}, sell: ${c.sell},
     grow: ${c.grow}, regrow: ${c.regrow}, harvests: ${c.harvests},
-    yield: [${c.yield[0]}, ${c.yield[1]}], exp: ${c.exp},
+    yield: [${c.yield[0]}, ${c.yield[1]}],
   },`).join('\n')}
 };
 
 /** 按解锁顺序排列的作物 id 列表，商店与选择弹窗按此顺序渲染 */
 export const CROP_IDS = Object.keys(CROPS);
+
+/** 作物分类的中文名与说明 */
+export const KIND_LABELS = {
+  exp: { label: '经验作物', desc: '长得慢，单次经验多' },
+  eco: { label: '经济作物', desc: '长得快，卖价高' },
+  normal: { label: '普通作物', desc: '两头都不突出' },
+};
+
+/**
+ * 一次收获的经验。玩家与 NPC 用的是同一套公式：
+ *
+ *     经验 = 总时间 / 4 × 作物等级 + 作物等级 × 收获个数
+ *
+ * @param {number} growSeconds 这一轮实际要等的秒数（再生轮更短，经验自然更少）
+ * @param {number} level 作物等级
+ * @param {number} amount 本次实际收获的数量
+ */
+export function expOf(growSeconds, level, amount) {
+  return Math.floor(growSeconds / 4 * level) + Math.floor(level * amount);
+}
+
+/**
+ * 一整个周期（首次成熟 + 所有再生轮）需要的总秒数。
+ */
+export function totalCycleSeconds(crop) {
+  let total = crop.grow;
+  for (let i = 1; i < crop.harvests; i += 1) total += crop.grow * crop.regrow ** i;
+  return total;
+}
+
+/**
+ * 一整个周期能拿到的总经验。
+ */
+export function totalCycleExp(crop, amount) {
+  let sum = 0;
+  for (let i = 0; i < crop.harvests; i += 1) {
+    sum += expOf(crop.grow * crop.regrow ** i, crop.lv, amount);
+  }
+  return sum;
+}
 `,
 );
 
@@ -454,6 +679,15 @@ ${expPairs.join('\n')}
 export function expForLevel(level) {
   if (level >= MAX_LEVEL) return Infinity;
   return EXP_TABLE[Math.max(1, level)] ?? EXP_TABLE[MAX_LEVEL - 1];
+}
+
+/**
+ * 折算「按等级给经验」时用这个：满级时 expForLevel 返回 Infinity，
+ * 直接拿去做乘法会得到无穷大的经验值。
+ */
+export function expForProgress(level) {
+  const v = expForLevel(level);
+  return Number.isFinite(v) ? v : EXP_TABLE[MAX_LEVEL - 1];
 }
 
 /** 根据等级取称号 */

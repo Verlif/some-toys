@@ -1,5 +1,5 @@
 /**
- * 农场领域：种植 / 浇水 / 施肥 / 除虫除草 / 收获 / 土地升级。
+ * 农场领域：种植 / 浇水 / 施肥 / 捉虫 / 收获 / 土地升级。
  *
  * 约定：每个动作先在内存里改完，再用 commit() 一次性落盘，
  * 保证「地块 + 背包 + 金币 + 经验」要么全成功要么全不变。
@@ -9,20 +9,22 @@ import { emit, EVENTS } from '../core/bus.js';
 import { state, getPlot } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
-import { CROPS } from '../data/crops.js';
+import { CROPS, expOf } from '../data/crops.js';
 import { SOILS } from '../data/soils.js';
 import { unlockedPlotCount as countUnlocked } from '../data/progression.js';
 import { seedId, produceId } from '../data/keys.js';
+import {
+  BOOST_CAP,
+  CARE_JITTER,
+  PEST_INTERVAL,
+  PEST_YIELD_BONUS,
+  WATER_INTERVAL,
+  WATER_SPEEDUP,
+} from '../data/friends.js';
+import { stageBounds } from '../data/stages.js';
 import { randInt } from '../core/utils.js';
 import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
 import { notify } from './notify.js';
-
-/** 杂草 / 害虫造成减产的概率 */
-const PEST_DAMAGE_CHANCE = 0.4;
-const PEST_DAMAGE_RATIO = 0.7;
-
-/** 多次收获作物，第 n 次收获的经验倍率（与 tools/gen-data.mjs 的平衡公式保持一致） */
-export const REGROW_EXP_DECAY = 0.8;
 
 /** 一次再生轮次的最短时长，防止高等级作物的 regrow 系数把时间压没 */
 const MIN_REGROW_MS = 30_000;
@@ -49,8 +51,17 @@ export function growProgress(plot) {
   return Math.max(0, Math.min(1, 1 - remain / plot.total));
 }
 
-/** 是否有需要处理的情况（杂草 / 害虫） */
-export const hasIssue = (plot) => Boolean(plot.cropId && (plot.weed || plot.pest));
+/** 是否有需要处理的情况（缺水 / 生虫） */
+export const hasIssue = (plot, now = Date.now()) =>
+  needsWater(plot, now) || needsPest(plot, now);
+
+/** 是否需要浇水（作物缺水了） */
+export const needsWater = (plot, now = Date.now()) =>
+  Boolean(plot.cropId) && now >= (plot.waterAt || 0);
+
+/** 是否需要捉虫（作物生虫了） */
+export const needsPest = (plot, now = Date.now()) =>
+  Boolean(plot.cropId) && now >= (plot.pestAt || 0);
 
 /** 可升级为指定土地的空闲普通地块 */
 export function upgradeablePlots(soilId) {
@@ -60,6 +71,15 @@ export function upgradeablePlots(soilId) {
 }
 
 /* ---------- 内部工具 ---------- */
+
+/**
+ * 照料计时：给一块地安排「下次需要浇水 / 捉虫」的时间。
+ * 加 ±30% 的随机浮动，让各个地不会整齐划一地同时出问题。
+ */
+function scheduleCare(plot, now) {
+  plot.waterAt = now + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+  plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+}
 
 async function persist(plot) {
   await commit({ player: state.player }, { plots: plot ? [plot] : [], bag: state.bag });
@@ -72,18 +92,18 @@ async function persist(plot) {
 function applyPlant(plot, cropId) {
   const crop = CROPS[cropId];
   const soil = SOILS[plot.soil];
+  const now = Date.now();
 
   inventory.take(seedId(cropId), 1);
   plot.cropId = cropId;
   plot.harvested = 0;
-  plot.plantedAt = Date.now();
+  plot.plantedAt = now;
   plot.total = Math.floor(crop.grow * 1000 * soil.timeMul);
   plot.readyAt = plot.plantedAt + plot.total;
-  plot.watered = false;
   plot.fert = false;
   plot.organic = false;
-  plot.weed = false;
-  plot.pest = false;
+  plot.boost = 0;
+  scheduleCare(plot, now);
   return { crop, soil };
 }
 
@@ -100,13 +120,14 @@ function beginRegrow(plot, crop, soil) {
     Math.floor(crop.grow * 1000 * soil.timeMul * crop.regrow),
   );
 
+  const now = Date.now();
   plot.harvested = done;
-  plot.plantedAt = Date.now();
+  plot.plantedAt = now;
   plot.total = regrowMs;
   plot.readyAt = plot.plantedAt + regrowMs;
-  plot.watered = false;
   plot.fert = false;
   plot.organic = false;
+  scheduleCare(plot, now);
   return true;
 }
 
@@ -118,11 +139,11 @@ function clearPlot(plot) {
     plantedAt: 0,
     readyAt: 0,
     total: 0,
-    watered: false,
     fert: false,
     organic: false,
-    weed: false,
-    pest: false,
+    boost: 0,
+    waterAt: 0,
+    pestAt: 0,
   });
 }
 
@@ -150,39 +171,60 @@ export async function plant(plotId, cropId) {
 }
 
 /**
- * 先买种子再立刻播种（商店「购买并种植」按钮）
- * @returns {Promise<boolean>}
+ * 浇水：只有作物缺水时才能浇。
+ *
+ * 效果是把**当前生长阶段**所需的时间砍掉 10% ——
+ * 也就是让作物在当前阶段里少等 10% 的时间。
+ * 经验按作物等级给：照料 12 级的作物就给 12 点。
  */
-export async function buyAndPlant(plotId, cropId) {
+export async function water(plotId) {
   const plot = getPlot(plotId);
-  const crop = CROPS[cropId];
-  if (!plot || plot.cropId || !crop) return false;
-
-  if (!player.spendCoins(crop.seed)) {
-    notify('金币不足 😥');
+  const now = Date.now();
+  if (!plot || !plot.cropId || now >= plot.readyAt) return false;
+  if (!needsWater(plot, now)) {
+    notify('这块地还不缺水');
     return false;
   }
 
-  const { soil } = applyPlant(plot, cropId);
-  recordPlanted(cropId);
+  const crop = CROPS[plot.cropId];
+  const bounds = stageBounds(plot, crop, now);
+  const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
+
+  plot.readyAt = Math.max(now, plot.readyAt - saved);
+  scheduleCare(plot, now);
+  player.addExpRaw(crop.lv);
+
   await persist(plot);
-  await completeGuide('plant');
-  notify(`${crop.emoji} 种下了 ${crop.name}（${soil.name}）`);
+  await completeGuide('water');
+  notify(
+    `💧 浇水成功，当前阶段缩短 ${Math.round(WATER_SPEEDUP * 100)}%（约 ${fmtSaved(saved)}）　经验 +${crop.lv}`,
+  );
   return true;
 }
 
 /**
- * 浇水：剩余时间减少 30%，每块地限一次
+ * 捉虫：只有作物生虫时才能捉。
+ * 每捉一次，这块地的产量增加 10%（有上限）。
+ * 经验同样按作物等级给。
  */
-export async function water(plotId) {
+export async function catchPest(plotId) {
   const plot = getPlot(plotId);
-  if (!plot || !plot.cropId || plot.watered || Date.now() >= plot.readyAt) return false;
+  const now = Date.now();
+  if (!plot || !plot.cropId) return false;
+  if (!needsPest(plot, now)) {
+    notify('这块地没有虫子');
+    return false;
+  }
 
-  plot.readyAt -= Math.floor((plot.readyAt - Date.now()) * 0.3);
-  plot.watered = true;
+  const crop = CROPS[plot.cropId];
+  const before = plot.boost || 0;
+  plot.boost = Math.min(BOOST_CAP, before + PEST_YIELD_BONUS);
+  plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+  player.addExpRaw(crop.lv);
 
   await persist(plot);
-  notify('💧 浇水成功，生长加速 30%');
+  const gain = Math.round((plot.boost - before) * 100);
+  notify(`🐛 捉虫成功，产量 +${gain}%（当前 +${Math.round(plot.boost * 100)}%）　经验 +${crop.lv}`);
   return true;
 }
 
@@ -221,46 +263,18 @@ export async function fertilize(plotId, itemId) {
   return true;
 }
 
-/**
- * 除草：消耗 1 瓶除草剂
- * @param {boolean} [silent] 已由 UI 统一提示时传 true
- */
-export async function clearWeed(plotId, silent = false) {
-  const plot = getPlot(plotId);
-  if (!plot || !plot.weed) return false;
-
-  if (!inventory.take('herbicide', 1)) {
-    notify('没有除草剂，去商店买吧');
-    return false;
-  }
-
-  plot.weed = false;
-  await persist(plot);
-  if (!silent) notify('🧴 杂草已清除');
-  return true;
-}
-
-/** 除虫：消耗 1 瓶杀虫剂 */
-export async function clearPest(plotId, silent = false) {
-  const plot = getPlot(plotId);
-  if (!plot || !plot.pest) return false;
-
-  if (!inventory.take('pesticide', 1)) {
-    notify('没有杀虫剂，去商店买吧');
-    return false;
-  }
-
-  plot.pest = false;
-  await persist(plot);
-  if (!silent) notify('🪲 害虫已清除');
-  return true;
+/** 把毫秒数说成人话，用于提示文案 */
+function fmtSaved(ms) {
+  if (ms < 60_000) return `${Math.round(ms / 1000)} 秒`;
+  if (ms < 3600_000) return `${Math.round(ms / 60_000)} 分钟`;
+  return `${(ms / 3600_000).toFixed(1)} 小时`;
 }
 
 /**
- * 收获：按土地倍率算产量，杂草/害虫有概率减产，转成农产品入包并发经验。
+ * 收获：按土地倍率和捉虫加成算产量，转成农产品入包并发经验。
  *
  * harvests > 1 的作物收获后不会消失，而是进入再生轮次；
- * 第 n 次收获的经验按 REGROW_EXP_DECAY 递减，总和与数值平衡公式一致。
+ * 再生轮的时间更短，经验公式里的时间项自然更小。
  */
 export async function harvest(plotId) {
   const plot = getPlot(plotId);
@@ -271,22 +285,16 @@ export async function harvest(plotId) {
 
   let amount = randInt(crop.yield[0], crop.yield[1]);
   amount = Math.floor(amount * soil.yieldMul);
-
-  let penalty = '';
-  if (plot.weed && Math.random() < PEST_DAMAGE_CHANCE) {
-    amount = Math.floor(amount * PEST_DAMAGE_RATIO);
-    penalty += '杂草减产30% ';
-  }
-  if (plot.pest && Math.random() < PEST_DAMAGE_CHANCE) {
-    amount = Math.floor(amount * PEST_DAMAGE_RATIO);
-    penalty += '害虫减产30% ';
-  }
+  // 每捉一次虫 +10% 产量
+  amount = Math.floor(amount * (1 + (plot.boost || 0)));
   amount = Math.max(1, amount);
 
   inventory.add(produceId(plot.cropId), amount);
   recordHarvested(plot.cropId, amount);
 
-  const exp = Math.floor(crop.exp * soil.expMul * REGROW_EXP_DECAY ** (plot.harvested || 0));
+  // 经验 = 总时间 / 4 × 作物等级 + 作物等级 × 收获个数
+  // 「总时间」取这一轮实际要等的秒数，所以再生轮（时间更短）给的经验自然更少
+  const exp = expOf(plot.total / 1000, crop.lv, amount);
   player.addExpRaw(exp);
 
   const remaining = beginRegrow(plot, crop, soil);
@@ -297,7 +305,7 @@ export async function harvest(plotId) {
   notify(
     `收获 ${crop.emoji}${crop.name} ×${amount}　经验 +${exp}`
     + (remaining ? `　还剩 ${crop.harvests - plot.harvested} 次` : '')
-    + (penalty ? `（${penalty.trim()}）` : ''),
+    + (plot.boost ? `（含捉虫加成 +${Math.round(plot.boost * 100)}%）` : ''),
     'gold',
   );
   return true;

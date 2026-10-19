@@ -15,6 +15,12 @@
   50%      { transform: scale(1.09); }
 }
 
+/* 缺水 / 生虫的警示按钮：轻微呼吸，提示玩家有事要处理 */
+@keyframes carePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(209, 72, 63, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(209, 72, 63, .16); }
+}
+
 /* Toast 进出 */
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(-10px) scale(.9); }
@@ -22,4 +28,17 @@
 }
 @keyframes toastOut {
   to { opacity: 0; transform: translateY(-9px) scale(.94); }
+}
+
+/* 签到庆祝卡：弹出 → 金圈扩散 → 淡出 */
+@keyframes scPop {
+  from { opacity: 0; transform: translateY(16px) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes scRing {
+  from { opacity: .85; transform: scale(.45); }
+  to   { opacity: 0; transform: scale(2); }
+}
+@keyframes scOut {
+  to { opacity: 0; }
 }

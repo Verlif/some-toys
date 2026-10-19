@@ -6,15 +6,14 @@
  * 避免 500ms 一次的心跳把整页刷掉。
  */
 import { byId, delegate } from '../../core/dom.js';
-import { on, EVENTS } from '../../core/bus.js';
+import { emit, on, EVENTS } from '../../core/bus.js';
 import { state } from '../../store/state.js';
 import * as farm from '../../store/farm.js';
 import { count } from '../../store/inventory.js';
-import { CROPS, CROP_IDS } from '../../data/crops.js';
+import { CROPS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
 import { SOILS } from '../../data/soils.js';
 import { PLOT_UNLOCK_LV } from '../../data/progression.js';
 import { seedId } from '../../data/keys.js';
-import { SEED_MODAL_FILTERS } from '../../data/navigation.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
 import { closeModal, openModal } from '../modal.js';
@@ -41,20 +40,47 @@ function emptyHTML(plot) {
     <button class="btn small" data-action="plant" data-id="${plot.id}">播 种</button>`;
 }
 
+/** 缺水 / 生虫的提示条 */
+function careWarnHTML(plot) {
+  const parts = [];
+  if (farm.needsWater(plot)) parts.push('💧 缺水');
+  if (farm.needsPest(plot)) parts.push('🐛 生虫');
+  if (!parts.length) return '';
+  return `<div class="plot-sub warn-text">${parts.join('　')}</div>`;
+}
+
+/** 缺水 / 生虫的操作按钮（红底警示） */
+function careButtonsHTML(plot) {
+  const out = [];
+  if (farm.needsWater(plot)) {
+    out.push(`<button class="icon-btn warn" data-action="water" data-id="${plot.id}"
+      title="浇水：当前生长阶段缩短 10%">💧</button>`);
+  }
+  if (farm.needsPest(plot)) {
+    out.push(`<button class="icon-btn warn" data-action="pest" data-id="${plot.id}"
+      title="捉虫：这块地的产量 +10%">🐛</button>`);
+  }
+  return out.join('');
+}
+
+/** 产量加成提示 */
+function boostHTML(plot) {
+  if (!plot.boost) return '';
+  return `<div class="plot-sub boost-text">产量 +${Math.round(plot.boost * 100)}%</div>`;
+}
+
 function growingHTML(plot) {
   const crop = CROPS[plot.cropId];
-  const warn = (plot.weed ? '🌿' : '') + (plot.pest ? '🐛' : '');
   return `
     <div class="plot-emoji" data-role="stage">${crop.emoji}</div>
     <div class="plot-name">${crop.name}</div>
     <div class="plot-sub" data-role="phase"></div>
-    ${warn ? '<div class="plot-sub" style="color:var(--danger)">' + warn + ' 需要处理</div>' : ''}
+    ${careWarnHTML(plot)}
+    ${boostHTML(plot)}
     <div class="bar"><i style="width:0%"></i></div>
     <div class="ptime"></div>
     <div class="plot-acts">
-      ${plot.weed ? '<button class="icon-btn" data-action="weed" data-id="' + plot.id + '" title="除草">🌿</button>' : ''}
-      ${plot.pest ? '<button class="icon-btn" data-action="pest" data-id="' + plot.id + '" title="除虫">🐛</button>' : ''}
-      ${plot.watered ? '' : '<button class="icon-btn" data-action="water" data-id="' + plot.id + '" title="浇水 -30%">💧</button>'}
+      ${careButtonsHTML(plot)}
       ${plot.fert ? '' : '<button class="icon-btn" data-action="fert" data-id="' + plot.id + '" title="普通化肥">🧪</button>'}
       ${plot.organic ? '' : '<button class="icon-btn" data-action="organic" data-id="' + plot.id + '" title="有机化肥">⚗️</button>'}
     </div>`;
@@ -62,13 +88,14 @@ function growingHTML(plot) {
 
 function ripeHTML(plot) {
   const crop = CROPS[plot.cropId];
-  const warn = (plot.weed ? '🌿' : '') + (plot.pest ? '🐛' : '');
   const left = crop.harvests - (plot.harvested || 0);
   return `
     <div class="plot-emoji">${crop.emoji}</div>
     <div class="plot-name">${crop.name} · 成熟</div>
     <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
-    ${warn ? '<div class="plot-sub" style="color:var(--danger)">' + warn + ' 有状况</div>' : ''}
+    ${careWarnHTML(plot)}
+    ${boostHTML(plot)}
+    <div class="plot-acts ripe-acts">${careButtonsHTML(plot)}</div>
     <button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收 获</button>`;
 }
 
@@ -81,10 +108,14 @@ function plotInnerHTML(plot, status) {
 
 /** 决定一块地是否需要重建 DOM 的指纹 */
 function plotKey(plot, status) {
+  const now = Date.now();
   return [
     status, plot.cropId || '', plot.soil, plot.harvested || 0,
-    plot.watered ? 1 : 0, plot.fert ? 1 : 0, plot.organic ? 1 : 0,
-    plot.weed ? 1 : 0, plot.pest ? 1 : 0,
+    plot.fert ? 1 : 0, plot.organic ? 1 : 0,
+    Math.round(plot.boost || 0),
+    // 缺水 / 生虫是随时间出现的，指纹里要带上，否则按钮不会冒出来
+    farm.needsWater(plot, now) ? 1 : 0,
+    farm.needsPest(plot, now) ? 1 : 0,
   ].join('|');
 }
 
@@ -119,7 +150,6 @@ export function renderFarm() {
   const unlocked = farm.unlockedPlotCount();
   const lockedCount = state.plots.length - unlocked;
   let firstLocked = null;
-  let lastLocked = null;
 
   for (const plot of state.plots) {
     const status = farm.plotStatus(plot);
@@ -128,7 +158,6 @@ export function renderFarm() {
     // 锁定的地块只渲染第一个
     if (status === 'locked') {
       if (firstLocked === null) firstLocked = plot.id;
-      lastLocked = plot.id;
       if (firstLocked !== plot.id) continue;
     }
 
@@ -137,10 +166,14 @@ export function renderFarm() {
   }
 
   // 折叠行
-  const foldNode = ensureNode(FOLD_KEY, `fold-${lockedCount}-${lastLocked}`, null, 'fold');
+  // 「下一块在 Lv.X 解锁」说的是**紧跟着已解锁部分的那一块**，
+  // 也就是 id = 已解锁数量的那块。之前错用了最后一块锁定地，
+  // 于是永远显示 Lv200。
+  const nextLv = firstLocked === null ? 0 : PLOT_UNLOCK_LV[firstLocked];
+  const foldKey = `fold-${lockedCount}-${nextLv}`;
+  const foldNode = ensureNode(FOLD_KEY, foldKey, null, 'fold');
   if (lockedCount > 1) {
-    updateNode(foldNode, { id: FOLD_KEY, count: lockedCount - 1, nextLv: PLOT_UNLOCK_LV[lastLocked] },
-      'fold', `fold-${lockedCount}-${lastLocked}`);
+    updateNode(foldNode, { id: FOLD_KEY, count: lockedCount - 1, nextLv }, 'fold', foldKey);
   } else {
     foldNode.el.remove();
     nodes.delete(FOLD_KEY);
@@ -197,85 +230,79 @@ function updateNode(node, plot, status, key) {
   if (node.time) node.time.textContent = fmtDuration(plot.readyAt - Date.now());
 }
 
-/** 种子弹窗的筛选档位 */
-let seedFilter = 'owned';
-
 /* ---------- 选择种子弹窗 ---------- */
 
+/**
+ * 种子选择用**条状卡片**：145 种作物如果用方格排布，一屏放不下几行，
+ * 换成横条才能把「售价 / 总耗时 / 收获次数 / 每次产量 / 预计收益」都摆出来。
+ */
 function seedCardHTML(cropId) {
   const crop = CROPS[cropId];
-  const locked = state.player.level < crop.lv;
   const owned = count(seedId(cropId));
 
-  let action;
-  if (locked) {
-    action = `<div class="seed-lock">Lv.${crop.lv} 解锁</div>`;
-  } else if (owned > 0) {
-    action = `<button class="btn small" data-action="plant" data-crop="${cropId}">种植 ×${owned}</button>`;
-  } else {
-    action = `<button class="btn small ghost" data-action="buy-plant" data-crop="${cropId}">购买 💰${crop.seed}</button>`;
-  }
+  // 预计收益：一整个周期的总经验与总金币（用平均产量估算）
+  const amount = (crop.yield[0] + crop.yield[1]) / 2;
+  const cycle = totalCycleSeconds(crop);
+  const exp = totalCycleExp(crop, amount);
 
   return `
-    <div class="seed-card ${locked ? 'locked' : ''}">
-      <div class="seed-emoji">${crop.emoji}</div>
-      <div class="seed-name">${crop.name}</div>
-      <div class="seed-meta">${fmtDuration(crop.grow * 1000)}成熟<br>收 ${crop.yield[0]}-${crop.yield[1]} 个${
-  crop.harvests > 1 ? ` · 共 ${crop.harvests} 茬` : ''
-}</div>
-      ${action}
+    <div class="seed-row">
+      <div class="seed-row-emoji">${crop.emoji}</div>
+      <div class="seed-row-body">
+        <div class="seed-row-top">
+          <span class="seed-row-name">${crop.name}</span>
+          <span class="seed-row-kind kind-${crop.kind}">${KIND_LABELS[crop.kind]?.label || ''}</span>
+          ${crop.slow ? '<span class="seed-row-kind kind-slow">厚积薄发</span>' : ''}
+        </div>
+        <div class="seed-row-meta">
+          <span>🌱 存货 ${owned}</span>
+          <span>⏱ 共 ${fmtDuration(cycle * 1000)}</span>
+          <span>🧺 ${crop.harvests > 1 ? `共 ${crop.harvests} 茬` : '一次'}</span>
+          <span>🌾 每次 ${crop.yield[0]}-${crop.yield[1]} 个</span>
+        </div>
+        <div class="seed-row-gain">
+          预计收益　经验 <b>${exp.toLocaleString()}</b>　售价 <b>${crop.sell}</b>/个
+        </div>
+      </div>
+      <div class="seed-row-act">
+        <button class="btn small" data-action="plant" data-crop="${cropId}">种 下</button>
+      </div>
     </div>`;
 }
 
 /**
  * 打开「选择种子」弹窗。
  *
- * 145 种作物全列出来在手机上要滚很久，所以默认只显示
- * 「有存货」和「当前等级能种」这两类，剩下 145 张卡片要翻全量才看得到。
- *
- * 注意：原版这里漏绑了 plant / buy-plant 两个按钮的事件，
- * 导致播种流程完全走不通，本次重构已修正。
+ * 只列出背包里**真有存货**的种子 —— 没种子就不该出现在这里，
+ * 需要买种子的走右上角的「商店」按钮。
+ * 少一层筛选，玩家的路径也更短：点地 → 点种子 → 种下。
  */
 function openPlantModal(plotId) {
   const plot = state.plots.find((p) => p.id === plotId);
   if (!plot) return;
   const soil = SOILS[plot.soil];
-
-  const shown = CROP_IDS.filter((id) => {
-    if (seedFilter === 'all') return true;
-    if (seedFilter === 'owned') return count(seedId(id)) > 0;
-    return state.player.level >= CROPS[id].lv;
-  });
-
-  const chips = SEED_MODAL_FILTERS.map((f) => `
-    <button class="filter-chip ${f.key === seedFilter ? 'active' : ''}"
-            data-action="filter-seeds" data-id="${f.key}">${f.label}</button>`).join('');
+  const owned = CROP_IDS.filter((id) => count(seedId(id)) > 0);
 
   openModal(`
     <div class="modal-head">
-      <h3>选择种子 · ${soil.name}</h3>
-      <button class="close" data-close>✕</button>
+      <h3>播种 · ${soil.name}</h3>
+      <div class="modal-head-acts">
+        <button class="btn small ghost" data-action="go-shop">🏪 商店</button>
+        <button class="close" data-close>✕</button>
+      </div>
     </div>
-    <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;padding:0 2px">
-      该地块加成：产量 ×${soil.yieldMul} · 成熟时间 ×${soil.timeMul}
-    </div>
-    <div class="shop-filter" style="padding:0 0 10px">${chips}
-      <span class="shop-filter-count">${shown.length} / ${CROP_IDS.length}</span>
-    </div>
-    ${shown.length
-      ? `<div class="seed-grid">${shown.map(seedCardHTML).join('')}</div>`
-      : '<div class="empty-tip">🪙<br>这个分类下暂时没有种子<br>换个筛选或去商店买一点吧</div>'}
+    <div class="modal-sub">该地块加成：产量 ×${soil.yieldMul} · 成熟时间 ×${soil.timeMul}</div>
+    ${owned.length
+      ? `<div class="seed-list">${owned.map(seedCardHTML).join('')}</div>`
+      : `<div class="empty-tip">🌱<br>背包里还没有种子<br>去商店买一点再来吧</div>
+         <button class="btn" style="width:100%" data-action="go-shop">去商店买种子</button>`}
   `, async (action, el) => {
-    if (action === 'filter-seeds') {
-      seedFilter = el.dataset.id;
-      openPlantModal(plotId);
+    if (action === 'go-shop') {
+      closeModal();
+      emit(EVENTS.NAVIGATE, 'shop');
       return;
     }
-    const cropId = el.dataset.crop;
-    let ok = false;
-    if (action === 'plant') ok = await farm.plant(plotId, cropId);
-    else if (action === 'buy-plant') ok = await farm.buyAndPlant(plotId, cropId);
-    if (ok) closeModal();
+    if (action === 'plant' && await farm.plant(plotId, el.dataset.crop)) closeModal();
   });
 }
 
@@ -284,10 +311,9 @@ function openPlantModal(plotId) {
 const PLOT_ACTIONS = {
   plant: (id) => openPlantModal(id),
   water: (id) => farm.water(id),
+  pest: (id) => farm.catchPest(id),
   fert: (id) => farm.fertilize(id, 'fertilizer'),
   organic: (id) => farm.fertilize(id, 'organic'),
-  weed: (id) => farm.clearWeed(id),
-  pest: (id) => farm.clearPest(id),
   harvest: (id) => farm.harvest(id),
 };
 

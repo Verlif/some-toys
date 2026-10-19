@@ -59,6 +59,46 @@ export function stageOf(plot, crop, now = Date.now()) {
   return growing[growing.length - 1];
 }
 
+/**
+ * 计算某块地当前所处阶段的时间边界。
+ *
+ * 浇水要用它算出「当前阶段需要多长时间」，
+ * 好按比例把这个阶段的时间砍掉一部分。
+ *
+ * @param {{plantedAt: number, total: number, readyAt: number, harvested?: number}} plot
+ * @param {{stages: string[]}} crop
+ * @param {number} [now]
+ * @returns {{stage: string, stageStart: number, stageEnd: number}}
+ */
+export function stageBounds(plot, crop, now = Date.now()) {
+  const path = stagePathFor(crop, plot.harvested || 0);
+  const growing = path.filter((key) => key !== 'ripe');
+  const totalWeight = growing.reduce((sum, key) => sum + STAGES[key].weight, 0);
+  const total = plot.total || 1;
+  const start = plot.plantedAt;
+  const end = plot.readyAt;
+
+  // 先按权重找到当前落在哪一段
+  const ratio = Math.max(0, Math.min(1, (now - start) / total));
+  let acc = 0;
+  let index = growing.length - 1;
+  for (let i = 0; i < growing.length; i += 1) {
+    acc += STAGES[growing[i]].weight / totalWeight;
+    if (ratio < acc) { index = i; break; }
+  }
+
+  // 再把这一段的时间边界算出来
+  let before = 0;
+  for (let i = 0; i < index; i += 1) before += STAGES[growing[i]].weight / totalWeight;
+  const span = STAGES[growing[index]].weight / totalWeight;
+
+  return {
+    stage: growing[index],
+    stageStart: start + before * total,
+    stageEnd: start + (before + span) * total,
+  };
+}
+
 /** 阶段对应的展示 emoji，成熟阶段直接用作物自己的 emoji */
 export function stageEmoji(crop, stage) {
   return STAGES[stage].emoji || crop.emoji;
