@@ -67,7 +67,7 @@ export function openAdventureLauncher() {
       <span class="adv-map-emoji">${map.emoji}</span>
       <span class="adv-map-body">
         <span class="adv-map-name">${map.name}<b>×${map.count}</b></span>
-        <span class="adv-map-meta">${map.swipes} 步 · 可挖 Lv.${map.seedCap} 以内的种子</span>
+        <span class="adv-map-meta">${map.swipes} 步 · 可挖 Lv.${map.shopSeedCap} 以内的种子</span>
       </span>
       <span class="adv-map-go">出发 ›</span>
     </button>`).join('');

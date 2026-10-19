@@ -134,40 +134,30 @@ const CATALOG = [
   ['月神稻', '🌕', 'grain', 'plain'], ['神谕麦', '🔮', 'grain', 'plain'], ['龙骨豆', '🦴', 'legume', 'plain'],
 ];
 
-/** 风味对数值的影响 */
+/** 风味只影响成熟时间，收益随等待时长自动抬高（见 cycleRevenue） */
 const FLAVOUR = {
-  plain: { time: 1.00, value: 1.00 },
-  sweet: { time: 1.10, value: 1.18 },
-  sour: { time: 0.95, value: 1.10 },
-  umami: { time: 1.20, value: 1.25 },
-  pungent: { time: 0.90, value: 1.05 },
+  plain: { time: 1.00 },
+  sweet: { time: 1.10 },
+  sour: { time: 0.95 },
+  umami: { time: 1.20 },
+  pungent: { time: 0.90 },
 };
 
 /**
  * 作物分三类，形成玩家的取舍：
  *
- *   exp   经验作物 —— 长得慢，单次经验多，但每小时的金币收入低
- *   eco   经济作物 —— 长得快、卖价高，每小时的金币收入高
+ *   exp   经验作物 —— 长得慢，单次经验多，每小时金币低
+ *   eco   经济作物 —— 长得快，每小时金币高
  *   normal 普通作物 —— 两头都不突出
  *
- * 关键在于**每小时的金币产出**才是真正的取舍点：
- * 经验公式里 (总时间/4)×等级 这一项与成熟时间成正比，
- * 而一轮能收获的次数与成熟时间成反比，两者正好抵消 ——
- * 所以不论种哪一类，每小时的经验吞吐是一样的，
- * 区别在于你愿意用多少时间来换金币。
- *
- *   每小时金币 = 每次数量 × 售价 ÷ 每次等待时间
- *   slow 作物 1.0 / 3.5 = 0.29 倍
- *   exp  作物 0.75 / 1.5 = 0.50 倍
- *   normal 作物 1.0 / 1.0 = 1.00 倍
- *   eco  作物 1.35 / 0.9 = 1.50 倍
- *
- * 分类按生长形态自动判定，玩家很快就能学会「粮食=经验、水果=金币」。
+ * 分类**只影响成熟时间**（exp 1.5 倍、eco 0.9 倍）。售价不再乘分类系数 ——
+ * 慢作物靠「每多等一小时多 5%」自然拿到更高的整轮收益，
+ * 但因为等得更久，每小时的金币依然更低，取舍仍然成立。
  */
 const KIND = {
-  exp: { time: 1.50, value: 0.75, label: '经验作物' },
-  eco: { time: 0.90, value: 1.35, label: '经济作物' },
-  normal: { time: 1.00, value: 1.00, label: '普通作物' },
+  exp: { time: 1.50, label: '经验作物' },
+  eco: { time: 0.90, label: '经济作物' },
+  normal: { time: 1.00, label: '普通作物' },
 };
 
 /**
@@ -184,8 +174,8 @@ const SLOW_CROPS = new Set([
   '茶树', '咖啡豆', '可可豆', '甘蔗', '薰衣草', '兰花', '葵花籽', '芦笋',
 ]);
 
-/** 厚积薄发作物的倍率 */
-const SLOW = { time: 3.5, value: 1.0 };
+/** 厚积薄发作物的倍率（覆盖形态倍率） */
+const SLOW = { time: 3.5 };
 
 /** 形态 → 作物分类 */
 const FORM_KIND = {
@@ -247,16 +237,29 @@ const growHoursAt = (level) => level ** 0.7;
 const seedPrice = (level) => Math.round(10 * level ** 1.75);
 
 /**
- * 一整轮的收益倍率（收入 ÷ 种子价）。
+ * 一整轮（首茬 + 所有再生茬）的总小时数。
  *
- * 旧公式把「种子价 × (1.2 + 等级 × 0.016)」直接当单价，
- * 再乘上产量与茬数，结果 Lv200 一株能卖出一亿多 —— 高等级作物的
- * 收入倍率超过 1000 倍，金币完全失去意义。
- *
- * 现在反过来：先定「这一轮最多该赚回几倍种子钱」，再由它除回去得到单价。
- * 倍率随等级略微收窄（4.0 → 3.2），意思是越到后期越要靠规模而不是暴利。
+ * 售价的「时长倍率」按它计算：等待越久，整轮该赚的越多。
  */
-const marginAt = (level) => 4.0 - Math.min(level, MAX_LEVEL) * 0.004;
+function cycleHours(growSec, regrow, harvests) {
+  const grow = growSec / 3600;
+  let total = 0;
+  for (let i = 0; i < harvests; i += 1) total += grow * regrow ** i;
+  return total;
+}
+
+/**
+ * 一整轮的期望收益（售价公式的源头）。
+ *
+ *     整轮收益 = (种子价 × 1.2 + 等级 × 10) × (1 + 0.05 × 整轮小时数)
+ *
+ * 先把「这一轮该赚多少」定死，再除以总产量得到单价 ——
+ * 单价因此不是自由变量：改种子价、改成熟时间都会自动传导。
+ * 每多等一小时多 5%，于是慢作物整轮更值钱，但每小时金币依然更低。
+ */
+function cycleRevenue(level, seed, hours) {
+  return (seed * 1.2 + level * 10) * (1 + hours * 0.05);
+}
 
 /**
  * 产量区间。基础 10~16 个起，再按作物形态加成。
@@ -401,11 +404,12 @@ const crops = CATALOG.map(([name, emoji, form, flavour], index) => {
   const harvests = harvestsAt(level);
   const yld = yieldRange(level, form);
   const seed = seedPrice(level);
+  const grow = growSeconds(level, flavour, kind, slow);
+  const regrow = regrowOf(level);
 
-  // 先定「这一整轮该赚回多少」，再摊到每个产品上。
-  // 于是「卖价」不再是自由变量，收入倍率被 marginAt 锁住。
-  const revenue = seed * marginAt(level) * FLAVOUR[flavour].value
-    * (slow ? SLOW.value : KIND[kind].value);
+  // 先定「这一整轮该赚多少」，再摊到每个产品上 ——
+  // 售价从此只由「种子价 + 等级 + 整轮时长」决定，不再乘分类或风味系数。
+  const revenue = cycleRevenue(level, seed, cycleHours(grow, regrow, harvests));
   const sell = Math.max(1, Math.round(revenue / (((yld[0] + yld[1]) / 2) * harvests)));
 
   return {
@@ -419,8 +423,8 @@ const crops = CATALOG.map(([name, emoji, form, flavour], index) => {
     lv: level,
     seed,
     sell,
-    grow: growSeconds(level, flavour, kind, slow),
-    regrow: regrowOf(level),
+    grow,
+    regrow,
     harvests,
     yield: yld,
   };
@@ -484,10 +488,10 @@ const multiCrops = MULTI_CATALOG.map(([name, emoji, form, flavour, level, harves
     Math.max(5, Math.round(base[1] * scale)),
   ];
   const seed = seedPrice(level);
-  // 整轮收入仍按等级锁定：总金币和同级单茬作物差不多，但总时长更短，
-  // 所以每小时金币只比单茬低一些（不再是「腰斩」）
-  const revenue = seed * marginAt(level) * FLAVOUR[flavour].value
-    * (form === 'flower' ? 1.05 : KIND[kind].value);
+  const grow = growSeconds(level, flavour, kind);
+  // 整轮时间包含所有再生茬，所以它们等得更久、整轮收益更高，
+  // 但每茬产量被摊薄，单价明显低于同级的单茬作物。
+  const revenue = cycleRevenue(level, seed, cycleHours(grow, MULTI_REGROW, harvests));
   const sell = Math.max(1, Math.round(revenue / (((yld[0] + yld[1]) / 2) * harvests)));
 
   return {
@@ -501,7 +505,7 @@ const multiCrops = MULTI_CATALOG.map(([name, emoji, form, flavour, level, harves
     lv: level,
     seed,
     sell,
-    grow: growSeconds(level, flavour, kind),
+    grow,
     regrow: MULTI_REGROW,
     harvests,
     yield: yld,
@@ -546,9 +550,13 @@ const specialCrops = SPECIAL_CATALOG.map(([name, emoji, form, level]) => {
   const kind = kindOf(form);
   const harvests = level <= 20 ? 1 : level <= 40 ? 2 : 3;
   const yld = yieldRange(level, form);
-  // 名义种子价：不卖，只用来给奖励池估值与商店列表排序
+  // 名义种子价：限定种子不卖，这里只是给奖励池估值
   const seed = Math.round(seedPrice(level) * 2);
-  const revenue = seedPrice(level) * marginAt(level) * 1.3 * KIND[kind].value;
+  // 限定种子长得比普通作物慢一点，免得一挖到就能立刻变现
+  const grow = Math.round(growSeconds(level, 'plain', kind) * 1.15);
+  const regrow = 0.45;
+  // 基础收益按同级普通种子的价格算，再乘 1.3 的限定溢价
+  const revenue = cycleRevenue(level, seedPrice(level), cycleHours(grow, regrow, harvests)) * 1.3;
   const sell = Math.max(1, Math.round(revenue / (((yld[0] + yld[1]) / 2) * harvests)));
 
   return {
@@ -562,30 +570,22 @@ const specialCrops = SPECIAL_CATALOG.map(([name, emoji, form, level]) => {
     lv: level,
     seed,
     sell,
-    // 限定种子长得比普通作物慢一点，免得一挖到就能立刻变现
-    grow: Math.round(growSeconds(level, 'plain', kind) * 1.15),
-    regrow: 0.45,
+    grow,
+    regrow,
     harvests,
     yield: yld,
   };
 });
 
 /**
- * 保证「一整轮收入」随等级严格递增 —— **单价不再强制单调**。
+ * 这里**不再**强行拉平整轮收入。
  *
- * 换茬数的时候（Lv21 从 1 茬变 2 茬），想维持同样的收入倍率，
- * 单价必然要掉下来一截。硬把单价拉回单调，那一级的收入会凭空翻倍，
- * 变成一个人人卡点的「暴富关」。所以这里守的是整轮收入这条线，
- * 单价允许在换茬处回落，商店里也改成同时显示「每株总收入」。
+ * 售价公式里带着「每等一小时 +5%」，所以厚积薄发作物等得久、
+ * 整轮收入本来就该比同级的快作物高 —— 硬把它拉成单调递增，
+ * 反而会把售价抬到公式算不出来的地方，等于把公式废掉。
+ * 真正该守的取舍是「每小时金币」：慢作物每小时仍然更少，
+ * 这条由下面的同等级横向比较来检查。
  */
-for (const kind of ['exp', 'eco', 'normal']) {
-  const list = crops.filter((c) => c.kind === kind);
-  for (let i = 1; i < list.length; i += 1) {
-    while (cycleIncome(list[i]) <= cycleIncome(list[i - 1])) {
-      list[i].sell += 1;
-    }
-  }
-}
 
 /* ============================================================
    5. 校验
@@ -632,22 +632,13 @@ for (let i = 1; i < crops.length; i += 1) {
   check(b.grow > a.grow / 5, `成熟时间跳变过大：${a.name} ${a.grow}s → ${b.name} ${b.grow}s`);
 }
 
-// 整轮收入必须在**同一分类内**随等级递增；单价允许在换茬处回落。
-// 真正的取舍点还是每小时的金币产出，见下面的同等级横向比较。
-for (const kind of ['exp', 'eco', 'normal']) {
-  const list = crops.filter((c) => c.kind === kind);
-  for (let i = 1; i < list.length; i += 1) {
-    check(cycleIncome(list[i]) > cycleIncome(list[i - 1]),
-      `${KIND[kind].label}内整轮收入未递增：${list[i - 1].name} ${cycleIncome(list[i - 1])} → ${list[i].name} ${cycleIncome(list[i])}`);
-  }
-}
-
-// 收入倍率必须锁在一个窄区间里：低了没人种，高了金币失去意义。
-// 这是这一版数值重做的核心护栏，改售价公式时它会第一时间报警。
+// 单价与整轮收入都**不再**强制单调：
+// 售价由公式决定，厚积薄发作物等得久、整轮收入本来就该更高。
+// 这里只守住量级，避免某一档突然暴富或完全没人种。
 for (const c of crops) {
   const ratio = cycleIncome(c) / c.seed;
-  check(ratio >= 2.0 && ratio <= 7.0,
-    `${c.name} 的整轮收入倍率 ${ratio.toFixed(2)} 超出 2.0~7.0`);
+  check(ratio >= 1.0 && ratio <= 8.0,
+    `${c.name} 的整轮收入倍率 ${ratio.toFixed(2)} 超出 1.0~8.0`);
 }
 
 // 限定作物要覆盖每一档藏宝图的种子等级上限（10 / 20 / 30 / 40 / 50 级往下 10 级）
@@ -679,6 +670,10 @@ check(crops.filter((c) => c.multi).every((c) => c.yield[0] >= 3), '多茬作物�
 // 每小时金币产出才是真正的取舍点：数量 × 售价 ÷ 等待时间。
 // 比较必须**同等级**进行 —— 售价随等级指数增长、产量只线性增长，
 // 跨等级取平均会被高等级作物完全带偏。
+//
+// 注意：新公式里整轮收入只跟「等多久」有关，慢作物整轮收入天然更高。
+// 所以这里只比较**每小时**，而且不设倍数门槛 —— 分类只靠时间倍率区分，
+// 经济作物快 10%、经验作物慢 50%，倍数差异本来就有限。
 const perHourCoin = (c) => (c.yield[0] + c.yield[1]) / 2 * c.sell / c.grow;
 const avg = (list, f) => list.reduce((s, c) => s + f(c), 0) / list.length;
 
@@ -691,16 +686,12 @@ for (const lv of [1, 3, 5, 10, 20, 30, 45, 60, 80, 120, 160, 200]) {
   const slow = crops.filter((c) => c.lv === lv && c.slow && !c.multi);
 
   if (normal.length && eco.length) {
-    check(avg(eco, cycleIncome) > avg(normal, cycleIncome),
-      `Lv${lv} 经济作物的整轮收入没有比普通作物高`);
-    check(avg(eco, perHourCoin) > avg(normal, perHourCoin) * 1.2,
-      `Lv${lv} 经济作物的每小时金币收入没有明显更高`);
+    check(avg(eco, perHourCoin) > avg(normal, perHourCoin),
+      `Lv${lv} 经济作物的每小时金币收入没有比普通作物高`);
   }
   if (normal.length && exp.length) {
-    check(avg(exp, cycleIncome) < avg(normal, cycleIncome),
-      `Lv${lv} 经验作物的整轮收入没有比普通作物低`);
-    check(avg(exp, perHourCoin) < avg(normal, perHourCoin) * 0.8,
-      `Lv${lv} 经验作物的每小时金币收入没有明显更低`);
+    check(avg(exp, perHourCoin) < avg(normal, perHourCoin),
+      `Lv${lv} 经验作物的每小时金币收入没有比普通作物低`);
   }
   if (normal.length && slow.length) {
     check(avg(slow, (c) => c.grow) > avg(normal, (c) => c.grow) * 2,
@@ -753,7 +744,7 @@ fs.writeFileSync(
  * kind      作物分类：exp 经验作物 / eco 经济作物 / normal 普通作物
  * lv        解锁等级
  * seed      种子售价（限定作物不卖，这里是估值）
- * sell      单个农产品售价
+ * sell      单个农产品售价，由「(种子价×1.2 + 等级×10) × (1 + 0.05×整轮小时) ÷ 总产量」倒推
  * grow      首次成熟所需秒数
  * regrow    再生系数，后续每次成熟 = grow × regrow
  * harvests  可收获总次数，1 表示一次性作物
@@ -812,8 +803,9 @@ export function totalCycleSeconds(crop) {
 /**
  * 一整轮的期望收入（按平均产量估）。
  *
- * 这是比「单价」更值得比较的指标：换茬数时单价会回落，
- * 但整轮收入只会随等级上升。商店与种子详情都用它。
+ * 因为售价里含「每等一小时 +5%」的时长倍率，整轮收入**不再随等级单调** ——
+ * 厚积薄发作物等得久，整轮收入会比同级的快作物高，这是设计意图。
+ * 跨作物比较请用「每小时金币」，那才是真正的取舍点。
  */
 export function cycleIncome(crop) {
   return Math.round(((crop.yield[0] + crop.yield[1]) / 2) * crop.sell * crop.harvests);

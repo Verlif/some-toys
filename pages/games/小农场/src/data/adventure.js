@@ -7,7 +7,8 @@
  *
  * 奖励池在进入地图时就一次性生成好：
  *   - 必有 3 种随机限定种子（等级不超过这张图的种子上限）；
- *   - 其余奖励的总价值约为藏宝图售价的 3 倍（金币 / 普通种子 / 道具）；
+ *   - 其余奖励约值藏宝图售价的 3 倍（金币 / 商店种子 / 道具）；
+ *     商店种子的等级上限是「买图所需农场等级 × 2」，可以越级挖到好种子；
  *   - 每次选择都会带走池子里的一份，没走对的那一份就留在地里。
  *
  * 这个模块是纯计算：不读写存档、不碰 DOM。玩家侧的流程在 store/adventure.js，
@@ -23,15 +24,17 @@ import { randInt } from '../core/utils.js';
  * 五档藏宝图。
  *
  * unlock = 10 × tier，就是「需要 10 倍的农场等级」；
- * seedCap = unlock + 10，挖到的种子不会超过这个等级。
+ * seedCap = unlock + 10，挖到的**限定**种子不会超过这个等级；
+ * shopSeedCap = unlock × 2，挖到的**商店**种子不会超过这个等级 ——
+ * 商店种子有真实的种子价，越级挖到才有惊喜感。
  * swipes = tier × 5 + 10，是这张图允许的总选择次数。
  */
 export const MAP_TIERS = [
-  { tier: 1, name: '一级藏宝图', price: 2_500, unlock: 10, seedCap: 20, swipes: 15, emoji: '🗺️' },
-  { tier: 2, name: '二级藏宝图', price: 5_000, unlock: 20, seedCap: 30, swipes: 20, emoji: '🧭' },
-  { tier: 3, name: '三级藏宝图', price: 10_000, unlock: 30, seedCap: 40, swipes: 25, emoji: '📜' },
-  { tier: 4, name: '四级藏宝图', price: 20_000, unlock: 40, seedCap: 50, swipes: 30, emoji: '🏴‍☠️' },
-  { tier: 5, name: '五级藏宝图', price: 40_000, unlock: 50, seedCap: 60, swipes: 35, emoji: '💎' },
+  { tier: 1, name: '一级藏宝图', price: 2_500, unlock: 10, seedCap: 20, shopSeedCap: 20, swipes: 15, emoji: '🗺️' },
+  { tier: 2, name: '二级藏宝图', price: 5_000, unlock: 20, seedCap: 30, shopSeedCap: 40, swipes: 20, emoji: '🧭' },
+  { tier: 3, name: '三级藏宝图', price: 10_000, unlock: 30, seedCap: 40, shopSeedCap: 60, swipes: 25, emoji: '📜' },
+  { tier: 4, name: '四级藏宝图', price: 20_000, unlock: 40, seedCap: 50, shopSeedCap: 80, swipes: 30, emoji: '🏴‍☠️' },
+  { tier: 5, name: '五级藏宝图', price: 40_000, unlock: 50, seedCap: 60, shopSeedCap: 100, swipes: 35, emoji: '💎' },
 ];
 
 /** 按档位取藏宝图，越界返回 null */
@@ -70,13 +73,26 @@ export const SCENES = [
 /** 奖励池里「其他奖励」的总价值 = 藏宝图售价 × 这个倍数 */
 const POOL_VALUE_RATIO = 3;
 
+/**
+ * 有多少张牌真的挂着奖励。
+ *
+ * 这个比例只决定「空手而归的次数」，不改变池子总价值 ——
+ * 牌少了，每份奖励就更肥。想让整趟更穷，得动 POOL_VALUE_RATIO。
+ */
+const REWARD_CARD_RATIO = 0.3;
+
 /** 邻居每次上线去买藏宝图的概率 */
 export const NPC_ADVENTURE_CHANCE = 0.12;
 
-/** 除限定种子外，其余奖励的构成（道具单价低，占比压低一点） */
+/**
+ * 除限定种子外，其余奖励的构成。
+ *
+ * 金币占 2/7（约 29%）。种子按种子价记账，但种下去能卖出 2~3 倍种子价的产出，
+ * 所以把份额从金币挪给种子并不会让玩家变穷 —— 真正的现金只有金币这一项。
+ */
 const REWARD_MIX = [
-  { kind: 'coin', weight: 5 },
-  { kind: 'seed', weight: 3 },
+  { kind: 'coin', weight: 2 },
+  { kind: 'seed', weight: 4 },
   { kind: 'item', weight: 1 },
 ];
 
@@ -105,7 +121,12 @@ function rollKind() {
   return REWARD_MIX[0].kind;
 }
 
-/** 这张图的种子等级上限内、可以正常买到的种子 */
+/**
+ * 这张图能挖到的商店种子：等级不超过「买图所需的农场等级 × 2」。
+ *
+ * 上限比限定种子的 seedCap 高得多 —— 限定种子一共只有到 Lv60，
+ * 商店种子才是越级挖宝的主要惊喜来源。
+ */
 function shopSeedsWithin(cap) {
   const all = Object.keys(CROPS).filter((id) => !CROPS[id].special && CROPS[id].lv <= cap);
   // 只挖「这一档里比较值钱」的种子，否则奖励全是最低级的小麦，很没成就感
@@ -149,8 +170,8 @@ export function buildRewardPool(tier) {
     });
   });
 
-  // 其余奖励：数量随步数走，总价值约等于售价 × 3
-  const slots = Math.max(4, Math.round(map.swipes * 0.45) - specials.length);
+  // 其余奖励：带奖励的牌约占三成，总价值仍约等于售价 × 3
+  const slots = Math.max(2, Math.round(map.swipes * REWARD_CARD_RATIO) - specials.length);
   const budget = map.price * POOL_VALUE_RATIO;
   const rewards = [];
 
@@ -167,7 +188,7 @@ export function buildRewardPool(tier) {
     }
 
     if (kind === 'seed') {
-      const cropId = pick(shopSeedsWithin(map.seedCap));
+      const cropId = pick(shopSeedsWithin(map.shopSeedCap));
       const crop = CROPS[cropId];
       const n = Math.max(1, Math.min(12, Math.round(share / crop.seed)));
       rewards.push(reward('seed', {

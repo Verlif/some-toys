@@ -149,7 +149,7 @@ function mapPanel() {
           <div class="si-name">${map.name} ${owned ? `<span class="si-own">· 拥有 ${owned}</span>` : ''}</div>
           <div class="si-meta seed-meta">
             <span class="meta-tag steps">👣 ${map.swipes} 步</span>
-            <span class="meta-tag yield">🌱 ≤Lv${map.seedCap}</span>
+            <span class="meta-tag yield">🌱 ≤Lv${map.shopSeedCap}</span>
             <span class="meta-tag special">✨ 限定×3</span>
           </div>
         </div>
