@@ -7,10 +7,12 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: linear-gradient(135deg, #59b356, #327f37);
+  /* 纯色，不用渐变：渐变在顶栏这种大面积色块上会显得脏，
+     而且和下面的浅绿面板接不上 */
+  background: var(--green-d);
   color: #fff;
   border-radius: 0 0 22px 22px;
-  box-shadow: 0 6px 20px rgba(50, 127, 55, .22);
+  box-shadow: 0 4px 14px rgba(50, 127, 55, .16);
   transition: border-radius .2s ease;
 }
 /* 展开时把底部的圆角收成直角，详情面板才能严丝合缝地接上来，
@@ -79,7 +81,7 @@
   right: 0;
   top: 100%;
   margin-top: -1px;
-  background: linear-gradient(180deg, #f2f9ef 0%, #eaf5e6 100%);
+  background: #f2f9ef;
   color: var(--text);
   border-radius: 0 0 20px 20px;
   box-shadow: 0 12px 28px rgba(30, 60, 30, .18);
@@ -117,6 +119,49 @@
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
+/* 展开层最上方：农场等级 + 经验进度条 */
+.hud-level {
+  background: #fff;
+  border-radius: 13px;
+  box-shadow: 0 1px 3px rgba(40, 80, 40, .06);
+  padding: 11px 13px 12px;
+  margin-bottom: 9px;
+}
+.hud-level-row { display: flex; align-items: baseline; gap: 8px; }
+.hud-level-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--green-d);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.hud-level-badge b { font-size: 14px; }
+.hud-level-title { font-size: 12.5px; font-weight: 700; color: #40503c; }
+.hud-level-exp {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.hud-level-bar {
+  height: 7px;
+  background: #e6ecdf;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 9px;
+}
+.hud-level-bar > i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: var(--green);
+  transition: width .4s ease;
+}
+
 .hud-detail-tip {
   text-align: center;
   font-size: 10.5px;
@@ -127,6 +172,32 @@
 /* ---------- 页面切换 ---------- */
 .page { display: none; animation: fade .2s ease; }
 .page.active { display: block; }
+
+/* ---------- 商店：固定高度，每个 tab 各自滚动 ----------
+   以前四个面板共用一条横向滚动条，纵向也由文档滚。
+   结果「种子滚到一半 → 切道具」，道具面板是空白的（文档滚动位置还在下面）。
+   现在整页固定高度，纵向滚动交给每个面板自己，互不影响。 */
+#page-shop.active {
+  position: fixed;
+  top: var(--hud-h);
+  bottom: var(--tab-h);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 900px;
+  overflow: hidden;
+}
+#page-shop #shop {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+/* 页面本身已经固定在顶栏下方，顶部条不需要再 sticky
+   （sticky 会按 top 偏移，反而在顶部多出一条空隙） */
+#page-shop .shop-top {
+  position: static;
+  flex-shrink: 0;
+}
 
 /* ---------- 地块网格 ---------- */
 .grid {
@@ -154,10 +225,10 @@
   justify-content: center;
   gap: 4px;
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, .92);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-top: 1px solid rgba(0, 0, 0, .05);
+  /* 不透明纯白：半透明 + 毛玻璃会让下面的内容透出一层灰，
+     看起来就像导航条本身带了一条黑色阴影 */
+  background: #fff;
+  border-top: 1px solid var(--line);
 }
 .tabbar button {
   flex: 1;
@@ -180,22 +251,38 @@
 .tabbar button span { font-size: 19px; line-height: 1; }
 .tabbar button.active { color: var(--green-d); background: #eef7e9; }
 
-/* 主页面是文档滚动（农场 / 邻居），没法在容器上做遮罩，
-   所以在底部导航上方压一条渐隐带。高度取 26px、底边藏进导航条里，
-   只露出十几像素的过渡，提示「下面还有内容」。
-   z-index 低于 tabbar（60），高于内容，不会挡住点击。 */
-.app::after {
-  content: '';
+/* 农场日志入口：浮在底部导航上方，只在农场页出现 */
+.log-fab {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  width: min(100%, 900px);
-  bottom: calc(56px + env(safe-area-inset-bottom));
-  height: 26px;
-  background: linear-gradient(180deg, rgba(238, 243, 233, 0), var(--bg));
-  pointer-events: none;
-  z-index: 55;
+  bottom: calc(74px + env(safe-area-inset-bottom));
+  z-index: 58;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 99px;
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #40503c;
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 18px rgba(50, 90, 45, .18);
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease;
 }
+body[data-page="farm"] .log-fab { display: inline-flex; }
+.log-fab:active { transform: translateX(-50%) scale(.95); }
+.log-fab span { font-size: 14px; line-height: 1; }
+
+/* 主页面是文档滚动（农场 / 邻居）。
+   之前这里压了一条 26px 的渐隐带提示「下面还有内容」，
+   但它贴着导航条，看起来就像导航的黑色阴影，和纯白导航撞在一起很脏。
+   现在导航改成不透明纯白，渐隐带去掉，靠列表自身的底部留白说话。 */
 
 /* ============================================================
    三个浮层（底部浮窗 / 子页面 / 模态弹窗）共用同一套交互：
@@ -282,8 +369,8 @@
 
 .sheet-panel {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 12px;
+  right: 12px;
   /* 浮起来一点，四个圆角才都看得见 */
   bottom: calc(8px + env(safe-area-inset-bottom));
   max-width: 640px;
@@ -300,6 +387,26 @@
   touch-action: pan-y;
 }
 #sheet.show .sheet-panel { transform: translateY(0); }
+
+/* ---------- 农场日志浮窗（复用 .sheet-panel 的外观与手势） ---------- */
+#logSheet {
+  position: fixed;
+  inset: 0;
+  z-index: 125;
+  visibility: hidden;
+  pointer-events: none;
+}
+#logSheet.show { visibility: visible; pointer-events: auto; }
+#logSheet.show .sheet-mask { opacity: 1; }
+#logSheet.show .sheet-panel { transform: translateY(0); }
+
+/* 日志面板：头部固定、列表自己滚，所以覆盖掉 .sheet-panel 的整体滚动 */
+.log-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 12px;
+  overflow: hidden;
+}
 
 /* ---------- 子页面 ---------- */
 #subpage {
@@ -394,8 +501,8 @@
    都不会被「边缘渐隐」的遮罩淡掉。 */
 .modal-card {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 12px;
+  right: 12px;
   bottom: calc(8px + env(safe-area-inset-bottom));
   max-width: 640px;
   margin: 0 auto;
@@ -528,3 +635,182 @@
   margin-top: 4px;
   line-height: 1.6;
 }
+/* ============================================================
+   冒险：全屏卡牌页
+   层级低于子页面（110）与模态弹窗（130）——
+   退出确认是模态弹窗，必须盖在它上面。
+   ============================================================ */
+#adventure {
+  position: fixed;
+  inset: 0;
+  z-index: 105;
+  margin: 0 auto;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 60% at 50% 0%, #f4faef 0%, #e6f2dc 45%, #d7e7c9 100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(2.5%);
+  transition: opacity .22s ease, transform .26s cubic-bezier(.2, .9, .3, 1);
+}
+#adventure.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+.adv-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 9px;
+}
+.adv-exit {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, .78);
+  color: #54654f;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(60, 90, 50, .12);
+}
+.adv-exit:active { transform: scale(.94); }
+
+.adv-head { flex: 1; min-width: 0; }
+.adv-title { font-size: 13.5px; font-weight: 700; color: #33412f; }
+.adv-steps {
+  font-size: 11px;
+  color: #6d7d68;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.adv-bar {
+  height: 4px;
+  margin: 0 16px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .7);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.adv-bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #9ad47a, #4b9b45);
+  transition: width .28s ease;
+}
+
+/* 舞台：卡片居中，四周留白由 padding 控制 */
+.adv-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px 18px;
+}
+
+.adv-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 350px);
+  height: min(52vh, 372px);
+  padding: 30px 22px 48px;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(40, 70, 35, .16), 0 2px 0 rgba(255, 255, 255, .8) inset;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  /* 手势要自己接管，不能让浏览器抢走横向滑动 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  will-change: transform;
+  transition: transform .22s cubic-bezier(.2, .9, .3, 1), opacity .19s ease;
+}
+.adv-card.dragging { cursor: grabbing; transition: none; }
+.adv-card.out { transition: transform .19s ease, opacity .19s ease; }
+.adv-card.in { animation: advIn .22s ease; }
+
+.adv-scene { font-size: 52px; line-height: 1; }
+.adv-card-title { font-size: 16.5px; font-weight: 700; color: #33412f; }
+.adv-card-text {
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: #7a8a75;
+  max-width: 240px;
+}
+.adv-card-hint {
+  position: absolute;
+  bottom: 18px;
+  font-size: 10.5px;
+  color: #b3bfae;
+  letter-spacing: .5px;
+}
+
+/* 左右两个选项：拖动时对应一侧浮起来 */
+.adv-side {
+  position: absolute;
+  /* 要盖在卡片之上：卡片还没滑走时也得看得见选中了哪边 */
+  z-index: 2;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 34%;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: #eef7e9;
+  color: var(--green-d);
+  font-size: 11.5px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity .08s linear;
+  pointer-events: none;
+}
+.adv-side-left { left: 9px; text-align: left; }
+.adv-side-right { right: 9px; text-align: right; }
+
+.adv-foot {
+  padding: 0 20px calc(20px + env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 10.5px;
+  color: #8b9a86;
+  flex-shrink: 0;
+}
+
+/* 挖到 / 空手的浮动提示：绝对定位，不占布局，不推挤卡片 */
+.adv-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0;
+}
+.adv-toast.show { animation: advToast 1.1s ease forwards; }
+.adv-toast-hit,
+.adv-toast-miss {
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(40, 70, 35, .16);
+}
+.adv-toast-hit { background: #fff6dd; color: #a0730f; }
+.adv-toast-miss { background: rgba(255, 255, 255, .82); color: #8b9a86; }

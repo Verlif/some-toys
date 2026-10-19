@@ -73,6 +73,35 @@ export function addExpRaw(amount) {
   return result;
 }
 
+/* ---------- 农场日志 ---------- */
+
+/** 玩家日志只保留最近这么多天 */
+const LOG_KEEP_DAYS = 7;
+
+/** 再多也留这么些条，避免存档无限膨胀 */
+const LOG_CAP = 60;
+
+/**
+ * 记一条农场日志（内存操作，随下一次 commit 一起落盘）
+ *
+ * 玩家自己的操作、商店买卖、邻居来偷菜 / 帮忙照料都走这里。
+ * 日志按写入顺序保存，展示时按时间倒序 —— 邻居结算会补写过去的时间点，
+ * 所以不能假设数组本身就是有序的。
+ *
+ * @param {string} emoji
+ * @param {string} text
+ * @param {number} [at] 事件发生时间，补算历史时用
+ */
+export function addLog(emoji, text, at = Date.now()) {
+  const log = state.player.log ?? (state.player.log = []);
+  log.unshift({ at, emoji, text });
+
+  const cutoff = Date.now() - LOG_KEEP_DAYS * 86_400_000;
+  const kept = log.filter((entry) => entry.at >= cutoff).slice(0, LOG_CAP);
+  log.length = 0;
+  log.push(...kept);
+}
+
 /* ---------- 落盘 ---------- */
 
 /** 写回玩家档案并通知 UI */

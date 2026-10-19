@@ -42,3 +42,16 @@
 @keyframes scOut {
   to { opacity: 0; }
 }
+/* 冒险卡片入场：从略小浮上来 */
+@keyframes advIn {
+  from { opacity: 0; transform: translateY(10px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 挖到奖励的提示：浮起 → 停住 → 淡出 */
+@keyframes advToast {
+  0%   { opacity: 0; transform: translate(-50%, 8px); }
+  14%  { opacity: 1; transform: translate(-50%, 0); }
+  72%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}

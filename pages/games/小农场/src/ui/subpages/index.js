@@ -17,7 +17,6 @@ export const subpages = {
   sign: signPage,
   guide: guidePage,
   dog: dogPage,
-  treasure: placeholderPage,
   ranch: placeholderPage,
   workshop: placeholderPage,
   market: placeholderPage,

@@ -11,11 +11,13 @@ import { state } from '../../store/state.js';
 import * as farm from '../../store/farm.js';
 import { count } from '../../store/inventory.js';
 import { CROPS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
+import { FERTILIZER_IDS, ITEMS } from '../../data/items.js';
 import { SOILS } from '../../data/soils.js';
 import { PLOT_UNLOCK_LV } from '../../data/progression.js';
 import { seedId } from '../../data/keys.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
+import { stackClass, yieldClass } from '../meta-tags.js';
 import { closeModal, openModal } from '../modal.js';
 
 /** plotId → { el, key, bar, time } */
@@ -81,8 +83,7 @@ function growingHTML(plot) {
     <div class="ptime"></div>
     <div class="plot-acts">
       ${careButtonsHTML(plot)}
-      ${plot.fert ? '' : '<button class="icon-btn" data-action="fert" data-id="' + plot.id + '" title="普通化肥">🧪</button>'}
-      ${plot.organic ? '' : '<button class="icon-btn" data-action="organic" data-id="' + plot.id + '" title="有机化肥">⚗️</button>'}
+      ${plot.fert ? '' : '<button class="icon-btn" data-action="fert" data-id="' + plot.id + '" title="施肥">🧪</button>'}
     </div>`;
 }
 
@@ -111,7 +112,7 @@ function plotKey(plot, status) {
   const now = Date.now();
   return [
     status, plot.cropId || '', plot.soil, plot.harvested || 0,
-    plot.fert ? 1 : 0, plot.organic ? 1 : 0,
+    plot.fert ? 1 : 0,
     Math.round(plot.boost || 0),
     // 缺水 / 生虫是随时间出现的，指纹里要带上，否则按钮不会冒出来
     farm.needsWater(plot, now) ? 1 : 0,
@@ -252,13 +253,17 @@ function seedCardHTML(cropId) {
         <div class="seed-row-top">
           <span class="seed-row-name">${crop.name}</span>
           <span class="seed-row-kind kind-${crop.kind}">${KIND_LABELS[crop.kind]?.label || ''}</span>
+          ${crop.multi ? '<span class="seed-row-kind kind-multi">多茬</span>' : ''}
+          ${crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : ''}
           ${crop.slow ? '<span class="seed-row-kind kind-slow">厚积薄发</span>' : ''}
         </div>
         <div class="seed-row-meta">
-          <span>🌱 存货 ${owned}</span>
-          <span>⏱ 共 ${fmtDuration(cycle * 1000)}</span>
-          <span>🧺 ${crop.harvests > 1 ? `共 ${crop.harvests} 茬` : '一次'}</span>
-          <span>🌾 每次 ${crop.yield[0]}-${crop.yield[1]} 个</span>
+          <span class="meta-tag">🌱 存货 ${owned}</span>
+          <span class="meta-tag lv">Lv.${crop.lv}</span>
+          <span class="meta-tag time">⏱ ${fmtDuration(cycle * 1000)}</span>
+          <span class="meta-tag stack ${stackClass(crop.harvests)}">🧺 ${crop.harvests} 茬</span>
+          <span class="meta-tag yield ${yieldClass(crop.yield[1])}">🌾 ${crop.yield[0]}-${crop.yield[1]}</span>
+          <span class="meta-tag price">💰 ${crop.sell}</span>
         </div>
         <div class="seed-row-gain">
           预计收益　经验 <b>${exp.toLocaleString()}</b>　售价 <b>${crop.sell}</b>/个
@@ -306,14 +311,65 @@ function openPlantModal(plotId) {
   });
 }
 
+/* ---------- 施肥弹窗 ---------- */
+
+/**
+ * 五档普通化肥 + 有机化肥，按背包存货列出来。
+ *
+ * 之前每块地上直接摆两个按钮（普通 / 有机），现在肥料的档位多了，
+ * 一格根本放不下，改成「点一下 🧪 → 选一档」——
+ * 顺便能在同一个面板里把「这块地已经用过什么」讲清楚。
+ */
+function openFertModal(plotId) {
+  const plot = state.plots.find((p) => p.id === plotId);
+  if (!plot || !plot.cropId || Date.now() >= plot.readyAt) return;
+
+  const crop = CROPS[plot.cropId];
+  const rows = FERTILIZER_IDS.map((id) => {
+    const item = ITEMS[id];
+    const owned = count(id);
+    const used = item.instant ? plot.organic : plot.fert;
+    const disabled = !owned || used;
+    const note = used
+      ? (item.instant ? '这块地已经用过有机化肥了' : '这块地这轮已经施过普通化肥了')
+      : item.desc;
+
+    return `
+      <div class="shop-item ${disabled ? 'locked' : ''}">
+        <div class="si-emoji">${item.emoji}</div>
+        <div class="si-body">
+          <div class="si-name">${item.name} <span class="si-own">· 拥有 ${owned}</span></div>
+          <div class="si-meta">${note}</div>
+        </div>
+        <button class="btn small ${disabled ? '' : 'ghost'}" ${disabled ? 'disabled' : ''}
+                data-action="apply-fert" data-plot="${plotId}" data-item="${id}">使用</button>
+      </div>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🧪 施肥 · ${crop.emoji}${crop.name}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">
+      还剩 ${fmtDuration(plot.readyAt - Date.now())} · 普通化肥每轮限一次，有机化肥另算一次
+    </div>
+    <div class="list">${rows}</div>
+  `, async (action, el) => {
+    if (action === 'apply-fert') {
+      const ok = await farm.fertilize(Number(el.dataset.plot), el.dataset.item);
+      if (ok) closeModal();
+    }
+  });
+}
+
 /* ---------- 挂载 ---------- */
 
 const PLOT_ACTIONS = {
   plant: (id) => openPlantModal(id),
   water: (id) => farm.water(id),
   pest: (id) => farm.catchPest(id),
-  fert: (id) => farm.fertilize(id, 'fertilizer'),
-  organic: (id) => farm.fertilize(id, 'organic'),
+  fert: (id) => openFertModal(id),
   harvest: (id) => farm.harvest(id),
 };
 

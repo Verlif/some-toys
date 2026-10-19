@@ -11,11 +11,12 @@ import { getFriend, state } from '../../store/state.js';
 import * as social from '../../store/social.js';
 import { formatCoins } from '../../store/npc-sim.js';
 import { CROPS } from '../../data/crops.js';
-import { PERSONALITIES } from '../../data/friends.js';
+import { PERSONALITIES, STEAL_LABELS } from '../../data/friends.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
 import { openModal } from '../modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
+import { showToast } from '../toast.js';
 
 let settling = false;
 
@@ -44,14 +45,13 @@ function relativeTime(at, now) {
   return `${Math.floor(diff / 86_400_000)}天前`;
 }
 
-function logHTML(friend, now) {
+function logHTML(friend, now, limit = 3) {
   if (!friend.log?.length) return '';
-  const items = friend.log.slice(0, 3).map((entry) => `
+  return friend.log.slice(0, limit).map((entry) => `
     <div class="friend-log-item">
       <span class="when">${relativeTime(entry.at, now)}</span>
       <span>${entry.emoji} ${escapeText(entry.text)}</span>
     </div>`).join('');
-  return `<div class="friend-log">${items}</div>`;
 }
 
 /** 动态文案里混着邻居名，这里做一次转义，避免名字里的符号破坏结构 */
@@ -62,7 +62,6 @@ function escapeText(text) {
 function cardHTML(friend, now) {
   const ripe = social.stealableCount(friend, now);
   const care = social.careCount(friend, now);
-  const { online, inMs } = social.presenceOf(friend, now);
 
   return `
     <div class="friend-card" data-action="visit" data-id="${friend.id}" role="button" tabindex="0">
@@ -74,14 +73,12 @@ function cardHTML(friend, now) {
           <span class="friend-chevron">›</span>
         </div>
         <div class="friend-stats">
+          <span class="friend-chip job">${escapeText(friend.profession || '邻居')}</span>
           <span class="friend-chip">💰 ${formatCoins(friend.coins)}</span>
           ${ripe > 0 ? `<span class="friend-chip ripe">🟡 ${ripe} 块可偷</span>` : ''}
           ${care > 0 ? `<span class="friend-chip care">💧 ${care} 块待照料</span>` : ''}
-          <span class="friend-chip ${online ? 'online' : ''}">
-            ${online ? '在线' : `${fmtDuration(inMs)}后上线`}
-          </span>
         </div>
-        ${logHTML(friend, now)}
+        <div class="friend-log">${logHTML(friend, now, 3)}</div>
       </div>
     </div>`;
 }
@@ -153,6 +150,15 @@ export async function enterFriendsPage() {
       });
       await social.persistFriends();
       await overlay.close();
+
+      // 邻居这段时间在玩家农场上的动作，合并成一条提示；
+      // 逐条弹的话离线久了会连弹十几条
+      const { stolen, cared, caught } = settler.summary;
+      const parts = [];
+      if (stolen) parts.push(`被顺走 ${stolen} 个作物`);
+      if (cared) parts.push(`邻居帮你照料了 ${cared} 块地`);
+      if (caught) parts.push(`守护犬赶走了 ${caught} 次`);
+      if (parts.length) showToast(`🏡 你不在时：${parts.join('，')}`);
     }
 
     renderFriends();
@@ -171,7 +177,8 @@ export async function enterFriendsPage() {
  */
 function plotCardHTML(friend, index, now) {
   const plot = friend.plots[index];
-  const base = (extra) => `<div class="npc-plot ${extra.cls || ''}">${extra.body}</div>`;
+  // data-slot 让操作之后能只替换这一格，而不是整窗重开（滚动位置也就不会丢）
+  const base = (extra) => `<div class="npc-plot ${extra.cls || ''}" data-slot="${index}">${extra.body}</div>`;
 
   if (!plot.cropId) {
     return base({ cls: 'empty', body: `<div class="np-emoji">🟫</div><div class="np-name">空地</div><div class="np-meta">闲置中</div>` });
@@ -214,7 +221,7 @@ function plotCardHTML(friend, index, now) {
       body: `
         <div class="np-emoji">${crop.emoji}</div>
         <div class="np-name">${crop.name}</div>
-        <div class="np-meta">${stolen ? '已被顺走过，产量减半' : '刚被顺走过'}</div>
+        <div class="np-meta">${stolen ? `已被顺走 ${stolen} 个` : '这块刚被顺过'}</div>
         ${boost}
         <div class="np-acts">${care}</div>`,
     });
@@ -233,66 +240,114 @@ function plotCardHTML(friend, index, now) {
   });
 }
 
+/** 弹窗底部那句提示，状态变了要跟着换 */
+function tipText(friend, now) {
+  return social.needsHelp(friend, now)
+    ? '有地缺水或生虫了 —— 在对应的地块上点 💧 或 🐛 帮忙，能拿到经验。'
+    : '偷菜会让邻居不高兴，但也是一种社交方式。';
+}
+
+/** 弹窗里的操作记录：最多 10 条，放在固定高度的滚动区里 */
+function logBoxHTML(friend, now) {
+  const items = logHTML(friend, now, 10);
+  return items
+    ? `<div class="friend-log npc-log" data-role="log">${items}</div>`
+    : '<div class="npc-log empty" data-role="log">还没有值得记下的事</div>';
+}
+
 /**
  * 拜访弹窗。顶部的信息区拆成独立的卡片，而不是把一堆文字挤在一行里。
  * 地块格子统一高度：按钮用 margin-top:auto 顶到底部，
  * 这样「偷完之后少了按钮」也不会让同一行看起来参差不齐。
+ *
+ * 操作之后**不重开弹窗**：只替换那一格地块卡、角标和底部提示，
+ * 滚动位置与日志区的视口都保持不变。
  */
 function openFriendModal(friendId) {
   const friend = getFriend(friendId);
   if (!friend) return;
   const now = Date.now();
-  const { online, inMs } = social.presenceOf(friend, now);
   const stealable = social.stealableCount(friend, now);
 
   const stats = [
     { k: '等级', v: `Lv.${friend.level}` },
     { k: '身家', v: `${formatCoins(friend.coins)} 💰` },
     { k: '地块', v: `${friend.plots.length} 块` },
-    { k: '状态', v: online ? '在线' : `${fmtDuration(inMs)}后上线` },
+    { k: '偷菜', v: STEAL_LABELS[friend.steal] || '偶尔顺菜' },
   ];
+
+  /** 只刷新受影响的这一格，以及需要跟着变的角标 / 提示 / 日志 */
+  function refreshPlot(index) {
+    const current = getFriend(friendId);
+    if (!current) return;
+    const at = Date.now();
+
+    const slot = document.querySelector(`#modal .npc-plot[data-slot="${index}"]`);
+    if (slot) slot.outerHTML = plotCardHTML(current, index, at);
+
+    const badge = document.querySelector('#modal [data-role="badge"]');
+    const left = social.stealableCount(current, at);
+    if (badge) {
+      badge.textContent = left > 0 ? `可偷 ${left}` : '暂无可偷';
+      badge.classList.toggle('ripe', left > 0);
+    }
+
+    const tip = document.querySelector('#modal [data-role="tip"]');
+    if (tip) tip.textContent = tipText(current, at);
+
+    const logBox = document.querySelector('#modal [data-role="log"]');
+    if (logBox) {
+      // 记录区自己也有滚动位置，重绘后要还回去
+      const keep = logBox.scrollTop;
+      logBox.outerHTML = logBoxHTML(current, at);
+      const next = document.querySelector('#modal [data-role="log"]');
+      if (next) next.scrollTop = keep;
+    }
+  }
 
   openModal(`
     <div class="npc-head">
       <div class="npc-avatar">${friend.avatar}</div>
       <div class="npc-id">
         <div class="npc-name">${escapeText(friend.name)}</div>
-        <div class="npc-sub">${escapeText(PERSONALITIES[friend.personality]?.name || '邻居')}的农场</div>
+        <div class="npc-sub">
+          ${escapeText(PERSONALITIES[friend.personality]?.name || '邻居')}
+          · ${escapeText(friend.profession || '农户')}
+        </div>
       </div>
-      <div class="npc-badge ${stealable > 0 ? 'ripe' : ''}">${stealable > 0 ? `可偷 ${stealable}` : '暂无可偷'}</div>
+      <div class="npc-badge ${stealable > 0 ? 'ripe' : ''}" data-role="badge">
+        ${stealable > 0 ? `可偷 ${stealable}` : '暂无可偷'}
+      </div>
     </div>
 
     <div class="npc-stats">
       ${stats.map((s) => `<div class="npc-stat"><span>${s.k}</span><b>${s.v}</b></div>`).join('')}
     </div>
 
-    ${logHTML(friend, now)}
+    <div class="npc-section-title">📜 最近操作</div>
+    ${logBoxHTML(friend, now)}
 
     <div class="npc-section-title">🟫 农场（${friend.plots.length} 块）</div>
     <div class="npc-plots">
       ${friend.plots.map((_, i) => plotCardHTML(friend, i, now)).join('')}
     </div>
 
-    <p class="npc-tip">
-      ${social.needsHelp(friend, now)
-        ? '有地缺水或生虫了 —— 在对应的地块上点 💧 或 🐛 帮忙，能拿到经验。'
-        : '偷菜会让邻居不高兴，但也是一种社交方式。'}
-    </p>
+    <p class="npc-tip" data-role="tip">${tipText(friend, now)}</p>
   `, async (action, el) => {
+    const index = Number(el.dataset.plot);
     if (action === 'steal') {
-      await social.steal(el.dataset.id, Number(el.dataset.plot));
-      // 偷完重开，让「刚被顺走过」立刻可见
-      if (getFriend(el.dataset.id)) openFriendModal(el.dataset.id);
+      await social.steal(el.dataset.id, index);
+      refreshPlot(index);
       return;
     }
     if (action === 'npc-water') {
-      await social.waterNeighborPlot(el.dataset.id, Number(el.dataset.plot));
-      if (getFriend(el.dataset.id)) openFriendModal(el.dataset.id);
+      await social.waterNeighborPlot(el.dataset.id, index);
+      refreshPlot(index);
       return;
     }
     if (action === 'npc-pest') {
-      await social.catchPestNeighborPlot(el.dataset.id, Number(el.dataset.plot));
-      if (getFriend(el.dataset.id)) openFriendModal(el.dataset.id);
+      await social.catchPestNeighborPlot(el.dataset.id, index);
+      refreshPlot(index);
     }
   });
 }

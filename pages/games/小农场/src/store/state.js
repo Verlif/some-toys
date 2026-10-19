@@ -8,7 +8,7 @@
  */
 import { loadSave, saveFriend } from '../core/storage.js';
 import { INITIAL_COINS, TOTAL_PLOTS } from '../data/progression.js';
-import { NPCS, VISIT_GAP_MAX, VISIT_GAP_MIN, generateNpcPlots } from '../data/friends.js';
+import { NPCS, generateNpcPlots, nextVisitAt, npcStartCoins, rollNpcLevel } from '../data/friends.js';
 import { normalizeNpc } from './npc-sim.js';
 import { randInt, safeNum } from '../core/utils.js';
 
@@ -18,8 +18,22 @@ export const state = {
   plots: [],
   bag: {},
   friends: [],
-  pet: { id: 'dog', fedUntil: 0 },
+  pet: { id: 'dog', satiety: 0, updatedAt: 0 },
 };
+
+/**
+ * 守护犬存档的字段迁移。
+ *
+ * 旧版只有 fedUntil（喂一次守 30 分钟），现在改成饱腹度 + 结算时刻。
+ * 旧字段直接丢掉：最多也就守着半小时，不值得为它算迁移。
+ */
+function normalizePet(pet) {
+  return {
+    id: pet.id || 'dog',
+    satiety: safeNum(pet.satiety, 0),
+    updatedAt: safeNum(pet.updatedAt, 0),
+  };
+}
 
 /** 新玩家档案 */
 export function createPlayer() {
@@ -38,6 +52,8 @@ export function createPlayer() {
     cropStats: {},
     // 新手引导：已完成的引导项
     guide: {},
+    // 农场日志：{ at, emoji, text }，只保留最近 7 天
+    log: [],
   };
 }
 
@@ -60,34 +76,52 @@ export function createPlot(id) {
     waterAt: 0,
     /** 下次需要捉虫的时间戳 */
     pestAt: 0,
+    /** 本轮是否已经被邻居顺走过（重新种下后刷新） */
+    stolen: false,
+    /** 本轮被顺走了几个，收获时扣掉 */
+    stolenCount: 0,
+    /** 最近一次被顺走的时间，仅用于展示与排查 */
+    stolenAt: 0,
   };
 }
 
 /**
- * 新建一位邻居。lastVisitAt 定在过去、nextVisitAt 定在未来，
+ * 新建一位邻居。等级与身家都按分布现掷，而不是写死在名单里；
+ * lastVisitAt 定在过去、nextVisitAt 按他的上线节奏排，
  * 这样玩家第一次进来就能看到他们已经「离线了一段时间」。
  */
 function createNpc(def, now) {
   const lastVisitAt = now - randInt(2 * 3600_000, 20 * 3600_000);
-  return {
+  const level = rollNpcLevel();
+  const npc = {
     id: def.id,
     name: def.name,
     avatar: def.avatar,
     personality: def.personality,
-    level: def.level,
+    profession: def.profession,
+    level,
     exp: 0,
-    coins: def.coins,
-    plots: generateNpcPlots(def, now),
+    coins: npcStartCoins(level),
+    schedule: def.schedule,
+    steal: def.steal,
     lastVisitAt,
-    nextVisitAt: lastVisitAt + randInt(VISIT_GAP_MIN, VISIT_GAP_MAX),
+    nextVisitAt: nextVisitAt(def, lastVisitAt),
     log: [],
   };
+  npc.plots = generateNpcPlots(npc, now);
+  return npc;
 }
 
 /** 补齐后来新增的字段，兼容旧存档 */
 function normalizePlot(plot) {
   if (plot.harvested === undefined) plot.harvested = 0;
   if (plot.boost === undefined) plot.boost = 0;
+  // 施肥标记：老存档里可能没有，统一成布尔值（农场视图靠它决定要不要显示 🧪）
+  plot.fert = Boolean(plot.fert);
+  plot.organic = Boolean(plot.organic);
+  // 被邻居顺走的计数是后加的字段
+  plot.stolenCount = safeNum(plot.stolenCount, 0);
+  plot.stolen = Boolean(plot.stolen);
   // 时间戳必须逐个清洗成有限数：IndexedDB 用结构化克隆保存，
   // undefined 会被原样存下来，界面上就会冒出 "NaN小时" 这种东西。
   for (const key of ['plantedAt', 'readyAt', 'total', 'waterAt', 'pestAt', 'stolenAt']) {
@@ -111,7 +145,8 @@ export async function initState() {
   state.player.guide ??= {};
   state.player.signStreak ??= 0;
   state.player.signTotal ??= 0;
-  state.pet = save.pet;
+  state.player.log ??= [];
+  state.pet = normalizePet(save.pet);
 
   // 地块：不足 TOTAL_PLOTS 就补齐，多的不删
   // （新建的地块不用立刻落盘，下次被玩家操作时 persist 会一并写回）
@@ -132,6 +167,17 @@ export async function initState() {
   } else {
     state.friends = NPCS.map((def) => createNpc(def, now));
     await Promise.all(state.friends.map(saveFriend));
+  }
+
+  // 名单里后加的邻居（本轮从 15 位扩到 20 位）：老存档也要补进来，
+  // 否则已经玩过的玩家永远见不到新面孔
+  const known = new Set(state.friends.map((npc) => npc.id));
+  const newcomers = NPCS
+    .filter((def) => !known.has(def.id))
+    .map((def) => createNpc(def, now));
+  if (newcomers.length) {
+    state.friends.push(...newcomers);
+    await Promise.all(newcomers.map(saveFriend));
   }
 
   return state;

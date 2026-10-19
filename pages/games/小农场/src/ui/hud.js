@@ -31,9 +31,11 @@ function collect() {
     level: byId('lvText'),
     title: byId('titleText'),
     coins: byId('coinText'),
+    dLevel: byId('dLevel'),
     dTitle: byId('dTitle'),
     dNextTitle: byId('dNextTitle'),
     dExp: byId('dExp'),
+    dExpBar: byId('dExpBar'),
     dPlots: byId('dPlots'),
     dStreak: byId('dStreak'),
     dCodex: byId('dCodex'),
@@ -60,9 +62,15 @@ export function renderHud() {
   els.title.textContent = titleOf(level);
   els.coins.textContent = coins;
 
+  els.dLevel.textContent = level;
   els.dTitle.textContent = titleOf(level);
+
+  const need = expForLevel(level);
+  els.dExp.textContent = maxed ? '已满级' : `${exp} / ${need}`;
+  const percent = maxed ? 100 : Math.max(0, Math.min(100, (exp / need) * 100));
+  els.dExpBar.style.width = `${percent}%`;
+
   els.dNextTitle.textContent = nextTitle(level);
-  els.dExp.textContent = maxed ? '已满级' : `${exp} / ${expForLevel(level)}`;
   els.dPlots.textContent = `${unlockedPlotCount(level)} / ${TOTAL_PLOTS}`;
   els.dStreak.textContent = `${currentStreak()} 天`;
   const codex = codexSummary();

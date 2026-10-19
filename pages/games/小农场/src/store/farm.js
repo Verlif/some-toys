@@ -10,6 +10,7 @@ import { state, getPlot } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { CROPS, expOf } from '../data/crops.js';
+import { ITEMS } from '../data/items.js';
 import { SOILS } from '../data/soils.js';
 import { unlockedPlotCount as countUnlocked } from '../data/progression.js';
 import { seedId, produceId } from '../data/keys.js';
@@ -55,13 +56,17 @@ export function growProgress(plot) {
 export const hasIssue = (plot, now = Date.now()) =>
   needsWater(plot, now) || needsPest(plot, now);
 
-/** 是否需要浇水（作物缺水了） */
+/**
+ * 是否需要浇水（作物缺水了）
+ *
+ * 已经成熟的作物不再需要照料 —— 成熟后就不该再冒出浇水按钮。
+ */
 export const needsWater = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now >= (plot.waterAt || 0);
+  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.waterAt || 0);
 
-/** 是否需要捉虫（作物生虫了） */
+/** 是否需要捉虫（作物生虫了），同样只在成熟前 */
 export const needsPest = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now >= (plot.pestAt || 0);
+  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.pestAt || 0);
 
 /** 可升级为指定土地的空闲普通地块 */
 export function upgradeablePlots(soilId) {
@@ -103,6 +108,9 @@ function applyPlant(plot, cropId) {
   plot.fert = false;
   plot.organic = false;
   plot.boost = 0;
+  plot.stolen = false;
+  plot.stolenCount = 0;
+  plot.stolenAt = 0;
   scheduleCare(plot, now);
   return { crop, soil };
 }
@@ -127,6 +135,9 @@ function beginRegrow(plot, crop, soil) {
   plot.readyAt = plot.plantedAt + regrowMs;
   plot.fert = false;
   plot.organic = false;
+  plot.stolen = false;
+  plot.stolenCount = 0;
+  plot.stolenAt = 0;
   scheduleCare(plot, now);
   return true;
 }
@@ -144,6 +155,9 @@ function clearPlot(plot) {
     boost: 0,
     waterAt: 0,
     pestAt: 0,
+    stolen: false,
+    stolenCount: 0,
+    stolenAt: 0,
   });
 }
 
@@ -164,6 +178,7 @@ export async function plant(plotId, cropId) {
 
   const { crop, soil } = applyPlant(plot, cropId);
   recordPlanted(cropId);
+  player.addLog('🌱', `种下 ${crop.name}（${soil.name}）`);
   await persist(plot);
   await completeGuide('plant');
   notify(`${crop.emoji} 种下了 ${crop.name}（${soil.name}）`);
@@ -193,6 +208,7 @@ export async function water(plotId) {
   plot.readyAt = Math.max(now, plot.readyAt - saved);
   scheduleCare(plot, now);
   player.addExpRaw(crop.lv);
+  player.addLog('💧', `给 ${crop.name} 浇水，当前阶段 -${Math.round(WATER_SPEEDUP * 100)}%`);
 
   await persist(plot);
   await completeGuide('water');
@@ -221,6 +237,7 @@ export async function catchPest(plotId) {
   plot.boost = Math.min(BOOST_CAP, before + PEST_YIELD_BONUS);
   plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
   player.addExpRaw(crop.lv);
+  player.addLog('🐛', `给 ${crop.name} 捉虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%`);
 
   await persist(plot);
   const gain = Math.round((plot.boost - before) * 100);
@@ -229,36 +246,58 @@ export async function catchPest(plotId) {
 }
 
 /**
- * 施肥：普通化肥加速 20%，有机化肥直接成熟（每块地限一次）
- * @param {'fertilizer'|'organic'} itemId
+ * 施肥。
+ *
+ * 普通化肥有五档（30 分钟 / 1 / 2 / 6 / 18 小时），按档位直接扣掉剩余时间；
+ * 剩余时间不足一档时，撒下去就是直接成熟 —— 不会浪费。
+ * 每块地每轮只能用一次普通化肥；有机化肥（一键成熟）另有一次额度。
+ *
+ * @param {string} plotId
+ * @param {string} itemId 见 data/items.js 的 FERTILIZER_IDS
  */
 export async function fertilize(plotId, itemId) {
   const plot = getPlot(plotId);
-  if (!plot || !plot.cropId || Date.now() >= plot.readyAt) return false;
+  const item = ITEMS[itemId];
+  const now = Date.now();
+  if (!plot || !plot.cropId || now >= plot.readyAt || !item?.fert) return false;
 
   if (!inventory.has(itemId)) {
-    notify(`没有${itemId === 'organic' ? '有机化肥' : '普通化肥'}了`);
+    notify(`没有${item.name}了`);
     return false;
   }
-  if (itemId === 'organic' && plot.organic) {
-    notify('这块地已经用过有机化肥了');
+  if (item.instant) {
+    if (plot.organic) {
+      notify('这块地已经用过有机化肥了');
+      return false;
+    }
+  } else if (plot.fert) {
+    notify('这块地这轮已经施过普通化肥了');
     return false;
   }
 
   inventory.take(itemId, 1);
+  const before = Math.max(0, plot.readyAt - now);
+  const saved = item.instant ? before : Math.min(before, item.minutes * 60_000);
 
-  if (itemId === 'organic') {
-    plot.readyAt = Date.now();
+  if (item.instant) {
+    plot.readyAt = now;
     plot.organic = true;
   } else {
-    plot.readyAt -= Math.floor((plot.readyAt - Date.now()) * 0.2);
+    plot.readyAt = Math.max(now, plot.readyAt - saved);
     plot.fert = true;
   }
 
+  player.addLog(
+    item.instant ? '⚗️' : '🧪',
+    `给 ${CROPS[plot.cropId].name} 施了${item.name}（成熟 −${fmtSaved(saved)}）`,
+  );
+
   await persist(plot);
   notify(
-    itemId === 'organic' ? '⚗️ 有机化肥生效，作物直接成熟！' : '🧪 普通化肥生效，生长加速 20%',
-    itemId === 'organic' ? 'gold' : '',
+    item.instant
+      ? '⚗️ 有机化肥生效，作物直接成熟！'
+      : `🧪 ${item.name}生效，成熟时间 −${fmtSaved(saved)}`,
+    item.instant ? 'gold' : '',
   );
   return true;
 }
@@ -289,23 +328,35 @@ export async function harvest(plotId) {
   amount = Math.floor(amount * (1 + (plot.boost || 0)));
   amount = Math.max(1, amount);
 
+  // 被邻居顺走的要真的扣掉：偷一个就少一个，不做翻倍惩罚
+  const stolen = plot.stolenCount || 0;
+  if (stolen) amount = Math.max(0, amount - stolen);
+
   inventory.add(produceId(plot.cropId), amount);
   recordHarvested(plot.cropId, amount);
 
-  // 经验 = 总时间 / 4 × 作物等级 + 作物等级 × 收获个数
-  // 「总时间」取这一轮实际要等的秒数，所以再生轮（时间更短）给的经验自然更少
-  const exp = expOf(plot.total / 1000, crop.lv, amount);
+  // 经验只看「收到几个」：每份产出 = 作物等级 + 2，再乘土地的经验倍率
+  const exp = Math.round(expOf(crop.lv, amount) * soil.expMul);
   player.addExpRaw(exp);
 
+  // 收完之后地块会被重置，提示里要用的加成得先存下来
+  const boost = plot.boost || 0;
   const remaining = beginRegrow(plot, crop, soil);
   if (!remaining) clearPlot(plot);
+
+  const desc = amount > 0
+    ? `收获 ${crop.emoji}${crop.name} ×${amount}`
+    : `${crop.emoji}${crop.name} 被顺光了，颗粒无收`;
+  const stolenNote = stolen ? `（被顺走 ${stolen} 个）` : '';
+  player.addLog('🌾', `${desc}，经验 +${exp}${stolenNote}`);
 
   await persist(plot);
   await completeGuide('harvest');
   notify(
-    `收获 ${crop.emoji}${crop.name} ×${amount}　经验 +${exp}`
+    `${desc}　经验 +${exp}`
     + (remaining ? `　还剩 ${crop.harvests - plot.harvested} 次` : '')
-    + (plot.boost ? `（含捉虫加成 +${Math.round(plot.boost * 100)}%）` : ''),
+    + (boost ? `（含捉虫加成 +${Math.round(boost * 100)}%）` : '')
+    + stolenNote,
     'gold',
   );
   return true;
@@ -333,6 +384,7 @@ export async function upgradeSoil(plotId, soilId) {
   }
 
   plot.soil = soilId;
+  player.addLog('🟫', `地块 ${plotId + 1} 升级为 ${soil.name}`);
   await persist(plot);
   await completeGuide('upgrade');
   notify(`🟫 地块 ${plotId + 1} 升级为 ${soil.name}`);

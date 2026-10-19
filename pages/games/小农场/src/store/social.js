@@ -9,22 +9,23 @@
  * 帮忙照料没有「一键打理」：玩家必须在**具体那块地**上点浇水或捉虫，
  * 才能拿到经验。这样邻居的农场才需要一块一块地看，而不是点一下就完事。
  */
-import { commit, saveFriend } from '../core/storage.js';
+import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state, getFriend } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
-import { estimateWork, npcPresence, simulateNpc } from './npc-sim.js';
+import { estimateWork, simulateNpc } from './npc-sim.js';
 import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
 import {
   BOOST_CAP,
-  DOG_CATCH_CHANCE,
-  DOG_GUARD_DURATION,
+  DOG_FOOD_SATIETY,
+  DOG_SATIETY_DECAY,
+  DOG_SATIETY_MAX,
+  LOG_LIMIT,
   PEST_INTERVAL,
   PEST_YIELD_BONUS,
-  STEAL_MIN_REMAIN_RATIO,
   WATER_INTERVAL,
 } from '../data/friends.js';
 import { notify } from './notify.js';
@@ -50,16 +51,14 @@ export function remainYield(plot) {
 /**
  * 某块邻居的地当前是否可偷。
  *
- * 两条限制：
- *   1. 每块地的每轮作物，玩家最多偷 1 次（作物重新种下后刷新标记）；
- *   2. 剩余产量不足原版一半时就不再可偷。
+ * 只有一条限制：每块地的每轮作物最多被偷 1 个。
+ * 偷菜只让产量少 1 个，不做「减半」这种翻倍惩罚，
+ * 所以也不需要「剩余不足一半」的门槛。
  */
 export function isStealable(plot, now = Date.now()) {
   if (!plot.cropId || now < plot.readyAt) return false;
   if (plot.stolen) return false;
-  const base = baseYield(plot);
-  if (base <= 0) return false;
-  return remainYield(plot) > base * STEAL_MIN_REMAIN_RATIO;
+  return remainYield(plot) >= 1;
 }
 
 /** 邻居当前有几块可偷的成熟地 */
@@ -67,13 +66,13 @@ export function stealableCount(friend, now = Date.now()) {
   return friend.plots.filter((p) => isStealable(p, now)).length;
 }
 
-/** 邻居的地是否缺水 */
+/** 邻居的地是否缺水（成熟后就不再需要照料） */
 export const needsWater = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now >= (plot.waterAt || 0);
+  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.waterAt || 0);
 
-/** 邻居的地是否生虫 */
+/** 邻居的地是否生虫（同上） */
 export const needsPest = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now >= (plot.pestAt || 0);
+  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.pestAt || 0);
 
 /** 邻居有几块地需要照料（缺水或生虫） */
 export const careCount = (friend, now = Date.now()) =>
@@ -81,9 +80,6 @@ export const careCount = (friend, now = Date.now()) =>
 
 /** 邻居有没有需要帮忙照料的地 */
 export const needsHelp = (friend, now = Date.now()) => careCount(friend, now) > 0;
-
-/** 在线 / 待机状态 */
-export const presenceOf = (friend, now) => npcPresence(friend, now);
 
 /* ---------- 离线结算 ---------- */
 
@@ -93,12 +89,33 @@ export const presenceOf = (friend, now) => npcPresence(friend, now);
  * 返回的对象由调用方分帧驱动（UI 层会配一个等待画面），
  * 这样即使离线很久也不会把主线程卡死。
  *
- * @returns {{total: number, done: number, finished: boolean, run: (budgetMs?: number) => boolean}}
+ * @returns {{total: number, done: number, finished: boolean, summary: {stolen: number, cared: number}, run: (budgetMs?: number) => boolean}}
  */
 export function createSettler() {
   const npcs = state.friends;
   const now = Date.now();
   const total = estimateWork(npcs, now);
+
+  /**
+   * 交给模拟层的「玩家农场」视图：邻居会顺手偷一块成熟地、
+   * 或帮一块缺水/生虫的地浇浇捉捉，改动直接落在 state.plots 上。
+   * 用回调写日志，npc-sim 依然不需要认识 store。
+   *
+   * dogSatietyAt(t) 让模拟能还原「那一刻」的饱腹度：
+   * 结算几天的离线时，狗不是一直满饱腹，而是随时间一路掉下去的。
+   */
+  const satietyNow = dogSatiety();
+  const farm = {
+    plots: state.plots,
+    stolen: 0,
+    cared: 0,
+    caught: 0,
+    log: (at, emoji, text) => player.addLog(emoji, text, at),
+    dogSatietyAt: (at) => Math.max(
+      0,
+      satietyNow - ((at - now) / 3600_000) * DOG_SATIETY_DECAY,
+    ),
+  };
 
   let index = 0;
   let done = 0;
@@ -107,6 +124,8 @@ export function createSettler() {
     total,
     get done() { return done; },
     get finished() { return index >= npcs.length; },
+    /** 这段时间邻居在玩家农场上做了多少事，用于结算后的汇总提示 */
+    get summary() { return { stolen: farm.stolen, cared: farm.cared, caught: farm.caught }; },
 
     /**
      * 在给定的时间预算内结算一批会话
@@ -116,7 +135,7 @@ export function createSettler() {
     run(budgetMs = 12) {
       const until = performance.now() + budgetMs;
       while (index < npcs.length && performance.now() < until) {
-        done += simulateNpc(npcs[index], npcs, now);
+        done += simulateNpc(npcs[index], npcs, now, farm);
         index += 1;
       }
       return index >= npcs.length;
@@ -124,10 +143,24 @@ export function createSettler() {
   };
 }
 
-/** 把结算结果落盘 */
+/**
+ * 把结算结果落盘。
+ *
+ * 邻居结算也会动玩家的地块（被顺走 / 被照料）和日志，
+ * 所以这里要连 plots + player 一起提交，不能只写 friends。
+ */
 export async function persistFriends() {
-  await Promise.all(state.friends.map(saveFriend));
+  await commit({ player: state.player }, { plots: state.plots, friends: state.friends });
   emit(EVENTS.FRIENDS);
+  emit(EVENTS.FARM);
+  emit(EVENTS.PLAYER);
+}
+
+/** 往邻居的农场日志里写一条（玩家的操作也记进对方那边） */
+function logFriend(friend, at, emoji, text) {
+  friend.log ??= [];
+  friend.log.unshift({ at, emoji, text });
+  if (friend.log.length > LOG_LIMIT) friend.log.length = LOG_LIMIT;
 }
 
 /* ---------- 玩家与邻居互动 ---------- */
@@ -149,18 +182,14 @@ export async function steal(friendId, index) {
     return { ok: false, reason: '这块地现在不能偷' };
   }
 
-  if (isDogGuarding() && Math.random() < DOG_CATCH_CHANCE) {
-    notify('🐕 被守护犬发现了！偷菜失败');
-    return { ok: false, reason: '被守护犬抓住了' };
-  }
-
-  // 标记：这块地这轮只能被偷一次，且邻居之后的收获要减半
+  // 标记：这块地这轮只能被偷一次，邻居之后的收获少 1 个
   target.stolen = true;
   target.stolenCount = (target.stolenCount || 0) + 1;
   target.stolenAt = now;
 
   const crop = CROPS[target.cropId];
   inventory.add(produceId(target.cropId), 1);
+  logFriend(friend, now, '🥷', `被 农场主 顺走了 ${crop.emoji}${crop.name} ×1`);
 
   await commit({ player: state.player }, { bag: state.bag, friends: [friend] });
   emit(EVENTS.FRIENDS);
@@ -190,6 +219,7 @@ export async function waterNeighborPlot(friendId, index) {
   // 经验跟着被照料的作物走：作物几级就给几点，不随玩家等级膨胀
   const exp = CROPS[target.cropId].lv;
   player.addExpRaw(exp);
+  logFriend(friend, now, '💧', '农场主 来帮忙浇了水');
 
   await commit({ player: state.player }, { friends: [friend] });
   emit(EVENTS.FRIENDS);
@@ -219,6 +249,7 @@ export async function catchPestNeighborPlot(friendId, index) {
   target.pestAt = now + PEST_INTERVAL;
   const exp = CROPS[target.cropId].lv;
   player.addExpRaw(exp);
+  logFriend(friend, now, '🐛', '农场主 来帮忙捉了虫');
 
   await commit({ player: state.player }, { friends: [friend] });
   emit(EVENTS.FRIENDS);
@@ -231,32 +262,54 @@ export async function catchPestNeighborPlot(friendId, index) {
 
 /* ---------- 守护犬 ---------- */
 
-/** 守护犬是否在守护中 */
-export function isDogGuarding() {
-  return state.pet.fedUntil > Date.now();
+/**
+ * 当前饱腹度（0~100）。
+ *
+ * 存档里只存「上次结算时的饱腹度 + 那个时刻」，这里按经过的小时数现算。
+ * 好处是不需要任何后台定时器：页面关十天再打开，一读就是掉光的 0。
+ */
+export function dogSatiety(now = Date.now()) {
+  const satiety = Math.max(0, state.pet.satiety || 0);
+  const hours = Math.max(0, (now - (state.pet.updatedAt || 0)) / 3600_000);
+  return Math.max(0, Math.min(DOG_SATIETY_MAX, satiety - hours * DOG_SATIETY_DECAY));
 }
 
-/** 守护剩余毫秒数 */
-export function guardRemainMs() {
-  return Math.max(0, state.pet.fedUntil - Date.now());
+/** 守护犬是否还在守护（有饱腹度就在岗） */
+export function isDogGuarding(now = Date.now()) {
+  return dogSatiety(now) > 0.5;
+}
+
+/** 还能守护多久（毫秒） */
+export function guardRemainMs(now = Date.now()) {
+  return Math.round((dogSatiety(now) / DOG_SATIETY_DECAY) * 3600_000);
 }
 
 /**
- * 喂狗：消耗 1 份狗粮，守护 30 分钟
+ * 喂狗：消耗 1 份狗粮，饱腹度 +45
  * @returns {Promise<boolean>}
  */
 export async function feedDog() {
+  if (dogSatiety() >= DOG_SATIETY_MAX - 1) {
+    notify('🐕 它已经吃得饱饱的了');
+    return false;
+  }
   if (!inventory.take('dogFood', 1)) {
     notify('没有狗粮，去商店买吧');
     return false;
   }
 
-  state.pet.fedUntil = Date.now() + DOG_GUARD_DURATION;
-  await commit({}, { bag: state.bag, pet: state.pet });
+  const now = Date.now();
+  // 先把「到此刻为止」的饱腹度结算掉，再往上加，避免叠加时把过期的时间也算进去
+  const next = Math.min(DOG_SATIETY_MAX, dogSatiety(now) + DOG_FOOD_SATIETY);
+  state.pet.satiety = next;
+  state.pet.updatedAt = now;
+
+  player.addLog('🦴', `喂了守护犬，饱腹度 ${Math.round(next)}%（约能守 ${Math.round(next / DOG_SATIETY_DECAY)} 小时）`);
+  await commit({ player: state.player }, { bag: state.bag, pet: state.pet });
   emit(EVENTS.PETS);
   emit(EVENTS.INVENTORY);
 
   await completeGuide('feed');
-  notify('🐕 守护犬吃饱了，守护农场 30 分钟', 'gold');
+  notify(`🐕 守护犬吃饱了，饱腹度 ${Math.round(next)}%`, 'gold');
   return true;
 }

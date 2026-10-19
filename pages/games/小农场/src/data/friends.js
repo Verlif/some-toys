@@ -1,59 +1,135 @@
 /**
  * 邻居 NPC 定义与离线模拟规则。
  *
- * 邻居是完全离线的：他们每天随机上线若干次，每次做几件事，然后待机。
- * 玩家什么时候打开游戏、什么时候进入邻居页，都不影响他们的成长节奏，
- * 进度由「上次结算时间 → 现在」的时间差补算出来。
+ * 每位邻居 = 性格 + 职业 + 上线节奏 + 偷菜倾向。
+ * 这四样叠起来决定他这座农场长什么样、什么时候上线、
+ * 会不会摸到玩家家里顺菜 —— 20 位邻居因此各有各的发展轨迹。
+ *
+ * 邻居是完全离线的：玩家什么时候打开游戏、什么时候进入邻居页，
+ * 都不影响他们的节奏；进度由「上次结算时间 → 现在」的时间差补算出来。
  */
 import { CROPS } from './crops.js';
+import { randInt } from '../core/utils.js';
 
 /* ---------- 性格：决定上线时各行为的权重 ---------- */
 export const PERSONALITIES = {
-  diligent: { name: '勤勉', weights: { harvest: 4, plant: 4, tend: 3, steal: 1, adventure: 1 } },
-  thrifty: { name: '精打细算', weights: { harvest: 3, plant: 2, tend: 2, steal: 2, adventure: 1 } },
-  merchant: { name: '生意人', weights: { harvest: 2, plant: 2, tend: 2, steal: 4, adventure: 2 } },
-  scholar: { name: '爱钻研', weights: { harvest: 2, plant: 3, tend: 4, steal: 1, adventure: 3 } },
-  leisurely: { name: '悠闲', weights: { harvest: 2, plant: 1, tend: 1, steal: 2, adventure: 2 } },
-  greedy: { name: '爱占便宜', weights: { harvest: 2, plant: 2, tend: 1, steal: 5, adventure: 1 } },
-  friendly: { name: '热心', weights: { harvest: 3, plant: 3, tend: 4, steal: 1, adventure: 1 } },
-  boss: { name: '场面人', weights: { harvest: 3, plant: 3, tend: 2, steal: 3, adventure: 2 } },
+  diligent: { name: '勤勉', weights: { harvest: 4, plant: 4, tend: 3 } },
+  thrifty: { name: '精打细算', weights: { harvest: 3, plant: 2, tend: 2 } },
+  merchant: { name: '生意人', weights: { harvest: 2, plant: 2, tend: 1 } },
+  scholar: { name: '爱钻研', weights: { harvest: 2, plant: 3, tend: 4 } },
+  leisurely: { name: '悠闲', weights: { harvest: 2, plant: 1, tend: 1 } },
+  greedy: { name: '爱占便宜', weights: { harvest: 2, plant: 2, tend: 1 } },
+  friendly: { name: '热心', weights: { harvest: 3, plant: 3, tend: 4 } },
+  boss: { name: '场面人', weights: { harvest: 3, plant: 3, tend: 2 } },
 };
 
-/* ---------- 15 位邻居 ---------- */
+/* ---------- 偷菜倾向 ---------- */
+
+/**
+ * 偷菜倾向 → 每次上线真的动手的概率。
+ *
+ * 单独抽出来而不是混进性格权重：「偷不偷」是邻居之间最直观的差异，
+ * 玩家被顺几次就能记住谁手不干净，而不是靠概率表算出来的错觉。
+ */
+export const STEAL_CHANCE = { never: 0, rare: 0.12, often: 0.45, always: 0.9 };
+
+/** 倾向的中文说明，显示在邻居详情里 */
+export const STEAL_LABELS = {
+  never: '从不偷菜',
+  rare: '偶尔顺菜',
+  often: '常去顺菜',
+  always: '见菜就偷',
+};
+
+/* ---------- 20 位邻居 ---------- */
+
+/**
+ * 邻居的起始等级。
+ *
+ * 不写死在名单里：每一位开局时从 1~36 级里加权随机，且**低等级更多** ——
+ * 玩家刚起步就能看到一批比自己高不了几级的邻居，追得上、也偷得着。
+ * 之后完全按正常模拟成长，**没有额外上限**（一直能涨到满级）。
+ */
+export const NPC_LEVEL_MAX = 36;
+
+/**
+ * 掷一个邻居起始等级（1~36）
+ *
+ * 用 `random ** 1.7` 把分布压向低端：平均约 14 级，
+ * 一半以上的邻居落在 13 级以内，30 级以上的只是少数。
+ * @returns {number}
+ */
+export function rollNpcLevel() {
+  return 1 + Math.floor(NPC_LEVEL_MAX * Math.random() ** 1.7);
+}
+
+/**
+ * 邻居的起始身家：等级越高越有钱，再乘一个 ±30% 的随机
+ * @param {number} level
+ * @returns {number}
+ */
+export function npcStartCoins(level) {
+  return Math.round(300 * level ** 1.6 * (0.7 + Math.random() * 0.6));
+}
+
+/**
+ * schedule 决定上线节奏：
+ *   { type: 'fixed', hours: [6, 18] }  每天固定钟点上线（带 ±30 分钟浮动）
+ *   { type: 'interval', min: 3, max: 10 } 按小时区间随机
+ * steal 是 STEAL_CHANCE 的档位。
+ */
 export const NPCS = [
-  { id: 'npc01', name: '王大爷', avatar: '👴', personality: 'diligent', level: 6, coins: 800 },
-  { id: 'npc02', name: '李大婶', avatar: '👩', personality: 'thrifty', level: 9, coins: 1200 },
-  { id: 'npc03', name: '小芳', avatar: '👧', personality: 'friendly', level: 13, coins: 2400 },
-  { id: 'npc04', name: '赵老板', avatar: '🧔', personality: 'merchant', level: 18, coins: 5200 },
-  { id: 'npc05', name: '陈老师', avatar: '👩‍🏫', personality: 'scholar', level: 24, coins: 9000 },
-  { id: 'npc06', name: '老王头', avatar: '🧓', personality: 'leisurely', level: 10, coins: 1500 },
-  { id: 'npc07', name: '张婶婶', avatar: '👵', personality: 'friendly', level: 16, coins: 3800 },
-  { id: 'npc08', name: '刘大哥', avatar: '👨', personality: 'diligent', level: 20, coins: 4600 },
-  { id: 'npc09', name: '林妹妹', avatar: '👩‍🦱', personality: 'greedy', level: 28, coins: 12000 },
-  { id: 'npc10', name: '周老板', avatar: '🧑‍💼', personality: 'boss', level: 35, coins: 26000 },
-  { id: 'npc11', name: '郑爷爷', avatar: '👴', personality: 'scholar', level: 22, coins: 6000 },
-  { id: 'npc12', name: '黄阿姨', avatar: '👩‍🦰', personality: 'thrifty', level: 30, coins: 14000 },
-  { id: 'npc13', name: '吴秀才', avatar: '🎓', personality: 'scholar', level: 42, coins: 40000 },
-  { id: 'npc14', name: '孙大厨', avatar: '🧑‍🍳', personality: 'merchant', level: 55, coins: 90000 },
-  { id: 'npc15', name: '村长', avatar: '👨‍🌾', personality: 'boss', level: 70, coins: 200000 },
+  { id: 'npc01', name: '王大爷', avatar: '👴', personality: 'diligent', profession: '退休农民',
+    schedule: { type: 'fixed', hours: [6, 18] }, steal: 'rare' },
+  { id: 'npc02', name: '李大婶', avatar: '👩', personality: 'thrifty', profession: '家庭主妇',
+    schedule: { type: 'fixed', hours: [7] }, steal: 'rare' },
+  { id: 'npc03', name: '小芳', avatar: '👧', personality: 'friendly', profession: '农大学生',
+    schedule: { type: 'fixed', hours: [17, 21] }, steal: 'never' },
+  { id: 'npc04', name: '赵老板', avatar: '🧔', personality: 'merchant', profession: '水果贩子',
+    schedule: { type: 'interval', min: 4, max: 10 }, steal: 'always' },
+  { id: 'npc05', name: '陈老师', avatar: '👩‍🏫', personality: 'scholar', profession: '小学教师',
+    schedule: { type: 'fixed', hours: [7, 19] }, steal: 'never' },
+  { id: 'npc06', name: '老王头', avatar: '🧓', personality: 'leisurely', profession: '钓鱼佬',
+    schedule: { type: 'interval', min: 8, max: 16 }, steal: 'rare' },
+  { id: 'npc07', name: '张婶婶', avatar: '👵', personality: 'friendly', profession: '面点摊主',
+    schedule: { type: 'interval', min: 6, max: 12 }, steal: 'never' },
+  { id: 'npc08', name: '刘大哥', avatar: '👨', personality: 'diligent', profession: '货车司机',
+    schedule: { type: 'interval', min: 3, max: 9 }, steal: 'often' },
+  { id: 'npc09', name: '林妹妹', avatar: '👩‍🦱', personality: 'greedy', profession: '带货主播',
+    schedule: { type: 'interval', min: 2, max: 8 }, steal: 'always' },
+  { id: 'npc10', name: '周老板', avatar: '🧑‍💼', personality: 'boss', profession: '农资经销商',
+    schedule: { type: 'interval', min: 5, max: 14 }, steal: 'often' },
+  { id: 'npc11', name: '郑爷爷', avatar: '👴', personality: 'scholar', profession: '退休会计',
+    schedule: { type: 'fixed', hours: [8, 20] }, steal: 'never' },
+  { id: 'npc12', name: '黄阿姨', avatar: '👩‍🦰', personality: 'thrifty', profession: '裁缝',
+    schedule: { type: 'fixed', hours: [9, 21] }, steal: 'rare' },
+  { id: 'npc13', name: '吴秀才', avatar: '🎓', personality: 'scholar', profession: '农技站技术员',
+    schedule: { type: 'fixed', hours: [6, 15] }, steal: 'never' },
+  { id: 'npc14', name: '孙大厨', avatar: '🧑‍🍳', personality: 'merchant', profession: '农家乐老板',
+    schedule: { type: 'interval', min: 4, max: 12 }, steal: 'often' },
+  { id: 'npc15', name: '村长', avatar: '👨‍🌾', personality: 'boss', profession: '村长',
+    schedule: { type: 'fixed', hours: [7, 18] }, steal: 'rare' },
+  { id: 'npc16', name: '何师傅', avatar: '🚚', personality: 'leisurely', profession: '长途司机',
+    schedule: { type: 'interval', min: 6, max: 16 }, steal: 'rare' },
+  { id: 'npc17', name: '小雨', avatar: '🌷', personality: 'friendly', profession: '花店店主',
+    schedule: { type: 'fixed', hours: [8, 20] }, steal: 'never' },
+  { id: 'npc18', name: '老支书', avatar: '👴', personality: 'boss', profession: '退休支书',
+    schedule: { type: 'fixed', hours: [6] }, steal: 'rare' },
+  { id: 'npc19', name: '阿满', avatar: '🧑‍🌾', personality: 'diligent', profession: '种粮大户',
+    schedule: { type: 'fixed', hours: [5, 17] }, steal: 'rare' },
+  { id: 'npc20', name: '米雪', avatar: '🍰', personality: 'thrifty', profession: '烘焙师',
+    schedule: { type: 'interval', min: 3, max: 10 }, steal: 'often' },
 ];
 
 /* ---------- 模拟节奏 ---------- */
 const HOUR = 3600_000;
 const DAY = 24 * HOUR;
 
-/** 一天平均上线次数 */
-export const VISITS_PER_DAY = 2;
+/** 固定钟点型上线的浮动：±30 分钟，免得所有邻居整点一起冒出来 */
+const FIXED_JITTER = 30 * 60_000;
 
-/** 上线间隔区间（随机落点），8~16 小时正好平均每天 2 次 */
-export const VISIT_GAP_MIN = 8 * HOUR;
-export const VISIT_GAP_MAX = 16 * HOUR;
-
-/** 上线时触发「冒险」的概率 */
-export const ADVENTURE_CHANCE = 0.16;
-
-/** 冒险成功的概率（其余为空手而归） */
-export const ADVENTURE_SUCCESS = 0.45;
+/** 没写 schedule 的邻居按这个区间上线 */
+const DEFAULT_INTERVAL = { min: 8, max: 16 };
 
 /** 每次上线平均执行的动作数 */
 export const ACTIONS_PER_VISIT = [2, 4];
@@ -68,27 +144,83 @@ export const DETAILED_WINDOW = DETAILED_WINDOW_DAYS * DAY;
 /** 单个 NPC 单次结算的会话数上限（兜底，正常远达不到） */
 export const MAX_VISITS_PER_NPC = 4000;
 
-/* ---------- 偷菜规则 ---------- */
+/* ---------- 上线时间 ---------- */
 
 /**
- * 玩家偷走一个作物后，这块地本轮产量对邻居减半的比例。
- * 偷是有代价的：邻居只能收一半。
+ * 从 at 起的下一次上线时间
+ *
+ * 固定钟点型：取 at 之后最近的一个钟点（带浮动）；今天的都过了就明天第一个。
+ * 间隔型：at + [min, max] 小时的随机落点。
+ *
+ * @param {{schedule?: object}} npc
+ * @param {number} at 毫秒时间戳
+ * @returns {number}
  */
-export const STEAL_YIELD_PENALTY = 0.5;
+export function nextVisitAt(npc, at) {
+  const schedule = npc.schedule || DEFAULT_INTERVAL;
 
-/** 剩余产量低于原版产量的这个比例时，就不能再偷了 */
-export const STEAL_MIN_REMAIN_RATIO = 0.5;
+  if (schedule.type === 'fixed') {
+    const hours = [...schedule.hours].sort((a, b) => a - b);
+    for (const hour of hours) {
+      const day = new Date(at);
+      day.setHours(hour, 0, 0, 0);
+      const candidate = day.getTime() + randInt(-FIXED_JITTER, FIXED_JITTER);
+      if (candidate > at) return candidate;
+    }
+    const next = new Date(at);
+    next.setDate(next.getDate() + 1);
+    next.setHours(hours[0], 0, 0, 0);
+    return next.getTime() + randInt(-FIXED_JITTER, FIXED_JITTER);
+  }
 
-/* ---------- 玩家与邻居互动 ---------- */
+  return at + randInt(schedule.min * HOUR, schedule.max * HOUR);
+}
 
-/** 守护犬在位时，偷菜被当场抓住的概率 */
-export const DOG_CATCH_CHANCE = 0.5;
+/**
+ * 这位邻居平均多久上线一次，用来给离线结算估进度
+ * @param {{schedule?: object}} npc
+ * @returns {number} 毫秒
+ */
+export function expectedGapMs(npc) {
+  const schedule = npc.schedule || DEFAULT_INTERVAL;
+  if (schedule.type === 'fixed') return DAY / Math.max(1, schedule.hours.length);
+  return ((schedule.min + schedule.max) / 2) * HOUR;
+}
 
-/** 守护犬一次喂食维持的时间（毫秒） */
-export const DOG_GUARD_DURATION = 30 * 60_000;
+/* ---------- 守护犬 ---------- */
 
-/** 每个 NPC 保留的动态条数 */
-export const LOG_LIMIT = 6;
+/**
+ * 守护犬用「饱腹度」表示状态：0~100，随时间匀速下降。
+ *
+ * 之前用 fedUntil 时间戳，只有「喂过一次 = 守护 30 分钟」这一种状态，
+ * 玩家既看不出还剩多久，也不知道狗到底有没有用。
+ * 改成饱腹度之后，进度条、剩余时长、拦截概率都能从这一个数字算出来。
+ */
+export const DOG_SATIETY_MAX = 100;
+
+/** 每份狗粮恢复的饱腹度 */
+export const DOG_FOOD_SATIETY = 45;
+
+/** 每小时掉多少饱腹度：喂满一次大约守护 16 小时 */
+export const DOG_SATIETY_DECAY = 6.25;
+
+/**
+ * 饱腹度 → 偷菜被赶走的概率。
+ *
+ * 饿扁了就是 0：狗不吃饭不会替你看门。
+ * 刚喂饱时七成能拦住，快饿完时只剩一成半 —— 狗粮是消耗品，
+ * 不喂就没有防护，这是它和「一次性道具」的区别。
+ * @param {number} satiety 0~100
+ * @returns {number} 0~1
+ */
+export function dogCatchChance(satiety) {
+  if (satiety <= 0) return 0;
+  const ratio = Math.max(0, Math.min(1, satiety / DOG_SATIETY_MAX));
+  return 0.15 + ratio * 0.55;
+}
+
+/** 每个邻居保留的操作记录条数（玩家页最多显示 10 条） */
+export const LOG_LIMIT = 10;
 
 /* ---------- 照料（浇水 / 捉虫）---------- */
 
@@ -113,7 +245,7 @@ export const BOOST_CAP = 1;
 /* ---------- 农场生成 ---------- */
 
 /** 邻居的地块数量随等级增长 */
-export function npcPlotCount(level) {
+function npcPlotCount(level) {
   return Math.min(12, 4 + Math.floor(level / 8));
 }
 
@@ -135,7 +267,8 @@ const CROP_POOL_MIN = 8;
  */
 export function cropsNearLevel(level) {
   const usable = Object.keys(CROPS)
-    .filter((id) => CROPS[id].lv <= level)
+    // 限定作物只能从藏宝图挖到，邻居的日常种植池里不该出现
+    .filter((id) => !CROPS[id].special && CROPS[id].lv <= level)
     // 按等级从高到低，放宽窗口时是从「最接近等级」的那一端往外拿
     .sort((a, b) => CROPS[b].lv - CROPS[a].lv);
 

@@ -15,6 +15,8 @@ import { mountSignCelebrate } from './ui/sign-celebrate.js';
 import { mountHud, renderHud } from './ui/hud.js';
 import { mountSubpage, renderCurrent, syncCoins } from './ui/subpage.js';
 import { mountSheet } from './ui/sheet.js';
+import { mountLogSheet } from './ui/log-sheet.js';
+import { mountAdventure } from './ui/adventure.js';
 import { mountTabs, activatePage, currentPage } from './ui/tabs.js';
 import { mountFarm, renderFarm } from './ui/views/farm.js';
 import { mountShop, renderShop } from './ui/views/shop.js';
@@ -34,6 +36,8 @@ async function boot() {
   mountHud();
   mountSubpage();
   mountSheet();
+  mountLogSheet();
+  mountAdventure();
   mountFarm();
   mountShop();
   mountFriends();

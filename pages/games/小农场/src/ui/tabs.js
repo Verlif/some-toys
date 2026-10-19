@@ -25,6 +25,8 @@ export function activatePage(name) {
   const enter = PAGE_ENTER[name];
   if (!enter) return;
   current = name;
+  // 让 CSS 能按页面做显隐（农场页的日志按钮就靠它）
+  document.body.dataset.page = name;
 
   for (const btn of document.querySelectorAll('#tabbar button')) {
     btn.classList.toggle('active', btn.dataset.page === name);
@@ -36,6 +38,16 @@ export function activatePage(name) {
   enter();
 }
 
+/**
+ * 把底部导航的实际高度写进 CSS 变量。
+ * 商店页是固定高度的（每个 tab 各自滚动），要给导航条留出准确的高度，
+ * 否则刘海屏上最后一行会被压在导航底下。
+ */
+function syncTabHeight() {
+  const bar = byId('tabbar');
+  if (bar) document.documentElement.style.setProperty('--tab-h', `${bar.offsetHeight}px`);
+}
+
 /** 绑定导航点击 */
 export function mountTabs() {
   delegate(byId('tabbar'), 'click', 'button', (btn) => {
@@ -45,6 +57,10 @@ export function mountTabs() {
     }
     activatePage(btn.dataset.page);
   });
+
+  syncTabHeight();
+  window.addEventListener('resize', syncTabHeight);
+  window.addEventListener('orientationchange', syncTabHeight);
 
   // 别处（比如播种弹窗里的「商店」按钮）可以通过事件总线请求切页，
   // 这样视图之间不必互相 import，也就不会绕出循环依赖

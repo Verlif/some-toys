@@ -116,3 +116,50 @@
   否则离线久的玩家会卡死
 - `store/state.js` 的 `normalizePlot` / `normalizeNpc` 负责给旧存档补字段，
   新增 NPC 或地块字段时必须在这里补上
+## 第十、十一轮之后的约定（弹窗与邻居）
+
+- **弹窗里的操作绝不整窗重开**：只替换受影响的那一格（`data-slot`）与相关角标 /
+  提示 / 日志区，否则滚动位置会被冲回顶部。日志区是固定 `max-height` 自己滚的容器，
+  新增一条不会把下面的内容顶下去
+- **成熟的地不再需要照料**：`needsWater` / `needsPest` 必须带 `now < readyAt`，
+  两边（farm / social）保持一致
+- **偷菜只减 1 个**：按 `stolenCount` 扣产量，不做「减半」；每块每轮最多被顺 1 次
+- **邻居有日程模型**：`schedule`（固定钟点 / 随机间隔）+ `steal` 倾向四档 +
+  `profession`。新增 NPC 只需在 `NPCS` 里加一条，`initState` 会按 id 差集补建
+- **NPC 动玩家农场**通过传给 `simulateNpc` 的 `farm` 对象（plots / 计数 / log 回调），
+  npc-sim 仍然不认识 store；落盘由 `social.persistFriends()` 一次提交 player+plots+friends
+- 玩家日志 `player.log`：7 天 / 60 条上限，展示时按 `at` 倒序（邻居补写的是过去时间）
+
+## 经济与冒险（第十二轮之后的约定）
+
+- **售价不是自由变量**：`整轮收入 = 种子价 × marginAt(lv) × 风味 × 分类`，
+  单价由它除回来。改经济只改 `marginAt` 或 `seedPrice`，别再往售价上乘等级系数
+- **单价允许非单调**（换茬数时必然回落），守的是 `cycleIncome()` 单调。
+  比较作物千万不要用单价跨形态比
+- **特殊作物**（`special: true`）不进商店、不进 `cropsNearLevel`，
+  只能从藏宝图挖；种子可以越级种（有种子就能种）
+- **邻居等级**：名单里不写 level/coins，`createNpc` 现掷 1~56（低等级更多），
+  成长上限 56；新增 NPC 只加 id/name/avatar/personality/profession/schedule/steal
+- **冒险是第 4 层页面**：`#adventure` z-index 105，必须低于模态弹窗（130），
+  因为退出确认用的是 openModal。奖励每次即时落盘，牌堆只存内存
+- **卡牌手势**用 Touch + 鼠标双通道，`touch-action: none`；阈值用绝对像素；
+  结算后必须清 `dragging/offset`，否则下一次轻点会重复选路
+- **CSS 类名**：`.meta-tag` 的修饰类不要用 `cycle`（签到卡片占用了全局 `.cycle`）；
+  标签高度写死 18px，避免 emoji 回退字体把行高撑开
+
+## 经验 / 多茬 / 守护犬（第十三轮之后的约定）
+
+- **经验只看产出**：每份 = `作物等级 + 2`，再乘土地 `expMul`。
+  改经验公式**必须重跑生成器** —— `EXP_TABLE` 是由 `expPerHourAt()` 反推的，
+  脱离生成器手改会立刻让升级节奏崩掉。经验表现在只有千万量级
+- **多茬作物是经验流**：`regrow: 0.8` 让总周期变长，整轮收入仍按等级锁定，
+  所以金币/小时天然低。给它们加价会触发「同分类整轮收入单调」的连锁抬价，
+  所以同等级横向比较里必须排除 `c.multi`
+- **守护犬**：`state.pet = { satiety, updatedAt }`，一律用 `dogSatiety()` 现算；
+  离线结算要传 `farm.dogSatietyAt(t)` 还原当时饱腹度。
+  狗只拦**别人偷自己**，玩家偷别人不再有概率失败
+- **商店是固定高度页**：`#page-shop` 上贴 `--hud-h` 下贴 `--tab-h`，
+  纵向滚动必须落在 `.shop-panel` 自己身上；任何新的商店 tab 都要是一个
+  `.shop-panel[data-panel]`，否则会退回「共用一个滚动条」
+- **顶栏 / 导航不用渐变、不用毛玻璃**：纯色更耐看，也不会透出灰色像阴影
+- **种子标签分档**统一走 `ui/meta-tags.js`，不要在两处各写一套

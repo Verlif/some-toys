@@ -35,6 +35,7 @@ function cardHTML(entry) {
     <div class="codex-card ${shadow ? 'shadow' : ''} ${locked ? 'locked' : ''}">
       <div class="codex-emoji">${shadow ? '❔' : entry.emoji}</div>
       <div class="codex-name">${shadow ? (locked ? '???' : '未收集') : entry.name}</div>
+      ${entry.special ? '<div class="codex-tag">限定</div>' : ''}
       <div class="codex-lv">Lv.${entry.lv}</div>
       ${detail}
       ${stats}

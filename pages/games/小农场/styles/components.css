@@ -240,9 +240,14 @@
 }
 
 /* ---------- 商店横向面板 ---------- */
+/* 外层只负责「横向翻页」，纵向滚动由每个面板自己承担：
+   否则四个面板共用一个滚动条，切 tab 时看到的是上一个面板的滚动位置。 */
 .shop-panels {
+  flex: 1;
+  min-height: 0;
   display: flex;
   overflow-x: auto;
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -253,12 +258,61 @@
 .shop-panels::-webkit-scrollbar { display: none; }
 .shop-panel {
   min-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   scroll-snap-align: start;
-  padding: 13px 0 20px;
+  padding: 13px 0 24px;
 }
 .shop-panel .list { padding: 0 13px; }
 
 .si-own { color: #8a978a; font-weight: 400; font-size: 11px; }
+
+/* 种子行的信息分层：等级 / 时长 / 茬数 / 产量 / 售价各用一套颜色与图标，
+   扫一眼就能把「贵不贵、多久收、能收几次」分开 */
+.meta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* 高度写死：emoji 的回退字体行高忽大忽小，不锁死会让同一行的胶囊参差不齐 */
+  height: 18px;
+  line-height: 1;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: #f2f5ee;
+  color: #6b7a68;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.meta-tag.lv { background: #e8f0fd; color: #3f6bb5; font-weight: 700; }
+.meta-tag.time { background: #f1f3f6; color: #6b7280; }
+.meta-tag.stack { background: #e8f6e2; color: var(--green-d); }
+.meta-tag.steps { background: #eef3e7; color: #5d7158; }
+.meta-tag.yield { background: #fdf0d4; color: #a07818; }
+.meta-tag.price { background: #fdf6e4; color: #b9820f; font-weight: 700; }
+
+/* 茬数：收得越多，颜色越靠后（灰 → 青 → 绿 → 蓝 → 紫）。
+   「1 茬」的灰最不抢眼，玩家的注意力会自然落到多茬作物上。 */
+.meta-tag.stack.h1 { background: #f1f3f6; color: #6b7280; }
+.meta-tag.stack.h2 { background: #e6f4f1; color: #2f7f6f; }
+.meta-tag.stack.h3 { background: #e8f6e2; color: var(--green-d); }
+.meta-tag.stack.h4 { background: #e6eefb; color: #3566b0; }
+.meta-tag.stack.h5 { background: #f0e9fb; color: #6b45b0; font-weight: 700; }
+
+/* 单次产量：灰 → 绿 → 橙 → 金，越高越显眼 */
+.meta-tag.yield.y1 { background: #f1f3f6; color: #6b7280; }
+.meta-tag.yield.y2 { background: #e8f6e2; color: var(--green-d); }
+.meta-tag.yield.y3 { background: #fdf0d4; color: #a07818; }
+.meta-tag.yield.y4 { background: #fde8cd; color: #a45a12; font-weight: 700; }
+
+/* 多茬作物：一次种下能收好几茬，是「经验流」的选择 */
+.meta-tag.multi { background: #eef7e9; color: #3f7a35; }
+.seed-row-kind.kind-multi { background: #e8f6e2; color: var(--green-d); }
+/* 标签行必须顶对齐：默认的 stretch 会把每颗胶囊拉到整行高，
+   一排标签就会变成三倍高的方块 */
+.seed-meta { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; }
 
 /* 种子行整行可点，右侧只剩价格与箭头 */
 .shop-item.seed-item { cursor: pointer; }
@@ -410,14 +464,20 @@
 }
 .friend-chip.ripe { background: #fdf0d4; color: #a07818; }
 .friend-chip.care { background: #fdeceb; color: #c73f36; }
-.friend-chip.online { background: #e2f3dd; color: var(--green-d); }
+/* 职业：邻居之间最直观的差异之一，用中性的蓝灰调，不和状态色抢眼 */
+.friend-chip.job { background: #eaf0f8; color: #4b6288; }
 
 /* 邻居页顶部的排序条：横向可滑，筛选档不会把宽度撑爆 */
+/* 排序条固定在顶栏下方，滚列表时不跟着走 */
 .friend-sort {
+  position: sticky;
+  top: var(--hud-h, 64px);
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 13px 9px;
+  padding: 8px 13px 9px;
+  background: var(--bg);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -444,6 +504,27 @@
   align-items: baseline;
 }
 .friend-log-item .when { color: #a8b3a5; flex-shrink: 0; font-size: 10px; }
+
+/* 弹窗里的完整操作记录：固定高度、内部滚动，新增一条不会把下面的地块顶下去 */
+.npc-log {
+  max-height: 168px;
+  overflow-y: auto;
+  margin: 0 0 14px;
+  padding: 9px 11px;
+  background: #f8faf6;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  border-top: 1px solid var(--line);
+  -webkit-overflow-scrolling: touch;
+}
+.npc-log.empty {
+  max-height: none;
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: center;
+  padding: 14px;
+}
+.npc-log .friend-log-item { font-size: 11.5px; }
 
 /* ---------- 拜访弹窗 ---------- */
 .npc-head {
@@ -798,6 +879,59 @@
 }
 .codex-card.shadow .codex-emoji { opacity: .35; filter: grayscale(1); }
 .codex-card.shadow .codex-name { color: #b3bdb0; }
+
+/* ---------- 农场日志浮窗 ---------- */
+.log-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 2px 16px 10px;
+  flex-shrink: 0;
+}
+.log-title { font-size: 14px; font-weight: 700; color: #40503c; }
+.log-sub { font-size: 10.5px; font-weight: 600; color: var(--muted); }
+
+.log-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 16px;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent 100%);
+}
+
+/* 日期分组标题吸顶，滚长列表时始终知道自己在哪一天 */
+.log-day {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 0 5px;
+  background: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8a978a;
+  letter-spacing: .5px;
+}
+.log-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px dashed #eef2ea;
+  font-size: 12px;
+}
+.log-item:last-child { border-bottom: none; }
+.log-time {
+  flex-shrink: 0;
+  width: 38px;
+  font-size: 10.5px;
+  color: #a8b3a5;
+  font-variant-numeric: tabular-nums;
+}
+.log-emoji { flex-shrink: 0; }
+.log-text { color: #40503c; line-height: 1.55; word-break: break-word; }
 
 /* ---------- 签到日历 ---------- */
 .cycle {
@@ -1180,3 +1314,122 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ============================================================
+   藏宝图与冒险（弹窗部分）
+   ============================================================ */
+
+/* 限定种子 / 限定作物：金色系，和普通分类标签拉开距离 */
+.meta-tag.special { background: #fdf0d4; color: #a07818; font-weight: 700; }
+.seed-row-kind.kind-special { background: #fdf0d4; color: #a07818; }
+
+.map-tip {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  padding: 10px 15px 4px;
+}
+
+.adv-intro {
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* 选图列表 */
+.adv-map-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.adv-map {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 13px;
+  background: #fafcf7;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: .15s;
+}
+.adv-map:hover { border-color: #c4e0b8; background: #f5fbf1; }
+.adv-map:active { transform: scale(.99); }
+.adv-map-emoji { font-size: 23px; line-height: 1; }
+.adv-map-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.adv-map-name { font-size: 13.5px; font-weight: 700; color: #33412f; }
+.adv-map-name b { font-size: 11.5px; font-weight: 600; color: var(--muted); margin-left: 5px; }
+.adv-map-meta { font-size: 11px; color: var(--muted); }
+.adv-map-go { font-size: 12px; font-weight: 700; color: var(--green-d); flex-shrink: 0; }
+
+.adv-shop-btn { width: 100%; margin-top: 12px; }
+
+/* 退出确认 */
+.adv-confirm-acts { display: flex; gap: 8px; }
+.adv-confirm-acts .btn { flex: 1; }
+
+/* 结算单 */
+.adv-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.adv-result-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  background: #fafcf7;
+  border-radius: 11px;
+  font-size: 13px;
+}
+.adv-result-emoji { font-size: 17px; line-height: 1; }
+.adv-result-name { flex: 1; color: #40503c; }
+.adv-result-n { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+/* 图鉴里的「限定」小标 */
+.codex-tag {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: #fdf0d4;
+  color: #a07818;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   守护犬：饱腹度
+   ============================================================ */
+.dog-state { font-size: 11px; font-weight: 600; }
+.dog-state.on { color: var(--green-d); }
+.dog-state.off { color: var(--danger); }
+
+.dog-bar {
+  height: 7px;
+  border-radius: 99px;
+  background: #eef1ea;
+  overflow: hidden;
+  margin: 6px 0 5px;
+}
+.dog-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--gold);
+  transition: width .3s ease;
+}
+.dog-facts {
+  padding: 14px 17px;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.dog-facts b { color: var(--green-d); }

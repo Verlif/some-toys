@@ -5,6 +5,7 @@
 import { byId, delegate, setHTML } from '../core/dom.js';
 import { MORE_MENU_ITEMS, NOT_READY_TOAST } from '../data/navigation.js';
 import { openSubpage } from './subpage.js';
+import { openAdventureLauncher } from './adventure.js';
 import { showToast } from './toast.js';
 import { dragToClose } from './drag-close.js';
 
@@ -48,6 +49,9 @@ export function mountSheet() {
     }
     closeSheet();
     // 等浮窗收起动画走完再推开子页面，避免两层位移打架
-    setTimeout(() => openSubpage(item.key), 130);
+    setTimeout(() => {
+      if (item.action === 'adventure') openAdventureLauncher();
+      else openSubpage(item.key);
+    }, 130);
   });
 }

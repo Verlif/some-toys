@@ -52,7 +52,7 @@ export async function loadSave() {
     plots: plotRows.sort((a, b) => a.id - b.id),
     bag,
     friends: friendRows,
-    pet: petRow || { id: PET_ID, fedUntil: 0 },
+    pet: petRow || { id: PET_ID, satiety: 0, updatedAt: 0 },
   };
 }
 

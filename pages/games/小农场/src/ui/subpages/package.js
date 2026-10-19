@@ -3,7 +3,8 @@
  */
 import { CROPS, CROP_IDS } from '../../data/crops.js';
 import { ITEMS, ITEM_IDS } from '../../data/items.js';
-import { seedId } from '../../data/keys.js';
+import { MAP_TIERS } from '../../data/adventure.js';
+import { mapId, seedId } from '../../data/keys.js';
 import { count } from '../../store/inventory.js';
 import { fmtDuration } from '../../core/utils.js';
 
@@ -28,6 +29,17 @@ export const packagePage = {
         </div>`;
     }).join('');
 
+    const mapRows = MAP_TIERS
+      .filter((map) => count(mapId(map.tier)) > 0)
+      .map((map) => `
+        <div class="shop-item">
+          <div class="si-emoji">${map.emoji}</div>
+          <div class="si-body">
+            <div class="si-name">${map.name} <span style="color:#8a978a;font-weight:400;font-size:11.5px">×${count(mapId(map.tier))}</span></div>
+            <div class="si-meta">${map.swipes} 步 · 去「☰ 其他 → 🧭 冒险」使用</div>
+          </div>
+        </div>`).join('');
+
     const itemRows = items.map((id) => {
       const item = ITEMS[id];
       return `
@@ -40,7 +52,9 @@ export const packagePage = {
         </div>`;
     }).join('');
 
-    const html = section('🌱 种子', seedRows) + section('🧪 道具', itemRows);
+    const html = section('🌱 种子', seedRows)
+      + section('🧭 藏宝图', mapRows)
+      + section('🧪 道具', itemRows);
     body.innerHTML = html
       || '<div class="empty-tip">🎒<br>包裹空空如也<br>去商店采购种子和道具吧～</div>';
   },

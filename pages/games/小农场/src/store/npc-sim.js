@@ -1,24 +1,25 @@
 /**
  * 邻居离线模拟引擎。
  *
- * 核心模型：每个 NPC 有一个「下次上线时间」，上线一次就执行 2~4 个行为，
- * 然后重新掷一个 8~16 小时间隔（平均每天 2 次），之后进入待机。
+ * 核心模型：每个 NPC 有一个「下次上线时间」（固定钟点或随机间隔，
+ * 见 data/friends.js 的 nextVisitAt），上线一次先做 2~4 件经营上的事，
+ * 再按各自的偷菜倾向顺一手、按性格决定要不要帮玩家照料一块地。
  *
  * 结算方式：玩家进入邻居页时，对每个 NPC 从上次结算点一路跑到「现在」。
  * 为了让「离线一年回来」也不会卡死，结算分两段：
- *   - 远期（超过 7 天）：用聚合公式一次性推进等级与财富，不记日志；
- *   - 近期（7 天内）：逐条执行上线会话，行为写进动态日志给玩家看。
+ *   - 远期（超过 7 天）：用聚合公式一次性推进等级与财富，不记日志，
+ *     也不会动玩家农场（那一段没有足够的信息还原过程）；
+ *   - 近期（7 天内）：逐条执行上线会话，行为写进双方日志。
  *
  * 这个模块是纯计算，不碰存储也不碰 DOM：
  * 它只负责把 NPC 对象从旧状态推到新状态，由调用方决定何时落盘。
  */
 import { CROPS, expOf } from '../data/crops.js';
 import { expForLevel, MAX_LEVEL } from '../data/progression.js';
+import { NPC_ADVENTURE_CHANCE, rollNpcAdventure } from '../data/adventure.js';
 import { randInt, safeNum } from '../core/utils.js';
 import {
   ACTIONS_PER_VISIT,
-  ADVENTURE_CHANCE,
-  ADVENTURE_SUCCESS,
   BOOST_CAP,
   CARE_JITTER,
   DETAILED_WINDOW,
@@ -27,14 +28,16 @@ import {
   PERSONALITIES,
   PEST_INTERVAL,
   PEST_YIELD_BONUS,
-  STEAL_YIELD_PENALTY,
-  VISIT_GAP_MAX,
-  VISIT_GAP_MIN,
+  STEAL_CHANCE,
   WATER_INTERVAL,
   cropsNearLevel,
   emptyNpcPlot,
+  expectedGapMs,
+  nextVisitAt,
   npcGrowMs,
-  npcPlotCount,
+  npcStartCoins,
+  rollNpcLevel,
+  dogCatchChance,
   shuffled,
 } from '../data/friends.js';
 
@@ -59,9 +62,6 @@ function weightedPick(weights) {
   return entries[0][0];
 }
 
-/** 掷下一次上线的间隔 */
-const rollGap = () => randInt(VISIT_GAP_MIN, VISIT_GAP_MAX);
-
 /** 新建一条动态 */
 function log(npc, at, emoji, text) {
   npc.log.unshift({ at, emoji, text });
@@ -72,9 +72,18 @@ function log(npc, at, emoji, text) {
 export function normalizeNpc(npc, fallback) {
   const personality = PERSONALITIES[npc.personality] ? npc.personality : fallback.personality;
   npc.personality = personality;
-  npc.coins = safeNum(npc.coins, fallback.coins);
+  // 职业、上线节奏、偷菜倾向是老存档里没有的，用名单里的定义补上
+  npc.profession = npc.profession || fallback.profession || '农夫';
+  npc.schedule = npc.schedule || fallback.schedule;
+  npc.steal = STEAL_CHANCE[npc.steal] === undefined ? (fallback.steal || 'rare') : npc.steal;
+  npc.coins = safeNum(npc.coins, 0);
   npc.exp = safeNum(npc.exp, 0);
-  npc.level = safeNum(npc.level, fallback.level);
+  npc.level = safeNum(npc.level, 1);
+  // 只有明显损坏的等级才会重掷。起始区间现在是 1~36，
+  // 但老存档里已经长到 50 级的邻居不该被「打回原形」——
+  // 成长没有上限，等级本来就该一路涨上去
+  if (npc.level < 1 || npc.level > MAX_LEVEL) npc.level = rollNpcLevel();
+  if (!npc.coins) npc.coins = npcStartCoins(npc.level);
   npc.lastVisitAt = safeNum(npc.lastVisitAt, 0);
   npc.nextVisitAt = safeNum(npc.nextVisitAt, 0);
   npc.log ??= [];
@@ -96,7 +105,14 @@ export function normalizeNpc(npc, fallback) {
    成长
    ============================================================ */
 
+/**
+ * 邻居的成长没有额外上限：和玩家一样一路涨到满级。
+ *
+ * 起始等级按 1~36 加权随机（低等级更多），之后完全按正常模拟走 ——
+ * 玩家离线很久回来，会发现邻居真的在长大，而不是卡在某个数字上。
+ */
 function gainExp(npc, amount) {
+  if (!Number.isFinite(amount) || amount <= 0) return;
   npc.exp += amount;
   while (npc.level < MAX_LEVEL && npc.exp >= expForLevel(npc.level)) {
     npc.exp -= expForLevel(npc.level);
@@ -122,14 +138,12 @@ function actHarvest(npc, at) {
     const amount = randInt(crop.yield[0], crop.yield[1]);
     // 邻居捉过虫的地也有产量加成
     let boosted = Math.floor(amount * (1 + (plot.boost || 0)));
-    // 被偷过的地，剩余产量对邻居减半
-    if (plot.stolenCount) {
-      boosted = Math.floor(boosted * (1 - STEAL_YIELD_PENALTY));
-    }
+    // 被顺走过几个就少收几个 —— 不做「减半」这种翻倍惩罚
+    boosted = Math.max(0, boosted - (plot.stolenCount || 0));
     totalValue += boosted * crop.sell;
     count += 1;
     // 与玩家完全一致的经验公式：总时间/4×等级 + 等级×个数
-    gainExp(npc, expOf(plot.total / 1000, crop.lv, boosted));
+    gainExp(npc, expOf(crop.lv, boosted));
 
     // 多次收获作物进入再生轮次，否则清空这块地
     plot.harvested = (plot.harvested || 0) + 1;
@@ -209,40 +223,113 @@ function actTend(npc, at) {
   return { emoji: '🧹', text: `打理了 ${tended} 块地，浇了水也除了虫`, exp: 0 };
 }
 
-/** 去别的邻居那儿偷菜。规则和玩家一样：每块地每轮只能被偷一次 */
-function actSteal(npc, neighbours, at) {
-  if (neighbours.length < 2) return null;
-  if (Math.random() > 0.6) return null;
+/**
+ * 顺菜。
+ *
+ * 先按这位邻居的偷菜倾向掷一次，再从「所有成熟且本轮没被顺过」的地里挑一处；
+ * 邻居家与玩家农场一视同仁 —— 偷玩家的时候会写进玩家日志，
+ * 玩家收获时按 stolenCount 扣掉。
+ *
+ * @param {object} npc
+ * @param {object[]} neighbours 其他 NPC
+ * @param {?object} farm 玩家农场 { plots, stolen, cared, caught, log, dogSatietyAt }
+ * @param {number} at
+ * @returns {?{emoji: string, text: string, exp: number}}
+ */
+function actSteal(npc, neighbours, farm, at) {
+  const chance = STEAL_CHANCE[npc.steal] || 0;
+  if (!chance || Math.random() >= chance) return null;
 
-  const victims = neighbours.filter((n) => n !== npc);
-  const victim = pick(victims);
-  const ripe = victim.plots.filter(
-    (p) => p.cropId && at >= p.readyAt && !p.stolen,
-  );
-  if (!ripe.length) return null;
+  const targets = [];
+  for (const other of neighbours) {
+    if (other === npc) continue;
+    for (const plot of other.plots) {
+      if (plot.cropId && CROPS[plot.cropId] && at >= plot.readyAt && !plot.stolen) {
+        targets.push({ plot, owner: other });
+      }
+    }
+  }
+  for (const plot of farm?.plots || []) {
+    if (plot.cropId && CROPS[plot.cropId] && at >= plot.readyAt && !plot.stolen) {
+      targets.push({ plot, owner: farm });
+    }
+  }
+  if (!targets.length) return null;
 
-  const plot = pick(ripe);
+  const { plot, owner } = pick(targets);
   const crop = CROPS[plot.cropId];
+  const isPlayer = owner === farm;
+
+  // 玩家农场有守护犬：饱腹度越高，被当场赶走的概率越大。
+  // 被赶走时这一趟白跑 —— 作物没少、邻居也没拿到钱。
+  if (isPlayer && farm.dogSatietyAt) {
+    const satiety = farm.dogSatietyAt(at);
+    if (satiety > 0 && Math.random() < dogCatchChance(satiety)) {
+      farm.caught += 1;
+      farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了（饱腹 ${Math.round(satiety)}%）`);
+      return { emoji: '🐕', text: '溜进 农场主 家想顺菜，被守护犬赶了出来', exp: 0 };
+    }
+  }
+
   plot.stolen = true;
   plot.stolenCount = (plot.stolenCount || 0) + 1;
   plot.stolenAt = at;
 
   npc.coins += crop.sell;
-  gainExp(npc, Math.floor(crop.exp * 0.5) + 6);
-  return { emoji: '🥷', text: `从 ${victim.name} 那儿顺走了 ${crop.emoji}${crop.name}`, exp: 0 };
+  // 经验按作物等级给，和玩家照料同一套口径；
+  // 旧代码取的是 crop.exp（根本没有这个字段），会让 npc.exp 变成 NaN
+  gainExp(npc, Math.max(1, Math.round(crop.lv * 0.6)) + 4);
+
+  if (isPlayer) {
+    farm.stolen += 1;
+    farm.log(at, '🥷', `${npc.name} 来你的农场，顺走了 ${crop.emoji}${crop.name} ×1`);
+  }
+
+  return {
+    emoji: '🥷',
+    text: `从${isPlayer ? '你的农场' : `${owner.name}家`}顺走了 ${crop.emoji}${crop.name}`,
+    exp: 0,
+  };
 }
 
-/** 冒险：小概率暴富，多数时候空手而归 */
-function actAdventure(npc, at) {
-  if (Math.random() > ADVENTURE_CHANCE) return null;
+/**
+ * 串门帮忙。
+ *
+ * 性格里的「打理」权重同时代表热心程度：热心的邻居经常顺手替玩家
+ * 浇一块地、捉一次虫，悠闲的邻居基本不管闲事。
+ * 只在**还没成熟**的地上动手 —— 成熟了就不再需要照料。
+ *
+ * @param {object} npc
+ * @param {?object} farm 玩家农场 { plots, cared, log }
+ * @param {number} at
+ */
+function actHelpPlayer(npc, farm, at) {
+  if (!farm) return null;
 
-  gainExp(npc, 20);
-  if (Math.random() < ADVENTURE_SUCCESS) {
-    const prize = Math.round(npc.coins * randFloat() * 0.5) + 500;
-    npc.coins += prize;
-    return { emoji: '🎲', text: `去山里转了一圈，捡到 ${formatCoins(prize)} 💰`, exp: 0 };
+  const weights = PERSONALITIES[npc.personality].weights;
+  if (Math.random() >= Math.min(0.6, weights.tend * 0.12)) return null;
+
+  const needs = farm.plots.filter((p) => p.cropId
+    && CROPS[p.cropId]
+    && at < p.readyAt
+    && (at >= (p.waterAt || 0) || at >= (p.pestAt || 0)));
+  if (!needs.length) return null;
+
+  const plot = pick(needs);
+  const crop = CROPS[plot.cropId];
+
+  if (at >= (plot.waterAt || 0)) {
+    plot.waterAt = at + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+    farm.cared += 1;
+    farm.log(at, '💧', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 浇了水`);
+    return { emoji: '🤝', text: `帮 农场主 给 ${crop.emoji}${crop.name} 浇了水`, exp: 0 };
   }
-  return { emoji: '🎲', text: '去山里转了一圈，空手而归', exp: 0 };
+
+  plot.pestAt = at + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+  plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
+  farm.cared += 1;
+  farm.log(at, '🐛', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 捉了虫`);
+  return { emoji: '🤝', text: `帮 农场主 给 ${crop.emoji}${crop.name} 捉了虫`, exp: 0 };
 }
 
 /** 万以内显示原数，超过后用「万」缩写，避免界面被长数字撑破 */
@@ -260,18 +347,17 @@ const ACTIONS = {
   harvest: actHarvest,
   plant: actPlant,
   tend: actTend,
-  steal: actSteal,
-  adventure: actAdventure,
 };
 
 /**
  * 执行一次上线会话。
  * @param {object} npc
- * @param {object[]} neighbours 全部 NPC，用于互相偷菜
+ * @param {object[]} neighbours 全部 NPC，用于互相顺菜
  * @param {number} at 本次上线时间戳
  * @param {boolean} record 是否写动态日志（远期聚合不写）
+ * @param {?object} farm 玩家农场，允许 NPC 偷他的菜或帮他照料
  */
-function runVisit(npc, neighbours, at, record) {
+function runVisit(npc, neighbours, at, record, farm) {
   const weights = PERSONALITIES[npc.personality].weights;
   const want = randInt(ACTIONS_PER_VISIT[0], ACTIONS_PER_VISIT[1]);
   const seen = new Set();
@@ -286,12 +372,35 @@ function runVisit(npc, neighbours, at, record) {
     }
     seen.add(action);
 
-    const result = ACTIONS[action](npc, neighbours, at);
+    const result = ACTIONS[action](npc, at);
     if (record && result) log(npc, at, result.emoji, result.text);
   }
 
+  // 有空地就顺手补种：邻居的农场不该长期荒着
+  if (npc.plots.some((p) => !p.cropId)) {
+    const planted = actPlant(npc, at);
+    if (record && planted) log(npc, at, planted.emoji, planted.text);
+  }
+
+  // 顺菜与串门帮忙不受性格权重的名额限制 —— 上线再忙也可能顺一手
+  const stolen = actSteal(npc, neighbours, farm, at);
+  if (record && stolen) log(npc, at, stolen.emoji, stolen.text);
+
+  const helped = actHelpPlayer(npc, farm, at);
+  if (record && helped) log(npc, at, helped.emoji, helped.text);
+
+  // 手头宽裕就去买张藏宝图：等级门槛、价格、奖励池都和玩家完全一致，
+  // 只是 NPC 不在场，奖励按池子价值直接算法结算
+  if (Math.random() < NPC_ADVENTURE_CHANCE) {
+    const trip = rollNpcAdventure(npc);
+    if (trip && record) {
+      const net = trip.net >= 0 ? `赚了 ${formatCoins(trip.net)}` : `亏了 ${formatCoins(-trip.net)}`;
+      log(npc, at, '🗺️', `买了${trip.map.name}去寻宝，${net} 💰`);
+    }
+  }
+
   npc.lastVisitAt = at;
-  npc.nextVisitAt = at + rollGap();
+  npc.nextVisitAt = nextVisitAt(npc, at);
 }
 
 /* ============================================================
@@ -304,7 +413,7 @@ function runVisit(npc, neighbours, at, record) {
  */
 function bulkAdvance(npc, until) {
   const span = Math.max(HOUR, until - (npc.lastVisitAt || until - HOUR));
-  const visits = Math.round((span / (24 * HOUR)) * 2);
+  const visits = Math.max(1, Math.round(span / expectedGapMs(npc)));
 
   // 每次上线的平均收益：收获越多、地块越多、等级越高越多
   const plotValue = npc.plots.reduce((sum, p) => {
@@ -314,12 +423,17 @@ function bulkAdvance(npc, until) {
   const perVisitCoins = plotValue * 0.6;
   npc.coins += Math.round(perVisitCoins * visits);
 
-  // 经验按同等级区间的作物平均值估算
+  // 经验按同等级可种作物的平均等级估算
   const pool = cropsNearLevel(npc.level);
   const avgExp = pool.length
-    ? pool.reduce((sum, id) => sum + CROPS[id].exp, 0) / pool.length
+    ? pool.reduce((sum, id) => sum + CROPS[id].lv, 0) / pool.length
     : 10;
   gainExp(npc, Math.round(avgExp * npc.plots.length * 0.5 * visits));
+
+  // 远期也会去买藏宝图，但只抽有限次，免得离线一年要跑几千轮
+  for (let i = 0, n = Math.min(visits, 20); i < n; i += 1) {
+    if (Math.random() < NPC_ADVENTURE_CHANCE) rollNpcAdventure(npc);
+  }
 
   // 地里作物按随机进度重建，保证状态看起来是「正在长的」，且尽量不重样
   const poolNow = shuffled(cropsNearLevel(npc.level));
@@ -344,7 +458,7 @@ function bulkAdvance(npc, until) {
   });
 
   npc.lastVisitAt = until;
-  npc.nextVisitAt = until + rollGap();
+  npc.nextVisitAt = nextVisitAt(npc, until);
 }
 
 /* ============================================================
@@ -358,7 +472,7 @@ export function estimateWork(npcs, now) {
   for (const npc of npcs) {
     const from = Math.max(npc.nextVisitAt || now, boundary);
     if (from > now) continue;
-    detailed += Math.min(MAX_VISITS_PER_NPC, Math.round((now - from) / ((VISIT_GAP_MIN + VISIT_GAP_MAX) / 2)));
+    detailed += Math.min(MAX_VISITS_PER_NPC, Math.round((now - from) / expectedGapMs(npc)));
   }
   return detailed;
 }
@@ -368,9 +482,10 @@ export function estimateWork(npcs, now) {
  * @param {object} npc
  * @param {object[]} npcs 全部 NPC
  * @param {number} now
+ * @param {?object} [farm] 玩家农场，允许 NPC 偷菜或帮忙照料
  * @returns {number} 本次实际精细模拟的会话数
  */
-export function simulateNpc(npc, npcs, now) {
+export function simulateNpc(npc, npcs, now, farm = null) {
   const boundary = now - DETAILED_WINDOW;
   let detailed = 0;
   let guard = 0;
@@ -380,22 +495,9 @@ export function simulateNpc(npc, npcs, now) {
     if (npc.nextVisitAt < boundary) {
       bulkAdvance(npc, boundary);
     } else {
-      runVisit(npc, npcs, npc.nextVisitAt, true);
+      runVisit(npc, npcs, npc.nextVisitAt, true, farm);
       detailed += 1;
     }
   }
   return detailed;
 }
-
-/**
- * 估算这位邻居距离下一次上线还有多久，用于「在线/待机」状态展示。
- * @returns {{online: boolean, inMs: number}}
- */
-export function npcPresence(npc, now = Date.now()) {
-  const next = npc.nextVisitAt || now;
-  const inMs = Math.max(0, next - now);
-  // 待机中的 NPC 记作刚刚才上线过，避免整页显示成一片「在线」
-  return { online: inMs > 0 && now - (npc.lastVisitAt || 0) < 30 * 60_000, inMs };
-}
-
-export { LOG_LIMIT, npcPlotCount };

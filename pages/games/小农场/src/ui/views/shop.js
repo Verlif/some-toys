@@ -15,22 +15,30 @@ import { count } from '../../store/inventory.js';
 import { CROPS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
 import { ITEMS, ITEM_IDS } from '../../data/items.js';
 import { SOILS, UPGRADEABLE_SOIL_IDS } from '../../data/soils.js';
+import { MAP_TIERS } from '../../data/adventure.js';
 import { SEED_FILTERS } from '../../data/navigation.js';
-import { seedId } from '../../data/keys.js';
+import { mapId, seedId } from '../../data/keys.js';
 import { fmtDuration } from '../../core/utils.js';
-import { openModal } from '../modal.js';
+import { stackClass, yieldClass } from '../meta-tags.js';
+import { closeModal, openModal } from '../modal.js';
 
 /** 当前选中的 tab */
 let activeTab = 'seed';
 /** 种子区的筛选档位 */
 let seedFilter = 'plantable';
+/** 下一次重绘是否保留当前面板的滚动位置（改筛选时要回到顶部） */
+let keepPanelScroll = true;
 
 /** tab 定义，放在 data 层更合适，但只有商店用得到，先留在视图里 */
 const TABS = [
   { key: 'seed', label: '种子', icon: '🌱' },
   { key: 'item', label: '道具', icon: '🧪' },
   { key: 'soil', label: '土地', icon: '🟫' },
+  { key: 'map', label: '藏宝图', icon: '🧭' },
 ];
+
+/** 商店只卖常规种子；限定种子（special）只能从藏宝图里挖到 */
+const SHOP_SEED_IDS = CROP_IDS.filter((id) => !CROPS[id].special);
 
 /** 右侧数量角标 */
 function owned(id) {
@@ -53,12 +61,12 @@ function filterHTML() {
     ${SEED_FILTERS.map((f) => `
       <button class="filter-chip ${f.key === seedFilter ? 'active' : ''}"
               data-action="filter-seeds" data-id="${f.key}">${f.label}</button>`).join('')}
-    <span class="shop-filter-count">${CROP_IDS.filter(matchFilter).length} / ${CROP_IDS.length}</span>
+    <span class="shop-filter-count">${SHOP_SEED_IDS.filter(matchFilter).length} / ${SHOP_SEED_IDS.length}</span>
   </div>`;
 }
 
 function seedPanel() {
-  const shown = CROP_IDS.filter(matchFilter);
+  const shown = SHOP_SEED_IDS.filter(matchFilter);
   if (!shown.length) {
     return '<div class="empty-tip">💸<br>暂时没有符合条件的种子<br>把地里的菜卖掉再来吧</div>';
   }
@@ -66,14 +74,19 @@ function seedPanel() {
   const rows = shown.map((id) => {
     const crop = CROPS[id];
     const locked = state.player.level < crop.lv;
-    const harvests = crop.harvests > 1 ? ` · 共${crop.harvests}茬` : '';
     return `
       <div class="shop-item seed-item ${locked ? 'locked' : ''}"
            data-action="seed-detail" data-id="${id}" role="button" tabindex="0">
         <div class="si-emoji">${crop.emoji}</div>
         <div class="si-body">
           <div class="si-name">${crop.name}种子 ${owned(seedId(id))}</div>
-          <div class="si-meta">Lv.${crop.lv} · ${fmtDuration(crop.grow * 1000)} · 收 ${crop.yield[0]}-${crop.yield[1]}${harvests}</div>
+          <div class="si-meta seed-meta">
+            <span class="meta-tag lv">Lv.${crop.lv}</span>
+            <span class="meta-tag time">⏱ ${fmtDuration(crop.grow * 1000)}</span>
+            <span class="meta-tag stack ${stackClass(crop.harvests)}">🧺 ${crop.harvests} 茬</span>
+            <span class="meta-tag yield ${yieldClass(crop.yield[1])}">🌾 ${crop.yield[0]}-${crop.yield[1]}</span>
+            ${crop.multi ? '<span class="meta-tag multi">🌿 多茬</span>' : ''}
+          </div>
         </div>
         <span class="si-price">${locked ? `Lv.${crop.lv}` : `💰 ${crop.seed}`}</span>
         <span class="si-chevron">›</span>
@@ -119,13 +132,55 @@ function soilPanel() {
   return `<div class="list">${rows}</div>`;
 }
 
+/**
+ * 藏宝图面板。
+ *
+ * 五档图的价格与等级门槛写死在 data/adventure.js，
+ * 「种子 ≤ Lv.N」就是挖到的种子上限（要求等级 + 10）。
+ */
+function mapPanel() {
+  const rows = MAP_TIERS.map((map) => {
+    const locked = state.player.level < map.unlock;
+    const owned = count(mapId(map.tier));
+    return `
+      <div class="shop-item ${locked ? 'locked' : ''}">
+        <div class="si-emoji">${map.emoji}</div>
+        <div class="si-body">
+          <div class="si-name">${map.name} ${owned ? `<span class="si-own">· 拥有 ${owned}</span>` : ''}</div>
+          <div class="si-meta seed-meta">
+            <span class="meta-tag steps">👣 ${map.swipes} 步</span>
+            <span class="meta-tag yield">🌱 ≤Lv${map.seedCap}</span>
+            <span class="meta-tag special">✨ 限定×3</span>
+          </div>
+        </div>
+        <button class="btn small ${locked ? '' : 'ghost'}" ${locked ? 'disabled' : ''}
+                data-action="map-buy" data-id="${map.tier}">
+          ${locked ? `Lv.${map.unlock}` : `💰 ${map.price}`}
+        </button>
+      </div>`;
+  }).join('');
+
+  return `<div class="list">${rows}</div>
+    <p class="map-tip">买好之后去「☰ 其他 → 🧭 冒险」出发。每张图必定能挖到 3 种限定种子，挖到什么全看运气。</p>`;
+}
+
 /* ---------- 渲染 ---------- */
 
-/** 重绘商店 */
+/**
+ * 重绘商店。
+ *
+ * 每个 tab 面板是**各自独立**的滚动容器（CSS 里 .shop-panel 自己 overflow-y），
+ * 所以「种子滚到底 → 切到道具」时道具面板仍然是它自己的顶部，
+ * 不会因为共用一个滚动条而看起来一片空白。
+ * 重绘（买东西）会保留当前面板的滚动位置，不会跳回顶部。
+ */
 export function renderShop() {
   const root = byId('shop');
   const panels = root.querySelector('.shop-panels');
-  const keepScroll = panels ? panels.scrollLeft : 0;
+  const keepLeft = panels ? panels.scrollLeft : 0;
+  const activePanel = panels?.querySelector(`.shop-panel[data-panel="${activeTab}"]`);
+  const keepTop = keepPanelScroll && activePanel ? activePanel.scrollTop : 0;
+  keepPanelScroll = true;
 
   setHTML(root, `
     <div class="shop-top">
@@ -141,13 +196,18 @@ export function renderShop() {
       <div class="shop-panel" data-panel="seed">${seedPanel()}</div>
       <div class="shop-panel" data-panel="item">${itemPanel()}</div>
       <div class="shop-panel" data-panel="soil">${soilPanel()}</div>
+      <div class="shop-panel" data-panel="map">${mapPanel()}</div>
     </div>`);
 
   const nextPanels = root.querySelector('.shop-panels');
   // scroll 事件不冒泡，只能直接挂在每次重绘后新建的容器上
   nextPanels.addEventListener('scroll', onPanelScroll, { passive: true });
   syncTabFromScroll(nextPanels);
-  if (keepScroll) nextPanels.scrollLeft = keepScroll;
+  if (keepLeft) nextPanels.scrollLeft = keepLeft;
+  if (keepTop) {
+    const panel = nextPanels.querySelector(`.shop-panel[data-panel="${activeTab}"]`);
+    if (panel) panel.scrollTop = keepTop;
+  }
 }
 
 /** 横向滚动 → 更新 tab 高亮。用 rAF 合并高频 scroll */
@@ -272,6 +332,7 @@ function openSeedModal(cropId) {
         <div class="sd-name">${crop.name}</div>
         <div class="sd-tags">
           <span class="seed-row-kind kind-${crop.kind}">${KIND_LABELS[crop.kind]?.label || ''}</span>
+          ${crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : ''}
           ${crop.slow ? '<span class="seed-row-kind kind-slow">厚积薄发</span>' : ''}
           <span class="sd-lv">Lv.${crop.lv}</span>
         </div>
@@ -338,7 +399,8 @@ function openSeedModal(cropId) {
     'qty-minus': () => step(-1),
     'qty-plus': () => step(1),
     'seed-buy': async () => {
-      if (await shop.buySeed(cropId, qty)) refresh();
+      // 买成功就直接收起弹窗：买完还留着弹窗，玩家会以为没买成又点一次
+      if (await shop.buySeed(cropId, qty)) closeModal();
     },
   };
 
@@ -387,10 +449,13 @@ function openSoilModal(soilId) {
 const SHOP_ACTIONS = {
   'seed-detail': (id) => openSeedModal(id),
   'buy-item': (id) => shop.buyItem(id),
+  'map-buy': (id) => shop.buyMap(Number(id)),
   'upgrade-soil': (id) => openSoilModal(id),
   'shop-tab': (id) => switchTab(id),
   'filter-seeds': (id) => {
     seedFilter = id;
+    // 换了筛选就该从列表顶部看起，不要沿用上一个筛选的滚动位置
+    keepPanelScroll = false;
     renderShop();
   },
 };

@@ -30,13 +30,20 @@
 
     <!-- 展开层：绝对定位，不会把下面的土地区域挤走 -->
     <div class="hud-detail" id="hudDetail" hidden>
+      <!-- 农场等级与经验进度：这一块是展开后最先要看到的信息 -->
+      <div class="hud-level">
+        <div class="hud-level-row">
+          <span class="hud-level-badge">Lv.<b id="dLevel">1</b></span>
+          <span class="hud-level-title" id="dTitle">新手农夫</span>
+          <span class="hud-level-exp" id="dExp">0 / 5400</span>
+        </div>
+        <div class="hud-level-bar"><i id="dExpBar"></i></div>
+      </div>
       <div class="hud-detail-grid">
-        <div class="hud-cell"><span class="k">当前称号</span><span class="v" id="dTitle">新手农夫</span></div>
         <div class="hud-cell"><span class="k">距离下一称号</span><span class="v" id="dNextTitle">田间好手</span></div>
-        <div class="hud-cell"><span class="k">升级进度</span><span class="v" id="dExp">0 / 36</span></div>
         <div class="hud-cell"><span class="k">地块</span><span class="v" id="dPlots">6 / 40</span></div>
         <div class="hud-cell"><span class="k">连续签到</span><span class="v" id="dStreak">0 天</span></div>
-        <div class="hud-cell"><span class="k">图鉴收集</span><span class="v" id="dCodex">0 / 145</span></div>
+        <div class="hud-cell"><span class="k">图鉴收集</span><span class="v" id="dCodex">0 / 200</span></div>
       </div>
       <div class="hud-detail-tip">轻点顶栏收起</div>
     </div>
@@ -47,6 +54,8 @@
     <section id="page-friends" class="page"><div id="friends"></div></section>
     <section id="page-shop" class="page"><div id="shop"></div></section>
   </main>
+
+  <button class="log-fab" id="logBtn"><span>📔</span>农场日志</button>
 
   <nav class="tabbar" id="tabbar">
     <button data-page="farm" class="active"><span>🌱</span>农场</button>
@@ -66,6 +75,19 @@
   </div>
 </div>
 
+<!-- 农场日志浮窗：与「更多功能」共用一套底部上滑 + 下拉关闭 -->
+<div id="logSheet">
+  <div class="sheet-mask" data-close-log></div>
+  <div class="sheet-panel log-panel">
+    <div class="sheet-handle"></div>
+    <div class="log-head">
+      <div class="log-title">📔 农场日志</div>
+      <div class="log-sub">最近 7 天</div>
+    </div>
+    <div class="log-body" id="logBody"></div>
+  </div>
+</div>
+
 <!-- 子页面（底部上滑的全屏面板） -->
 <div id="subpage">
   <div class="sheet-handle"></div>
@@ -77,6 +99,32 @@
   <div class="subpage-body" id="subpageBody"></div>
   <!-- 底栏：固定在底部，不随内容滚动 -->
   <div class="subpage-foot" id="subpageFoot" hidden></div>
+</div>
+
+<!-- 冒险：全屏的卡牌选择界面。
+     层级放在子页面之下，这样「退出确认」的模态弹窗才能盖在它上面 -->
+<div id="adventure" aria-hidden="true">
+  <div class="adv-top">
+    <button class="adv-exit" id="advExit" aria-label="退出冒险">✕</button>
+    <div class="adv-head">
+      <div class="adv-title" id="advTitle">藏宝图</div>
+      <div class="adv-steps" id="advSteps">剩余 0 步</div>
+    </div>
+  </div>
+  <div class="adv-bar"><i id="advBar"></i></div>
+  <div class="adv-stage" id="advStage">
+    <!-- 左右选项放在舞台层而不是卡片里：卡片飞出去时它们仍固定在屏幕两侧 -->
+    <div class="adv-side adv-side-left" id="advLeft"></div>
+    <div class="adv-side adv-side-right" id="advRight"></div>
+    <div class="adv-card" id="advCard">
+      <div class="adv-scene" id="advScene">🌲</div>
+      <div class="adv-card-title" id="advCardTitle"></div>
+      <div class="adv-card-text" id="advCardText"></div>
+      <div class="adv-card-hint">← 左滑　右滑 →</div>
+    </div>
+  </div>
+  <div class="adv-toast" id="advToast" hidden></div>
+  <div class="adv-foot" id="advFoot">每张牌只有一边藏着奖励</div>
 </div>
 
 <!-- 模态弹窗（与子页面同一套底部上滑交互） -->

@@ -14,11 +14,11 @@
 export const SIGN_CYCLE = [
   { day: 1, coins: 1.0, exp: 0.5, items: {} },
   { day: 2, coins: 1.4, exp: 0.8, items: {} },
-  { day: 3, coins: 2.0, exp: 1.2, items: { fertilizer: 1 } },
+  { day: 3, coins: 2.0, exp: 1.2, items: { fertilizer: 2 } },
   { day: 4, coins: 2.8, exp: 1.8, items: {} },
-  { day: 5, coins: 4.0, exp: 2.6, items: { organic: 1 } },
+  { day: 5, coins: 4.0, exp: 2.6, items: { fert2h: 1, organic: 1 } },
   { day: 6, coins: 6.0, exp: 4.0, items: { dogFood: 2 } },
-  { day: 7, coins: 20.0, exp: 14.0, items: { fertilizer: 5, organic: 3, dogFood: 3 } },
+  { day: 7, coins: 20.0, exp: 14.0, items: { fert6h: 2, organic: 1, dogFood: 3 } },
 ];
 
 /** 循环长度 */

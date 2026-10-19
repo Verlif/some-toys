@@ -35,6 +35,9 @@
   /* 顶栏实际高度由 ui/hud.js 量出来写回，这里给一个兜底值，
      避免 JS 尚未执行时依赖它的吸附定位失效 */
   --hud-h: 64px;
+  /* 底部导航高度同理，由 ui/tabs.js 量出来写回；
+     商店页是固定高度布局，要精确扣掉它 */
+  --tab-h: calc(60px + env(safe-area-inset-bottom));
 }
 
 html,

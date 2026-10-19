@@ -6,9 +6,13 @@
 
 export const SEED_PREFIX = 'seed_';
 export const PRODUCE_PREFIX = 'crop_';
+export const MAP_PREFIX = 'map_';
 
 /** 种子在背包中的 key，如 seed_wheat */
 export const seedId = (cropId) => `${SEED_PREFIX}${cropId}`;
 
 /** 农产品在背包中的 key，如 crop_wheat */
 export const produceId = (cropId) => `${PRODUCE_PREFIX}${cropId}`;
+
+/** 藏宝图在背包中的 key，如 map_3 */
+export const mapId = (tier) => `${MAP_PREFIX}${tier}`;

@@ -109,6 +109,8 @@ export function codexEntries() {
       yield: crop.yield,
       sell: crop.sell,
       seed: crop.seed,
+      /** 限定作物：商店不卖，只能从藏宝图挖到 */
+      special: Boolean(crop.special),
       planted: stat.planted,
       harvested: stat.harvested,
       /** 点亮：收获数量大于 0 */
