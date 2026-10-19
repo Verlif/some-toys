@@ -47,6 +47,9 @@
       DRC.DirectionHints.draw(ctx, game.track, hint, game.animTime);
     }
 
+    // ②.5 漂移轮胎印：铺在路面上、车底下，所以它只"压"在地面不会被车挡住
+    if (game.tireMarks) game.tireMarks.draw(ctx);
+
     // ③ 全部赛车
     for (let i = 0; i < game.cars.length; i++) {
       DRC.CarRenderer.drawCar(ctx, game.cars[i], game.animTime);

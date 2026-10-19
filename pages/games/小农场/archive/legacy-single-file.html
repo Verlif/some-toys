@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>🌾 家园农场 · 文字版</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --green:#4caf50;--green-d:#35833a;--green-l:#7cc576;
+    --bg:#eef3e9;--card:#fff;--text:#22301f;--muted:#8a978a;
+    --gold:#f0a92e;--line:#e3e9dd;--radius:16px;--danger:#e05a4e;
+  }
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);
+    background-image:radial-gradient(circle at 15% 0%,#f7fbf2 0%,transparent 45%),
+                     radial-gradient(circle at 90% 100%,#e8f0e0 0%,transparent 50%);
+    background-attachment:fixed;-webkit-font-smoothing:antialiased;
+    -webkit-text-size-adjust:100%;
+    overscroll-behavior-y:none;
+  }
+  .app{max-width:900px;margin:0 auto;padding-bottom:calc(78px + env(safe-area-inset-bottom));min-height:100%}
+
+  /* ===== HUD ===== */
+  .hud{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(135deg,#59b356,#327f37);color:#fff;
+    padding:13px 16px 11px;border-radius:0 0 22px 22px;
+    box-shadow:0 6px 20px rgba(50,127,55,.22);
+  }
+  .hud-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .hud-user{display:flex;align-items:center;gap:10px}
+  .avatar{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.22);
+    display:grid;place-items:center;font-size:20px;border:2px solid rgba(255,255,255,.35)}
+  .hud-name{font-size:14px;font-weight:600}
+  .hud-lv{font-size:11px;opacity:.85;margin-top:1px}
+  .hud-coins{background:rgba(0,0,0,.16);padding:7px 13px;border-radius:999px;
+    font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+  .exp-wrap{margin-top:9px;display:flex;align-items:center;gap:8px}
+  .exp-bar{flex:1;height:5px;background:rgba(0,0,0,.18);border-radius:99px;overflow:hidden}
+  .exp-bar > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#ffe08a,#ffc93c);
+    border-radius:99px;transition:width .35s ease}
+  .exp-text{font-size:10.5px;opacity:.85;font-variant-numeric:tabular-nums}
+
+  /* ===== 页面 ===== */
+  .page{display:none;animation:fade .2s ease}
+  .page.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+  /* ===== 地块 ===== */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:11px;padding:15px}
+  .plot{position:relative;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:6px;min-height:168px;padding:12px 9px;
+    background:linear-gradient(180deg,#fffefa,#f8f2e6);
+    border:1px solid #ece2cf;border-radius:var(--radius);
+    box-shadow:0 2px 6px rgba(70,90,60,.06);transition:.18s;text-align:center}
+  .plot::after{content:'';position:absolute;inset:auto 0 0 0;height:24px;
+    background:linear-gradient(180deg,transparent,rgba(200,175,135,.13));
+    border-radius:0 0 var(--radius) var(--radius);pointer-events:none}
+  .plot.growing{background:linear-gradient(180deg,#fcfff9,#eef7ea);border-color:#d6e6cd}
+  .plot.ripe{border-color:#f0c060;box-shadow:0 0 0 2px rgba(240,192,96,.3),0 6px 16px rgba(240,170,60,.18);
+    background:linear-gradient(180deg,#fffdf2,#fdf4dd)}
+  .plot.locked{background:repeating-linear-gradient(45deg,#f4f4f0,#f4f4f0 8px,#eeece5 8px,#eeece5 16px);
+    border-color:#e2e0d6;opacity:.78}
+  .plot.locked::after{display:none}
+  .plot.warn{border-color:#e8a0a0;box-shadow:0 0 0 2px rgba(224,90,78,.15)}
+  .plot-emoji{font-size:36px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.07))}
+  .plot-emoji.empty{opacity:.42;font-size:28px}
+  .plot.ripe .plot-emoji{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
+  .plot-name{font-size:12px;font-weight:600;color:#40503c}
+  .plot-sub{font-size:11px;color:var(--muted)}
+  .plot-lock{font-size:24px;opacity:.48}
+  .soil-tag{font-size:9.5px;padding:1px 6px;border-radius:99px;font-weight:700;letter-spacing:.3px}
+  .soil-normal{background:#e8e0d0;color:#8a7a5a}
+  .soil-red{background:#fbe0dc;color:#b04a3a}
+  .soil-black{background:#dedad4;color:#4a4640}
+  .soil-gold{background:#fdf0c8;color:#a07818}
+
+  .bar{width:82%;height:5px;background:#e4e9de;border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0%;border-radius:99px;
+    background:linear-gradient(90deg,var(--green-l),var(--green));transition:width .5s linear}
+  .ptime{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .plot-acts{display:flex;gap:5px;margin-top:1px;flex-wrap:wrap;justify-content:center}
+  .icon-btn{width:29px;height:29px;border-radius:9px;border:1px solid #dfe8d8;
+    background:#fff;font-size:14px;cursor:pointer;line-height:1;
+    display:grid;place-items:center;transition:.15s}
+  .icon-btn:hover{background:#f0f8ec;border-color:#b8d8ac;transform:translateY(-1px)}
+  .icon-btn:active{transform:scale(.9)}
+
+  /* ===== 按钮 ===== */
+  .btn{border:none;border-radius:10px;padding:8px 15px;cursor:pointer;
+    background:var(--green);color:#fff;font-size:12.5px;font-weight:600;
+    font-family:inherit;transition:.16s;letter-spacing:.2px;
+    box-shadow:0 2px 6px rgba(76,175,80,.22)}
+  .btn:hover{background:var(--green-d);transform:translateY(-1px)}
+  .btn:active{transform:scale(.96)}
+  .btn.small{padding:6px 12px;font-size:11.5px;border-radius:9px}
+  .btn.ghost{background:#fff;color:var(--green-d);border:1px solid #cfe3c6;box-shadow:none}
+  .btn.ghost:hover{background:#f2f9ef}
+  .btn.harvest{background:linear-gradient(135deg,#ffb238,#f08a1e);box-shadow:0 3px 10px rgba(240,160,40,.32)}
+  .btn.danger{background:var(--danger);box-shadow:0 2px 6px rgba(224,90,78,.25)}
+  .btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+
+  /* ===== 列表 ===== */
+  .section-title{font-size:12.5px;font-weight:700;color:#5c6b57;letter-spacing:.5px;padding:17px 17px 8px}
+  .list{padding:0 13px}
+  .shop-item{display:flex;align-items:center;gap:11px;background:var(--card);
+    border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin-bottom:8px;transition:.16s}
+  .shop-item:hover{border-color:#cfe3c6;box-shadow:0 3px 12px rgba(80,120,70,.07)}
+  .shop-item.locked{opacity:.52}
+  .si-emoji{font-size:24px;width:34px;text-align:center;flex-shrink:0}
+  .si-body{flex:1;min-width:0}
+  .si-name{font-size:13.5px;font-weight:600;margin-bottom:2px}
+  .si-meta{font-size:11px;color:var(--muted);line-height:1.5}
+  .si-price{font-size:12.5px;font-weight:700;color:var(--gold);white-space:nowrap}
+
+  .empty-tip{text-align:center;color:var(--muted);font-size:13px;padding:46px 20px;line-height:1.9}
+
+  .friend-card{display:flex;align-items:center;gap:11px;background:var(--card);
+    border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:8px;transition:.16s}
+  .friend-card:hover{border-color:#cfe3c6;box-shadow:0 3px 12px rgba(80,120,70,.07)}
+  .friend-avatar{width:42px;height:42px;border-radius:50%;background:#eef7e9;
+    display:grid;place-items:center;font-size:21px;flex-shrink:0}
+  .friend-body{flex:1;min-width:0}
+  .friend-name{font-size:13.5px;font-weight:600}
+  .friend-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .friend-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+
+  /* ===== 底部主导航 ===== */
+  .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;justify-content:center;gap:4px;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-top:1px solid rgba(0,0,0,.05)}
+  .tabbar button{flex:1;max-width:130px;border:none;background:none;cursor:pointer;
+    font-family:inherit;font-size:11px;font-weight:600;color:#93a08e;
+    padding:7px 2px;border-radius:11px;transition:.18s;
+    display:flex;flex-direction:column;align-items:center;gap:2px}
+  .tabbar button span{font-size:19px;line-height:1}
+  .tabbar button.active{color:var(--green-d);background:#eef7e9}
+
+  /* ===== 底部浮窗（其他） ===== */
+  #sheet{position:fixed;inset:0;z-index:120;visibility:hidden;pointer-events:none}
+  #sheet.show{visibility:visible;pointer-events:auto}
+  .sheet-mask{position:absolute;inset:0;background:rgba(28,40,26,.42);
+    backdrop-filter:blur(3px);opacity:0;transition:opacity .25s ease}
+  #sheet.show .sheet-mask{opacity:1}
+  .sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;
+    border-radius:24px 24px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));
+    transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);
+    box-shadow:0 -8px 30px rgba(0,0,0,.12);max-height:82vh;overflow-y:auto}
+  #sheet.show .sheet-panel{transform:translateY(0)}
+  .sheet-handle{width:38px;height:4px;border-radius:99px;background:#dfe6d8;margin:6px auto 14px}
+  .sheet-title{font-size:13px;font-weight:700;color:#5c6b57;letter-spacing:.5px;margin-bottom:13px;padding-left:2px}
+  .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .sheet-item{border:none;background:#f7faf4;border-radius:16px;padding:14px 4px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    font-family:inherit;font-size:11.5px;color:#5c6b57;font-weight:600;transition:.15s}
+  .sheet-item:hover{background:#eef7e9}
+  .sheet-item:active{transform:scale(.96)}
+  .sheet-item .ico{font-size:24px;line-height:1}
+  .sheet-item.locked{opacity:.55}
+
+  /* ===== 子页面（全屏） ===== */
+  #subpage{position:fixed;inset:0;z-index:110;background:var(--bg);
+    display:flex;flex-direction:column;
+    transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);
+    will-change:transform}
+  #subpage.show{transform:translateX(0)}
+  .subpage-head{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+    background:#fff;border-bottom:1px solid var(--line);flex-shrink:0}
+  .back{border:none;background:#f2f5ee;width:32px;height:32px;border-radius:10px;cursor:pointer;
+    font-size:16px;color:#5c6b57;display:grid;place-items:center;transition:.15s}
+  .back:hover{background:#e6ede0}
+  .subpage-head h3{flex:1;font-size:15px;font-weight:700}
+  .sub-coins{font-size:13px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+  .subpage-body{flex:1;overflow-y:auto;padding-bottom:40px;-webkit-overflow-scrolling:touch}
+
+  /* ===== 弹窗 ===== */
+  #modal{position:fixed;inset:0;z-index:130;display:none}
+  #modal.show{display:block}
+  .modal-mask{position:absolute;inset:0;background:rgba(28,40,26,.42);backdrop-filter:blur(3px)}
+  .modal-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(92vw,560px);max-height:82vh;overflow-y:auto;
+    background:#fff;border-radius:20px;padding:17px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .22s cubic-bezier(.2,1.2,.4,1)}
+  @keyframes pop{from{opacity:0;transform:translate(-50%,-46%) scale(.95)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+  .modal-head h3{font-size:15.5px;font-weight:700}
+  .close{border:none;background:#f2f5ee;width:29px;height:29px;border-radius:50%;cursor:pointer;
+    font-size:13px;color:#7c8a78;transition:.15s}
+  .close:hover{background:#e6ede0;color:#4a5a46}
+
+  .seed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px}
+  .seed-card{background:#fafcf7;border:1px solid #e8efe2;border-radius:13px;
+    padding:11px 7px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.16s}
+  .seed-card:hover{border-color:#c4e0b8;background:#f5fbf1}
+  .seed-card.locked{opacity:.44;filter:grayscale(.6)}
+  .seed-emoji{font-size:26px}
+  .seed-name{font-size:12.5px;font-weight:600}
+  .seed-meta{font-size:10px;color:var(--muted);line-height:1.5}
+  .seed-lock{font-size:10.5px;color:#b08a3a;font-weight:600}
+
+  /* ===== Toast ===== */
+  #toasts{position:fixed;top:calc(84px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:200;
+    display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:none;width:100%}
+  .toast{background:rgba(34,48,31,.92);color:#fff;font-size:12.5px;font-weight:500;
+    padding:9px 17px;border-radius:99px;box-shadow:0 6px 20px rgba(0,0,0,.2);
+    animation:toastIn .28s cubic-bezier(.2,1.2,.4,1);max-width:90vw;text-align:center}
+  .toast.out{animation:toastOut .28s ease forwards}
+  .toast.gold{background:linear-gradient(135deg,#f5a623,#e8871e)}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-10px) scale(.9)}to{opacity:1;transform:none}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(-9px) scale(.94)}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="hud">
+    <div class="hud-row">
+      <div class="hud-user">
+        <div class="avatar">🧑‍🌾</div>
+        <div>
+          <div class="hud-name" id="nameText">农场主</div>
+          <div class="hud-lv">Lv.<span id="lvText">1</span> · <span id="titleText">新手农夫</span></div>
+        </div>
+      </div>
+      <div class="hud-coins">💰 <span id="coinText">0</span></div>
+    </div>
+    <div class="exp-wrap">
+      <div class="exp-bar"><i id="expFill"></i></div>
+      <div class="exp-text" id="expText">0 / 100</div>
+    </div>
+  </header>
+
+  <main>
+    <section id="page-farm" class="page active"><div class="grid" id="plots"></div></section>
+    <section id="page-friends" class="page"><div id="friends"></div></section>
+    <section id="page-shop" class="page"><div id="shop"></div></section>
+  </main>
+
+  <nav class="tabbar">
+    <button data-page="farm" class="active"><span>🌱</span>农场</button>
+    <button data-page="friends"><span>👥</span>邻居</button>
+    <button data-page="shop"><span>🏪</span>商店</button>
+    <button data-sheet="1"><span>☰</span>其他</button>
+  </nav>
+</div>
+
+<!-- 底部浮窗：其他 -->
+<div id="sheet">
+  <div class="sheet-mask" data-close-sheet></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">更多功能</div>
+    <div class="sheet-grid" id="sheetGrid"></div>
+  </div>
+</div>
+
+<!-- 子页面 -->
+<div id="subpage">
+  <div class="subpage-head">
+    <button class="back" id="subBack">←</button>
+    <h3 id="subpageTitle">功能</h3>
+    <div class="sub-coins">💰 <span id="subCoins">0</span></div>
+  </div>
+  <div class="subpage-body" id="subpageBody"></div>
+</div>
+
+<div id="modal"></div>
+<div id="toasts"></div>
+
+<script>
+/* ============================================================
+   一、配置
+   ============================================================ */
+const CROPS = {
+  wheat:     {name:'小麦',   emoji:'🌾', lv:1,  seed:10,   sell:12,  grow:45,   yield:[2,3],   exp:10},
+  carrot:    {name:'胡萝卜', emoji:'🥕', lv:1,  seed:25,   sell:28,  grow:90,   yield:[2,3],   exp:14},
+  corn:      {name:'玉米',   emoji:'🌽', lv:2,  seed:45,   sell:48,  grow:150,  yield:[3,4],   exp:24},
+  potato:    {name:'土豆',   emoji:'🥔', lv:3,  seed:70,   sell:78,  grow:240,  yield:[3,4],   exp:34},
+  tomato:    {name:'番茄',   emoji:'🍅', lv:5,  seed:110,  sell:105, grow:300,  yield:[4,5],   exp:48},
+  strawberry:{name:'草莓',   emoji:'🍓', lv:7,  seed:190,  sell:165, grow:420,  yield:[4,6],   exp:70},
+  watermelon:{name:'西瓜',   emoji:'🍉', lv:10, seed:350,  sell:310, grow:660,  yield:[5,7],   exp:100},
+  pumpkin:   {name:'南瓜',   emoji:'🎃', lv:13, seed:550,  sell:440, grow:960,  yield:[6,8],   exp:145},
+  grape:     {name:'葡萄',   emoji:'🍇', lv:16, seed:980,  sell:720, grow:1320, yield:[7,9],   exp:200},
+  sunflower: {name:'向日葵', emoji:'🌻', lv:20, seed:1900, sell:1050,grow:1800, yield:[8,10],  exp:280},
+};
+
+const SOILS = {
+  normal:{name:'普通土地', tag:'普通', cls:'soil-normal', yieldMul:1,   timeMul:1,   unlock:0,  cost:0},
+  red:   {name:'红土地',   tag:'红土', cls:'soil-red',    yieldMul:1.1, timeMul:1,   unlock:8,  cost:2000},
+  black: {name:'黑土地',   tag:'黑土', cls:'soil-black',  yieldMul:1.2, timeMul:0.8, unlock:15, cost:8000},
+  gold:  {name:'金土地',   tag:'金土', cls:'soil-gold',   yieldMul:1.28,timeMul:0.8, unlock:25, cost:30000},
+};
+
+const ITEMS = {
+  fertilizer: {name:'普通化肥', emoji:'🧪', price:60,  desc:'减少 20% 剩余时间'},
+  organic:    {name:'有机化肥', emoji:'⚗️', price:180, desc:'直接成熟（每块地限用1次）'},
+  herbicide:  {name:'除草剂',   emoji:'🧴', price:40,  desc:'清除杂草'},
+  pesticide:  {name:'杀虫剂',   emoji:'🪲', price:40,  desc:'清除害虫'},
+  dogFood:    {name:'狗粮',     emoji:'🦴', price:50,  desc:'喂养守护犬，恢复守护能力'},
+};
+
+const PLOT_UNLOCK_LV = [1,1,1,1,1,1,3,5,7,9,11,13,15,18,21];
+
+const TITLES = [[1,'新手农夫'],[5,'田间好手'],[10,'种植达人'],[16,'丰收专家'],[23,'庄园主'],[30,'农业大亨']];
+
+/* 底部浮窗里的功能入口 */
+const SHEET_ITEMS = [
+  {key:'bag',        icon:'🧺', label:'仓库',    ready:true},
+  {key:'package',    icon:'🎒', label:'包裹',    ready:true},
+  {key:'quests',     icon:'📋', label:'任务',    ready:true},
+  {key:'sign',       icon:'📅', label:'签到',    ready:true},
+  {key:'dog',        icon:'🐕', label:'狗窝',    ready:true},
+  {key:'achievement',icon:'🏆', label:'成就',    ready:false},
+  {key:'treasure',   icon:'🗺️', label:'寻宝',    ready:false},
+  {key:'codex',      icon:'📖', label:'图鉴',    ready:false},
+  {key:'ranch',      icon:'🐄', label:'牧场',    ready:false},
+  {key:'workshop',   icon:'⚒️', label:'加工坊',  ready:false},
+  {key:'market',     icon:'🏪', label:'交易行',  ready:false},
+  {key:'settings',   icon:'⚙️', label:'设置',    ready:false},
+];
+
+const SUB_TITLES = {
+  bag:'🧺 仓库', package:'🎒 包裹', quests:'📋 任务', sign:'📅 签到',
+  dog:'🐕 狗窝', achievement:'🏆 成就', treasure:'🗺️ 寻宝', codex:'📖 图鉴',
+  ranch:'🐄 牧场', workshop:'⚒️ 加工坊', market:'🏪 交易行', settings:'⚙️ 设置'
+};
+
+/* ============================================================
+   二、IndexedDB
+   ============================================================ */
+const DB_NAME='homeland_farm_v2', DB_VER=1;
+let db=null;
+
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('player'))   d.createObjectStore('player',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('plots'))    d.createObjectStore('plots',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('inventory'))d.createObjectStore('inventory',{keyPath:'itemId'});
+      if(!d.objectStoreNames.contains('friends'))  d.createObjectStore('friends',{keyPath:'id'});
+    };
+    req.onsuccess=e=>{db=e.target.result;res(db);};
+    req.onerror=e=>rej(e.target.error);
+  });
+}
+function store(n,m='readonly'){return db.transaction(n,m).objectStore(n);}
+function pGet(n,k){return new Promise((res,rej)=>{const r=store(n).get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function pGetAll(n){return new Promise((res,rej)=>{const r=store(n).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function pPut(n,v){return new Promise((res,rej)=>{const r=store(n,'readwrite').put(v);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+function pDel(n,k){return new Promise((res,rej)=>{const r=store(n,'readwrite').delete(k);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+
+/* ============================================================
+   三、状态
+   ============================================================ */
+let player=null;
+let plots=[];
+let bag={};
+let friends=[];
+let dog={fedUntil:0};
+const plotDom=new Map();
+
+const seedKey=id=>'seed_'+id;
+const cropKey=id=>'crop_'+id;
+const NPCS = [
+  {id:'npc1',name:'王大爷',avatar:'👴',level:6, style:'short'},
+  {id:'npc2',name:'李大婶',avatar:'👩',level:9, style:'mixed'},
+  {id:'npc3',name:'小芳',  avatar:'👧',level:13,style:'mixed'},
+  {id:'npc4',name:'赵老板',avatar:'🧔',level:18,style:'long'},
+  {id:'npc5',name:'陈老师',avatar:'👩‍🏫',level:24,style:'long'},
+];
+
+function expNeed(lv){return 100+(lv-1)*85;}
+function randInt(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000));
+  if(s<60)return s+'秒';const m=Math.floor(s/60),sec=s%60;
+  if(m<60)return m+'分'+(sec?sec+'秒':'');const h=Math.floor(m/60),mi=m%60;
+  return h+'小时'+(mi?mi+'分':'');}
+function unlockedPlots(){let n=6;for(let i=6;i<PLOT_UNLOCK_LV.length;i++)if(player.level>=PLOT_UNLOCK_LV[i])n++;return n;}
+function titleOf(lv){let t=TITLES[0][1];for(const [l,n] of TITLES)if(lv>=l)t=n;return t;}
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+
+function checkDailyReset(){
+  const t=todayKey();
+  if(player.dailyDate!==t){
+    player.dailyDate=t;
+    player.dailyWater=0;
+    player.dailyHarvest=0;
+    player.dailyClaimed={water:false,harvest:false};
+    savePlayer();
+  }
+}
+
+/* ============================================================
+   四、初始化
+   ============================================================ */
+async function init(){
+  await openDB();
+
+  player=await pGet('player','player');
+  if(!player){
+    player={id:'player',name:'农场主',level:1,exp:0,coins:300,lastSign:0,createdAt:Date.now()};
+    await pPut('player',player);
+  }
+  checkDailyReset();
+
+  plots=await pGetAll('plots');
+  if(plots.length<PLOT_UNLOCK_LV.length){
+    for(let i=plots.length;i<PLOT_UNLOCK_LV.length;i++){
+      const p={id:i,cropId:null,plantedAt:0,readyAt:0,total:0,soil:'normal',
+               watered:false,fert:false,organic:false,weed:false,pest:false};
+      plots.push(p);await pPut('plots',p);
+    }
+  }
+  plots.sort((a,b)=>a.id-b.id);
+
+  bag={};
+  (await pGetAll('inventory')).forEach(it=>bag[it.itemId]=it.count);
+
+  friends=await pGetAll('friends');
+  if(!friends.length) await initFriends();
+
+  dog=await pGet('player','dog')||{fedUntil:0};
+
+  renderHUD();
+  updatePlots();
+  renderShop();
+  renderFriends();
+  buildSheet();
+
+  setInterval(updatePlots,500);
+  setInterval(tickFriends,20000);
+}
+
+async function initFriends(){
+  friends=[];
+  for(const npc of NPCS){
+    const f={...npc, plots:generateNpcPlots(npc)};
+    friends.push(f);
+    await pPut('friends',f);
+  }
+}
+
+function generateNpcPlots(npc){
+  const pool=Object.keys(CROPS).filter(id=>CROPS[id].lv<=npc.level);
+  const arr=[];
+  const count=npc.style==='short'?4:npc.style==='mixed'?6:9;
+  for(let i=0;i<count;i++){
+    const r=Math.random();
+    let cropId=null, plantedAt=0, readyAt=0, total=0;
+    if(r<0.55){
+      cropId=pool[Math.floor(Math.random()*pool.length)];
+      const c=CROPS[cropId];
+      total=c.grow*1000;
+      plantedAt=Date.now()-Math.random()*total*0.85;
+      readyAt=plantedAt+total;
+    }
+    arr.push({cropId,plantedAt,readyAt,total,stolen:false});
+  }
+  return arr;
+}
+
+/* ============================================================
+   五、存档辅助
+   ============================================================ */
+async function savePlayer(){await pPut('player',player);}
+async function savePlot(p){await pPut('plots',p);}
+async function saveItem(itemId){
+  const count=bag[itemId]||0;
+  if(count<=0){delete bag[itemId];await pDel('inventory',itemId);}
+  else{bag[itemId]=count;await pPut('inventory',{itemId,count});}
+}
+async function addItem(itemId,n){
+  bag[itemId]=(bag[itemId]||0)+n;return saveItem(itemId);
+}
+
+/* ============================================================
+   六、HUD
+   ============================================================ */
+function renderHUD(){
+  document.getElementById('lvText').textContent=player.level;
+  document.getElementById('titleText').textContent=titleOf(player.level);
+  document.getElementById('coinText').textContent=player.coins;
+  document.getElementById('nameText').textContent=player.name;
+  const need=expNeed(player.level);
+  document.getElementById('expFill').style.width=Math.min(100,player.exp/need*100)+'%';
+  document.getElementById('expText').textContent=`${player.exp} / ${need}`;
+  const sc=document.getElementById('subCoins');
+  if(sc)sc.textContent=player.coins;
+}
+
+async function addExp(n){
+  player.exp+=n;
+  let up=false,unlockedMsg=false;
+  while(player.exp>=expNeed(player.level)){
+    player.exp-=expNeed(player.level);
+    const before=unlockedPlots();
+    player.level++;
+    if(unlockedPlots()>before)unlockedMsg=true;
+    up=true;
+  }
+  await savePlayer();renderHUD();
+  if(up){
+    toast(`🎉 升级！现在是 Lv.${player.level} · ${titleOf(player.level)}`,'gold');
+    if(unlockedMsg)setTimeout(()=>toast('🔓 新地块已解锁！'),700);
+    renderShop();
+  }
+}
+
+/* ============================================================
+   七、地块渲染
+   ============================================================ */
+function plotStatus(p){
+  if(!p.cropId)return 'empty';
+  return Date.now()>=p.readyAt?'ripe':'growing';
+}
+
+function updatePlots(){
+  const grid=document.getElementById('plots');
+  if(!grid)return;
+  const now=Date.now();
+  const unlocked=unlockedPlots();
+
+  for(const p of plots){
+    const locked=p.id>=unlocked;
+    const status=locked?'locked':plotStatus(p);
+    const hasWarn=!locked&&p.cropId&&(p.weed||p.pest);
+    const key=`${status}|${p.cropId||''}|${p.watered?1:0}|${p.fert?1:0}|${p.organic?1:0}|${p.weed?1:0}|${p.pest?1:0}|${p.soil}`;
+
+    let dom=plotDom.get(p.id);
+    if(!dom){
+      const el=document.createElement('div');
+      grid.appendChild(el);
+      dom={el,key:null};
+      plotDom.set(p.id,dom);
+    }
+
+    if(dom.key!==key){
+      dom.key=key;
+      dom.el.className='plot'+(locked?' locked':hasWarn?' warn':status==='ripe'?' ripe':status==='growing'?' growing':'');
+      dom.el.innerHTML=plotInner(p,status,locked);
+      dom.bar=dom.el.querySelector('.bar > i');
+      dom.time=dom.el.querySelector('.ptime');
+    }
+
+    if(status==='growing'&&dom.bar){
+      const rem=p.readyAt-now;
+      const pct=Math.max(0,Math.min(100,100*(1-rem/p.total)));
+      dom.bar.style.width=pct+'%';
+      if(dom.time)dom.time.textContent=fmt(rem);
+    }
+  }
+}
+
+function plotInner(p,status,locked){
+  if(locked){
+    return `<div class="plot-lock">🔒</div>
+            <div class="plot-sub">Lv.${PLOT_UNLOCK_LV[p.id]} 解锁</div>`;
+  }
+  if(status==='empty'){
+    return `<div class="plot-emoji empty">🌱</div>
+            <div class="plot-sub">空闲土地</div>
+            <span class="soil-tag ${SOILS[p.soil].cls}">${SOILS[p.soil].tag}</span>
+            <button class="btn small" data-act="plant" data-pid="${p.id}">播 种</button>`;
+  }
+  const c=CROPS[p.cropId];
+  const warnIcons=(p.weed?'🌿':'')+(p.pest?'🐛':'');
+  if(status==='ripe'){
+    return `<div class="plot-emoji">${c.emoji}</div>
+            <div class="plot-name">${c.name} · 成熟</div>
+            ${warnIcons?`<div class="plot-sub" style="color:var(--danger)">${warnIcons} 有状况</div>`:''}
+            <button class="btn small harvest" data-act="harvest" data-pid="${p.id}">收 获</button>`;
+  }
+  return `<div class="plot-emoji">${c.emoji}</div>
+          <div class="plot-name">${c.name}</div>
+          ${warnIcons?`<div class="plot-sub" style="color:var(--danger)">${warnIcons} 需要处理</div>`:''}
+          <div class="bar"><i style="width:0%"></i></div>
+          <div class="ptime"></div>
+          <div class="plot-acts">
+            ${p.weed?`<button class="icon-btn" data-act="weed" data-pid="${p.id}" title="除草">🌿</button>`:''}
+            ${p.pest?`<button class="icon-btn" data-act="pest" data-pid="${p.id}" title="除虫">🐛</button>`:''}
+            ${p.watered?'':`<button class="icon-btn" data-act="water" data-pid="${p.id}" title="浇水 -30%">💧</button>`}
+            ${p.fert?'':`<button class="icon-btn" data-act="fert" data-pid="${p.id}" title="普通化肥">🧪</button>`}
+            ${p.organic?'':`<button class="icon-btn" data-act="organic" data-pid="${p.id}" title="有机化肥">⚗️</button>`}
+          </div>`;
+}
+
+document.getElementById('plots').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-act]');
+  if(!btn)return;
+  const id=Number(btn.dataset.pid),act=btn.dataset.act;
+  if(act==='plant')openPlantModal(id);
+  if(act==='water')waterPlot(id);
+  if(act==='fert')fertPlot(id,'fertilizer');
+  if(act==='organic')fertPlot(id,'organic');
+  if(act==='weed')clearWeed(id);
+  if(act==='pest')clearPest(id);
+  if(act==='harvest')harvestPlot(id);
+});
+
+/* ============================================================
+   八、种植
+   ============================================================ */
+let currentPlotId=null;
+
+function openPlantModal(plotId){
+  currentPlotId=plotId;
+  const p=plots.find(x=>x.id===plotId);
+  const soil=SOILS[p.soil];
+  let cards='';
+  for(const [id,c] of Object.entries(CROPS)){
+    const locked=player.level<c.lv;
+    const have=bag[seedKey(id)]||0;
+    let action;
+    if(locked){action=`<div class="seed-lock">Lv.${c.lv} 解锁</div>`;}
+    else if(have>0){action=`<button class="btn small" data-plant="${id}">种植 ×${have}</button>`;}
+    else{action=`<button class="btn small ghost" data-buyplant="${id}">购买 💰${c.seed}</button>`;}
+    cards+=`<div class="seed-card ${locked?'locked':''}">
+      <div class="seed-emoji">${c.emoji}</div>
+      <div class="seed-name">${c.name}</div>
+      <div class="seed-meta">${fmt(c.grow*1000)}成熟<br>收 ${c.yield[0]}-${c.yield[1]} 个</div>
+      ${action}
+    </div>`;
+  }
+  openModal(`
+    <div class="modal-head">
+      <h3>选择种子 · ${soil.name}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px;padding:0 2px">
+      该地块加成：产量 ×${soil.yieldMul} · 成熟时间 ×${soil.timeMul}
+    </div>
+    <div class="seed-grid">${cards}</div>
+  `);
+}
+
+async function plantCrop(plotId,cropId){
+  const p=plots.find(x=>x.id===plotId);
+  if(!p||p.cropId)return;
+  const c=CROPS[cropId],key=seedKey(cropId);
+  if(!bag[key]||bag[key]<=0){toast('没有这种种子');return;}
+
+  bag[key]--;await saveItem(key);
+
+  const soil=SOILS[p.soil];
+  p.cropId=cropId;
+  p.plantedAt=Date.now();
+  p.total=Math.floor(c.grow*1000*soil.timeMul);
+  p.readyAt=p.plantedAt+p.total;
+  p.watered=false;p.fert=false;p.organic=false;p.weed=false;p.pest=false;
+  await savePlot(p);
+
+  closeModal();updatePlots();refreshSub();
+  toast(`${c.emoji} 种下了 ${c.name}（${soil.name}）`);
+}
+
+async function buyAndPlant(plotId,cropId){
+  const c=CROPS[cropId];
+  if(player.coins<c.seed){toast('金币不足 😥');return;}
+  player.coins-=c.seed;await savePlayer();renderHUD();
+  bag[seedKey(cropId)]=(bag[seedKey(cropId)]||0)+1;
+  await saveItem(seedKey(cropId));
+  await plantCrop(plotId,cropId);
+}
+
+/* ============================================================
+   九、照料
+   ============================================================ */
+async function waterPlot(id){
+  const p=plots.find(x=>x.id===id);
+  if(!p||!p.cropId||p.watered||Date.now()>=p.readyAt)return;
+  const rem=p.readyAt-Date.now();
+  p.readyAt-=Math.floor(rem*0.3);p.watered=true;
+  player.dailyWater=(player.dailyWater||0)+1;
+  await savePlayer();
+  await savePlot(p);updatePlots();refreshSub();
+  toast('💧 浇水成功，生长加速 30%');
+}
+
+async function fertPlot(id,type){
+  const p=plots.find(x=>x.id===id);
+  if(!p||!p.cropId||Date.now()>=p.readyAt)return;
+  const item=ITEMS[type];
+  if((bag[type]||0)<=0){toast(`没有${item.name}了`);return;}
+  if(type==='organic'&&p.organic){toast('这块地已经用过有机化肥了');return;}
+
+  bag[type]--;await saveItem(type);
+
+  if(type==='organic'){
+    p.readyAt=Date.now();p.organic=true;
+    toast('⚗️ 有机化肥生效，作物直接成熟！','gold');
+  }else{
+    const rem=p.readyAt-Date.now();
+    p.readyAt-=Math.floor(rem*0.2);p.fert=true;
+    toast('🧪 普通化肥生效，生长加速 20%');
+  }
+  await savePlot(p);updatePlots();refreshSub();
+}
+
+async function clearWeed(id){
+  const p=plots.find(x=>x.id===id);
+  if(!p||!p.weed)return;
+  if((bag['herbicide']||0)<=0){toast('没有除草剂，去商店买吧');return;}
+  bag['herbicide']--;await saveItem('herbicide');
+  p.weed=false;await savePlot(p);updatePlots();refreshSub();
+  toast('🧴 杂草已清除');
+}
+
+async function clearPest(id){
+  const p=plots.find(x=>x.id===id);
+  if(!p||!p.pest)return;
+  if((bag['pesticide']||0)<=0){toast('没有杀虫剂，去商店买吧');return;}
+  bag['pesticide']--;await saveItem('pesticide');
+  p.pest=false;await savePlot(p);updatePlots();refreshSub();
+  toast('🪲 害虫已清除');
+}
+
+/* ============================================================
+   十、收获
+   ============================================================ */
+async function harvestPlot(id){
+  const p=plots.find(x=>x.id===id);
+  if(!p||!p.cropId||Date.now()<p.readyAt)return;
+
+  const c=CROPS[p.cropId],soil=SOILS[p.soil];
+  let n=randInt(c.yield[0],c.yield[1]);
+  n=Math.floor(n*soil.yieldMul);
+
+  let penalty='';
+  if(p.weed&&Math.random()<0.4){n=Math.floor(n*0.7);penalty+='杂草减产30% ';}
+  if(p.pest&&Math.random()<0.4){n=Math.floor(n*0.7);penalty+='害虫减产30% ';}
+  n=Math.max(1,n);
+
+  await addItem(cropKey(p.cropId),n);
+
+  p.cropId=null;p.plantedAt=0;p.readyAt=0;p.total=0;
+  p.watered=false;p.fert=false;p.organic=false;p.weed=false;p.pest=false;
+  await savePlot(p);
+
+  let exp=c.exp;
+  if(p.soil==='gold')exp=Math.floor(exp*1.28);
+  await addExp(exp);
+
+  player.dailyHarvest=(player.dailyHarvest||0)+1;
+  await savePlayer();
+
+  updatePlots();refreshSub();
+  toast(`收获 ${c.emoji}${c.name} ×${n}　经验 +${exp}${penalty?'（'+penalty.trim()+'）':''}`,'gold');
+}
+
+/* ============================================================
+   十一、商店
+   ============================================================ */
+function renderShop(){
+  const el=document.getElementById('shop');
+  if(!el)return;
+
+  let html='<div class="section-title">🌱 种子</div><div class="list">';
+  for(const [id,c] of Object.entries(CROPS)){
+    const locked=player.level<c.lv;
+    const own=bag[seedKey(id)]||0;
+    html+=`<div class="shop-item ${locked?'locked':''}">
+      <div class="si-emoji">${c.emoji}</div>
+      <div class="si-body">
+        <div class="si-name">${c.name}种子 ${own?`<span style="color:#8a978a;font-weight:400;font-size:11px">· 拥有 ${own}</span>`:''}</div>
+        <div class="si-meta">${fmt(c.grow*1000)}成熟 · 收 ${c.yield[0]}-${c.yield[1]} 个 · 单价 ${c.sell}</div>
+      </div>
+      <button class="btn small ${locked?'':'ghost'}" ${locked?'disabled':''} data-buyseed="${id}">
+        ${locked?'Lv.'+c.lv:'💰 '+c.seed}
+      </button>
+    </div>`;
+  }
+  html+='</div>';
+
+  html+='<div class="section-title">🧪 道具</div><div class="list">';
+  for(const [id,it] of Object.entries(ITEMS)){
+    const own=bag[id]||0;
+    html+=`<div class="shop-item">
+      <div class="si-emoji">${it.emoji}</div>
+      <div class="si-body">
+        <div class="si-name">${it.name} ${own?`<span style="color:#8a978a;font-weight:400;font-size:11px">· 拥有 ${own}</span>`:''}</div>
+        <div class="si-meta">${it.desc}</div>
+      </div>
+      <button class="btn small ghost" data-buyitem="${id}">💰 ${it.price}</button>
+    </div>`;
+  }
+  html+='</div>';
+
+  html+='<div class="section-title">🟫 土地升级</div><div class="list">';
+  for(const [id,s] of Object.entries(SOILS)){
+    if(id==='normal')continue;
+    const locked=player.level<s.unlock;
+    html+=`<div class="shop-item ${locked?'locked':''}">
+      <div class="si-emoji">🟫</div>
+      <div class="si-body">
+        <div class="si-name">${s.name}</div>
+        <div class="si-meta">产量 ×${s.yieldMul} · 时间 ×${s.timeMul}${id==='gold'?' · 经验 ×1.28':''}</div>
+      </div>
+      <button class="btn small ${locked?'':'ghost'}" ${locked?'disabled':''} data-upgrade="${id}">
+        ${locked?'Lv.'+s.unlock:'💰 '+s.cost}
+      </button>
+    </div>`;
+  }
+  html+='</div>';
+
+  el.innerHTML=html;
+}
+
+document.getElementById('shop').addEventListener('click',async e=>{
+  const seedBtn=e.target.closest('[data-buyseed]');
+  if(seedBtn){
+    const id=seedBtn.dataset.buyseed,c=CROPS[id];
+    if(player.coins<c.seed){toast('金币不足 😥');return;}
+    player.coins-=c.seed;await savePlayer();
+    await addItem(seedKey(id),1);
+    renderHUD();renderShop();refreshSub();
+    toast(`购买 ${c.emoji}${c.name}种子 ×1`);
+    return;
+  }
+  const itemBtn=e.target.closest('[data-buyitem]');
+  if(itemBtn){
+    const id=itemBtn.dataset.buyitem,it=ITEMS[id];
+    if(player.coins<it.price){toast('金币不足 😥');return;}
+    player.coins-=it.price;await savePlayer();
+    await addItem(id,1);
+    renderHUD();renderShop();refreshSub();
+    toast(`购买 ${it.emoji}${it.name} ×1`);
+    return;
+  }
+  const upBtn=e.target.closest('[data-upgrade]');
+  if(upBtn){
+    const id=upBtn.dataset.upgrade,s=SOILS[id];
+    if(player.level<s.unlock){toast(`需要 Lv.${s.unlock} 才能升级`);return;}
+    if(player.coins<s.cost){toast('金币不足 😥');return;}
+    openModal(`
+      <div class="modal-head"><h3>升级土地 · ${s.name}</h3><button class="close" data-close>✕</button></div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:14px">
+        将一块<b>普通土地</b>升级为 ${s.name}，消耗 💰${s.cost}。<br>
+        升级后该地块产量 ×${s.yieldMul}，成熟时间 ×${s.timeMul}。
+      </p>
+      <div class="seed-grid">
+        ${plots.filter(p=>p.id<unlockedPlots()&&p.soil==='normal').map(p=>`
+          <button class="btn small ghost" data-applyupgrade="${id}" data-pid="${p.id}" style="width:100%">
+            地块 ${p.id+1}
+          </button>`).join('')||'<p style="font-size:12px;color:var(--muted)">没有可升级的普通土地</p>'}
+      </div>
+    `);
+  }
+});
+
+document.getElementById('modal').addEventListener('click',async e=>{
+  const applyBtn=e.target.closest('[data-applyupgrade]');
+  if(applyBtn){
+    const soilId=applyBtn.dataset.applyupgrade;
+    const pid=Number(applyBtn.dataset.pid);
+    const s=SOILS[soilId];
+    if(player.coins<s.cost){toast('金币不足');return;}
+    const p=plots.find(x=>x.id===pid);
+    if(!p||p.soil!=='normal'||p.cropId){toast('这块地当前无法升级');return;}
+    player.coins-=s.cost;await savePlayer();
+    p.soil=soilId;await savePlot(p);
+    closeModal();renderHUD();renderShop();updatePlots();
+    toast(`🟫 地块 ${pid+1} 升级为 ${s.name}`);
+  }
+});
+
+/* ============================================================
+   十二、邻居 / 偷菜
+   ============================================================ */
+function renderFriends(){
+  const el=document.getElementById('friends');
+  if(!el)return;
+  let html='<div class="section-title">👥 邻居农场</div><div style="padding:0 13px">';
+  for(const f of friends){
+    const ripeCount=f.plots.filter(p=>p.cropId&&!p.stolen&&Date.now()>=p.readyAt).length;
+    html+=`<div class="friend-card">
+      <div class="friend-avatar">${f.avatar}</div>
+      <div class="friend-body">
+        <div class="friend-name">${f.name} <span style="font-weight:400;font-size:11px;color:var(--muted)">Lv.${f.level}</span></div>
+        <div class="friend-meta">${ripeCount>0?`🟡 ${ripeCount} 块地可偷`:'🌱 暂时没有成熟作物'}</div>
+      </div>
+      <div class="friend-actions">
+        <button class="btn small ghost" data-visit="${f.id}">拜访</button>
+      </div>
+    </div>`;
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+document.getElementById('friends').addEventListener('click',e=>{
+  const visitBtn=e.target.closest('[data-visit]');
+  if(visitBtn){openFriendModal(visitBtn.dataset.visit);}
+});
+
+async function openFriendModal(fid){
+  const f=friends.find(x=>x.id===fid);
+  if(!f)return;
+  const now=Date.now();
+  let cards='';
+  for(let i=0;i<f.plots.length;i++){
+    const p=f.plots[i];
+    if(!p.cropId){
+      cards+=`<div class="seed-card locked"><div class="seed-emoji">🟫</div><div class="seed-name">空地</div></div>`;
+      continue;
+    }
+    const c=CROPS[p.cropId];
+    const ripe=now>=p.readyAt;
+    if(ripe&&!p.stolen){
+      cards+=`<div class="seed-card">
+        <div class="seed-emoji">${c.emoji}</div>
+        <div class="seed-name">${c.name}</div>
+        <div class="seed-meta" style="color:var(--green-d);font-weight:600">可偷取</div>
+        <button class="btn small harvest" data-steal="${fid}" data-idx="${i}">偷 1 个</button>
+      </div>`;
+    }else if(p.stolen){
+      cards+=`<div class="seed-card locked"><div class="seed-emoji">${c.emoji}</div><div class="seed-name">${c.name}</div><div class="seed-meta">已被偷过</div></div>`;
+    }else{
+      cards+=`<div class="seed-card"><div class="seed-emoji">${c.emoji}</div><div class="seed-name">${c.name}</div><div class="seed-meta">${fmt(p.readyAt-now)}后成熟</div></div>`;
+    }
+  }
+  openModal(`
+    <div class="modal-head"><h3>${f.avatar} ${f.name} 的农场</h3><button class="close" data-close>✕</button></div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">偷菜会让邻居不高兴，但也是一种社交方式。</div>
+    <div class="seed-grid">${cards}</div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+      <button class="btn ghost small" data-helpfriend="${fid}" style="width:100%">🤝 帮忙打理（+经验）</button>
+    </div>
+  `);
+}
+
+document.getElementById('modal').addEventListener('click',async e=>{
+  const stealBtn=e.target.closest('[data-steal]');
+  if(stealBtn){
+    const fid=stealBtn.dataset.steal;
+    const idx=Number(stealBtn.dataset.idx);
+    const f=friends.find(x=>x.id===fid);
+    if(!f)return;
+    const p=f.plots[idx];
+    if(!p||!p.cropId||p.stolen||Date.now()<p.readyAt)return;
+
+    if(dog.fedUntil>Date.now()&&Math.random()<0.5){
+      toast('🐕 被守护犬发现了！偷菜失败');
+      return;
+    }
+
+    p.stolen=true;
+    await pPut('friends',f);
+
+    const c=CROPS[p.cropId];
+    await addItem(cropKey(p.cropId),1);
+    await addExp(3);
+    closeModal();renderFriends();refreshSub();
+    toast(`偷到 ${c.emoji}${c.name} ×1（经验 +3）`,'gold');
+    return;
+  }
+
+  const helpBtn=e.target.closest('[data-helpfriend]');
+  if(helpBtn){
+    const fid=helpBtn.dataset.helpfriend;
+    const f=friends.find(x=>x.id===fid);
+    if(!f)return;
+    const hasIssue=f.plots.some(p=>p.cropId&&!p.stolen);
+    if(!hasIssue){toast('这位邻居的农场暂时不需要帮忙');return;}
+    await addExp(8);
+    closeModal();
+    toast('🤝 帮邻居打理了农场（经验 +8）');
+  }
+});
+
+async function tickFriends(){
+  for(const f of friends){
+    let changed=false;
+    f.plots.forEach(p=>{
+      if(p.cropId&&p.stolen&&Date.now()-p.readyAt>1000*60*10){
+        p.stolen=false;changed=true;
+      }
+    });
+    if(changed)await pPut('friends',f);
+  }
+}
+
+/* ============================================================
+   十三、底部浮窗（其他）
+   ============================================================ */
+let currentSub=null;
+
+function buildSheet(){
+  const grid=document.getElementById('sheetGrid');
+  grid.innerHTML=SHEET_ITEMS.map(it=>`
+    <button class="sheet-item ${it.ready?'':'locked'}" data-sub="${it.key}">
+      <span class="ico">${it.icon}</span>
+      <span>${it.label}</span>
+    </button>`).join('');
+
+  grid.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-sub]');
+    if(!btn)return;
+    const key=btn.dataset.sub;
+    const item=SHEET_ITEMS.find(x=>x.key===key);
+    if(!item.ready){
+      toast('该功能正在开发中，敬请期待～');
+      return;
+    }
+    closeSheet();
+    setTimeout(()=>openSubpage(key),130);
+  });
+}
+
+function openSheet(){
+  document.getElementById('sheet').classList.add('show');
+}
+function closeSheet(){
+  document.getElementById('sheet').classList.remove('show');
+}
+document.querySelector('[data-close-sheet]').addEventListener('click',closeSheet);
+
+/* ============================================================
+   十四、子页面（全屏）
+   ============================================================ */
+function openSubpage(key){
+  currentSub=key;
+  document.getElementById('subpageTitle').textContent=SUB_TITLES[key]||'功能';
+  document.getElementById('subCoins').textContent=player.coins;
+  const body=document.getElementById('subpageBody');
+  body.scrollTop=0;
+  renderSub(key,body);
+  document.getElementById('subpage').classList.add('show');
+}
+function closeSubpage(){
+  document.getElementById('subpage').classList.remove('show');
+  currentSub=null;
+}
+document.getElementById('subBack').addEventListener('click',closeSubpage);
+
+function refreshSub(){
+  if(currentSub && document.getElementById('subpage').classList.contains('show')){
+    renderSub(currentSub,document.getElementById('subpageBody'));
+    document.getElementById('subCoins').textContent=player.coins;
+  }
+}
+
+function renderSub(key,body){
+  if(key==='bag')           renderBagInto(body);
+  else if(key==='package')  renderPackageInto(body);
+  else if(key==='quests')   renderQuestsInto(body);
+  else if(key==='sign')     renderSignInto(body);
+  else if(key==='dog')      renderDogInto(body);
+  else body.innerHTML=placeholderHtml();
+}
+
+function placeholderHtml(){
+  return `<div class="empty-tip">🚧<br>这个功能还在建设中<br>先专心种地吧～</div>`;
+}
+
+/* ---------- 仓库（农产品） ---------- */
+function renderBagInto(body){
+  const crops=Object.keys(CROPS).filter(id=>(bag[cropKey(id)]||0)>0);
+  if(!crops.length){
+    body.innerHTML=`<div class="empty-tip">🧺<br>仓库里还没有农产品<br>去农场收获一些吧～</div>`;
+    return;
+  }
+  let total=0,rows='';
+  for(const id of crops){
+    const c=CROPS[id],n=bag[cropKey(id)],val=n*c.sell;
+    total+=val;
+    rows+=`<div class="shop-item">
+      <div class="si-emoji">${c.emoji}</div>
+      <div class="si-body">
+        <div class="si-name">${c.name} <span style="color:#8a978a;font-weight:400;font-size:11.5px">×${n}</span></div>
+        <div class="si-meta">单价 ${c.sell} · 共值 ${val} 金币</div>
+      </div>
+      <button class="btn small ghost" data-sell="${id}">卖出</button>
+    </div>`;
+  }
+  body.innerHTML=`
+    <div class="section-title">🧺 农产品</div>
+    <div class="list">${rows}</div>
+    <div style="padding:6px 16px 20px">
+      <button class="btn" style="width:100%" data-sellall>全部卖出（+${total} 💰）</button>
+    </div>`;
+}
+
+/* ---------- 包裹（种子 + 道具） ---------- */
+function renderPackageInto(body){
+  const seeds=Object.keys(CROPS).filter(id=>(bag[seedKey(id)]||0)>0);
+  const items=Object.keys(ITEMS).filter(id=>(bag[id]||0)>0);
+  let html='';
+
+  if(seeds.length){
+    let rows='';
+    for(const id of seeds){
+      const c=CROPS[id];
+      rows+=`<div class="shop-item">
+        <div class="si-emoji">${c.emoji}</div>
+        <div class="si-body">
+          <div class="si-name">${c.name}种子 <span style="color:#8a978a;font-weight:400;font-size:11.5px">×${bag[seedKey(id)]}</span></div>
+          <div class="si-meta">${fmt(c.grow*1000)}成熟 · 需 Lv.${c.lv}</div>
+        </div>
+      </div>`;
+    }
+    html+=`<div class="section-title">🌱 种子</div><div class="list">${rows}</div>`;
+  }
+
+  if(items.length){
+    let rows='';
+    for(const id of items){
+      const it=ITEMS[id];
+      rows+=`<div class="shop-item">
+        <div class="si-emoji">${it.emoji}</div>
+        <div class="si-body">
+          <div class="si-name">${it.name} <span style="color:#8a978a;font-weight:400;font-size:11.5px">×${bag[id]}</span></div>
+          <div class="si-meta">${it.desc}</div>
+        </div>
+      </div>`;
+    }
+    html+=`<div class="section-title">🧪 道具</div><div class="list">${rows}</div>`;
+  }
+
+  body.innerHTML=html||`<div class="empty-tip">🎒<br>包裹空空如也<br>去商店采购种子和道具吧～</div>`;
+}
+
+/* ---------- 任务 ---------- */
+function renderQuestsInto(body){
+  checkDailyReset();
+  const claimed=player.dailyClaimed||{};
+  const waterCount=player.dailyWater||0;
+  const harvestCount=player.dailyHarvest||0;
+
+  const waterDone=waterCount>=5;
+  const harvestDone=harvestCount>=3;
+
+  body.innerHTML=`
+    <div class="section-title">📋 每日任务</div>
+    <div class="list">
+      <div class="shop-item">
+        <div class="si-emoji">💧</div>
+        <div class="si-body">
+          <div class="si-name">勤劳农夫</div>
+          <div class="si-meta">给作物浇水 5 次（${Math.min(5,waterCount)}/5）</div>
+        </div>
+        <button class="btn small ${waterDone&&!claimed.water?'':'ghost'}"
+          ${(waterDone&&!claimed.water)?'':'disabled'} data-quest="water">
+          ${claimed.water?'已领取':'领取'}
+        </button>
+      </div>
+      <div class="shop-item">
+        <div class="si-emoji">🌾</div>
+        <div class="si-body">
+          <div class="si-name">今日丰收</div>
+          <div class="si-meta">收获作物 3 次（${Math.min(3,harvestCount)}/3）</div>
+        </div>
+        <button class="btn small ${harvestDone&&!claimed.harvest?'':'ghost'}"
+          ${(harvestDone&&!claimed.harvest)?'':'disabled'} data-quest="harvest">
+          ${claimed.harvest?'已领取':'领取'}
+        </button>
+      </div>
+    </div>
+
+    <div class="section-title">🏆 成就</div>
+    <div class="list">
+      <div class="shop-item">
+        <div class="si-emoji">🌱</div>
+        <div class="si-body">
+          <div class="si-name">初次丰收</div>
+          <div class="si-meta">完成第一次收获</div>
+        </div>
+        <span style="font-size:12px;color:${player.level>=2?'var(--green-d)':'var(--muted)'}">
+          ${player.level>=2?'✓ 已完成':'未完成'}
+        </span>
+      </div>
+      <div class="shop-item">
+        <div class="si-emoji">🏅</div>
+        <div class="si-body">
+          <div class="si-name">小有积蓄</div>
+          <div class="si-meta">金币达到 1000</div>
+        </div>
+        <span style="font-size:12px;color:${player.coins>=1000?'var(--green-d)':'var(--muted)'}">
+          ${player.coins>=1000?'✓ 已完成':'未完成'}
+        </span>
+      </div>
+    </div>`;
+}
+
+/* ---------- 签到 ---------- */
+function renderSignInto(body){
+  const canSign=!player.lastSign||!sameDay(player.lastSign,Date.now());
+  body.innerHTML=`
+    <div class="section-title">📅 每日签到</div>
+    <div class="list">
+      <div class="shop-item">
+        <div class="si-emoji">🎁</div>
+        <div class="si-body">
+          <div class="si-name">今日签到</div>
+          <div class="si-meta">奖励：50 金币 + 20 经验</div>
+        </div>
+        <button class="btn small ${canSign?'':'ghost'}" ${canSign?'':'disabled'} data-sign>
+          ${canSign?'签 到':'已签到'}
+        </button>
+      </div>
+    </div>
+    <div style="padding:16px 17px;font-size:11.5px;color:var(--muted);line-height:1.9">
+      每天签到一次，日积月累也是一笔不小的收入。<br>
+      连续签到的额外奖励功能正在规划中。
+    </div>`;
+}
+
+/* ---------- 狗窝 ---------- */
+function renderDogInto(body){
+  const active=dog.fedUntil>Date.now();
+  body.innerHTML=`
+    <div class="section-title">🐕 守护犬</div>
+    <div class="list">
+      <div class="shop-item">
+        <div class="si-emoji">🐕</div>
+        <div class="si-body">
+          <div class="si-name">农场守护犬
+            <span style="font-size:11px;color:${active?'var(--green-d)':'var(--danger)'}">
+              · ${active?'守护中':'饥饿'}
+            </span>
+          </div>
+          <div class="si-meta">${active?`剩余守护时间 ${fmt(dog.fedUntil-Date.now())}`:'喂食狗粮后，邻居偷菜有 50% 概率被赶走'}</div>
+        </div>
+        <button class="btn small ghost" data-feeddog>🦴 喂食</button>
+      </div>
+    </div>
+    <div style="padding:16px 17px;font-size:11.5px;color:var(--muted);line-height:1.9">
+      狗粮可以在商店购买。<br>
+      守护犬等级、品种等功能正在规划中。
+    </div>`;
+}
+
+/* ---------- 子页面事件委托 ---------- */
+document.getElementById('subpageBody').addEventListener('click',async e=>{
+  /* 仓库卖出 */
+  const sellBtn=e.target.closest('[data-sell]');
+  if(sellBtn&&currentSub==='bag'){
+    const id=sellBtn.dataset.sell,n=bag[cropKey(id)]||0;
+    if(n<=0)return;
+    player.coins+=n*CROPS[id].sell;
+    bag[cropKey(id)]=0;await saveItem(cropKey(id));
+    await savePlayer();renderHUD();refreshSub();
+    toast(`卖出 ${CROPS[id].emoji}${CROPS[id].name} ×${n}，+${n*CROPS[id].sell} 💰`);
+    return;
+  }
+  if(e.target.closest('[data-sellall]')&&currentSub==='bag'){
+    let total=0;
+    for(const id of Object.keys(CROPS)){
+      const n=bag[cropKey(id)]||0;
+      if(n>0){total+=n*CROPS[id].sell;bag[cropKey(id)]=0;await saveItem(cropKey(id));}
+    }
+    if(total<=0)return;
+    player.coins+=total;await savePlayer();renderHUD();refreshSub();
+    toast(`全部卖出，+${total} 💰`,'gold');
+    return;
+  }
+
+  /* 任务领取 */
+  const q=e.target.closest('[data-quest]');
+  if(q&&currentSub==='quests'){
+    const type=q.dataset.quest;
+    if(!player.dailyClaimed)player.dailyClaimed={};
+    if(player.dailyClaimed[type])return;
+
+    if(type==='water'){
+      if((player.dailyWater||0)<5)return;
+      player.dailyClaimed.water=true;
+      player.coins+=30;
+      await savePlayer();await addExp(10);
+      toast('💧 任务完成，+30 金币 +10 经验','gold');
+    }
+    if(type==='harvest'){
+      if((player.dailyHarvest||0)<3)return;
+      player.dailyClaimed.harvest=true;
+      player.coins+=40;
+      await savePlayer();await addExp(15);
+      toast('🌾 任务完成，+40 金币 +15 经验','gold');
+    }
+    renderHUD();refreshSub();
+    return;
+  }
+
+  /* 签到 */
+  if(e.target.closest('[data-sign]')&&currentSub==='sign'){
+    if(player.lastSign&&sameDay(player.lastSign,Date.now()))return;
+    player.lastSign=Date.now();
+    player.coins+=50;
+    await savePlayer();renderHUD();
+    await addExp(20);
+    refreshSub();
+    toast('📅 签到成功，+50 金币 +20 经验','gold');
+    return;
+  }
+
+  /* 喂狗 */
+  if(e.target.closest('[data-feeddog]')&&currentSub==='dog'){
+    if((bag['dogFood']||0)<=0){toast('没有狗粮，去商店买吧');return;}
+    bag['dogFood']--;await saveItem('dogFood');
+    dog.fedUntil=Date.now()+1000*60*30;
+    await pPut('player',{id:'dog',fedUntil:dog.fedUntil});
+    refreshSub();
+    toast('🐕 守护犬吃饱了，守护农场 30 分钟','gold');
+  }
+});
+
+function sameDay(a,b){
+  const da=new Date(a),db=new Date(b);
+  return da.getFullYear()===db.getFullYear()&&da.getMonth()===db.getMonth()&&da.getDate()===db.getDate();
+}
+
+/* ============================================================
+   十五、弹窗 / Toast / 主导航
+   ============================================================ */
+function openModal(html){
+  const m=document.getElementById('modal');
+  m.innerHTML=`<div class="modal-mask"></div><div class="modal-card">${html}</div>`;
+  m.classList.add('show');
+  m.querySelector('.modal-mask').onclick=closeModal;
+  m.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+}
+function closeModal(){
+  const m=document.getElementById('modal');
+  m.classList.remove('show');m.innerHTML='';
+}
+
+function toast(msg,type=''){
+  const box=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className='toast '+type;el.textContent=msg;
+  box.appendChild(el);
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),280);},1800);
+}
+
+document.querySelectorAll('.tabbar button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    /* 其他：打开底部浮窗 */
+    if(btn.dataset.sheet){
+      openSheet();
+      return;
+    }
+    document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('page-'+btn.dataset.page).classList.add('active');
+    if(btn.dataset.page==='shop')renderShop();
+    if(btn.dataset.page==='farm')updatePlots();
+    if(btn.dataset.page==='friends')renderFriends();
+  });
+});
+
+/* ============================================================
+   十六、启动
+   ============================================================ */
+init().catch(err=>{
+  console.error(err);
+  document.body.innerHTML=`<div style="padding:40px;text-align:center;font-family:sans-serif">
+    <h2>😵 初始化失败</h2><p style="color:#888;margin-top:10px">${err.message}</p>
+  </div>`;
+});
+</script>
+</body>
+</html>

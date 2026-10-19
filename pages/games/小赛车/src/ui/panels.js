@@ -3,7 +3,8 @@
    模式选择页为分层展开：
      单人 / 双人 / 观战 → （双人时）合作 / 对抗 → （合作时）方案 A / B
      单人 / 对抗时另有「驾驶方式」：每人一行 [自主驾驶][前后位][方向位]，
-     选了座位就只开自己那一半，另一半由接管位的 AI 队友负责
+     选了座位就只开自己那一半，另一半由接管位的 AI 队友负责，
+     并可选队友的风格（保守 / 激进）
    观战模式没有玩家车：车辆数量下限 2，标签改为"参赛车辆数量"。
    ========================================================= */
 (function (DRC) {
@@ -15,15 +16,16 @@
   let segMode = null;
   let segTeam = null;
   let segScheme = null;
-  let segSeatAi = null;
+  let segSeatStyle = null;
   let segAi = null;
   let segSound = null;
   let fieldTeam = null;
   let fieldSeat = null;
-  let fieldSeatAi = null;
+  let fieldSeatStyle = null;
   let seatList = null;
   let seatNote = null;
-  let lblSeatAi = null;
+  let lblSeatStyle = null;
+  let styleNote = null;
   let fieldScheme = null;
   let modeNote = null;
   let schemeNote = null;
@@ -168,7 +170,9 @@
       const seat = st.seats[i] | 0;
       if (!seat) continue;
       const who = n > 1 ? 'P' + (i + 1) + ' ' : '你';
-      parts.push(seat === 1 ? who + '管前后，方向交给 AI' : who + '管方向，前后交给 AI');
+      const style = (DRC.DRIVE_STYLES[(st.seatStyle || 1) - 1] || DRC.DRIVE_STYLES[0]).label;
+      parts.push((seat === 1 ? who + '管前后，方向交给' : who + '管方向，前后交给')
+        + 'AI（' + style + '）');
     }
     if (!parts.length) {
       return '每台车都有前后与方向两位驾驶员：自主驾驶两边都自己开，' +
@@ -203,7 +207,7 @@
       seg.onclick = onSeatClick(i);
     }
 
-    fieldSeatAi.classList.toggle('hidden', !assist);
+    fieldSeatStyle.classList.toggle('hidden', !assist);
     seatNote.textContent = seatNoteText(st, n);
   }
 
@@ -261,9 +265,11 @@
     // 驾驶方式：单人 / 双人对抗可拆座位，合作模式两人本来各占一席
     const isSeat = st.mode === 'solo' || st.mode === 'versus';
     fieldSeat.classList.toggle('open', isSeat);
-    // 接管位挡位：无 AI 上车时整块藏起来，免得勾着不用
-    setActive(segSeatAi, String(st.seatAi));
-    lblSeatAi.textContent = (DRC.AI_LEVELS[st.seatAi - 1] || DRC.AI_LEVELS[4]).label;
+    // 协作风格：无 AI 上车时整块藏起来，免得勾着不用
+    setActive(segSeatStyle, String(st.seatStyle));
+    const style = DRC.DRIVE_STYLES[(st.seatStyle || 1) - 1] || DRC.DRIVE_STYLES[0];
+    lblSeatStyle.textContent = style.label.replace(/\s/g, '');
+    styleNote.textContent = style.note;
     if (isSeat) renderSeats(st);
 
     // AI 智能程度：挡位名 + 一句话说明
@@ -331,15 +337,16 @@
     segMode = el('segMode').querySelectorAll('button');
     segTeam = el('segTeam').querySelectorAll('button');
     segScheme = el('segScheme').querySelectorAll('button');
-    segSeatAi = el('segSeatAi').querySelectorAll('button');
+    segSeatStyle = el('segSeatStyle').querySelectorAll('button');
     segAi = el('segAi').querySelectorAll('button');
     segSound = el('segSound').querySelectorAll('button');
     fieldTeam = el('fieldTeam');
     fieldSeat = el('fieldSeat');
-    fieldSeatAi = el('fieldSeatAi');
+    fieldSeatStyle = el('fieldSeatStyle');
     seatList = el('seatList');
     seatNote = el('seatNote');
-    lblSeatAi = el('lblSeatAi');
+    lblSeatStyle = el('lblSeatStyle');
+    styleNote = el('styleNote');
     fieldScheme = el('fieldScheme');
     modeNote = el('modeNote');
     schemeNote = el('schemeNote');
@@ -418,10 +425,10 @@
       };
     }
 
-    // 接管位 AI 强度 1~5（只管坐进玩家另一个座位的队友）
-    for (let i = 0; i < segSeatAi.length; i++) {
-      segSeatAi[i].onclick = function () {
-        game.state.seatAi = Number(this.dataset.v);
+    // 协作驾驶风格 保守 / 激进（只管坐进玩家另一个座位的队友）
+    for (let i = 0; i < segSeatStyle.length; i++) {
+      segSeatStyle[i].onclick = function () {
+        game.state.seatStyle = Number(this.dataset.v);
         sync();
       };
     }

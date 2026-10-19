@@ -5,8 +5,12 @@
    绕行超车时不低于前车速度，直道目标就是尾速满值——离目标远就
    全油门，只有贴近目标时才按差距给"羽油门"，不会在目标附近
    来回全油 / 重刹地抖。
-   技能系数只乘在弯道限速上：新手是"入弯收得早"，不是直道踩不到底。
-   位次补偿（car.boost）同时抬升目标速度与物理限速。
+   弯道限速取两个上限的较小值：转向能力（v = ω × R）与横向抓地
+   （v²/R ≤ 可用的横向加速度）。抓地这一项带两个档案参数：
+   aiGripUse（允许用掉几成抓地）与 aiDriftCap（弯里允许滑到多大滑角），
+   所以保守档在弯里几乎不甩尾，激进档能用漂移换更快的过弯速度。
+   跟车安全距与刹车前视窗口同样由档案决定：保守提前一个刹车点收油、
+   留足车距；激进贴到物理极限才介入。
    跟车安全距由挡位决定（aiFollowBase / aiFollowHead）：挡位越高
    跟得越近、越晚减速；绕行超车期间速度目标锁定正在超的那台车
    （含身侧与略后方），不会半程松油门。
@@ -17,25 +21,43 @@
   const C = DRC.CONFIG;
 
   function decide(car, ctx) {
+    // 贴墙卡死脱困：优先给油朝赛道中心挪，比倒车更快脱身
+    if (car.wallStuck > 0) return 1;
+
     // 倒车中：节流也归前后驾驶员。贴墙倒车降速是基础车辆操作
     // （全速倒车尾部横扫半径大，容易扫到墙），所有挡位都生效
     if (car.reverseTimer > 0) {
       return ctx.wallGap < 60 ? -0.55 : -1;
     }
 
-    // 1) 弯道限速：过弯速度由转向能力决定 v = ω_max × R，
-    //    按 aiCornerMargin 留余量给转向惯性与贴墙修正；
-    //    车头还没对准弯道时再额外收一点，避免一边修正一边冲。
+    // 1) 弯道限速：两个上限取小
+    //    a) 转向能力：v = ω × R，ω = turnRate × 余量 × 车头对准程度 × 技能
+    //    b) 横向抓地：过弯要 v²/R 的横向加速度，而轮胎能给的最大值受
+    //       抓地上限与"允许滑到多大滑角"共同限制——保守档只用六成抓地
+    //       且把滑角压到 0.16rad（远在留胎痕的 0.17 之下），所以它
+    //       在弯里基本不甩；激进档抓地用满、滑角放到 0.64，
+    //       同样的弯能多带三成速度，代价是甩尾掉速
     //    位次补偿只放大直道尾速——弯道物理上限是抓地力决定的，
     //    跟着名次一起放大会让车入弯太快、转向跟不上外抛蹭墙
     let target = C.maxSpeed * car.boost;
     let vCorner = Infinity;
     if (ctx.minRAhead < Infinity) {
-      const align = 1 - 0.22 * DRC.clamp(Math.abs(ctx.angleDiff) / 0.8, 0, 1);
+      const R = ctx.minRAhead;
+      const align = 1 - C.aiAlignLoss * DRC.clamp(Math.abs(ctx.angleDiff) / 0.8, 0, 1);
       // 技能系数只作用在弯道：新手"不敢压极限"是入弯收油，
       // 不是直道也跑不到全速。乘在整个 target 上会让低挡位的车
       // 在直路上永远只到全速的 72%~88%，看起来就是不敢踩
-      vCorner = C.turnRate * ctx.minRAhead * C.aiCornerMargin * align * car.skill;
+      const vSteer = C.turnRate * R * C.aiCornerMargin * align * car.skill;
+
+      // 抓地上限按 vSteer 处的抓地折算（v 越小抓地越足），再除以
+      // 允许的滑角：横向加速度 = 刚度 × 滑角，两者取小
+      const grip = C.lateralGrip
+        * (1 - C.lateralGripFalloff * DRC.clamp(vSteer / C.maxSpeed, 0, 1))
+        * C.aiGripUse;
+      const latAllow = Math.min(C.lateralStiff * Math.max(0.05, C.aiDriftCap), grip);
+      const vGrip = Math.sqrt(latAllow * R);
+
+      vCorner = Math.min(vSteer, vGrip);
       if (vCorner < target) target = vCorner;
     }
 
@@ -80,6 +102,17 @@
     if (ctx.headingToWall > 0.3 && ctx.wallGap < 40) {
       const vWall = C.maxSpeed * 0.55 * DRC.clamp(ctx.wallGap / 40, 0.2, 1);
       if (vWall < target) target = vWall;
+    }
+
+    // 3.5) 打转自救：侧滑角已经很大时先收油。车快横过来了还在给油，
+    //      只会越转越快、越转越偏——低档位的反应间隔长，这种局面
+    //      靠转向驾驶员是救不回来的（它下一次决策可能还在 0.3s 之后）。
+    //      收油把横向力还给轮胎，行驶方向才有机会被拽回车头。
+    //      这不改变任何档案的性格，只是"车要翻了别加油"。
+    const spun = DRC.clamp((Math.abs(car.slip) - 0.40) / 0.35, 0, 1);
+    if (spun > 0) {
+      const vSpun = C.maxSpeed * (1 - 0.6 * spun);
+      if (vSpun < target) target = vSpun;
     }
 
     // 4) 落地：离目标远就全油；接近目标时按差距给"羽油门"。

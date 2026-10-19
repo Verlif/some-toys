@@ -224,6 +224,18 @@
     ctx.translate(car.x, car.y);
     ctx.rotate(car.angle);
 
+    // 刹车点头 + 漂移侧倾：前者是重量前移，后者是车顺着侧滑方向"歪"。
+    // 轮胎印只在后轮，车身若还端端正正就看不出是在甩——这一下
+    // 让"打方向会甩出去"、"踩刹车车会点头"在画面上立刻成立
+    if (car.pitch > 0.01) {
+      const d = car.pitch;
+      ctx.transform(1 - d * 0.09, 0, 0, 1, 0, car.len * 0.05 * d);
+    }
+    if (Math.abs(car.slip) > 0.01) {
+      const lean = DRC.clamp(car.slip * 0.9, -0.24, 0.24) * (0.45 + 0.55 * car.drift);
+      ctx.transform(1, 0, Math.sin(lean), 1, 0, 0);
+    }
+
     // 阴影
     ctx.fillStyle = 'rgba(0,0,0,0.38)';
     DRC.roundRect(ctx, -hl + 3, -hw + 5, m.len, m.wid, 8);

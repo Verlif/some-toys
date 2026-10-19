@@ -466,11 +466,18 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 4px 16px rgba(23, 150, 180, 0.35);
 }
 
-/* 五挡位（AI 智能程度）：按钮更窄，字号与间距收紧 */
+/* 五挡位（AI 对手智能程度）：按钮更窄，字号与间距收紧 */
 .seg-5 button {
   padding: 11px 2px;
   font-size: 12.5px;
   letter-spacing: 0;
+}
+
+/* 两挡位（协作驾驶风格）：按钮更宽更透气 */
+.seg-2 button {
+  padding: 11px 10px;
+  font-size: 14px;
+  letter-spacing: 2px;
 }
 
 /* ---------------- 驾驶方式（每个玩家一行） ---------------- */

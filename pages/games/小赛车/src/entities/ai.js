@@ -20,6 +20,8 @@
    共享感知在两位驾驶员之间只算一次：
      · angleDiff   瞄准点偏差（瞄准点已向弯心内切，过弯走线更短，
                    叠走线偏好 / 绕行外移 / 并排避让，并限幅在路面内）
+     · velAngle    行驶方向：车头朝向 ≠ 行驶方向是漂移的本质，转向
+                   驾驶员要按它修正而不是按车头修
      · minRAhead   刹车窗口内的最小曲率半径（提前减速的依据）
      · blocker     车头前方最近的占道车
      · neighbor    并排最近的车（横向分离，防起步互切与超车侧擦；
@@ -27,6 +29,12 @@
      · pass        绕行超车期间正在超的那台车（含身侧与略后方）
      · rear        正后方最近的车（倒车避让）
      · wallGap / headingToWall  与两侧墙的关系
+
+   两种协作风格（DRC.DRIVE_STYLES，由 Game.useAiProfile 套进 CONFIG）：
+     · 保守：弯心内切权重压到 0.26 = 几乎走中线；只用六成抓地，
+             弯道限速把速度压到远低于漂移线，所以基本不甩尾
+     · 激进：弯心内切拉到 1.34 倍 + 横向限幅放到 0.78 半宽 = 钳形
+             最短路线；抓地用满，能漂就漂，几乎不主动收油
 
    协调器还保留两项安全覆盖（绕过驾驶员的反应间隔）：
      · 倒车时后方有车 → hold 住不倒
@@ -66,7 +74,8 @@
    * @param {Array} cars 全部车辆（含自己）
    * @param {?{lat:number, look:number, win:number}} jitter 世界观偏差
    *   （最低挡专用：两位驾驶员各算各的，对赛道的理解还不一样）
-   * @returns {{spd:number, angleDiff:number, minRAhead:number,
+   * @returns {{spd:number, aimX:number, aimY:number, velAngle:number,
+   *            angleDiff:number, minRAhead:number,
    *            blocker:?{ahead:number, side:number, speed:number},
    *            neighbor:?{ahead:number, side:number},
    *            rear:?{behind:number, side:number},
@@ -148,10 +157,14 @@
     // 再叠两份"个性"：lineBias 是每台车开局 roll 的固定走线偏好
     // （有的偏内有的偏外，不是全场压着中线跑）；otSide 是超车绕行
     // 方向（要超车就往外线切，把内线让给前车）
+    // 内切权重由驾驶档案决定：保守档压到 0.26 以下≈关掉内切走中线，
+    // 激进档拉到 1.34 让它贴着弯心极限切——两者都乘进 lineBias，
+    // 所以保守档连"自己的走线偏好"也一并收掉
     const apex = DRC.clamp(
       DRC.normAngle(s[(near + 26) % n].ang - s[(near + 6) % n].ang), -1.3, 1.3);
-    let bias = apex * 0.32 * C.trackHalfWidth + j.lat
-      + car.lineBias * C.trackHalfWidth * 0.4
+    const cut = C.aiLineWeight;
+    let bias = apex * 0.32 * C.trackHalfWidth * cut + j.lat
+      + car.lineBias * C.trackHalfWidth * 0.4 * cut
       + (car.otSide || 0) * 0.42 * C.trackHalfWidth;
 
     // 并排横向避让也作用在瞄准点上：只靠转向打舵压不住瞄准追踪——
@@ -186,8 +199,10 @@
 
     // 瞄准点不能超出路面：内切 + 走线 + 绕行 + 避让叠满时最深能到
     // ±137px，比墙面还靠外——车会直奔墙去（低速绕行撞墙的主因）。
-    // 收到 72% 半宽内：留足车身与墙的距离，绕行该有的外移照样有
-    bias = DRC.clamp(bias, -0.72 * C.trackHalfWidth, 0.72 * C.trackHalfWidth);
+    // 收到 aiLineRange 倍半宽内：留足车身与墙的距离，绕行该有的外移
+    // 照样有。激进档放到 0.78（几乎用满路宽去切钳形线），
+    // 保守档收到 0.44（贴着中线，连绕行外移都收敛）
+    bias = DRC.clamp(bias, -C.aiLineRange * C.trackHalfWidth, C.aiLineRange * C.trackHalfWidth);
 
     const aimX = tgt.x + tgt.nx * bias;
     const aimY = tgt.y + tgt.ny * bias;
@@ -196,8 +211,10 @@
     const angleDiff = DRC.normAngle(desired - car.angle);
 
     // 刹车窗口内的最小曲率半径：窗口覆盖"从现在减速到过弯"所需的距离，
-    // 只要窗口里藏着更急的弯，现在就开始收油
-    const win = Math.floor((16 + spd * 0.055) * j.win);
+    // 只要窗口里藏着更急的弯，现在就开始收油。窗口长度由档案决定——
+    // 保守档把窗口拉长 1.45 倍，等于提前一个刹车点就开始收油；
+    // 激进档收到 0.82，几乎是贴着弯才刹车
+    const win = Math.floor((16 + spd * 0.055) * C.aiBrakeWindow * j.win);
     let minRAhead = Infinity;
     for (let k = 4; k <= win; k += 4) {
       const r = localRadius(s, (near + k) % n);
@@ -205,11 +222,14 @@
     }
 
     // 与墙的关系（墙在沥青 + 红白缓冲带之外）
+    // headingToWall 用的是行驶方向而不是车头朝向：漂移时车尾已经甩出去了，
+    // 车头看着没顶墙，屁股可能早就蹭上了
     const sample = s[near];
     const sign = car.lat >= 0 ? 1 : -1;
     const limit = C.trackHalfWidth + C.bufferWidth - car.wid * 0.5;
     const wallGap = limit - Math.abs(car.lat);
-    const headingToWall = (hx * sample.nx + hy * sample.ny) * sign;
+    const headingToWall =
+      (Math.cos(car.velAngle) * sample.nx + Math.sin(car.velAngle) * sample.ny) * sign;
 
     // 记下本帧的并排对象与侧偏距离，供下一帧算横向接近速度
     car.nbName = neighbor ? neighbor.name : null;
@@ -217,6 +237,12 @@
 
     return {
       spd: spd,
+      // 瞄准点（转向驾驶员直接拿它算期望行驶方向）
+      aimX: aimX,
+      aimY: aimY,
+      // 行驶方向（不是车头朝向）：有惯性的车上这两者会分开，
+      // 转向驾驶员必须修正行驶方向才能真的走在那条线上
+      velAngle: car.velAngle,
       angleDiff: angleDiff,
       minRAhead: minRAhead,
       blocker: blocker,
@@ -231,24 +257,43 @@
   /**
    * 受阻判定：方向踩满却推不动、且前方有车或贴墙，就安排一次倒车。
    * 这是两位驾驶员共享的"共识"，避免一人狂踩油门一人干瞪眼。
+   *
+   * 贴墙时倒车只会继续蹭——那本来是给"被车顶住"准备的。所以贴墙
+   * 卡死改为直接朝赛道中心给油：低速下转向权限本来就小，
+   * 车头朝哪转就往哪挪，慢但一定能挪出来。漂移模型之前撞墙后
+   * 车头基本朝着路面方向，一路倒车就能退回去；现在车可能整台横在
+   * 墙里（侧滑角上百度），倒车只会把车尾也塞进墙，必须换成前进。
    */
   function updateStuck(car, ctx, dt) {
+    // 倒车也可能是"卡在墙里出不来"：车整台横过来之后，倒车脱困会
+    // 把它按在墙上打转（车头永远对不上路面方向）。所以这里看的是
+    // "贴墙 + 推不动"这个事实本身，不在乎当前是给油还是倒车
+    const wedged = ctx.wallGap < 26 && ctx.spd < C.aiStuckSpeed;
     if (car.reverseTimer > 0) {
       car.reverseTimer -= dt;
-      car.stuckTimer = 0;
+      car.stuckTimer = wedged ? car.stuckTimer + dt : 0;
+      // 倒车 0.9s 到了还是贴墙不动 → 换前进脱困，否则永远出不来
+      if (car.reverseTimer <= 0 && wedged) {
+        car.wallStuck = C.aiReverseTime;
+        car.throttlePlan = 1;
+      }
       return;
     }
 
     const pushing = ctx.spd < C.aiStuckSpeed && car.throttlePlan > 0.5;
     const blocked = (ctx.blocker !== null && ctx.blocker.ahead < 64) || ctx.wallGap < 26;
 
-    if (pushing && blocked) car.stuckTimer += dt;
+    if (pushing && blocked || wedged) car.stuckTimer += dt;
     else car.stuckTimer = 0;
 
     if (car.stuckTimer > 0.55) {
       car.stuckTimer = 0;
-      car.reverseTimer = C.aiReverseTime;
-      car.throttlePlan = -1;                     // 立即生效，不等下一次决策
+      if (ctx.wallGap < 26) {
+        car.wallStuck = C.aiReverseTime;         // 贴墙卡死：改用前进脱困
+      } else {
+        car.reverseTimer = C.aiReverseTime;
+        car.throttlePlan = -1;                    // 立即生效，不等下一次决策
+      }
     }
   }
 
@@ -321,18 +366,34 @@
    * 最低挡专用：两位驾驶员各自的世界观偏差。
    * 偏差每隔 0.4~0.8s 重抽一次——持续一小会儿，两个人才会稳定地
    * "各管各的"（一个瞄左一个刹早），而不是每帧随机抽搐。
+   *
+   * 偏差幅度由 aiJitterRange 封顶。加漂移之前它只影响走线好不好看；
+   * 现在它直接乘进速度方向的修正里——油门按 A 的弯道算、转向按 B 的
+   * 弯道算，两套指令天生对不上，车会在中线上左右横甩。原来的 ±20 /
+   * 前视 ±2 / 窗口 0.8~1.2 实测太狠：60 秒只能跑 9km，等于开不出赛。
+   * 收窄到 ±7 之后"完全没有默契"依然看得出来（撞墙多、圈速慢），
+   * 但车还是能跑完全程——档位定位是"菜"，不是"动不了"。
    */
   function rollJitter(car, dt) {
     const j = car.jitter;
+    const cap = C.aiJitterRange;
     j.ct -= dt;
     if (j.ct <= 0) {
       j.ct = DRC.rnd(0.4, 0.8);
-      j.t = { lat: DRC.rnd(-20, 20), look: Math.round(DRC.rnd(-2, 2)), win: DRC.rnd(0.8, 1.2) };
+      j.t = {
+        lat: DRC.rnd(-cap, cap),
+        look: Math.round(DRC.rnd(-1, 1)),
+        win: DRC.rnd(0.88, 1.12),
+      };
     }
     j.cs -= dt;
     if (j.cs <= 0) {
       j.cs = DRC.rnd(0.4, 0.8);
-      j.s = { lat: DRC.rnd(-20, 20), look: Math.round(DRC.rnd(-2, 2)), win: DRC.rnd(0.8, 1.2) };
+      j.s = {
+        lat: DRC.rnd(-cap, cap),
+        look: Math.round(DRC.rnd(-1, 1)),
+        win: DRC.rnd(0.88, 1.12),
+      };
     }
   }
 
@@ -353,6 +414,7 @@
 
     // 感知：中高挡位共享一次，两位驾驶员看同一个世界；
     // 最低挡不共享——各算各的，且各自对赛道形状有随机理解偏差
+    // （偏差幅度由 rollJitter 里的 aiJitterRange 限制，理由见那里）
     let ctxT, ctxS;
     if (C.aiSharedSense) {
       ctxT = ctxS = sense(car, track, cars);
@@ -373,14 +435,31 @@
     // 玩家车的接管位同样算"车上有 AI 在开"，照吃这份补偿
     updateRankBoost(car, dt);
 
+    // 兜底：长时间原地打转就强制救援。
+    // 低挡位"完全没有默契"在有惯性之后可能演变成自锁——两个人各按各的
+    // 理解操作，指令互相抵消，车在原地反复横甩（实测 60 秒只跑 3km）。
+    // 这不该是"菜"的一部分，菜是慢和撞墙，不是动不了。
+    // 检测方式：连续 1.5s 速度都低于 90 且没有前进，就直接安排一次倒车
+    if (ctxT.spd < 90 && car.reverseTimer <= 0 && car.wallStuck <= 0) {
+      car.idleTimer += dt;
+      if (car.idleTimer > 1.5) {
+        car.idleTimer = 0;
+        car.reverseTimer = 1.0;
+        car.throttlePlan = -1;
+      }
+    } else {
+      car.idleTimer = 0;
+    }
+
     // 倒车脱困与掉头恢复都要靠油门执行：AI 不管油门时整段跳过，
     // 否则会出现「玩家踩着油门，AI 却按倒车逻辑打方向」的错乱
     if (!steerOnly) {
       updateStuck(car, ctxT, dt);
+      if (car.wallStuck > 0) car.wallStuck -= dt;
 
       // 掉头 / 打横恢复：车头偏离赛道方向超过约 86° 且速度起不来时，
       // 倒车把车头摆回来——硬着头皮开只会横向滑墙
-      if (car.reverseTimer > 0) {
+      if (car.reverseTimer > 0 || car.wallStuck > 0) {
         car.spinTimer = 0;
       } else {
         if (Math.abs(ctxT.angleDiff) > 1.5 && ctxT.spd < 160) car.spinTimer += dt;

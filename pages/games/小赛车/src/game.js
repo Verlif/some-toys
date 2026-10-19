@@ -5,7 +5,8 @@
         空格切鸟瞰总览，A/D 或 ←/→ 切换跟随车辆）
    驾驶方式（solo / versus）：每台车有前后与方向两位驾驶员，
         玩家可自主驾驶（两边都自己开），也可以只坐一个座位，
-        另一个座位由指定挡位的 AI 接管（见 seatOf / useAiLevel）
+        另一个座位由 AI 队友接管——队友的风格取自「保守 / 激进」
+        两挡（见 seatStyle / useAiProfile）
    ========================================================= */
 (function (DRC) {
   'use strict';
@@ -21,6 +22,7 @@
 
       this.cam = new DRC.Camera();
       this.effects = new DRC.Particles();
+      this.tireMarks = new DRC.TireMarks();
 
       this.state = {
         scene: 'menu',
@@ -30,10 +32,10 @@
         // 驾驶方式（单人 / 双人对抗）：0 自主 / 1 前后位 / 2 方向位，
         // 下标 = 玩家序号；选了座位就把另一个座位交给 AI 队友
         seats: [0, 0],
-        seatAi: 5,           // 接管位 AI 的挡位（1~5，与 NPC 的 aiLevel 互相独立）
+        seatStyle: 2,        // 接管位队友的风格：1 保守 / 2 激进
         npcCount: 3,
         totalLaps: 3,
-        aiLevel: 3,           // AI 智能程度挡位 1~5（DRC.AI_LEVELS）
+        aiLevel: 3,           // 全场 NPC 的智能程度挡位 1~5（DRC.AI_LEVELS）
         time: 0,
         countdown: 0,
         countdownKind: 'start',  // start = 开赛，resume = 暂停恢复
@@ -53,7 +55,7 @@
       this.players = [];
       this.order = [];
       this.animTime = 0;
-      this._aiLevel = 0;        // 当前套在 CONFIG 里的 AI 挡位（见 useAiLevel）
+      this._profile = null;    // 当前套在 CONFIG 里的驾驶档案（见 useAiProfile）
       this._cdNum = 0;         // 倒计时音效已响到哪一步（3 / 2 / 1）
       this._chime = 0;         // 玩家冲线时刻（结算和弦据此顺延）
     }
@@ -85,6 +87,7 @@
       this.players = [];
       this.order = [];
       this.effects.clear();
+      this.tireMarks.clear();
       this.cam.reset();
       DRC.Input.reset();
       DRC.UI.show('panelMain');
@@ -147,14 +150,15 @@
       this._cdNum = 0;          // 倒计时音效的当前步（0 = 尚未响）
       this._chime = 0;          // 玩家冲线时刻（结算音效据此顺延）
 
-      // 应用 AI 智能程度挡位：把所选挡位的参数写进 CONFIG，
+      // 应用全场 NPC 的智能程度挡位：把所选挡位的参数写进 CONFIG，
       // ai.js / ai-throttle.js / ai-steer.js 直接读，无需逐层传参。
       // 这里只用来 roll 每台 AI 的固有技能系数；正式跑起来时每台车
-      // 会在思考前套用自己的挡位（见 useAiLevel），NPC 与接管位互不干扰
+      // 会在思考前套用自己的档案（见 useAiProfile），NPC 与接管位互不干扰
       DRC.applyAiLevel(st.aiLevel);
 
       // 使用选择页里预览的那条赛道，不再重新生成
       this.effects.clear();
+      this.tireMarks.clear();
       this.cars = [];
       this.players = [];
       this.order = [];
@@ -209,9 +213,11 @@
         car.nearIdx = idx;
         car.lat = lat;
         car.skill = isPlayer ? 1 : DRC.rnd(CONFIG.aiSkill[0], CONFIG.aiSkill[1]);
-        // 每台车的 AI 挡位：NPC 用设置页选的挡位，玩家车的接管位用自己的挡位，
-        // 自主驾驶的玩家车没有 AI 上车（0）。思考前由 useAiLevel 套进 CONFIG
-        car.aiLevel = isPlayer ? (seat ? st.seatAi : 0) : st.aiLevel;
+        // 驾驶档案：NPC 用设置页选的全场挡位，玩家车的接管位用
+        // 保守 / 激进两挡之一；自主驾驶的玩家车没有 AI 上车（0）。
+        // 思考前由 useAiProfile 把对应档案套进 CONFIG
+        car.aiLevel = (isPlayer || isCoop) ? 0 : st.aiLevel;
+        car.driveStyle = (isPlayer && seat) ? st.seatStyle : 0;
         // 每台车 roll 一条自己的走线偏好（相对半宽）：有的偏内有的偏外，
         // 不是全场压着中线跑
         car.lineBias = isPlayer ? 0 : DRC.rnd(-CONFIG.aiLineBias, CONFIG.aiLineBias);
@@ -221,7 +227,7 @@
       }
 
       this.order = DRC.Race.updateRanks(this.cars);
-      this._aiLevel = 0;              // 新一局：下帧思考前重新套用挡位
+      this._profile = null;            // 新一局：下帧思考前重新套用档案
       this.cam.reset();
       DRC.Input.reset();
       DRC.UI.hideAll();
@@ -344,15 +350,24 @@
       if (st.mode === 'coop') return '双人合作 · ' + DRC.COOP_SCHEMES[st.coopScheme].label;
       if (st.mode === 'solo') {
         const s = this.seatOfPlayer(0);
-        return '单人' + (s ? ' · 协作（' + DRC.DRIVE_SEATS[s].label + '）' : '');
+        return '单人' + (s ? ' · 协作（' + DRC.DRIVE_SEATS[s].label
+          + ' · AI ' + this.styleLabel(st.seatStyle) + '）' : '');
       }
-      // 双人对抗：两人各自独立选座位，只把选了座位的写进 meta
+      // 双人对抗：两人各自独立选座位，只把选了座位的写进 meta。
+      // 风格是全局一个设置，所以两位队友共用同一个（与原来的「接管位强度」一致）
       const a = this.seatOfPlayer(0);
       const b = this.seatOfPlayer(1);
       if (!a && !b) return '双人对抗';
-      return '双人对抗 · ' +
-        'P1 ' + (a ? DRC.DRIVE_SEATS[a].label : '自主') + ' / ' +
-        'P2 ' + (b ? DRC.DRIVE_SEATS[b].label : '自主');
+      const tag = (seat) => seat
+        ? DRC.DRIVE_SEATS[seat].label + ' · AI ' + this.styleLabel(st.seatStyle)
+        : '自主';
+      return '双人对抗 · P1 ' + tag(a) + ' / P2 ' + tag(b);
+    }
+
+    /** 协作驾驶风格的短名（保守 / 激进） */
+    styleLabel(style) {
+      const s = DRC.DRIVE_STYLES[(style || 1) - 1] || DRC.DRIVE_STYLES[0];
+      return s.label.replace(/\s/g, '');
     }
 
     /**
@@ -370,15 +385,19 @@
     }
 
     /**
-     * 思考某台车前套用它的 AI 挡位。CONFIG 里的 ai* 参数是全局的，
-     * 一场比赛里 NPC 与玩家接管位可能不同挡，所以按车切换——
-     * 同一挡位连续思考时不必重复写
+     * 思考某台车前套用它的驾驶档案。CONFIG 里的 ai* 参数是全局的，
+     * 一场比赛里 NPC 与玩家接管位可能用不同档案，所以按车切换——
+     * 同一个档案连续思考时不必重复写
+     * @param {DRC.Car} car
      */
-    useAiLevel(car) {
-      const lvl = car.aiLevel || 3;
-      if (this._aiLevel === lvl) return;
-      this._aiLevel = lvl;
-      DRC.applyAiLevel(lvl);
+    useAiProfile(car) {
+      const key = car.driveStyle
+        ? 's' + car.driveStyle
+        : 'l' + (car.aiLevel || 3);
+      if (this._profile === key) return;
+      this._profile = key;
+      if (car.driveStyle) DRC.applyDriveStyle(car.driveStyle);
+      else DRC.applyAiLevel(car.aiLevel || 3);
     }
 
     /** 按当前模式读取玩家操作意图 */
@@ -396,6 +415,7 @@
 
       this.animTime += dt;
       this.effects.update(dt);
+      this.tireMarks.update(dt);      // 胎痕淡出与场景无关，暂停 / 结算时也照常老化
 
       if (st.scene === 'race') {
         if (st.phase === 'countdown') {
@@ -455,7 +475,7 @@
               steer = inp.steer;
             } else {
               // 协作驾驶：自己那一轴来自键盘，另一个座位由 AI 队友出
-              this.useAiLevel(c);
+              this.useAiProfile(c);
               const ai = DRC.AI.think(c, this.track, cars, dt, DRC.DRIVE_SEATS[seat].role);
               if (seat === 1) {          // 玩家管前后，AI 管方向
                 throttle = inp.throttle;
@@ -466,7 +486,7 @@
               }
             }
           } else {
-            this.useAiLevel(c);
+            this.useAiProfile(c);
             const inp = DRC.AI.think(c, this.track, cars, dt);
             throttle = inp.throttle;
             steer = inp.steer;
@@ -483,6 +503,12 @@
       for (let i = 0; i < cars.length; i++) {
         DRC.Collision.constrainToTrack(cars[i], this.track, this.effects, this.cam);
         cars[i].tick(dt);
+      }
+
+      // 3.5 漂移取样：胎痕与轮胎烟都从这一步出来。
+      //     放在碰撞之后：撞墙时车已经被推回路面，擦出来的痕才不会画到墙里
+      for (let i = 0; i < cars.length; i++) {
+        this.tireMarks.sample(cars[i], this.effects);
       }
 
       // 4) 圈数与排名

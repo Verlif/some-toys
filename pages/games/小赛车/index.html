@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>双人赛车 · 随机赛道对战</title>
+<title>双座漂移 · 惯性协作竞速</title>
 <link rel="stylesheet" href="styles/base.css">
 <link rel="stylesheet" href="styles/panels.css">
 </head>
@@ -15,14 +15,16 @@
 
   <!-- 主菜单 -->
   <div class="panel" id="panelMain">
-    <h1>双人赛车</h1>
-    <p class="sub">单人竞速 · 双人同屏 · 硬墙碰撞</p>
+    <h1>双 座 漂 移</h1>
+    <p class="sub">惯性漂移 · 协作驾驶 · 随机赛道</p>
     <button class="btn primary" id="btnStart">开 始 游 戏</button>
     <p class="hint">
       单人：<b>WASD</b> 或 <b>方向键</b> 均可驾驶<br>
       双人合作：两人分工控制同一台车<br>
       双人对抗：P1 <b>WASD</b> · P2 <b>方向键</b><br>
-      协作驾驶：单人或对抗时只坐一个座位，另一个座位交给 AI<br>
+      协作驾驶：单人或对抗时只坐一个座位，另一个座位交给 AI
+      （<b>保守</b> 帮你稳住 / <b>激进</b> 相信你）<br>
+      高速打方向会甩尾，留下胎痕；行进中踩 <b>S</b> 也会<br>
       观战：AI 全自动 · <b>空格</b> 鸟瞰总览 · <b>A/D</b> 切换跟随<br>
       Esc / P 暂停比赛
     </p>
@@ -61,16 +63,13 @@
           <div class="seat-list" id="seatList"></div>
           <div class="field-note" id="seatNote"></div>
         </div>
-        <div class="field" id="fieldSeatAi">
-          <div class="field-label">接管位 AI 强度 <span id="lblSeatAi">赛车手</span></div>
-          <div class="seg seg-5" id="segSeatAi">
-            <button type="button" data-v="1">新 手</button>
-            <button type="button" data-v="2">入 门</button>
-            <button type="button" data-v="3">普 通</button>
-            <button type="button" data-v="4">老 练</button>
-            <button type="button" data-v="5" class="active">赛车手</button>
+        <div class="field" id="fieldSeatStyle">
+          <div class="field-label">AI 队友风格 <span id="lblSeatStyle">激进</span></div>
+          <div class="seg seg-2" id="segSeatStyle">
+            <button type="button" data-v="1">保 守</button>
+            <button type="button" data-v="2" class="active">激 进</button>
           </div>
-          <div class="field-note">与「AI 智能程度」互不影响：那一挡只管坐进你另一个座位的队友</div>
+          <div class="field-note" id="styleNote"></div>
         </div>
       </div>
     </div>
@@ -103,7 +102,7 @@
     </div>
 
     <div class="field">
-      <div class="field-label">AI 智能程度 <span id="lblAi">普通</span></div>
+      <div class="field-label">AI 对手智能程度 <span id="lblAi">普通</span></div>
       <div class="seg seg-5" id="segAi">
         <button type="button" data-v="1">新 手</button>
         <button type="button" data-v="2">入 门</button>
@@ -181,6 +180,7 @@
 <script src="src/world/camera.js"></script>
 <!-- 实体 -->
 <script src="src/entities/particles.js"></script>
+<script src="src/entities/tire-marks.js"></script>
 <script src="src/entities/car.js"></script>
 <script src="src/entities/ai-throttle.js"></script>
 <script src="src/entities/ai-steer.js"></script>

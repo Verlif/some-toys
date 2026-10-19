@@ -1,0 +1,54 @@
+/* ============================================================
+   base.css —— 全局重置、设计令牌、排版基线
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --green: #4caf50;
+  --green-d: #35833a;
+  --green-l: #7cc576;
+  --bg: #eef3e9;
+  --card: #fff;
+  --text: #22301f;
+  --muted: #8a978a;
+  --gold: #f0a92e;
+  --line: #e3e9dd;
+  --radius: 16px;
+  --danger: #e05a4e;
+  /* 顶栏实际高度由 ui/hud.js 量出来写回，这里给一个兜底值，
+     避免 JS 尚未执行时依赖它的吸附定位失效 */
+  --hud-h: 64px;
+}
+
+html,
+body {
+  height: 100%;
+  user-select: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  background-image:
+    radial-gradient(circle at 15% 0%, #f7fbf2 0%, transparent 45%),
+    radial-gradient(circle at 90% 100%, #e8f0e0 0%, transparent 50%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+/* 应用外壳：内容最大宽度 + 底部导航留白 */
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding-bottom: calc(78px + env(safe-area-inset-bottom));
+  min-height: 100%;
+}

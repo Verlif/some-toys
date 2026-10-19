@@ -16,12 +16,13 @@
     ctx.stroke();
   }
 
-  /** 协作驾驶的座位小标：'AI 方向' / 'AI 前后'（自主驾驶返回空串） */
+  /** 协作驾驶的座位小标：'AI 方向 · 保守' / 'AI 前后 · 激进'（自主驾驶返回空串） */
   function seatTag(st, idx) {
     if (st.mode !== 'solo' && st.mode !== 'versus') return '';
     const s = (st.seats || [])[idx] | 0;
     if (!s) return '';
-    return s === 1 ? 'AI 方向' : 'AI 前后';
+    const style = (DRC.DRIVE_STYLES[(st.seatStyle || 1) - 1] || DRC.DRIVE_STYLES[0]).label;
+    return (s === 1 ? 'AI 方向' : 'AI 前后') + ' · ' + style.replace(/\s/g, '');
   }
 
   /** 左上：两名玩家的圈数与名次 */
@@ -200,6 +201,17 @@
         ctx.fillStyle = p.color;
         DRC.roundRect(ctx, barX, base - 7, barW * ratio, 6, 3);
         ctx.fill();
+      }
+
+      // 漂移时速度条尾部烧一小段琥珀色，并挂一个「漂移」小标——
+      // 甩尾是纯手感反馈，不看地面胎痕也要知道自己正在滑
+      if (p.drift > 0) {
+        ctx.fillStyle = 'rgba(255,209,102,' + (0.35 + p.drift * 0.55).toFixed(2) + ')';
+        DRC.roundRect(ctx, barX, base - 7, barW * ratio, 6, 3);
+        ctx.fill();
+        ctx.font = '800 9.5px ' + FONT;
+        ctx.fillStyle = '#ffd166';
+        ctx.fillText('漂 移', barX, base - 11);
       }
 
       ctx.textAlign = 'right';

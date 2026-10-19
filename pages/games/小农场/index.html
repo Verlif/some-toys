@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#327f37">
+  <title>🌾 阳光牧场 · 文字版</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+
+  <link rel="stylesheet" href="./styles/base.css">
+  <link rel="stylesheet" href="./styles/components.css">
+  <link rel="stylesheet" href="./styles/layout.css">
+  <link rel="stylesheet" href="./styles/animations.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="hud">
+    <button class="hud-bar" id="hudToggle" aria-expanded="false">
+      <span class="hud-user">
+        <span class="avatar">🧑‍🌾</span>
+        <span class="hud-id">
+          <span class="hud-name" id="nameText">农场主</span>
+          <span class="hud-lv">Lv.<span id="lvText">1</span> · <span id="titleText">新手农夫</span></span>
+        </span>
+      </span>
+      <span class="hud-coins">💰 <span id="coinText">0</span></span>
+      <span class="hud-caret">▾</span>
+    </button>
+
+    <!-- 展开层：绝对定位，不会把下面的土地区域挤走 -->
+    <div class="hud-detail" id="hudDetail" hidden>
+      <div class="hud-detail-grid">
+        <div class="hud-cell"><span class="k">当前称号</span><span class="v" id="dTitle">新手农夫</span></div>
+        <div class="hud-cell"><span class="k">距离下一称号</span><span class="v" id="dNextTitle">田间好手</span></div>
+        <div class="hud-cell"><span class="k">升级进度</span><span class="v" id="dExp">0 / 36</span></div>
+        <div class="hud-cell"><span class="k">地块</span><span class="v" id="dPlots">6 / 40</span></div>
+        <div class="hud-cell"><span class="k">连续签到</span><span class="v" id="dStreak">0 天</span></div>
+        <div class="hud-cell"><span class="k">图鉴收集</span><span class="v" id="dCodex">0 / 145</span></div>
+      </div>
+      <div class="hud-detail-tip">轻点顶栏收起</div>
+    </div>
+  </header>
+
+  <main>
+    <section id="page-farm" class="page active"><div class="grid" id="plots"></div></section>
+    <section id="page-friends" class="page"><div id="friends"></div></section>
+    <section id="page-shop" class="page"><div id="shop"></div></section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-page="farm" class="active"><span>🌱</span>农场</button>
+    <button data-page="friends"><span>👥</span>邻居</button>
+    <button data-page="shop"><span>🏪</span>商店</button>
+    <button data-sheet><span>☰</span>其他</button>
+  </nav>
+</div>
+
+<!-- 底部浮窗：更多功能 -->
+<div id="sheet">
+  <div class="sheet-mask" data-close-sheet></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">更多功能</div>
+    <div class="sheet-grid" id="sheetGrid"></div>
+  </div>
+</div>
+
+<!-- 子页面（底部上滑的全屏面板） -->
+<div id="subpage">
+  <div class="sheet-handle"></div>
+  <div class="subpage-head">
+    <h3 id="subpageTitle">功能</h3>
+    <div class="sub-coins">💰 <span id="subCoins">0</span></div>
+    <button class="close" id="subBack" aria-label="关闭">✕</button>
+  </div>
+  <div class="subpage-body" id="subpageBody"></div>
+</div>
+
+<!-- 模态弹窗（与子页面同一套底部上滑交互） -->
+<div id="modal">
+  <div class="modal-mask" data-close></div>
+  <div class="modal-card"></div>
+</div>
+<div id="toasts"></div>
+
+<!-- 进入邻居页时的离线结算等待画面 -->
+<div id="simOverlay" hidden>
+  <div class="sim-card">
+    <div class="sim-emoji">🧑‍🌾</div>
+    <div class="sim-title">邻居们正在farm……</div>
+    <div class="sim-bar"><i></i></div>
+    <div class="sim-label">0%</div>
+    <div class="sim-detail"></div>
+  </div>
+</div>
+
+<noscript>
+  <p style="padding:40px;text-align:center">本游戏需要启用 JavaScript。</p>
+</noscript>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
