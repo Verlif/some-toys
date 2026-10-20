@@ -135,8 +135,10 @@ function soilPanel() {
 /**
  * 藏宝图面板。
  *
- * 五档图的价格与等级门槛写死在 data/adventure.js，
- * 「种子 ≤ Lv.N」就是挖到的种子上限（要求等级 + 10）。
+ * 五档图的价格与等级门槛写死在 data/adventure.js。
+ * 两个等级标签必须区分清楚，之前只写一个「Lv.10」很容易被读成「可挖到 Lv.10」：
+ *   🏡 农场≥Lv.10  → 买这张图需要的农场等级
+ *   🌱 种子≤Lv.20  → 挖到的种子上限
  */
 function mapPanel() {
   const rows = MAP_TIERS.map((map) => {
@@ -149,13 +151,14 @@ function mapPanel() {
           <div class="si-name">${map.name} ${owned ? `<span class="si-own">· 拥有 ${owned}</span>` : ''}</div>
           <div class="si-meta seed-meta">
             <span class="meta-tag steps">👣 ${map.swipes} 步</span>
-            <span class="meta-tag yield">🌱 ≤Lv${map.shopSeedCap}</span>
+            <span class="meta-tag lv">🏡 农场≥Lv${map.unlock}</span>
+            <span class="meta-tag yield">🌱 种子≤Lv${map.shopSeedCap}</span>
             <span class="meta-tag special">✨ 限定×3</span>
           </div>
         </div>
         <button class="btn small ${locked ? '' : 'ghost'}" ${locked ? 'disabled' : ''}
                 data-action="map-buy" data-id="${map.tier}">
-          ${locked ? `Lv.${map.unlock}` : `💰 ${map.price}`}
+          ${locked ? `需 Lv.${map.unlock}` : `💰 ${map.price}`}
         </button>
       </div>`;
   }).join('');
@@ -240,8 +243,7 @@ function syncTabFromScroll(panels) {
 }
 
 /** 切到指定 tab */
-function switchTab(key) {
-  const root = byId('shop');
+function switchTab(key) {  const root = byId('shop');
   const panels = root?.querySelector('.shop-panels');
   if (!panels) return;
 
@@ -259,6 +261,19 @@ function switchTab(key) {
 }
 
 /* ---------- 种子详情：数量 + 购买 ---------- */
+
+/**
+ * 外部跳转入口：先记住要打开哪个 tab，再让 activatePage 触发渲染。
+ * 播种弹窗要「去买种子」、冒险页要「去买藏宝图」，都走这里，
+ * 不用把 activeTab 暴露出去。
+ * @param {string} key seed / item / soil / map
+ */
+export function setShopTab(key) {
+  if (!TABS.some((t) => t.key === key)) return;
+  activeTab = key;
+  // 换了 tab 就该从该面板顶部看起
+  keepPanelScroll = false;
+}
 
 /** 单次购买的数量上限，防止按住加号一路刷到天价 */
 const MAX_QTY = 99;

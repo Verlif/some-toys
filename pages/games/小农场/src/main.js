@@ -21,6 +21,7 @@ import { mountTabs, activatePage, currentPage } from './ui/tabs.js';
 import { mountFarm, renderFarm } from './ui/views/farm.js';
 import { mountShop, renderShop } from './ui/views/shop.js';
 import { mountFriends, renderFriends } from './ui/views/friends.js';
+import { mountNews, renderNews } from './ui/views/news.js';
 
 /** 地块倒计时刷新间隔 */
 const TICK_MS = 500;
@@ -41,12 +42,14 @@ async function boot() {
   mountFarm();
   mountShop();
   mountFriends();
+  mountNews();
   mountTabs();
 
   renderHud();
   renderFarm();
   renderShop();
   renderFriends();
+  renderNews();
   activatePage('farm');
 
   // 子页面顶部的金币与内容跟随状态变化

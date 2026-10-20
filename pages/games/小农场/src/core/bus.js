@@ -23,6 +23,8 @@ export const EVENTS = {
   CODEX: 'state:codex',
   /** 守护犬等宠物状态变化 */
   PETS: 'state:pets',
+  /** 时报有新的大新闻 */
+  NEWS: 'state:news',
   /** 领域层请求弹一条提示，由 UI 层的 toast 组件消费 */
   NOTIFY: 'ui:notify',
   /** 请求切换主页面，payload 为页面名（farm / friends / shop） */

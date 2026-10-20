@@ -94,6 +94,25 @@
 .plot-sub { font-size: 11px; color: var(--muted); }
 .plot-lock { font-size: 24px; opacity: .48; }
 
+/* 产量加成角标：钉在左上角，不参与正文排版，
+   这样地块上的操作按钮不会被多出来的一行文字挤下去 */
+.plot-corner {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 1;
+  padding: 3px 6px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  pointer-events: none;
+}
+.plot-corner.b1, .np-boost.b1 { background: #6aa84f; }
+.plot-corner.b2, .np-boost.b2 { background: #e0912f; }
+.plot-corner.b3, .np-boost.b3 { background: #d1483f; }
+
 .plot-acts {
   display: flex;
   gap: 5px;
@@ -603,6 +622,7 @@
 /* 统一高度：所有邻居地格子都是这个高度，
    按钮用 margin-top:auto 顶到底部，多几个按钮也不会把卡片撑高 */
 .npc-plot {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -635,6 +655,42 @@
 .np-acts .icon-btn { flex: 0 0 auto; width: 27px; height: 27px; font-size: 13px; }
 .npc-plot.care { border-color: #f2b8b2; background: #fffaf9; }
 .npc-plot .np-meta.ripe-meta { color: #a07818; font-weight: 700; }
+
+/* 角落标记：左上角产量加成，右上角「这一轮不能再偷」的原因 */
+.np-corner {
+  position: absolute;
+  top: 5px;
+  z-index: 1;
+  padding: 3px 5px;
+  border-radius: 7px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+.np-boost { left: 5px; color: #fff; }
+.np-flag {
+  right: 5px;
+  font-size: 10px;
+  background: rgba(255, 255, 255, .9);
+  border: 1px solid #e6ddc8;
+  padding: 2px 4px;
+}
+.np-flag.guarded { border-color: #cbaee8; background: #f7f1ff; }
+
+/* 一键照料条：有道具时才有内容，空的时候整行收起来 */
+.npc-quick { display: flex; gap: 8px; margin: 10px 0 2px; }
+.npc-quick:empty { display: none; }
+.npc-quick .btn { flex: 1 1 0; min-width: 0; font-size: 11.5px; }
+.npc-quick .tool-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: #8a978a;
+  background: #f2f6ee;
+  border-radius: 99px;
+  padding: 1px 5px;
+  margin-left: 4px;
+}
 
 .npc-foot {
   margin-top: 14px;
@@ -1433,3 +1489,29 @@
   line-height: 1.9;
 }
 .dog-facts b { color: var(--green-d); }
+
+/* ---------- 时报 ---------- */
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.news-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 13px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.news-emoji { font-size: 18px; line-height: 1.25; flex: 0 0 auto; }
+.news-body { min-width: 0; }
+.news-text { font-size: 12.5px; color: #3c4a39; line-height: 1.55; }
+.news-when { font-size: 10.5px; color: #a8b3a5; margin-top: 3px; }
+.news-foot {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 16px 0 8px;
+}

@@ -23,6 +23,9 @@ import {
   BOOST_CAP,
   CARE_JITTER,
   DETAILED_WINDOW,
+  DOG_FOOD_PRICE,
+  DOG_FOOD_SATIETY,
+  DOG_SATIETY_MAX,
   LOG_LIMIT,
   MAX_VISITS_PER_NPC,
   PERSONALITIES,
@@ -34,8 +37,10 @@ import {
   emptyNpcPlot,
   expectedGapMs,
   nextVisitAt,
+  npcDogSatietyAt,
   npcGrowMs,
   npcStartCoins,
+  rollNpcDogSatiety,
   rollNpcLevel,
   dogCatchChance,
   shuffled,
@@ -87,6 +92,9 @@ export function normalizeNpc(npc, fallback) {
   npc.lastVisitAt = safeNum(npc.lastVisitAt, 0);
   npc.nextVisitAt = safeNum(npc.nextVisitAt, 0);
   npc.log ??= [];
+  // 守护犬是后加的：老邻居没有这两个字段，开局给一个随机饱腹度
+  npc.dogSatiety = safeNum(npc.dogSatiety, rollNpcDogSatiety());
+  npc.dogAt = safeNum(npc.dogAt, npc.lastVisitAt || Date.now());
 
   npc.plots = (npc.plots || []).map((p) => {
     const plot = { ...emptyNpcPlot(), ...p };
@@ -96,6 +104,7 @@ export function normalizeNpc(npc, fallback) {
     }
     plot.boost = safeNum(plot.boost, 0);
     plot.harvested = safeNum(plot.harvested, 0);
+    plot.guarded = Boolean(plot.guarded);
     return plot;
   });
   return npc;
@@ -154,6 +163,10 @@ function actHarvest(npc, at) {
       plot.plantedAt = at;
       plot.readyAt = at + regrow;
       plot.total = regrow;
+      // 进入新一轮：被偷过的标记与守护犬的封锁都该清掉
+      plot.stolen = false;
+      plot.stolenCount = 0;
+      plot.guarded = false;
     }
     acted = true;
   }
@@ -190,6 +203,7 @@ function actPlant(npc, at) {
     plot.stolenAt = 0;
     plot.stolen = false;
     plot.stolenCount = 0;
+    plot.guarded = false;
     plot.boost = 0;
     // 邻居也会遇到缺水与生虫，这是玩家能插手的地方
     plot.waterAt = at + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
@@ -221,6 +235,33 @@ function actTend(npc, at) {
 
   gainExp(npc, 6 * tended);
   return { emoji: '🧹', text: `打理了 ${tended} 块地，浇了水也除了虫`, exp: 0 };
+}
+
+/**
+ * 给守护犬添食。
+ *
+ * 邻居的狗不是摆设：饱腹度低了它自己也会被偷。喂不喂由性格决定 ——
+ * 性格里「打理」的权重同时代表顾家的程度，热心/勤勉的邻居几乎不会让狗饿着，
+ * 悠闲/爱占便宜的基本想不起来。
+ *
+ * @returns {?{emoji: string, text: string, exp: number}}
+ */
+function actFeedDog(npc, at) {
+  const satiety = npcDogSatietyAt(npc, at);
+  if (satiety > 60) return null;
+
+  const weights = PERSONALITIES[npc.personality].weights;
+  if (Math.random() >= Math.min(0.55, weights.tend * 0.13)) return null;
+  if (npc.coins < DOG_FOOD_PRICE) return null;
+
+  npc.coins -= DOG_FOOD_PRICE;
+  npc.dogSatiety = Math.min(DOG_SATIETY_MAX, satiety + DOG_FOOD_SATIETY);
+  npc.dogAt = at;
+  return {
+    emoji: '🦴',
+    text: `给守护犬添了食，饱腹度 ${Math.round(npc.dogSatiety)}%`,
+    exp: 0,
+  };
 }
 
 /**
@@ -267,6 +308,7 @@ function actSteal(npc, neighbours, farm, at) {
     if (satiety > 0 && Math.random() < dogCatchChance(satiety)) {
       farm.caught += 1;
       farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了（饱腹 ${Math.round(satiety)}%）`);
+      farm.news?.(at, '🐕', `${npc.name} 溜进你的农场想顺菜，被守护犬赶了出来`);
       return { emoji: '🐕', text: '溜进 农场主 家想顺菜，被守护犬赶了出来', exp: 0 };
     }
   }
@@ -283,6 +325,10 @@ function actSteal(npc, neighbours, farm, at) {
   if (isPlayer) {
     farm.stolen += 1;
     farm.log(at, '🥷', `${npc.name} 来你的农场，顺走了 ${crop.emoji}${crop.name} ×1`);
+    farm.news?.(at, '🥷', `${npc.name} 溜进你的农场，顺走了 ${crop.emoji}${crop.name}`);
+  } else {
+    // 邻居之间的偷菜是时报最喜欢的素材
+    farm?.news?.(at, '🥷', `${npc.name} 从 ${owner.name} 家顺走了 ${crop.emoji}${crop.name}`);
   }
 
   return {
@@ -361,6 +407,11 @@ function runVisit(npc, neighbours, at, record, farm) {
   const weights = PERSONALITIES[npc.personality].weights;
   const want = randInt(ACTIONS_PER_VISIT[0], ACTIONS_PER_VISIT[1]);
   const seen = new Set();
+  const levelBefore = npc.level;
+
+  // 先把狗的饱腹度结算到这一刻：喂不喂、还剩多少，都以这个数为准
+  npc.dogSatiety = npcDogSatietyAt(npc, at);
+  npc.dogAt = at;
 
   for (let i = 0; i < want; i += 1) {
     let action = weightedPick(weights);
@@ -382,6 +433,10 @@ function runVisit(npc, neighbours, at, record, farm) {
     if (record && planted) log(npc, at, planted.emoji, planted.text);
   }
 
+  // 顺手喂狗：饿着的时候才想起来，具体喂不喂看性格
+  const fed = actFeedDog(npc, at);
+  if (record && fed) log(npc, at, fed.emoji, fed.text);
+
   // 顺菜与串门帮忙不受性格权重的名额限制 —— 上线再忙也可能顺一手
   const stolen = actSteal(npc, neighbours, farm, at);
   if (record && stolen) log(npc, at, stolen.emoji, stolen.text);
@@ -396,7 +451,16 @@ function runVisit(npc, neighbours, at, record, farm) {
     if (trip && record) {
       const net = trip.net >= 0 ? `赚了 ${formatCoins(trip.net)}` : `亏了 ${formatCoins(-trip.net)}`;
       log(npc, at, '🗺️', `买了${trip.map.name}去寻宝，${net} 💰`);
+      // 赚回图价以上才算「大奖」，亏本的不配上时报
+      if (trip.net >= trip.map.price) {
+        farm?.news?.(at, '💰', `${npc.name} 寻宝挖到大奖，一张${trip.map.name}赚了 ${formatCoins(trip.net)} 💰`);
+      }
     }
+  }
+
+  // 农场升级也是新闻：一晚上涨好几级的时候只报最终等级
+  if (record && npc.level > levelBefore) {
+    farm?.news?.(at, '🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`);
   }
 
   npc.lastVisitAt = at;
@@ -459,6 +523,12 @@ function bulkAdvance(npc, until) {
 
   npc.lastVisitAt = until;
   npc.nextVisitAt = nextVisitAt(npc, until);
+
+  // 远期没有逐次会话，狗的状态给一个「像那么回事」的值：
+  // 顾家的邻居更可能记得喂，悠闲的基本任它饿着
+  const weights = PERSONALITIES[npc.personality].weights;
+  npc.dogSatiety = Math.min(DOG_SATIETY_MAX, 20 + weights.tend * 12);
+  npc.dogAt = until;
 }
 
 /* ============================================================

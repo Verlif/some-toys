@@ -11,7 +11,7 @@ import { state } from '../../store/state.js';
 import * as farm from '../../store/farm.js';
 import { count } from '../../store/inventory.js';
 import { CROPS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
-import { FERTILIZER_IDS, ITEMS } from '../../data/items.js';
+import { FERTILIZER_IDS, ITEMS, PESTICIDE_ID, SPRINKLER_ID } from '../../data/items.js';
 import { SOILS } from '../../data/soils.js';
 import { PLOT_UNLOCK_LV } from '../../data/progression.js';
 import { seedId } from '../../data/keys.js';
@@ -65,20 +65,25 @@ function careButtonsHTML(plot) {
   return out.join('');
 }
 
-/** 产量加成提示 */
+/**
+ * 产量加成角标：钉在地块左上角，不占正文的流。
+ * 10~30% 绿、40~60% 橙、70~100% 金红 —— 一眼看出这块地攒了多少加成。
+ */
 function boostHTML(plot) {
   if (!plot.boost) return '';
-  return `<div class="plot-sub boost-text">产量 +${Math.round(plot.boost * 100)}%</div>`;
+  const pct = Math.round(plot.boost * 100);
+  const tier = Math.min(3, Math.ceil(pct / 30));
+  return `<span class="plot-corner b${tier}" title="捉虫带来的产量加成">+${pct}%</span>`;
 }
 
 function growingHTML(plot) {
   const crop = CROPS[plot.cropId];
   return `
+    ${boostHTML(plot)}
     <div class="plot-emoji" data-role="stage">${crop.emoji}</div>
     <div class="plot-name">${crop.name}</div>
     <div class="plot-sub" data-role="phase"></div>
     ${careWarnHTML(plot)}
-    ${boostHTML(plot)}
     <div class="bar"><i style="width:0%"></i></div>
     <div class="ptime"></div>
     <div class="plot-acts">
@@ -91,11 +96,11 @@ function ripeHTML(plot) {
   const crop = CROPS[plot.cropId];
   const left = crop.harvests - (plot.harvested || 0);
   return `
+    ${boostHTML(plot)}
     <div class="plot-emoji">${crop.emoji}</div>
     <div class="plot-name">${crop.name} · 成熟</div>
     <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
     ${careWarnHTML(plot)}
-    ${boostHTML(plot)}
     <div class="plot-acts ripe-acts">${careButtonsHTML(plot)}</div>
     <button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收 获</button>`;
 }
@@ -181,6 +186,49 @@ export function renderFarm() {
   }
 
   grid.classList.toggle('dense', unlocked > DENSE_THRESHOLD);
+  renderFarmTools();
+}
+
+/**
+ * 底部的一键照料条。
+ *
+ * 只有背包里真有洒水器 / 杀虫剂时才出现；按钮上的数字是「待处理块数」，
+ * 后面的 ×N 是道具存量。数量或需求数没变就不重建 DOM，
+ * 否则 500ms 一次的心跳会把正在按的按钮换掉。
+ */
+let toolsKey = '';
+
+function renderFarmTools() {
+  const el = byId('farmTools');
+  if (!el) return;
+
+  const water = count(SPRINKLER_ID);
+  const pest = count(PESTICIDE_ID);
+  if (!water && !pest) {
+    if (toolsKey) {
+      toolsKey = '';
+      el.hidden = true;
+      el.innerHTML = '';
+      document.body.classList.remove('has-farm-tools');
+    }
+    return;
+  }
+
+  const now = Date.now();
+  const needWater = state.plots.filter((p) => farm.needsWater(p, now)).length;
+  const needPest = state.plots.filter((p) => farm.needsPest(p, now)).length;
+  const key = `${water}|${pest}|${needWater}|${needPest}`;
+  if (key === toolsKey) return;
+  toolsKey = key;
+
+  el.hidden = false;
+  document.body.classList.add('has-farm-tools');
+  el.innerHTML = [
+    water ? `<button class="tool-btn" data-action="water-all" ${needWater ? '' : 'disabled'}>
+      🚿 一键浇水${needWater ? `（${needWater} 块）` : '· 暂无需求'} <span class="tool-count">×${water}</span></button>` : '',
+    pest ? `<button class="tool-btn" data-action="pest-all" ${needPest ? '' : 'disabled'}>
+      🧴 一键杀虫${needPest ? `（${needPest} 块）` : '· 暂无需求'} <span class="tool-count">×${pest}</span></button>` : '',
+  ].join('');
 }
 
 /** 取（或创建）某个地块的 DOM 节点 */
@@ -304,7 +352,8 @@ function openPlantModal(plotId) {
   `, async (action, el) => {
     if (action === 'go-shop') {
       closeModal();
-      emit(EVENTS.NAVIGATE, 'shop');
+      // 买种子：直接落在种子 tab，不用玩家再点一次
+      emit(EVENTS.NAVIGATE, { page: 'shop', tab: 'seed' });
       return;
     }
     if (action === 'plant' && await farm.plant(plotId, el.dataset.crop)) closeModal();
@@ -373,12 +422,25 @@ const PLOT_ACTIONS = {
   harvest: (id) => farm.harvest(id),
 };
 
+/** 底部一键照料按钮：与地块上的单块操作是两套入口 */
+const FARM_TOOL_ACTIONS = {
+  'water-all': () => farm.waterAll(),
+  'pest-all': () => farm.catchPestAll(),
+};
+
 export function mountFarm() {
   grid = byId('plots');
 
   delegate(grid, 'click', '[data-action]', (el) => {
     PLOT_ACTIONS[el.dataset.action]?.(Number(el.dataset.id));
   });
+
+  const tools = byId('farmTools');
+  if (tools) {
+    delegate(tools, 'click', '[data-action]', (el) => {
+      FARM_TOOL_ACTIONS[el.dataset.action]?.(el);
+    });
+  }
 
   on(EVENTS.PLAYER, renderFarm);
   on(EVENTS.FARM, renderFarm);

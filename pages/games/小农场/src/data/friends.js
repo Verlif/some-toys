@@ -9,7 +9,8 @@
  * 都不影响他们的节奏；进度由「上次结算时间 → 现在」的时间差补算出来。
  */
 import { CROPS } from './crops.js';
-import { randInt } from '../core/utils.js';
+import { ITEMS } from './items.js';
+import { randInt, safeNum } from '../core/utils.js';
 
 /* ---------- 性格：决定上线时各行为的权重 ---------- */
 export const PERSONALITIES = {
@@ -219,6 +220,28 @@ export function dogCatchChance(satiety) {
   return 0.15 + ratio * 0.55;
 }
 
+/** 邻居给狗添一次食要花的钱：和玩家买一份狗粮同价 */
+export const DOG_FOOD_PRICE = ITEMS.dogFood.price;
+
+/** 邻居家的狗开局时的饱腹度：有的刚喂过，有的已经饿了一阵 */
+export const rollNpcDogSatiety = () => randInt(0, 70);
+
+/**
+ * 某位邻居的狗在 at 时刻的饱腹度。
+ *
+ * 和玩家的狗用同一套「存快照 + 按小时衰减」的算法，
+ * 所以邻居离线再久也不会一直满饱腹地替他看着农场。
+ *
+ * @param {object} npc
+ * @param {number} at
+ * @returns {number} 0~100
+ */
+export function npcDogSatietyAt(npc, at) {
+  const satiety = safeNum(npc.dogSatiety, 0);
+  const hours = Math.max(0, (at - safeNum(npc.dogAt, 0)) / HOUR);
+  return Math.max(0, Math.min(DOG_SATIETY_MAX, satiety - hours * DOG_SATIETY_DECAY));
+}
+
 /** 每个邻居保留的操作记录条数（玩家页最多显示 10 条） */
 export const LOG_LIMIT = 10;
 
@@ -346,6 +369,8 @@ export const emptyNpcPlot = () => ({
   stolen: false,
   /** 本轮被偷走了多少个 */
   stolenCount: 0,
+  /** 本轮被守护犬拦下过：整座农场都不能再偷 */
+  guarded: false,
   boost: 0,
   waterAt: 0,
   pestAt: 0,

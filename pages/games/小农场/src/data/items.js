@@ -1,14 +1,25 @@
 /**
  * 道具表。
  *
- * fert     是否为肥料类道具（作用于地块）
+ * fert     是否为肥料类道具（作用于单块地）
  * minutes  普通化肥固定缩短的分钟数（有机化肥不用这个字段）
  * instant  直接成熟（每块地每轮限用 1 次）
+ * all      'water' / 'pest'：一次作用于整座农场的一次性道具
  *
  * 普通化肥拆成五档：30 分钟 / 1 / 2 / 6 / 18 小时，价格随档位递增。
  * 一小时的档位便宜、随手就能撒，18 小时档贵但能救一株快熟的高价作物。
  * 有机化肥（一键成熟）随之提价 —— 否则它比任何一档都便宜，其余档位就白设计了。
+ *
+ * 洒水器 / 杀虫剂是「省手」道具：整座农场一次处理完，只消耗 1 个。
+ * 它们不改变单块地的效果，只是把点十几下变成点一下。
  */
+
+/** 一键浇水道具的 id */
+export const SPRINKLER_ID = 'sprinkler';
+
+/** 一键杀虫道具的 id */
+export const PESTICIDE_ID = 'pesticide';
+
 export const ITEMS = {
   fertilizer: { name: '普通化肥 30分', emoji: '🧪', price: 60,   desc: '成熟时间 −30 分钟', fert: true, minutes: 30 },
   fert1h:     { name: '普通化肥 1时',  emoji: '🧪', price: 110,  desc: '成熟时间 −1 小时',  fert: true, minutes: 60 },
@@ -17,6 +28,8 @@ export const ITEMS = {
   fert18h:    { name: '普通化肥 18时', emoji: '🧪', price: 1300, desc: '成熟时间 −18 小时', fert: true, minutes: 1080 },
   organic:    { name: '有机化肥',      emoji: '⚗️', price: 1800, desc: '直接成熟（每块地限用 1 次）', fert: true, instant: true },
   dogFood:    { name: '狗粮',          emoji: '🦴', price: 50,   desc: '喂养守护犬，饱腹度 +45%', fert: false },
+  [SPRINKLER_ID]: { name: '洒水器', emoji: '🚿', price: 200, desc: '一次性：给整座农场所有缺水的地浇水', fert: false, all: 'water' },
+  [PESTICIDE_ID]: { name: '杀虫剂', emoji: '🧴', price: 200, desc: '一次性：给整座农场所有生虫的地捉虫', fert: false, all: 'pest' },
 };
 
 /** 商店道具渲染顺序 */

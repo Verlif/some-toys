@@ -14,6 +14,8 @@ import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { MAP_TIERS, buildRun, describeReward, mapTier } from '../data/adventure.js';
 import { mapId, seedId } from '../data/keys.js';
+import { formatCoins } from './npc-sim.js';
+import { addNews } from './news.js';
 import { notify } from './notify.js';
 
 /** 当前正在进行的冒险，null 表示没在冒险 */
@@ -112,6 +114,12 @@ export async function finishRun() {
   player.addLog('🏁', earned.length
     ? `寻宝结束，带回 ${earned.length} 份奖励（约值 ${value} 💰）`
     : '寻宝结束，两手空空地回来了');
+
+  // 大赚要上电视：跑一趟拿回的价值超过图价两倍才算「大奖」
+  const map = MAP_TIERS.find((m) => m.tier === run.tier);
+  if (map && value > map.price * 2) {
+    addNews('💰', `你在${map.name}里挖到大奖，带回约 ${formatCoins(value)} 的奖励`);
+  }
 
   run = null;
   await persist();

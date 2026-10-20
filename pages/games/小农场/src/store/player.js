@@ -12,6 +12,7 @@ import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
 import { expForLevel, MAX_LEVEL, titleOf, unlockedPlotCount } from '../data/progression.js';
 import { notify } from './notify.js';
+import { addNews } from './news.js';
 
 /** 没加到经验时的返回值（等级保持不变） */
 function noGain() {
@@ -66,6 +67,7 @@ export function addExpRaw(amount) {
 
   if (result.leveledUp) {
     notify(`🎉 升级！现在是 Lv.${player.level} · ${titleOf(player.level)}`, 'gold');
+    addNews('🎉', `${player.name} 的农场升到了 Lv.${player.level} · ${titleOf(player.level)}`);
     if (result.unlockedPlots > 0) {
       setTimeout(() => notify('🔓 新地块已解锁！'), 700);
     }

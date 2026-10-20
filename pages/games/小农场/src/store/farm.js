@@ -10,7 +10,7 @@ import { state, getPlot } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { CROPS, expOf } from '../data/crops.js';
-import { ITEMS } from '../data/items.js';
+import { ITEMS, PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
 import { SOILS } from '../data/soils.js';
 import { unlockedPlotCount as countUnlocked } from '../data/progression.js';
 import { seedId, produceId } from '../data/keys.js';
@@ -242,6 +242,84 @@ export async function catchPest(plotId) {
   await persist(plot);
   const gain = Math.round((plot.boost - before) * 100);
   notify(`🐛 捉虫成功，产量 +${gain}%（当前 +${Math.round(plot.boost * 100)}%）　经验 +${crop.lv}`);
+  return true;
+}
+
+/**
+ * 一键浇灌：消耗 1 个洒水器，把所有缺水的地一次浇完。
+ *
+ * 单块效果与手动浇水完全一致（当前生长阶段 -10%，每块按作物等级给经验），
+ * 道具只负责省掉「一块一块点」这件事。
+ *
+ * @returns {Promise<boolean>}
+ */
+export async function waterAll() {
+  const now = Date.now();
+  const targets = state.plots.filter((p) => isUnlocked(p) && needsWater(p, now));
+  if (!targets.length) {
+    notify('现在没有需要浇水的地');
+    return false;
+  }
+  if (!inventory.has(SPRINKLER_ID)) {
+    notify('没有洒水器了，去商店买一个吧');
+    return false;
+  }
+  inventory.take(SPRINKLER_ID, 1);
+
+  let exp = 0;
+  for (const plot of targets) {
+    const crop = CROPS[plot.cropId];
+    const bounds = stageBounds(plot, crop, now);
+    const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
+    plot.readyAt = Math.max(now, plot.readyAt - saved);
+    scheduleCare(plot, now);
+    exp += crop.lv;
+  }
+
+  player.addExpRaw(exp);
+  player.addLog('🚿', `用洒水器给 ${targets.length} 块地浇了水，经验 +${exp}`);
+
+  await commit({ player: state.player }, { plots: targets, bag: state.bag });
+  emit(EVENTS.PLAYER);
+  emit(EVENTS.FARM);
+  emit(EVENTS.INVENTORY);
+  notify(`🚿 一键浇水：${targets.length} 块地，经验 +${exp}`, 'gold');
+  return true;
+}
+
+/**
+ * 一键杀虫：消耗 1 个杀虫剂，把所有生虫的地一次捉完。
+ * 每块地产量 +10%，经验按作物等级给。
+ * @returns {Promise<boolean>}
+ */
+export async function catchPestAll() {
+  const now = Date.now();
+  const targets = state.plots.filter((p) => isUnlocked(p) && needsPest(p, now));
+  if (!targets.length) {
+    notify('现在没有需要捉虫的地');
+    return false;
+  }
+  if (!inventory.has(PESTICIDE_ID)) {
+    notify('没有杀虫剂了，去商店买一个吧');
+    return false;
+  }
+  inventory.take(PESTICIDE_ID, 1);
+
+  let exp = 0;
+  for (const plot of targets) {
+    plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
+    plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+    exp += CROPS[plot.cropId].lv;
+  }
+
+  player.addExpRaw(exp);
+  player.addLog('🧴', `用杀虫剂给 ${targets.length} 块地除了虫，经验 +${exp}`);
+
+  await commit({ player: state.player }, { plots: targets, bag: state.bag });
+  emit(EVENTS.PLAYER);
+  emit(EVENTS.FARM);
+  emit(EVENTS.INVENTORY);
+  notify(`🧴 一键杀虫：${targets.length} 块地，经验 +${exp}`, 'gold');
   return true;
 }
 

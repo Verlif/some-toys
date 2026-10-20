@@ -8,7 +8,7 @@ import { CROPS, CROP_IDS } from '../../data/crops.js';
 import { produceId } from '../../data/keys.js';
 import { count } from '../../store/inventory.js';
 import { sellProduce } from '../../store/shop.js';
-import { openModal } from '../modal.js';
+import { closeModal, openModal } from '../modal.js';
 
 /** 勾选中的作物 id 集合 */
 const selected = new Set();
@@ -53,6 +53,8 @@ function confirmSell(ids) {
       await sellProduce(id);
       selected.delete(id);
     }
+    // 卖完就收起确认框：否则列表在背后已经空了，弹窗还停在原地
+    closeModal();
   });
 }
 

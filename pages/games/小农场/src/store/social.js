@@ -27,8 +27,12 @@ import {
   PEST_INTERVAL,
   PEST_YIELD_BONUS,
   WATER_INTERVAL,
+  dogCatchChance,
+  npcDogSatietyAt,
 } from '../data/friends.js';
+import { PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
 import { notify } from './notify.js';
+import { addNews } from './news.js';
 
 /* ---------- 邻居状态查询 ---------- */
 
@@ -51,13 +55,13 @@ export function remainYield(plot) {
 /**
  * 某块邻居的地当前是否可偷。
  *
- * 只有一条限制：每块地的每轮作物最多被偷 1 个。
- * 偷菜只让产量少 1 个，不做「减半」这种翻倍惩罚，
- * 所以也不需要「剩余不足一半」的门槛。
+ * 两道限制：
+ *   1. 每块地的每轮作物最多被偷 1 个；
+ *   2. 被对方的守护犬逮住过一次，整座农场这一轮都不能再偷（guarded）。
  */
 export function isStealable(plot, now = Date.now()) {
   if (!plot.cropId || now < plot.readyAt) return false;
-  if (plot.stolen) return false;
+  if (plot.stolen || plot.guarded) return false;
   return remainYield(plot) >= 1;
 }
 
@@ -111,6 +115,7 @@ export function createSettler() {
     cared: 0,
     caught: 0,
     log: (at, emoji, text) => player.addLog(emoji, text, at),
+    news: (at, emoji, text) => addNews(emoji, text, at),
     dogSatietyAt: (at) => Math.max(
       0,
       satietyNow - ((at - now) / 3600_000) * DOG_SATIETY_DECAY,
@@ -180,6 +185,25 @@ export async function steal(friendId, index) {
 
   if (!friend || !target || !isStealable(target, now)) {
     return { ok: false, reason: '这块地现在不能偷' };
+  }
+
+  // 邻居的狗也在看家：饱腹度越高，被当场逮住的概率越大。
+  // 一旦被逮住，这座农场**当前所有作物**这一轮都进不去了 ——
+  // 和「每块地已被偷过」是同一个效果，只是原因不同。
+  const satiety = npcDogSatietyAt(friend, now);
+  if (satiety > 0 && Math.random() < dogCatchChance(satiety)) {
+    for (const plot of friend.plots) {
+      if (plot.cropId) plot.guarded = true;
+    }
+    logFriend(friend, now, '🐕', '守护犬抓住了想偷菜的 农场主，这座农场这一轮都进不去了');
+    addNews('🐕', `${friend.name} 的守护犬抓住了前来偷菜的农场主`);
+
+    await commit({ player: state.player }, { friends: [friend] });
+    emit(EVENTS.FRIENDS);
+    emit(EVENTS.PLAYER);
+
+    notify(`🐕 被 ${friend.name} 家的守护犬抓住了！这一轮他家的作物都不敢碰了`, 'gold');
+    return { ok: false, caught: true, reason: '被守护犬抓住了' };
   }
 
   // 标记：这块地这轮只能被偷一次，邻居之后的收获少 1 个
@@ -260,6 +284,87 @@ export async function catchPestNeighborPlot(friendId, index) {
   return true;
 }
 
+/**
+ * 一键帮邻居浇水：消耗 1 个洒水器，把他家所有缺水的地一次浇完。
+ * 单块效果与手动浇水一致（waterAt 推到下一个 6 小时），经验按作物等级给。
+ * @returns {Promise<boolean>}
+ */
+export async function waterAllNeighborPlots(friendId) {
+  const friend = getFriend(friendId);
+  const now = Date.now();
+  if (!friend) return false;
+
+  const targets = friend.plots.filter((p) => needsWater(p, now));
+  if (!targets.length) {
+    notify('他家的地现在都不缺水');
+    return false;
+  }
+  if (!inventory.has(SPRINKLER_ID)) {
+    notify('没有洒水器了，去商店买一个吧');
+    return false;
+  }
+  inventory.take(SPRINKLER_ID, 1);
+
+  let exp = 0;
+  for (const plot of targets) {
+    plot.waterAt = now + WATER_INTERVAL;
+    exp += CROPS[plot.cropId].lv;
+  }
+
+  player.addExpRaw(exp);
+  logFriend(friend, now, '🚿', `农场主 用洒水器帮他给 ${targets.length} 块地浇了水`);
+
+  await commit({ player: state.player }, { bag: state.bag, friends: [friend] });
+  emit(EVENTS.FRIENDS);
+  emit(EVENTS.PLAYER);
+  emit(EVENTS.INVENTORY);
+
+  await completeGuide('care');
+  notify(`🚿 帮 ${friend.name} 浇了 ${targets.length} 块地（经验 +${exp}）`, 'gold');
+  return true;
+}
+
+/**
+ * 一键帮邻居杀虫：消耗 1 个杀虫剂，把他家所有生虫的地一次捉完。
+ * 每块地产量 +10%，经验按作物等级给。
+ * @returns {Promise<boolean>}
+ */
+export async function catchPestAllNeighborPlots(friendId) {
+  const friend = getFriend(friendId);
+  const now = Date.now();
+  if (!friend) return false;
+
+  const targets = friend.plots.filter((p) => needsPest(p, now));
+  if (!targets.length) {
+    notify('他家的地现在都没有虫子');
+    return false;
+  }
+  if (!inventory.has(PESTICIDE_ID)) {
+    notify('没有杀虫剂了，去商店买一个吧');
+    return false;
+  }
+  inventory.take(PESTICIDE_ID, 1);
+
+  let exp = 0;
+  for (const plot of targets) {
+    plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
+    plot.pestAt = now + PEST_INTERVAL;
+    exp += CROPS[plot.cropId].lv;
+  }
+
+  player.addExpRaw(exp);
+  logFriend(friend, now, '🧴', `农场主 用杀虫剂帮他给 ${targets.length} 块地除了虫`);
+
+  await commit({ player: state.player }, { bag: state.bag, friends: [friend] });
+  emit(EVENTS.FRIENDS);
+  emit(EVENTS.PLAYER);
+  emit(EVENTS.INVENTORY);
+
+  await completeGuide('care');
+  notify(`🧴 帮 ${friend.name} 除了 ${targets.length} 块地的虫（经验 +${exp}）`, 'gold');
+  return true;
+}
+
 /* ---------- 守护犬 ---------- */
 
 /**
@@ -305,7 +410,9 @@ export async function feedDog() {
   state.pet.updatedAt = now;
 
   player.addLog('🦴', `喂了守护犬，饱腹度 ${Math.round(next)}%（约能守 ${Math.round(next / DOG_SATIETY_DECAY)} 小时）`);
-  await commit({ player: state.player }, { bag: state.bag, pet: state.pet });
+  // pet 必须放在第一个参数里：commit() 只认 singles.pet，
+  // 放进 collections 会被静默忽略，饱腹度就永远存不下来
+  await commit({ player: state.player, pet: state.pet }, { bag: state.bag });
   emit(EVENTS.PETS);
   emit(EVENTS.INVENTORY);
 

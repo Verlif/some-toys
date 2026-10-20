@@ -313,7 +313,8 @@ const ADVENTURE_ACTIONS = {
   },
   'goto-shop': () => {
     closeModal();
-    emit(EVENTS.NAVIGATE, 'shop');
+    // 买藏宝图：直接落在藏宝图 tab
+    emit(EVENTS.NAVIGATE, { page: 'shop', tab: 'map' });
   },
   'adv-exit-confirm': async () => {
     closeModal();

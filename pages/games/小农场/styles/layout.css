@@ -279,6 +279,51 @@ body[data-page="farm"] .log-fab { display: inline-flex; }
 .log-fab:active { transform: translateX(-50%) scale(.95); }
 .log-fab span { font-size: 14px; line-height: 1; }
 
+/* ---------- 一键浇水 / 杀虫 ----------
+   只在农场页、且背包里真有道具时出现，浮在日志按钮下面一行。
+   有这一行时把日志按钮整体抬高，两者不会叠在一起。 */
+.farm-tools {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(74px + env(safe-area-inset-bottom));
+  z-index: 59;
+  display: none;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+body[data-page="farm"] .farm-tools { display: flex; }
+.farm-tools[hidden] { display: none; }
+body.has-farm-tools .log-fab { bottom: calc(128px + env(safe-area-inset-bottom)); }
+
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d8e6cf;
+  border-radius: 99px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #40503c;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(50, 90, 45, .12);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tool-btn b { color: var(--green-d); }
+.tool-btn:disabled { color: #a8b3a5; border-color: #e6ebe1; box-shadow: none; cursor: default; }
+.tool-btn .tool-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8a978a;
+  background: #f2f6ee;
+  border-radius: 99px;
+  padding: 1px 5px;
+}
+
 /* 主页面是文档滚动（农场 / 邻居）。
    之前这里压了一条 26px 的渐隐带提示「下面还有内容」，
    但它贴着导航条，看起来就像导航的黑色阴影，和纯白导航撞在一起很脏。

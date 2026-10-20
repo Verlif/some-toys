@@ -54,6 +54,8 @@ export function createPlayer() {
     guide: {},
     // 农场日志：{ at, emoji, text }，只保留最近 7 天
     log: [],
+    // 时报：{ at, emoji, text }，最近 7 天 / 80 条
+    news: [],
   };
 }
 
@@ -146,6 +148,7 @@ export async function initState() {
   state.player.signStreak ??= 0;
   state.player.signTotal ??= 0;
   state.player.log ??= [];
+  state.player.news ??= [];
   state.pet = normalizePet(save.pet);
 
   // 地块：不足 TOTAL_PLOTS 就补齐，多的不删

@@ -4,14 +4,16 @@
 import { byId, delegate } from '../core/dom.js';
 import { on, EVENTS } from '../core/bus.js';
 import { renderFarm } from './views/farm.js';
-import { renderShop } from './views/shop.js';
+import { renderShop, setShopTab } from './views/shop.js';
 import { enterFriendsPage } from './views/friends.js';
+import { renderNews } from './views/news.js';
 import { openSheet } from './sheet.js';
 
 /** 页面 id → 进入该页时要做的事。邻居页特殊一些：进入时要先补算离线结算。 */
 const PAGE_ENTER = {
   farm: renderFarm,
   friends: enterFriendsPage,
+  news: renderNews,
   shop: renderShop,
 };
 
@@ -20,10 +22,20 @@ let current = 'farm';
 /** 当前所在的主页面 */
 export const currentPage = () => current;
 
-/** 切换到某个主页面 */
-export function activatePage(name) {
+/**
+ * 切换到某个主页面。
+ *
+ * options.tab 只对商店有意义：外部跳转（买种子 / 买藏宝图）时
+ * 要直接落到对应的售卖类型，而不是让玩家自己再点一次 tab。
+ *
+ * @param {string} name
+ * @param {{tab?: string}} [options]
+ */
+export function activatePage(name, options = {}) {
   const enter = PAGE_ENTER[name];
   if (!enter) return;
+  if (name === 'shop' && options.tab) setShopTab(options.tab);
+
   current = name;
   // 让 CSS 能按页面做显隐（农场页的日志按钮就靠它）
   document.body.dataset.page = name;
@@ -63,6 +75,10 @@ export function mountTabs() {
   window.addEventListener('orientationchange', syncTabHeight);
 
   // 别处（比如播种弹窗里的「商店」按钮）可以通过事件总线请求切页，
-  // 这样视图之间不必互相 import，也就不会绕出循环依赖
-  on(EVENTS.NAVIGATE, (page) => activatePage(page));
+  // 这样视图之间不必互相 import，也就不会绕出循环依赖。
+  // payload 可以是页面名，也可以是 { page, tab }
+  on(EVENTS.NAVIGATE, (payload) => {
+    if (typeof payload === 'string') activatePage(payload);
+    else if (payload?.page) activatePage(payload.page, payload);
+  });
 }

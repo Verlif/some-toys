@@ -9,25 +9,19 @@
  *   src/data/soils.js        8 档土地
  *   src/data/progression.js  40 块地解锁 / 200 级经验曲线 / 称号阶梯
  *
- * ===== 平衡设计的核心：经验曲线是「反推」出来的 =====
+ * ===== 经验曲线：简单累加 =====
  *
- * 传统做法是先拍一条经验曲线，再让作物去填，结果必然有一处失衡。
- * 这里反过来：先确定「一次成熟能拿到多少经验」，再由它除以
- * 「升一级希望需要几轮成熟」，得到每级所需经验。
- * 于是任何一处平衡改动（土地倍率、再生次数、地块数、作物经验）
- * 都会自动传导到经验曲线上，不需要手工重算。
+ *     升一级所需经验 = 200 × 当前等级 + 上一级所需经验
  *
- * ===== 平衡目标 =====
+ * 也就是 100 × 等级 × (等级 + 1)：
  *
- * 等级段   成熟时间        每级轮数  预期每级耗时   到此等级累计
- * 1-10     40s → 3.4min      1.2     ~4min          40min
- * 11-25    3.4min → 7.9min    2.0     ~16min         3h
- * 26-60    8min → 12.6min     2.5     ~31min         15h
- * 61-120   13min → 16min      3.0     ~48min         55h
- * 121-200  16min → 22min      3.5     ~78min         143h
+ *   Lv1 → 2      200        Lv10 → 11      11,000
+ *   Lv50 → 51    255,000    Lv100 → 101    1,010,000
+ *   Lv199 → 200  3,980,000  满级累计       约 2.67 亿
  *
- * 143 小时是全满级的总投入，按每天 3 小时活跃计约一个半月，
- * 期间加速手段是土地升级与多次收获作物。
+ * 这条曲线**不再**由「每小时经验 × 期望小时数」反推：
+ * 升级节奏只跟等级有关，与作物售价、土地倍率、地块数的平衡改动完全解耦。
+ * 早期升级慢、后期靠规模追上来，是刻意保留的观感。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -230,9 +224,6 @@ function growSeconds(level, flavour, kind = 'normal', slow = false) {
   const mul = slow ? SLOW.time : KIND[kind].time;
   return Math.round(hours * 3600 * FLAVOUR[flavour].time * mul);
 }
-/** 成熟时间（小时），经验曲线要用 */
-const growHoursAt = (level) => level ** 0.7;
-
 /** 种子价格 */
 const seedPrice = (level) => Math.round(10 * level ** 1.75);
 
@@ -299,62 +290,16 @@ function harvestsAt(level) {
 /** 再生系数：后续每次成熟只需首次的一小部分 */
 const regrowOf = (level) => (level <= 20 ? 0.5 : level <= 70 ? 0.42 : level <= 150 ? 0.35 : 0.28);
 
-/** 升到某等级时已解锁的地块数 */
-function plotsAt(level) {
-  return PLOTS.unlock.filter((need) => need <= level).length;
-}
-
-/** 该等级可用的最高土地的经验倍率 */
-function soilExpMulAt(level) {
-  return SOILS.filter((s) => s.unlock <= level).pop().expMul;
-}
-
 /**
- * 升一级希望花掉多少**小时**。
+ * 升一级所需经验（累加式）：
  *
- * 作物现在要长几小时到几天，所以升级节奏按「真实等待多久」来定。
- * 早期一小时一级，后期四小时一级。
- */
-function targetHoursAt(level) {
-  if (level <= 10) return 1.0;
-  if (level <= 30) return 1.5;
-  if (level <= 80) return 2.0;
-  if (level <= 150) return 3.0;
-  return 4.0;
-}
-
-/**
- * 该等级典型作物「每块地每小时」能拿多少经验。
+ *     需要 = 200 × 当前等级 + 上一级需要的经验
  *
- *     每小时经验 = 平均产量 × 茬数 × (等级 + 2) ÷ 一整轮的等待小时数
- *
- * 经验不再跟成熟时间挂钩，所以这条曲线与旧版完全不同 ——
- * 经验表必须由它反推，否则升级会慢上二十倍。
- */
-function expPerHourAt(level) {
-  const growHours = growSeconds(level, 'plain', 'normal', false) / 3600;
-  const h = harvestsAt(level);
-  const regrow = regrowOf(level);
-  const [min, max] = yieldRange(level, 'grain');
-  const amount = (min + max) / 2;
-
-  // 一整轮：首次成熟 + 每一次再生
-  let cycleHours = 0;
-  for (let i = 0; i < h; i += 1) cycleHours += growHours * regrow ** i;
-
-  return amount * h * (level + 2) / cycleHours;
-}
-
-/**
- * 升一级所需经验。
- *
- * 仍然沿用「每小时经验 × 希望花几小时」的反推思路：
- * 只改经验公式（每份产出 = 等级 + 2）时，这条表会自动跟着缩放，
- * 升级节奏保持不变。
+ * 也就是 200 × (1 + 2 + … + 等级) = 100 × 等级 × (等级 + 1)。
+ * 只跟等级有关，不再参考作物产量、土地倍率或地块数量。
  */
 function expNeeded(level) {
-  const perHour = expPerHourAt(level) * plotsAt(level) * soilExpMulAt(level);
-  return Math.max(100, Math.round(perHour * targetHoursAt(level)));
+  return 100 * level * (level + 1);
 }
 
 /* ============================================================
@@ -707,15 +652,10 @@ PLOTS.unlock.slice(PLOTS_UNLOCKED_AT_START).forEach((lv, i) => {
 });
 check(PLOTS.unlock.slice(0, PLOTS_UNLOCKED_AT_START).every((lv) => lv === 1), '开局地块应全部 Lv1 解锁');
 
-// 早期几级的「每小时经验」会因为成熟时间起步更快而略微下滑，
-// 直接照抄会让 Lv2 比 Lv1 还容易升。这里做一次单调平滑：
-// 后一级至少比前一级多 1 点，曲线只涨不跌。
+// 累加公式本身严格递增（Lv1 200 → Lv2 600 → …），不需要额外的平滑
 const expTable = Array.from({ length: MAX_LEVEL + 1 }, (_, lv) => expNeeded(lv));
-for (let lv = 2; lv <= MAX_LEVEL; lv += 1) {
-  expTable[lv] = Math.max(expTable[lv], expTable[lv - 1] + 1);
-}
 check(expTable.every((v, i) => i < 2 || v > expTable[i - 1]),
-  '经验曲线未严格递增：' + expTable.findIndex((v, i) => i >= 2 && v <= expTable[i - 1]) + ' 级（' + expTable.filter((v,i)=>i>=2&&v<=expTable[i-1]).length + ' 处）');
+  '经验曲线未严格递增：' + expTable.findIndex((v, i) => i >= 2 && v <= expTable[i - 1]) + ' 级');
 check(TITLES.at(-1)[0] === MAX_LEVEL, '称号阶梯未覆盖到 200 级');
 check(SOILS.every((s, i) => i === 0 || s.unlock > SOILS[i - 1].unlock), '土地解锁等级未递增');
 
@@ -883,8 +823,10 @@ export const TOTAL_PLOTS = ${TOTAL_PLOTS};
 
 /**
  * 升到下一级所需经验。
- * 这条曲线是由「一轮成熟能拿多少经验 ÷ 希望几轮升一级」反推出来的，
- * 所以调整土地倍率、再生次数、地块数或作物经验时，它会自动跟随。
+ *
+ *     需要 = 200 × 当前等级 + 上一级需要的经验
+ *
+ * 累加式曲线：只跟等级有关，和作物、土地、地块数的平衡改动互不影响。
  */
 const EXP_TABLE = {
 ${expPairs.join('\n')}
