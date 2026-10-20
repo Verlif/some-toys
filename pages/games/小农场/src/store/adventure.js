@@ -13,7 +13,7 @@ import { state } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { MAP_TIERS, buildRun, describeReward, mapTier } from '../data/adventure.js';
-import { mapId, seedId } from '../data/keys.js';
+import { mapId, produceId, seedId } from '../data/keys.js';
 import { formatCoins } from './npc-sim.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
@@ -47,6 +47,7 @@ export const stepsLeft = () => (run ? run.cards.length - run.index : 0);
 function applyReward(reward) {
   if (reward.kind === 'coin') player.addCoins(reward.n);
   else if (reward.kind === 'item') inventory.add(reward.id, reward.n);
+  else if (reward.kind === 'produce') inventory.add(produceId(reward.id), reward.n);
   else inventory.add(seedId(reward.id), reward.n);
 }
 

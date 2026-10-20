@@ -186,6 +186,18 @@ Lv1→2 要 200，Lv199→200 要 398 万，满级累计 2.67 亿。
 - **一键道具**：`sprinkler` / `pesticide`（各 200），`ITEMS[].all = 'water'|'pest'`；
   玩家农场出 `#farmTools`（`body.has-farm-tools` 顶开日志按钮），
   NPC 弹窗出 `.npc-quick`。没道具或没需求时按钮不出现
+- **施肥额度是唯一的**（第 15 轮）：普通化肥 / 增产剂 / 有机化肥共用 `plot.fert`，
+  一株作物一轮只能施一次。增产加成记在 `plot.yieldBonus`，
+  收获时与捉虫加成**相乘**（不是相加）。老存档 `plot.organic` 读档时并进 `plot.fert`
+- **图鉴靠标本点亮**：`player.specimens = { cropId: true }`，
+  一份标本 = 50 个对应产出（`SPECIMEN_COST`）；`codexEntries().lit` 是「有标本」，
+  不是「收获过」。库存不够或做过时**不显示**制作按钮
+- **称号全部手动领取**（第 15 轮）：33 个（26 等级 + 7 图鉴），
+  数据在生成器里产出（`progression.js` 的 `TITLES`，字段 `need/skin/coins/items`）；
+  `player.titles = { claimed:{}, equipped }`；同时只能戴一个，佩戴的显示在顶栏。
+  ⚠️ `titleOf(level)` 已删，改用 `titleById(id)` / `titleAt(type, value)`
+- **签到不再发经验**（第 15 轮）：每天 = 普通化肥(30分) + 随机商店种子 + 少量金币；
+  **周六是大奖日**（`isBigDay`），额外从该等级可用最高档藏宝图的奖励池抽一份
 - **地块角标**：`.plot-corner` / `.np-corner` 绝对定位不占流。
   ⚠️ 类名是 `np-corner` 不是 `npc-corner`（写错过的坑）
 - **商店是固定高度页**：`#page-shop` 上贴 `--hud-h` 下贴 `--tab-h`，

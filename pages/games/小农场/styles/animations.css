@@ -55,3 +55,9 @@
   72%  { opacity: 1; transform: translate(-50%, 0); }
   100% { opacity: 0; transform: translate(-50%, -8px); }
 }
+
+/* 称号入口的红点：轻微呼吸，提示「有新的可以领」 */
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}

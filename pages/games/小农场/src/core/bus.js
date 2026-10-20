@@ -21,13 +21,15 @@ export const EVENTS = {
   SIGN: 'state:sign',
   /** 图鉴统计或新手引导变化 */
   CODEX: 'state:codex',
+  /** 称号的领取与佩戴变化 */
+  TITLES: 'state:titles',
   /** 守护犬等宠物状态变化 */
   PETS: 'state:pets',
   /** 时报有新的大新闻 */
   NEWS: 'state:news',
   /** 领域层请求弹一条提示，由 UI 层的 toast 组件消费 */
   NOTIFY: 'ui:notify',
-  /** 请求切换主页面，payload 为页面名（farm / friends / shop） */
+  /** 请求切换主页面，payload 为页面名（farm / friends / news / shop） */
   NAVIGATE: 'ui:navigate',
 };
 

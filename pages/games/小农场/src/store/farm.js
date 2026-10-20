@@ -106,7 +106,7 @@ function applyPlant(plot, cropId) {
   plot.total = Math.floor(crop.grow * 1000 * soil.timeMul);
   plot.readyAt = plot.plantedAt + plot.total;
   plot.fert = false;
-  plot.organic = false;
+  plot.yieldBonus = 0;
   plot.boost = 0;
   plot.stolen = false;
   plot.stolenCount = 0;
@@ -134,7 +134,7 @@ function beginRegrow(plot, crop, soil) {
   plot.total = regrowMs;
   plot.readyAt = plot.plantedAt + regrowMs;
   plot.fert = false;
-  plot.organic = false;
+  plot.yieldBonus = 0;
   plot.stolen = false;
   plot.stolenCount = 0;
   plot.stolenAt = 0;
@@ -151,7 +151,7 @@ function clearPlot(plot) {
     readyAt: 0,
     total: 0,
     fert: false,
-    organic: false,
+    yieldBonus: 0,
     boost: 0,
     waterAt: 0,
     pestAt: 0,
@@ -326,9 +326,13 @@ export async function catchPestAll() {
 /**
  * 施肥。
  *
- * 普通化肥有五档（30 分钟 / 1 / 2 / 6 / 18 小时），按档位直接扣掉剩余时间；
- * 剩余时间不足一档时，撒下去就是直接成熟 —— 不会浪费。
- * 每块地每轮只能用一次普通化肥；有机化肥（一键成熟）另有一次额度。
+ * 三类肥料共用**同一个额度** —— 一株作物一轮只能施一次：
+ *   普通化肥  缩短成熟时间（五档）
+ *   增产剂    提高本轮产量（+10% / +20% / +30%）
+ *   有机化肥  直接成熟
+ *
+ * 普通化肥按档位直接扣掉剩余时间；剩余时间不足一档时，
+ * 撒下去就是直接成熟 —— 不会浪费。
  *
  * @param {string} plotId
  * @param {string} itemId 见 data/items.js 的 FERTILIZER_IDS
@@ -343,31 +347,37 @@ export async function fertilize(plotId, itemId) {
     notify(`没有${item.name}了`);
     return false;
   }
-  if (item.instant) {
-    if (plot.organic) {
-      notify('这块地已经用过有机化肥了');
-      return false;
-    }
-  } else if (plot.fert) {
-    notify('这块地这轮已经施过普通化肥了');
+  if (plot.fert) {
+    notify('这块地这轮已经施过肥了');
     return false;
   }
 
   inventory.take(itemId, 1);
+  const crop = CROPS[plot.cropId];
+
+  // 增产剂：不改时间，只加产量
+  if (item.boost) {
+    plot.yieldBonus = item.boost;
+    plot.fert = true;
+    player.addLog(item.emoji, `给 ${crop.name} 施了${item.name}（本轮产量 +${Math.round(item.boost * 100)}%）`);
+    await persist(plot);
+    notify(`${item.emoji} ${item.name}生效，${crop.name} 的产量 +${Math.round(item.boost * 100)}%`, 'gold');
+    return true;
+  }
+
   const before = Math.max(0, plot.readyAt - now);
   const saved = item.instant ? before : Math.min(before, item.minutes * 60_000);
 
   if (item.instant) {
     plot.readyAt = now;
-    plot.organic = true;
   } else {
     plot.readyAt = Math.max(now, plot.readyAt - saved);
-    plot.fert = true;
   }
+  plot.fert = true;
 
   player.addLog(
     item.instant ? '⚗️' : '🧪',
-    `给 ${CROPS[plot.cropId].name} 施了${item.name}（成熟 −${fmtSaved(saved)}）`,
+    `给 ${crop.name} 施了${item.name}（成熟 −${fmtSaved(saved)}）`,
   );
 
   await persist(plot);
@@ -404,6 +414,8 @@ export async function harvest(plotId) {
   amount = Math.floor(amount * soil.yieldMul);
   // 每捉一次虫 +10% 产量
   amount = Math.floor(amount * (1 + (plot.boost || 0)));
+  // 增产剂：本轮产量加成
+  amount = Math.floor(amount * (1 + (plot.yieldBonus || 0)));
   amount = Math.max(1, amount);
 
   // 被邻居顺走的要真的扣掉：偷一个就少一个，不做翻倍惩罚

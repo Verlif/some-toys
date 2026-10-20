@@ -50,6 +50,10 @@ export function createPlayer() {
     signTotal: 0,
     // 图鉴：作物 id → { planted, harvested }
     cropStats: {},
+    // 标本：作物 id → true。做了标本才算点亮图鉴
+    specimens: {},
+    // 称号：{ claimed: { id: true }, equipped: id }
+    titles: { claimed: {}, equipped: '' },
     // 新手引导：已完成的引导项
     guide: {},
     // 农场日志：{ at, emoji, text }，只保留最近 7 天
@@ -70,8 +74,10 @@ export function createPlot(id) {
     readyAt: 0,
     total: 0,
     soil: 'normal',
+    /** 本轮是否已经施过肥（任何种类都算，用掉唯一一次额度） */
     fert: false,
-    organic: false,
+    /** 增产剂带来的产量加成（0.1 / 0.2 / 0.3），本轮有效 */
+    yieldBonus: 0,
     /** 产量加成，捉一次虫 +10% */
     boost: 0,
     /** 下次需要浇水的时间戳 */
@@ -118,9 +124,12 @@ function createNpc(def, now) {
 function normalizePlot(plot) {
   if (plot.harvested === undefined) plot.harvested = 0;
   if (plot.boost === undefined) plot.boost = 0;
-  // 施肥标记：老存档里可能没有，统一成布尔值（农场视图靠它决定要不要显示 🧪）
+  // 施肥标记：老存档里普通化肥用 fert、有机化肥用 organic，
+  // 现在一株作物一轮只许施一次肥，两个标记合并成一个
+  if (plot.organic) plot.fert = true;
   plot.fert = Boolean(plot.fert);
-  plot.organic = Boolean(plot.organic);
+  plot.yieldBonus = safeNum(plot.yieldBonus, 0);
+  delete plot.organic;
   // 被邻居顺走的计数是后加的字段
   plot.stolenCount = safeNum(plot.stolenCount, 0);
   plot.stolen = Boolean(plot.stolen);
@@ -144,6 +153,9 @@ export async function initState() {
 
   state.player = save.player || createPlayer();
   state.player.cropStats ??= {};
+  state.player.specimens ??= {};
+  state.player.titles ??= { claimed: {}, equipped: '' };
+  state.player.titles.claimed ??= {};
   state.player.guide ??= {};
   state.player.signStreak ??= 0;
   state.player.signTotal ??= 0;

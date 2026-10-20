@@ -1,20 +1,24 @@
 /**
- * 签到领域：每日签到 + 连续签到奖励。
+ * 签到领域：每日签到 + 连续签到奖励 + 周六盲盒。
  *
  * 字段说明：
  *   lastSign   上次签到的时间戳
  *   signStreak 当前连续签到天数，断签归 1
  *   signTotal  累计签到总天数（不清零，用于展示生涯统计）
+ *
+ * 每天固定发：普通化肥（缩短 30 分钟）×1 + 一颗随机商店种子 + 少量金币。
+ * 连续签到的 7 天循环体现在金币倍数上；每周六额外开一个盲盒。
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
-import { addCoins, addExpRaw } from './player.js';
+import { addCoins } from './player.js';
 import { add } from './inventory.js';
-import { CYCLE_DAYS, daysLeftInCycle, rewardFor } from '../data/signin.js';
+import { CYCLE_DAYS, DAILY_ITEM, daysLeftInCycle, isBigDay, rewardFor } from '../data/signin.js';
 import { CROPS } from '../data/crops.js';
-import { expForProgress } from '../data/progression.js';
-import { dayKey, isSameDay } from '../core/utils.js';
+import { MAP_TIERS, buildRewardPool } from '../data/adventure.js';
+import { produceId, seedId } from '../data/keys.js';
+import { dayKey, isSameDay, randInt } from '../core/utils.js';
 
 const DAY_MS = 86_400_000;
 
@@ -54,30 +58,79 @@ export const currentStreak = () => state.player.signStreak;
 /** 距离本轮结束还差几天 */
 export const leftInCycle = () => daysLeftInCycle(state.player.signStreak);
 
+/** 今天是不是大奖日（周六） */
+export const isBigDayToday = (now = Date.now()) => isBigDay(now);
+
 /**
  * 把「倍数」换算成实际数额。
  *
  * 基准是玩家当前等级的一次正常收获：
  *   金币 ≈ 该等级最贵作物的售价 × 3
- *   经验 ≈ 升到下一级所需经验 × 倍数
  * 这样 200 级时签到依然有意义，1 级时也不会一次送掉几十级。
  */
-function resolveReward(mul, now) {
-  const level = state.player.level;
+function coinBase(level) {
   const best = Object.values(CROPS)
     .filter((c) => c.lv <= level)
     .reduce((max, c) => Math.max(max, c.sell), 12);
+  return Math.max(10, Math.round(best * 3));
+}
 
+/**
+ * 今天签到能拿到什么（用于界面上的预告）。
+ *
+ * 种子的具体品种是签到那一刻才掷的，这里只给等级上限 ——
+ * 预告要是写死某一种种子，实际发到的却不是它，就成了一句话骗人。
+ */
+export function todayReward(now = Date.now()) {
+  const level = state.player.level;
+  const mul = rewardFor(todayStreakDay(now));
   return {
-    coins: Math.max(10, Math.round(best * 3 * mul.coins)),
-    exp: Math.max(1, Math.round(expForProgress(level) * mul.exp)),
-    items: mul.items,
+    coins: Math.max(10, Math.round(coinBase(level) * mul.coins)),
+    items: { [DAILY_ITEM]: 1 },
+    /** 随机种子的等级上限 */
+    seedLv: level,
+    /** 今天是大奖日 */
+    big: isBigDay(now),
   };
 }
 
-/** 今天签到能拿到什么（用于按钮上的预告） */
-export function todayReward(now = Date.now()) {
-  return resolveReward(rewardFor(todayStreakDay(now)), now);
+/** 随机一颗商店种子（等级不高于农场等级） */
+function rollSeedId(level) {
+  const pool = Object.keys(CROPS).filter((id) => !CROPS[id].special && CROPS[id].lv <= level);
+  return pool.length ? pool[randInt(0, pool.length - 1)] : null;
+}
+
+/**
+ * 周六盲盒：从「玩家等级对应的最高可用藏宝图」的奖励池里抽一份。
+ *
+ * 等级不够 10 级时还没有可用的藏宝图，返回 null（发奖时走兜底）。
+ * @returns {?{map: object, reward: object}}
+ */
+export function rollBigBox(level = state.player.level) {
+  const usable = MAP_TIERS.filter((m) => level >= m.unlock);
+  if (!usable.length) return null;
+
+  const map = usable[usable.length - 1];
+  const pool = buildRewardPool(map.tier);
+  if (!pool.rewards.length) return null;
+
+  return { map, reward: pool.rewards[randInt(0, pool.rewards.length - 1)] };
+}
+
+/** 盲盒里那份奖励的发放方式 */
+function applyBoxReward(reward) {
+  if (!reward) return;
+  if (reward.kind === 'coin') addCoins(reward.n);
+  else if (reward.kind === 'item') add(reward.id, reward.n);
+  else if (reward.kind === 'produce') add(produceId(reward.id), reward.n);
+  else add(seedId(reward.id), reward.n);
+}
+
+/** 盲盒奖励的中文说明 */
+export function describeBoxReward(reward) {
+  if (!reward) return '';
+  if (reward.kind === 'coin') return `💰 ${reward.n.toLocaleString()} 金币`;
+  return `${reward.emoji} ${reward.name} ×${reward.n}`;
 }
 
 /**
@@ -87,7 +140,8 @@ export function todayReward(now = Date.now()) {
  * 所以这里把「今天拿到了什么」一起带出去。
  *
  * @param {number} [now]
- * @returns {Promise<null|{day:number, streak:number, coins:number, exp:number, items:object}>}
+ * @returns {Promise<null|{day:number, streak:number, coins:number, items:object,
+ *                        seed:?object, box:?object}>}
  *   今天已签过则返回 null
  */
 export async function signIn(now = Date.now()) {
@@ -102,8 +156,26 @@ export async function signIn(now = Date.now()) {
   const day = todayStreakDay(now);
   const reward = todayReward(now);
   addCoins(reward.coins);
-  addExpRaw(reward.exp);
   for (const [itemId, n] of Object.entries(reward.items)) add(itemId, n);
+
+  // 每天一颗随机种子
+  const seedIdPicked = rollSeedId(state.player.level);
+  const seed = seedIdPicked ? { id: seedIdPicked, ...CROPS[seedIdPicked] } : null;
+  if (seedIdPicked) add(seedId(seedIdPicked), 1);
+
+  // 周六大奖日：再开一个盲盒
+  let box = null;
+  if (reward.big) {
+    box = rollBigBox(state.player.level);
+    if (box) {
+      applyBoxReward(box.reward);
+    } else {
+      // 等级还不够买第一档藏宝图，兜底给点金币与化肥
+      addCoins(Math.max(50, coinBase(state.player.level)));
+      add(DAILY_ITEM, 2);
+      box = { map: null, reward: null };
+    }
+  }
 
   await commit({ player: state.player }, { bag: state.bag });
   emit(EVENTS.PLAYER);
@@ -113,8 +185,9 @@ export async function signIn(now = Date.now()) {
     day,
     streak: state.player.signStreak,
     coins: reward.coins,
-    exp: reward.exp,
     items: reward.items,
+    seed,
+    box,
   };
   emit(EVENTS.SIGN, payload);
   return payload;
@@ -160,7 +233,7 @@ export function calendarOf(now = Date.now()) {
       state = 'future';
     }
 
-    cells.push({ day, state, at, reward: rewardFor(day) });
+    cells.push({ day, state, at, big: isBigDay(at) });
   }
 
   return {

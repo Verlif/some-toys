@@ -388,8 +388,21 @@ body.has-farm-tools .log-fab { bottom: calc(128px + env(safe-area-inset-bottom))
 }
 .sheet-item:hover { background: #eef7e9; }
 .sheet-item:active { transform: scale(.96); }
-.sheet-item .ico { font-size: 24px; line-height: 1; }
+.sheet-item .ico { font-size: 24px; line-height: 1; position: relative; }
 .sheet-item.locked { opacity: .55; }
+
+/* 「有新的称号可领」的红点 */
+.sheet-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e0524a;
+  box-shadow: 0 0 0 2px #fff;
+  animation: dotPulse 1.6s ease-in-out infinite;
+}
 
 /* ---------- 底部浮窗（更多功能） ---------- */
 #sheet {

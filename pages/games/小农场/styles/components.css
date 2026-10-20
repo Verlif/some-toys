@@ -814,6 +814,18 @@
   padding: 3px 9px;
 }
 
+/* 周六盲盒：单独一块，比日常奖励更醒目 */
+.sc-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(150deg, #f7ecff, #ffeef4);
+  border: 1px solid #e6c9f0;
+  text-align: center;
+}
+.sc-box-title { font-size: 11px; font-weight: 700; color: #8b5fa8; }
+.sc-box-item { font-size: 13px; font-weight: 700; color: #6d4a86; margin-top: 4px; }
+
 /* ---------- 新手引导 ---------- */
 .guide-progress {
   padding: 16px 16px 8px;
@@ -932,6 +944,22 @@
   background: #f7f8f5;
   border-style: dashed;
   border-color: #dfe4da;
+}
+
+/* 制作标本：只有仓库里够 50 个时才出现 */
+.specimen-btn {
+  margin-top: 7px;
+  font-size: 10.5px;
+  padding: 5px 8px;
+  background: #fff8e2;
+  border: 1px solid #ecdca4;
+  color: #8a7433;
+}
+.specimen-btn:active { transform: scale(.95); }
+.codex-tip {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 8px;
 }
 .codex-card.shadow .codex-emoji { opacity: .35; filter: grayscale(1); }
 .codex-card.shadow .codex-name { color: #b3bdb0; }
@@ -1515,3 +1543,101 @@
   color: var(--muted);
   padding: 16px 0 8px;
 }
+
+/* ---------- 称号 ---------- */
+
+/* 徽章：10 套配色，由称号的 skin 字段决定。
+   越往后越「亮」，一眼能看出哪个更稀有 */
+.title-badge {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
+  background: #b8c4b2;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .12);
+  flex: 0 0 auto;
+}
+.title-badge.big { width: 62px; height: 62px; border-radius: 20px; font-size: 32px; }
+
+.title-badge.skin-1  { background: linear-gradient(160deg, #9db98a, #6f9660); }
+.title-badge.skin-2  { background: linear-gradient(160deg, #b6cf8e, #7fa653); }
+.title-badge.skin-3  { background: linear-gradient(160deg, #8fc7b1, #4f9c83); }
+.title-badge.skin-4  { background: linear-gradient(160deg, #7cc0d8, #3d8fae); }
+.title-badge.skin-5  { background: linear-gradient(160deg, #8fb4e0, #4f7cc0); }
+.title-badge.skin-6  { background: linear-gradient(160deg, #a99ada, #7a63c2); }
+.title-badge.skin-7  { background: linear-gradient(160deg, #c79ada, #9a5fbe); }
+.title-badge.skin-8  { background: linear-gradient(160deg, #e29ec2, #c75f92); }
+.title-badge.skin-9  { background: linear-gradient(160deg, #e8a877, #c9752f); }
+.title-badge.skin-10 { background: linear-gradient(160deg, #f0c96a, #d99b25); }
+
+/* 顶部大卡：当前佩戴的称号 */
+.title-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 14px 16px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  background: #f4f8f1;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.title-hero-badge { display: grid; place-items: center; }
+.title-hero-name { font-size: 16px; font-weight: 700; color: #3c4a39; }
+.title-hero-sub { font-size: 11.5px; color: var(--muted); }
+
+/* 称号网格 */
+.title-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+  padding: 0 13px;
+  margin-bottom: 6px;
+}
+.title-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 8px 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  text-align: center;
+}
+.title-card.ready { border-color: #e8c96a; background: #fffdf4; }
+.title-card.claimed { background: #fbfcfa; }
+.title-card.equipped { border-color: #8fbf76; background: #f6fbf2; }
+.title-card .title-name { font-size: 12px; font-weight: 600; color: #40503c; }
+.title-card .title-need { font-size: 10.5px; color: var(--muted); }
+.title-card .title-reward {
+  font-size: 10px;
+  color: #a08a4a;
+  line-height: 1.5;
+  min-height: 15px;
+}
+.title-state { font-size: 10.5px; color: #b3bdb0; }
+.title-state.on { color: #6b9c52; font-weight: 700; }
+.title-card .btn { margin-top: 2px; }
+
+/* 「有 N 个称号可以领取」的横条 */
+.title-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 13px 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff8e2;
+  border: 1px solid #ecdca4;
+  font-size: 12px;
+  color: #8a7433;
+  font-weight: 600;
+}
+.title-banner b { font-size: 14px; }

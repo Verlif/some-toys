@@ -10,6 +10,7 @@
  */
 import { on, EVENTS } from '../core/bus.js';
 import { ITEMS } from '../data/items.js';
+import { describeBoxReward } from '../store/signin.js';
 
 const HOLD_MS = 2200;
 const FADE_MS = 320;
@@ -41,14 +42,27 @@ function dismiss() {
 
 /**
  * 播放签到庆祝
- * @param {{day:number, streak:number, coins:number, exp:number, items:object}} payload
+ * @param {{day:number, streak:number, coins:number, items:object,
+ *          seed:?object, box:?object}} payload
  */
-export function showSignCelebrate({ day, streak, coins, exp, items = {} }) {
+export function showSignCelebrate({ day, streak, coins, items = {}, seed, box }) {
   dismiss();
 
   const itemsHTML = Object.entries(items)
     .map(([id, n]) => `<span class="sc-item">${ITEMS[id]?.emoji || '🎁'} ${ITEMS[id]?.name || id} ×${n}</span>`)
     .join('');
+
+  const seedHTML = seed
+    ? `<span class="sc-item">🌱 ${seed.emoji} ${seed.name}种子 ×1</span>`
+    : '';
+
+  // 周六的盲盒：抽到什么全看运气，直接把结果摆出来
+  const boxHTML = box
+    ? `<div class="sc-box">
+         <div class="sc-box-title">🎰 盲盒 · ${box.map ? box.map.name : '安慰奖'}</div>
+         <div class="sc-box-item">${box.reward ? describeBoxReward(box.reward) : '💰 额外金币与化肥'}</div>
+       </div>`
+    : '';
 
   layer = document.createElement('div');
   layer.className = 'sign-celebrate';
@@ -60,9 +74,9 @@ export function showSignCelebrate({ day, streak, coins, exp, items = {} }) {
       <div class="sc-sub">第 ${day} 天 · 连续签到 ${streak} 天</div>
       <div class="sc-rewards">
         <div class="sc-reward"><span>💰</span><b data-count="${coins}">0</b></div>
-        <div class="sc-reward"><span>✨</span><b data-count="${exp}">0</b><small>经验</small></div>
       </div>
-      ${itemsHTML ? `<div class="sc-items">${itemsHTML}</div>` : ''}
+      ${(itemsHTML || seedHTML) ? `<div class="sc-items">${itemsHTML}${seedHTML}</div>` : ''}
+      ${boxHTML}
     </div>`;
   layer.addEventListener('click', dismiss);
   document.body.appendChild(layer);

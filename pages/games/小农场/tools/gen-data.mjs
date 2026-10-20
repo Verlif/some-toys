@@ -26,6 +26,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ITEMS } from '../src/data/items.js';
 
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/data');
 const MAX_LEVEL = 200;
@@ -50,13 +51,55 @@ const SOILS = [
   { id: 'myth', name: '神话土地', tag: '神土', cls: 'soil-myth', emoji: '⭐', yieldMul: 2.40, timeMul: 0.45, expMul: 1.90, unlock: 160, cost: 8_000_000 },
 ];
 
+/**
+ * 称号表。
+ *
+ * 全部称号都要**手动领取**：
+ *   等级称号  条件是农场等级
+ *   图鉴称号  条件是点亮的图鉴数量
+ * 领取后可以佩戴一个，佩戴的称号显示在顶栏。
+ *
+ * skin  是配色编号，CSS 里定义了对应的底色（1~10）；
+ * coins 是「一次正常收获」的倍数，实际金额按玩家等级缩放（见 store/titles.js）；
+ * items 是直接发放的道具组合，图鉴称号按收集难度逐级加重。
+ */
 const TITLES = [
-  [1, '新手农夫'], [5, '田间好手'], [9, '种植达人'], [13, '丰收专家'], [17, '园艺能手'],
-  [22, '农场主'], [27, '庄园主'], [32, '农业大亨'], [38, '土地所有者'], [44, '丰收节冠军'],
-  [50, '十里洋场'], [57, '一方霸主'], [64, '农业宗师'], [71, '田园诗人'], [78, '作物学家'],
-  [86, '生态农场主'], [94, '田园领主'], [102, '粮仓巨头'], [110, '四季常青'], [118, '瓜果王国'],
-  [128, '花果之乡'], [138, '田园帝国'], [150, '大地主'], [165, '农业传奇'], [180, '田园之神'],
-  [200, '阳光牧场主'],
+  // ── 等级称号（26 档）──────────────────────────────
+  { id: 'lv1', name: '新手农夫', emoji: '🌱', skin: 1, need: { type: 'level', value: 1 }, coins: 1, items: {} },
+  { id: 'lv5', name: '田间好手', emoji: '🌾', skin: 1, need: { type: 'level', value: 5 }, coins: 1.1, items: {} },
+  { id: 'lv9', name: '种植达人', emoji: '🌻', skin: 2, need: { type: 'level', value: 9 }, coins: 1.2, items: {} },
+  { id: 'lv13', name: '丰收专家', emoji: '🧺', skin: 2, need: { type: 'level', value: 13 }, coins: 1.3, items: {} },
+  { id: 'lv17', name: '园艺能手', emoji: '🌷', skin: 2, need: { type: 'level', value: 17 }, coins: 1.4, items: {} },
+  { id: 'lv22', name: '农场主', emoji: '🏡', skin: 3, need: { type: 'level', value: 22 }, coins: 1.5, items: {} },
+  { id: 'lv27', name: '庄园主', emoji: '🏰', skin: 3, need: { type: 'level', value: 27 }, coins: 1.6, items: {} },
+  { id: 'lv32', name: '农业大亨', emoji: '💰', skin: 4, need: { type: 'level', value: 32 }, coins: 1.7, items: {} },
+  { id: 'lv38', name: '土地所有者', emoji: '⛏️', skin: 4, need: { type: 'level', value: 38 }, coins: 1.8, items: {} },
+  { id: 'lv44', name: '丰收节冠军', emoji: '🏅', skin: 4, need: { type: 'level', value: 44 }, coins: 1.9, items: {} },
+  { id: 'lv50', name: '十里洋场', emoji: '🌍', skin: 5, need: { type: 'level', value: 50 }, coins: 2, items: {} },
+  { id: 'lv57', name: '一方霸主', emoji: '👑', skin: 5, need: { type: 'level', value: 57 }, coins: 2.1, items: {} },
+  { id: 'lv64', name: '农业宗师', emoji: '🎓', skin: 5, need: { type: 'level', value: 64 }, coins: 2.2, items: {} },
+  { id: 'lv71', name: '田园诗人', emoji: '🖋️', skin: 6, need: { type: 'level', value: 71 }, coins: 2.3, items: {} },
+  { id: 'lv78', name: '作物学家', emoji: '🔬', skin: 6, need: { type: 'level', value: 78 }, coins: 2.4, items: {} },
+  { id: 'lv86', name: '生态农场主', emoji: '🌿', skin: 6, need: { type: 'level', value: 86 }, coins: 2.5, items: {} },
+  { id: 'lv94', name: '田园领主', emoji: '⚜️', skin: 7, need: { type: 'level', value: 94 }, coins: 2.6, items: {} },
+  { id: 'lv102', name: '粮仓巨头', emoji: '🏬', skin: 7, need: { type: 'level', value: 102 }, coins: 2.7, items: {} },
+  { id: 'lv110', name: '四季常青', emoji: '🍃', skin: 7, need: { type: 'level', value: 110 }, coins: 2.8, items: {} },
+  { id: 'lv118', name: '瓜果王国', emoji: '🍈', skin: 8, need: { type: 'level', value: 118 }, coins: 2.9, items: {} },
+  { id: 'lv128', name: '花果之乡', emoji: '🌸', skin: 8, need: { type: 'level', value: 128 }, coins: 3, items: {} },
+  { id: 'lv138', name: '田园帝国', emoji: '🏞️', skin: 8, need: { type: 'level', value: 138 }, coins: 3.1, items: {} },
+  { id: 'lv150', name: '大地主', emoji: '🎩', skin: 9, need: { type: 'level', value: 150 }, coins: 3.2, items: {} },
+  { id: 'lv165', name: '农业传奇', emoji: '🗿', skin: 9, need: { type: 'level', value: 165 }, coins: 3.3, items: {} },
+  { id: 'lv180', name: '田园之神', emoji: '☀️', skin: 9, need: { type: 'level', value: 180 }, coins: 3.4, items: {} },
+  { id: 'lv200', name: '阳光牧场主', emoji: '🌞', skin: 10, need: { type: 'level', value: 200 }, coins: 3.5, items: {} },
+
+  // ── 图鉴称号（按点亮的图鉴数量，7 档）──────────────
+  { id: 'cx10', name: '拾穗学徒', emoji: '🌾', skin: 1, need: { type: 'codex', value: 10 }, coins: 2, items: { fertilizer: 3 } },
+  { id: 'cx30', name: '苗圃园丁', emoji: '🌱', skin: 2, need: { type: 'codex', value: 30 }, coins: 3, items: { fert1h: 2, dogFood: 2 } },
+  { id: 'cx60', name: '丰穑之士', emoji: '🪴', skin: 3, need: { type: 'codex', value: 60 }, coins: 5, items: { organic: 1, sprinkler: 1, pesticide: 1 } },
+  { id: 'cx100', name: '四季农师', emoji: '🍂', skin: 5, need: { type: 'codex', value: 100 }, coins: 8, items: { organic: 1, boost30: 2, sprinkler: 2, pesticide: 2 } },
+  { id: 'cx140', name: '种脉传家', emoji: '🧬', skin: 7, need: { type: 'codex', value: 140 }, coins: 12, items: { organic: 2, boost30: 4, sprinkler: 3, pesticide: 3, dogFood: 5 } },
+  { id: 'cx170', name: '一方农宗', emoji: '🏛️', skin: 8, need: { type: 'codex', value: 170 }, coins: 18, items: { organic: 3, boost30: 6, sprinkler: 4, pesticide: 4, dogFood: 8 } },
+  { id: 'cx200', name: '万物图典', emoji: '📖', skin: 10, need: { type: 'codex', value: 200 }, coins: 26, items: { organic: 5, boost30: 10, sprinkler: 6, pesticide: 6, dogFood: 12 } },
 ];
 
 /**
@@ -656,7 +699,19 @@ check(PLOTS.unlock.slice(0, PLOTS_UNLOCKED_AT_START).every((lv) => lv === 1), '�
 const expTable = Array.from({ length: MAX_LEVEL + 1 }, (_, lv) => expNeeded(lv));
 check(expTable.every((v, i) => i < 2 || v > expTable[i - 1]),
   '经验曲线未严格递增：' + expTable.findIndex((v, i) => i >= 2 && v <= expTable[i - 1]) + ' 级');
-check(TITLES.at(-1)[0] === MAX_LEVEL, '称号阶梯未覆盖到 200 级');
+check(TITLES.filter((t) => t.need.type === 'level').at(-1).need.value === MAX_LEVEL, '等级称号未覆盖到 200 级');
+check(new Set(TITLES.map((t) => t.id)).size === TITLES.length, '称号 id 重复');
+{
+  const lvTitles = TITLES.filter((t) => t.need.type === 'level');
+  const cxTitles = TITLES.filter((t) => t.need.type === 'codex');
+  check(lvTitles.every((t, i) => i === 0 || t.need.value > lvTitles[i - 1].need.value), '等级称号门槛未递增');
+  check(cxTitles.every((t, i) => i === 0 || t.need.value > cxTitles[i - 1].need.value), '图鉴称号门槛未递增');
+  for (const t of TITLES) {
+    for (const id of Object.keys(t.items)) {
+      check(ITEMS[id], `称号「${t.name}」引用了不存在的道具 ${id}`);
+    }
+  }
+}
 check(SOILS.every((s, i) => i === 0 || s.unlock > SOILS[i - 1].unlock), '土地解锁等级未递增');
 
 if (problems.length) {
@@ -792,7 +847,9 @@ const expPairs = [];
 for (let lv = 1; lv <= MAX_LEVEL; lv += 1) {
   expPairs.push(`  ${lv}: ${expTable[lv]},`);
 }
-const titlePairs = TITLES.map(([lv, name]) => `  [${lv}, '${name}'],`);
+const titleRows = TITLES.map((t) => `  { id: '${t.id}', name: '${t.name}', emoji: '${t.emoji}', skin: ${t.skin}, `
+  + `need: { type: '${t.need.type}', value: ${t.need.value} }, coins: ${t.coins}, `
+  + `items: ${JSON.stringify(t.items).replace(/"/g, "'")} },`).join('\n');
 
 fs.writeFileSync(
   path.join(OUT, 'progression.js'),
@@ -810,9 +867,16 @@ export const PLOT_UNLOCK_LV = [
 ${PLOTS.unlock.map((lv, i) => (i % 10 === 0 ? `  ${PLOTS.unlock.slice(i, i + 10).join(', ')},` : '')).filter(Boolean).join('\n')}
 ];
 
-/** 称号表：[最低等级, 称号]，升序 */
+/**
+ * 称号表：全部要**手动领取**，领取后可以佩戴一个。
+ *
+ * need.type  'level' 农场等级 / 'codex' 点亮的图鉴数量
+ * skin       配色编号，CSS 里定义了对应的底色
+ * coins      奖励金币 = 「该等级一次正常收获的价值」× 这个倍数
+ * items      额外发放的道具组合
+ */
 export const TITLES = [
-${titlePairs.join('\n')}
+${titleRows}
 ];
 
 /** 新玩家的初始金币 */
@@ -846,13 +910,22 @@ export function expForProgress(level) {
   return Number.isFinite(v) ? v : EXP_TABLE[MAX_LEVEL - 1];
 }
 
-/** 根据等级取称号 */
-export function titleOf(level) {
-  let title = TITLES[0][1];
-  for (const [minLv, name] of TITLES) {
-    if (level >= minLv) title = name;
+/** 按 id 取称号 */
+export function titleById(id) {
+  return TITLES.find((t) => t.id === id) || null;
+}
+
+/**
+ * 某个条件下已达成的最高称号（用来提示玩家「有新的可以领了」）。
+ * @param {'level'|'codex'} type
+ * @param {number} value 当前等级 / 已点亮的图鉴数
+ */
+export function titleAt(type, value) {
+  let found = null;
+  for (const t of TITLES) {
+    if (t.need.type === type && t.need.value <= value) found = t;
   }
-  return title;
+  return found;
 }
 
 /** 根据等级计算已解锁的地块数量 */

@@ -12,13 +12,12 @@ import {
   expForLevel,
   MAX_LEVEL,
   PLOT_UNLOCK_LV,
-  TITLES,
   TOTAL_PLOTS,
-  titleOf,
   unlockedPlotCount,
 } from '../data/progression.js';
 import { codexSummary } from '../store/codex.js';
 import { currentStreak } from '../store/signin.js';
+import { equippedTitle, titleStates } from '../store/titles.js';
 
 let els = null;
 
@@ -42,10 +41,27 @@ function collect() {
   };
 }
 
-/** 下一个称号及其所需等级 */
-function nextTitle(level) {
-  const next = TITLES.find(([minLv]) => minLv > level);
-  return next ? `Lv.${next[0]} ${next[1]}` : '已达最高称号';
+/**
+ * 下一个还没领到的称号 —— 用来提示「有新的可以领了」。
+ * 等级称号与图鉴称号混在一起按达成度排，先看哪个更接近。
+ */
+function nextTitle() {
+  const pending = titleStates().filter((t) => !t.claimed);
+  if (!pending.length) return '全部称号已领完';
+  const next = pending.reduce((best, t) => (
+    t.need.type === 'level'
+      ? (best.need.type === 'codex' || t.need.value - state.player.level < best.need.value - state.player.level ? t : best)
+      : best
+  ), pending[0]);
+  return next.need.type === 'level'
+    ? `Lv.${next.need.value} ${next.name}`
+    : `点亮 ${next.need.value} 种 ${next.name}`;
+}
+
+/** 佩戴的称号（没佩戴过时为 null） */
+function titleText() {
+  const t = equippedTitle();
+  return t ? `${t.emoji} ${t.name}` : '未佩戴称号';
 }
 
 /** 重绘 HUD */
@@ -59,18 +75,18 @@ export function renderHud() {
   els.name.innerHTML = escapeHtml(name);
   els.name.title = name;
   els.level.textContent = level;
-  els.title.textContent = titleOf(level);
+  els.title.textContent = titleText();
   els.coins.textContent = coins;
 
   els.dLevel.textContent = level;
-  els.dTitle.textContent = titleOf(level);
+  els.dTitle.textContent = titleText();
 
   const need = expForLevel(level);
   els.dExp.textContent = maxed ? '已满级' : `${exp} / ${need}`;
   const percent = maxed ? 100 : Math.max(0, Math.min(100, (exp / need) * 100));
   els.dExpBar.style.width = `${percent}%`;
 
-  els.dNextTitle.textContent = nextTitle(level);
+  els.dNextTitle.textContent = nextTitle();
   els.dPlots.textContent = `${unlockedPlotCount(level)} / ${TOTAL_PLOTS}`;
   els.dStreak.textContent = `${currentStreak()} 天`;
   const codex = codexSummary();

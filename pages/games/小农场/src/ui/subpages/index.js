@@ -4,6 +4,7 @@
 import { bagPage } from './bag.js';
 import { packagePage } from './package.js';
 import { codexPage } from './codex.js';
+import { titlesPage } from './titles.js';
 import { signPage } from './sign.js';
 import { guidePage } from './guide.js';
 import { dogPage } from './dog.js';
@@ -14,6 +15,7 @@ export const subpages = {
   bag: bagPage,
   package: packagePage,
   codex: codexPage,
+  titles: titlesPage,
   sign: signPage,
   guide: guidePage,
   dog: dogPage,

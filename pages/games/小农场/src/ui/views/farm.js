@@ -67,13 +67,16 @@ function careButtonsHTML(plot) {
 
 /**
  * 产量加成角标：钉在地块左上角，不占正文的流。
- * 10~30% 绿、40~60% 橙、70~100% 金红 —— 一眼看出这块地攒了多少加成。
+ *
+ * 两种来源相乘：捉虫是累积的（每只 +10%），增产剂是一次性的（10/20/30%）。
+ * 显示的是**合并后的实际增幅**，颜色按档位分。
  */
 function boostHTML(plot) {
-  if (!plot.boost) return '';
-  const pct = Math.round(plot.boost * 100);
+  const total = (1 + (plot.boost || 0)) * (1 + (plot.yieldBonus || 0)) - 1;
+  if (total <= 0) return '';
+  const pct = Math.round(total * 100);
   const tier = Math.min(3, Math.ceil(pct / 30));
-  return `<span class="plot-corner b${tier}" title="捉虫带来的产量加成">+${pct}%</span>`;
+  return `<span class="plot-corner b${tier}" title="产量加成">+${pct}%</span>`;
 }
 
 function growingHTML(plot) {
@@ -363,37 +366,43 @@ function openPlantModal(plotId) {
 /* ---------- 施肥弹窗 ---------- */
 
 /**
- * 五档普通化肥 + 有机化肥，按背包存货列出来。
+ * 施肥：缩短时间（五档普通化肥）、增产（三档增产剂）、直接成熟（有机化肥）。
  *
- * 之前每块地上直接摆两个按钮（普通 / 有机），现在肥料的档位多了，
- * 一格根本放不下，改成「点一下 🧪 → 选一档」——
- * 顺便能在同一个面板里把「这块地已经用过什么」讲清楚。
+ * 三类共用一个额度 —— 一株作物一轮只能施一次，所以面板分成三组，
+ * 每组都能一眼看出「还剩什么没选」。
  */
+function fertRow(id, plotId, used) {
+  const item = ITEMS[id];
+  const owned = count(id);
+  const disabled = !owned || used;
+  const note = used ? '这块地这轮已经施过肥了' : item.desc;
+
+  return `
+    <div class="shop-item ${disabled ? 'locked' : ''}">
+      <div class="si-emoji">${item.emoji}</div>
+      <div class="si-body">
+        <div class="si-name">${item.name} <span class="si-own">· 拥有 ${owned}</span></div>
+        <div class="si-meta">${note}</div>
+      </div>
+      <button class="btn small ${disabled ? '' : 'ghost'}" ${disabled ? 'disabled' : ''}
+              data-action="apply-fert" data-plot="${plotId}" data-item="${id}">使用</button>
+    </div>`;
+}
+
 function openFertModal(plotId) {
   const plot = state.plots.find((p) => p.id === plotId);
   if (!plot || !plot.cropId || Date.now() >= plot.readyAt) return;
 
   const crop = CROPS[plot.cropId];
-  const rows = FERTILIZER_IDS.map((id) => {
-    const item = ITEMS[id];
-    const owned = count(id);
-    const used = item.instant ? plot.organic : plot.fert;
-    const disabled = !owned || used;
-    const note = used
-      ? (item.instant ? '这块地已经用过有机化肥了' : '这块地这轮已经施过普通化肥了')
-      : item.desc;
+  const used = Boolean(plot.fert);
 
-    return `
-      <div class="shop-item ${disabled ? 'locked' : ''}">
-        <div class="si-emoji">${item.emoji}</div>
-        <div class="si-body">
-          <div class="si-name">${item.name} <span class="si-own">· 拥有 ${owned}</span></div>
-          <div class="si-meta">${note}</div>
-        </div>
-        <button class="btn small ${disabled ? '' : 'ghost'}" ${disabled ? 'disabled' : ''}
-                data-action="apply-fert" data-plot="${plotId}" data-item="${id}">使用</button>
-      </div>`;
-  }).join('');
+  const group = (title, ids) => `
+    <div class="section-title">${title}</div>
+    <div class="list">${ids.map((id) => fertRow(id, plotId, used)).join('')}</div>`;
+
+  const timeIds = FERTILIZER_IDS.filter((id) => ITEMS[id].minutes);
+  const boostIds = FERTILIZER_IDS.filter((id) => ITEMS[id].boost);
+  const instantIds = FERTILIZER_IDS.filter((id) => ITEMS[id].instant);
 
   openModal(`
     <div class="modal-head">
@@ -401,9 +410,12 @@ function openFertModal(plotId) {
       <button class="close" data-close>✕</button>
     </div>
     <div class="modal-sub">
-      还剩 ${fmtDuration(plot.readyAt - Date.now())} · 普通化肥每轮限一次，有机化肥另算一次
+      还剩 ${fmtDuration(plot.readyAt - Date.now())} · 一株作物每轮只能施一次肥
+      ${used ? '（这块地已经施过了）' : ''}
     </div>
-    <div class="list">${rows}</div>
+    ${group('⏳ 缩短成熟时间', timeIds)}
+    ${group('💫 提高产量', boostIds)}
+    ${group('⚗️ 直接成熟', instantIds)}
   `, async (action, el) => {
     if (action === 'apply-fert') {
       const ok = await farm.fertilize(Number(el.dataset.plot), el.dataset.item);

@@ -1,8 +1,11 @@
 /**
- * 图鉴领域：记录每种作物的种植与收获次数。
+ * 图鉴领域：记录每种作物的种植与收获次数，以及做好的标本。
  *
  * 统计存在 player.cropStats 上，结构是 { 作物id: { planted, harvested } }。
- * 「收获数 > 0」即视为点亮，这是图鉴的核心判定。
+ * **点亮**的判定是「有标本」—— 制作一份标本要花掉仓库里 50 个同样的产出，
+ * 所以收集本身就是目标；收获数只是展示用的参考资料。
+ *
+ * 标本存在 player.specimens 上，结构是 { 作物id: true }。
  *
  * 老存档没有 cropStats，统计从接入那一刻开始累积，不追溯历史。
  */
@@ -12,12 +15,18 @@ import { state } from './state.js';
 import { CROP_IDS, CROPS } from '../data/crops.js';
 import { MAX_LEVEL } from '../data/progression.js';
 import { GUIDES } from '../data/guide.js';
+import { produceId } from '../data/keys.js';
+import { count, take } from './inventory.js';
 import { addCoins, addExpRaw } from './player.js';
 import { notify } from './notify.js';
+
+/** 制作一份标本要消耗多少个产出 */
+export const SPECIMEN_COST = 50;
 
 /** 补齐后来新增的字段 */
 export function ensureStats() {
   if (!state.player.cropStats) state.player.cropStats = {};
+  if (!state.player.specimens) state.player.specimens = {};
   if (!state.player.guide) state.player.guide = {};
 }
 
@@ -87,17 +96,62 @@ export function guideProgress() {
 
 /* ---------- 图鉴 ---------- */
 
+/** 是否已经做好标本 */
+export function hasSpecimen(cropId) {
+  ensureStats();
+  return Boolean(state.player.specimens[cropId]);
+}
+
+/** 仓库里够不够做一份标本 */
+export function specimenReady(cropId) {
+  return count(produceId(cropId)) >= SPECIMEN_COST;
+}
+
 /**
- * 图鉴条目列表。145 种作物全部返回，由调用方决定怎么展示未解锁的。
+ * 制作一份标本：扣掉仓库里 50 个同样的产出，点亮该图鉴。
+ *
+ * @param {string} cropId
+ * @returns {Promise<boolean>} 是否制作成功
+ */
+export async function makeSpecimen(cropId) {
+  ensureStats();
+  const crop = CROPS[cropId];
+  if (!crop) return false;
+  if (hasSpecimen(cropId)) {
+    notify('这份标本已经做好了');
+    return false;
+  }
+  if (!specimenReady(cropId)) {
+    notify(`仓库里不够 ${SPECIMEN_COST} 个${crop.name}`);
+    return false;
+  }
+
+  take(produceId(cropId), SPECIMEN_COST);
+  state.player.specimens[cropId] = true;
+
+  await commit({ player: state.player }, { bag: state.bag });
+  emit(EVENTS.CODEX);
+  emit(EVENTS.INVENTORY);
+
+  notify(`${crop.emoji} 做好了${crop.name}的标本，图鉴已点亮`, 'gold');
+  return true;
+}
+
+/**
+ * 图鉴条目列表。全部作物都返回，由调用方决定怎么展示未解锁的。
  * @returns {Array<{id, name, emoji, lv, stages, sell, yield, grow, harvests,
- *                 planted, harvested, lit, unlocked, unlockedPlots}>}
+ *                 planted, harvested, lit, unlocked, unlockedPlots,
+ *                 specimen, canMake, owned}>}
  */
 export function codexEntries() {
   const level = state.player.level;
+  ensureStats();
 
   return CROP_IDS.map((id) => {
     const crop = CROPS[id];
     const stat = statOf(id);
+    const specimen = hasSpecimen(id);
+    const owned = count(produceId(id));
     return {
       id,
       name: crop.name,
@@ -113,8 +167,14 @@ export function codexEntries() {
       special: Boolean(crop.special),
       planted: stat.planted,
       harvested: stat.harvested,
-      /** 点亮：收获数量大于 0 */
-      lit: stat.harvested > 0,
+      /** 点亮：做好了一份标本 */
+      lit: specimen,
+      /** 已经做好标本 */
+      specimen,
+      /** 仓库里现有的产出数量 */
+      owned,
+      /** 能不能做标本：没做过且仓库里够 50 个 */
+      canMake: !specimen && owned >= SPECIMEN_COST,
       /** 解锁：等级足够 */
       unlocked: level >= crop.lv,
     };

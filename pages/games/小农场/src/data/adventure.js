@@ -66,6 +66,18 @@ export const SCENES = [
   { scene: '🎪', title: '路边集市', text: '有人在卖看不懂的干粮，也有人在下注。', left: '买点干粮', right: '直接走过' },
   { scene: '🌬️', title: '老风车', text: '风车还在转，叶片发出吱呀声。', left: '靠近些', right: '绕到背面' },
   { scene: '🌌', title: '星空', text: '天忽然黑了，星星多得不真实。', left: '数一数星星', right: '闭眼许个愿' },
+  { scene: '🚧', title: '施工的路段', text: '前面围着围挡，绕路要花不少时间。', left: '从围挡下钻过去', right: '老老实实绕行' },
+  { scene: '🪙', title: '石缝里的光', text: '路边石缝里好像反着一点光。', left: '蹲下来看看', right: '不浪费时间' },
+  { scene: '🌾', title: '倒伏的麦田', text: '一片麦子被风压倒在地上，麦穗沉甸甸的。', left: '顺手割一捆', right: '替主人扶一扶' },
+  { scene: '🕯️', title: '熄灭的路灯', text: '路灯不知什么时候坏了，前面一片黑。', left: '摸黑走过去', right: '等下一盏亮着' },
+  { scene: '🎣', title: '静的水面', text: '水面平得不像话，浮标却动了一下。', left: '甩一竿试试', right: '继续赶路' },
+  { scene: '📦', title: '摔破的木箱', text: '木箱翻在路边，里面的东西撒了一地。', left: '挑几样能用的', right: '一样不碰' },
+  { scene: '🪵', title: '堆起的柴火', text: '柴火堆得比人还高，底下压着个东西。', left: '抽开几根看看', right: '不动人家的柴' },
+  { scene: '🌊', title: '退潮的滩涂', text: '海水退得很远，滩涂上留下一串串小洞。', left: '沿着小洞走', right: '离水远一点' },
+  { scene: '🕯️', title: '地窖入口', text: '地窖盖子歪在一边，里面传出凉气。', left: '扶着梯子下去', right: '把盖子盖回去' },
+  { scene: '🦌', title: '林间的鹿', text: '一只鹿站在林间，没有跑。', left: '轻声靠近', right: '原地不动' },
+  { scene: '🧭', title: '倒扣的罗盘', text: '罗盘躺在地上，指针还在轻轻晃。', left: '捡起来看看', right: '让它躺平' },
+  { scene: '🌋', title: '冒烟的裂口', text: '地面裂开一道缝，底下有热气往上冒。', left: '凑近看看', right: '离远些' },
 ];
 
 /* ---------- 奖励 ---------- */
@@ -87,12 +99,14 @@ export const NPC_ADVENTURE_CHANCE = 0.12;
 /**
  * 除限定种子外，其余奖励的构成。
  *
- * 金币占 2/7（约 29%）。种子按种子价记账，但种下去能卖出 2~3 倍种子价的产出，
+ * 金币占 1/4。种子按种子价记账，但种下去能卖出 2~3 倍种子价的产出，
  * 所以把份额从金币挪给种子并不会让玩家变穷 —— 真正的现金只有金币这一项。
+ * 「成熟产出」是已经摘好的农产品，直接就能卖，按单价记账。
  */
 const REWARD_MIX = [
   { kind: 'coin', weight: 2 },
-  { kind: 'seed', weight: 4 },
+  { kind: 'seed', weight: 3 },
+  { kind: 'produce', weight: 2 },
   { kind: 'item', weight: 1 },
 ];
 
@@ -197,6 +211,22 @@ export function buildRewardPool(tier) {
         emoji: crop.emoji,
         name: `${crop.name}种子`,
         value: crop.seed * n,
+      }));
+      continue;
+    }
+
+    if (kind === 'produce') {
+      // 已经摘好的农产品：等级范围与商店种子一致，数量在 2~10 之间，
+      // 但要受这一份的预算约束（卖价太贵就少给几个）
+      const cropId = pick(shopSeedsWithin(map.shopSeedCap));
+      const crop = CROPS[cropId];
+      const n = Math.max(2, Math.min(10, Math.round(share / crop.sell)));
+      rewards.push(reward('produce', {
+        id: cropId,
+        n,
+        emoji: crop.emoji,
+        name: crop.name,
+        value: crop.sell * n,
       }));
       continue;
     }

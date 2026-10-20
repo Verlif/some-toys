@@ -326,8 +326,25 @@ try {
   if (PLOT_UNLOCK_LV.at(-1) !== MAX_LEVEL) {
     fail(cropFile, `最后一块地在 Lv${PLOT_UNLOCK_LV.at(-1)} 解锁，未对齐等级上限 ${MAX_LEVEL}`);
   }
-  if (TITLES.at(-1)[0] !== MAX_LEVEL) {
-    fail(cropFile, `最后一级称号在 Lv${TITLES.at(-1)[0]}，未对齐等级上限 ${MAX_LEVEL}`);
+  // 称号现在分两类：等级称号（门槛=等级）与图鉴称号（门槛=图鉴数量）
+  const levelTitles = TITLES.filter((t) => t.need.type === 'level');
+  const codexTitles = TITLES.filter((t) => t.need.type === 'codex');
+  if (!levelTitles.length || !codexTitles.length) {
+    fail(cropFile, '称号表缺少等级称号或图鉴称号');
+  }
+  if (levelTitles.at(-1).need.value !== MAX_LEVEL) {
+    fail(cropFile, `最后一级称号在 Lv${levelTitles.at(-1).need.value}，未对齐等级上限 ${MAX_LEVEL}`);
+  }
+  for (const [list, label] of [[levelTitles, '等级'], [codexTitles, '图鉴']]) {
+    for (let i = 1; i < list.length; i += 1) {
+      if (list[i].need.value <= list[i - 1].need.value) {
+        fail(cropFile, `${label}称号门槛未递增：${list[i - 1].name} → ${list[i].name}`);
+        break;
+      }
+    }
+  }
+  if (new Set(TITLES.map((t) => t.id)).size !== TITLES.length) {
+    fail(cropFile, '称号 id 重复');
   }
   for (let lv = 1; lv < MAX_LEVEL; lv += 1) {
     if (expForLevel(lv) >= expForLevel(lv + 1)) {

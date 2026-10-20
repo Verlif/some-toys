@@ -59,6 +59,7 @@ async function boot() {
   on(EVENTS.FRIENDS, renderCurrent);
   on(EVENTS.SIGN, renderCurrent);
   on(EVENTS.CODEX, renderCurrent);
+  on(EVENTS.TITLES, renderCurrent);
 
   // 邻居的成长不在这里推进——它只在切到邻居页时结算一次，见 enterFriendsPage。
   // 心跳同样只在农场页可见时刷新地块。
