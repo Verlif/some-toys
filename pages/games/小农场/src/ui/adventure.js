@@ -260,6 +260,13 @@ function askExit() {
   `, (action) => ADVENTURE_ACTIONS[action]?.());
 }
 
+/** 结算单里右侧那个数：金币写金额，守护犬写「已入窝」 */
+function resultAmount(reward) {
+  if (reward.kind === 'coin') return `${reward.n} 💰`;
+  if (reward.kind === 'dog') return '已入狗窝';
+  return `×${reward.n}`;
+}
+
 /** 本趟收获的结算单 */
 function showSummary(summary) {
   const rows = summary.earned.length
@@ -267,7 +274,7 @@ function showSummary(summary) {
         <div class="adv-result-row">
           <span class="adv-result-emoji">${r.emoji}</span>
           <span class="adv-result-name">${r.name}</span>
-          <span class="adv-result-n">${r.kind === 'coin' ? `${r.n} 💰` : `×${r.n}`}</span>
+          <span class="adv-result-n">${resultAmount(r)}</span>
         </div>`).join('')
     : '<div class="empty-tip">🕳️<br>这趟什么都没挖到<br>下次换个方向试试</div>';
 

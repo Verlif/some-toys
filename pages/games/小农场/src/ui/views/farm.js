@@ -19,6 +19,7 @@ import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
 import { stackClass, yieldClass } from '../meta-tags.js';
 import { closeModal, openModal } from '../modal.js';
+import { activeBreed, dogSatiety, guardChanceNow } from '../../store/dogs.js';
 
 /** plotId → { el, key, bar, time } */
 const nodes = new Map();
@@ -157,10 +158,10 @@ export function renderFarm() {
   if (!grid) return;
 
   const unlocked = farm.unlockedPlotCount();
-  const lockedCount = state.plots.length - unlocked;
+  const lockedCount = state.farm.plots.length - unlocked;
   let firstLocked = null;
 
-  for (const plot of state.plots) {
+  for (const plot of state.farm.plots) {
     const status = farm.plotStatus(plot);
     const key = plotKey(plot, status);
 
@@ -195,9 +196,13 @@ export function renderFarm() {
 /**
  * 底部的一键照料条。
  *
- * 只有背包里真有洒水器 / 杀虫剂时才出现；按钮上的数字是「待处理块数」，
- * 后面的 ×N 是道具存量。数量或需求数没变就不重建 DOM，
- * 否则 500ms 一次的心跳会把正在按的按钮换掉。
+ * 两块内容：
+ *   - **上岗的守护犬**：常驻信息，有没有狗、什么品种、拦得住几成。
+ *     它和背包里的道具无关，只要农场上有狗就显示；
+ *   - **一键照料按钮**：只有背包里真有洒水器 / 杀虫剂时才出现，
+ *     按钮上的数字是「待处理块数」，后面的 ×N 是道具存量。
+ *
+ * 数量或需求数没变就不重建 DOM，否则 500ms 一次的心跳会把正在按的按钮换掉。
  */
 let toolsKey = '';
 
@@ -207,31 +212,44 @@ function renderFarmTools() {
 
   const water = count(SPRINKLER_ID);
   const pest = count(PESTICIDE_ID);
-  if (!water && !pest) {
-    if (toolsKey) {
-      toolsKey = '';
-      el.hidden = true;
-      el.innerHTML = '';
-      document.body.classList.remove('has-farm-tools');
-    }
-    return;
-  }
+
+  // 上岗的守护犬是农场的常驻信息：有没有狗、什么品种、拦得住几成
+  const breed = activeBreed();
+  const dogTag = breed
+    ? `<span class="farm-dog" title="${breed.name} 正在看家，拦截率 ${Math.round(guardChanceNow() * 100)}%">
+        ${breed.emoji} ${breed.name} · 拦截 ${Math.round(guardChanceNow() * 100)}%
+        <i class="farm-dog-bar"><b style="width:${Math.round(dogSatiety())}%"></b></i>
+      </span>`
+    : '<span class="farm-dog off">🐶 没有狗上岗</span>';
 
   const now = Date.now();
-  const needWater = state.plots.filter((p) => farm.needsWater(p, now)).length;
-  const needPest = state.plots.filter((p) => farm.needsPest(p, now)).length;
-  const key = `${water}|${pest}|${needWater}|${needPest}`;
-  if (key === toolsKey) return;
-  toolsKey = key;
+  const needWater = state.farm.plots.filter((p) => farm.needsWater(p, now)).length;
+  const needPest = state.farm.plots.filter((p) => farm.needsPest(p, now)).length;
+  const key = `${water}|${pest}|${needWater}|${needPest}|${breed?.id || ''}|${Math.round(dogSatiety())}`;
 
-  el.hidden = false;
-  document.body.classList.add('has-farm-tools');
-  el.innerHTML = [
-    water ? `<button class="tool-btn" data-action="water-all" ${needWater ? '' : 'disabled'}>
-      🚿 一键浇水${needWater ? `（${needWater} 块）` : '· 暂无需求'} <span class="tool-count">×${water}</span></button>` : '',
-    pest ? `<button class="tool-btn" data-action="pest-all" ${needPest ? '' : 'disabled'}>
-      🧴 一键杀虫${needPest ? `（${needPest} 块）` : '· 暂无需求'} <span class="tool-count">×${pest}</span></button>` : '',
-  ].join('');
+  if (key !== toolsKey) {
+    toolsKey = key;
+
+    // 没有道具就只剩守护犬那一行：不能因此把整条藏掉，
+    // 否则新玩家（还没买过洒水器）永远看不到自己养了条狗
+    const toolRow = (water || pest)
+      ? `<div class="farm-tool-row">${[
+        water ? `<button class="tool-btn" data-action="water-all" ${needWater ? '' : 'disabled'}>
+          🚿 一键浇水${needWater ? `（${needWater} 块）` : '· 暂无需求'} <span class="tool-count">×${water}</span></button>` : '',
+        pest ? `<button class="tool-btn" data-action="pest-all" ${needPest ? '' : 'disabled'}>
+          🧴 一键杀虫${needPest ? `（${needPest} 块）` : '· 暂无需求'} <span class="tool-count">×${pest}</span></button>` : '',
+      ].join('')}</div>`
+      : '';
+
+    el.hidden = false;
+    el.innerHTML = `<div class="farm-dog-row">${dogTag}</div>${toolRow}`;
+  }
+
+  // 日志按钮按工具条的**实际**高度抬起来（含 8px 间隙）。
+  // 不能写死：只有狗行是 26px 左右，多了一键按钮就是两倍高。
+  // 页面不可见时 offsetHeight 为 0，这时不要覆盖，等下一次渲染再量。
+  const height = el.offsetHeight;
+  if (height) document.body.style.setProperty('--farm-tools-h', `${height + 8}px`);
 }
 
 /** 取（或创建）某个地块的 DOM 节点 */
@@ -334,7 +352,7 @@ function seedCardHTML(cropId) {
  * 少一层筛选，玩家的路径也更短：点地 → 点种子 → 种下。
  */
 function openPlantModal(plotId) {
-  const plot = state.plots.find((p) => p.id === plotId);
+  const plot = state.farm.plots.find((p) => p.id === plotId);
   if (!plot) return;
   const soil = SOILS[plot.soil];
   const owned = CROP_IDS.filter((id) => count(seedId(id)) > 0);
@@ -390,7 +408,7 @@ function fertRow(id, plotId, used) {
 }
 
 function openFertModal(plotId) {
-  const plot = state.plots.find((p) => p.id === plotId);
+  const plot = state.farm.plots.find((p) => p.id === plotId);
   if (!plot || !plot.cropId || Date.now() >= plot.readyAt) return;
 
   const crop = CROPS[plot.cropId];
@@ -457,4 +475,6 @@ export function mountFarm() {
   on(EVENTS.PLAYER, renderFarm);
   on(EVENTS.FARM, renderFarm);
   on(EVENTS.INVENTORY, renderFarm);
+  // 换狗、喂狗、狗粮槽变化都要更新顶上的守护犬信息
+  on(EVENTS.PETS, renderFarmTools);
 }

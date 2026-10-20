@@ -14,6 +14,17 @@
 </head>
 <body>
 
+<!-- 启动等待画面：开库、读档、补算邻居近况都可能要一两秒。
+     直接写在 HTML 里，JS 还没跑起来时它就已经可见，不会白屏。 -->
+<div id="boot">
+  <div class="boot-card">
+    <div class="boot-logo">🌾</div>
+    <div class="boot-title" id="bootTitle">正在连接到农场</div>
+    <div class="boot-sub" id="bootSub">打开本地存档…</div>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+  </div>
+</div>
+
 <div class="app">
   <header class="hud">
     <button class="hud-bar" id="hudToggle" aria-expanded="false">
@@ -143,7 +154,7 @@
 <div id="simOverlay" hidden>
   <div class="sim-card">
     <div class="sim-emoji">🧑‍🌾</div>
-    <div class="sim-title">邻居们正在farm……</div>
+    <div class="sim-title">邻居们正在打理农场……</div>
     <div class="sim-bar"><i></i></div>
     <div class="sim-label">0%</div>
     <div class="sim-detail"></div>

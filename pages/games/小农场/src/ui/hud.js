@@ -50,7 +50,7 @@ function nextTitle() {
   if (!pending.length) return '全部称号已领完';
   const next = pending.reduce((best, t) => (
     t.need.type === 'level'
-      ? (best.need.type === 'codex' || t.need.value - state.player.level < best.need.value - state.player.level ? t : best)
+      ? (best.need.type === 'codex' || t.need.value - state.farm.level < best.need.value - state.farm.level ? t : best)
       : best
   ), pending[0]);
   return next.need.type === 'level'
@@ -69,7 +69,7 @@ export function renderHud() {
   if (!els) collect();
   if (!els?.name) return;
 
-  const { level, exp, coins, name } = state.player;
+  const { level, exp, coins, name } = state.farm;
   const maxed = level >= MAX_LEVEL;
 
   els.name.innerHTML = escapeHtml(name);

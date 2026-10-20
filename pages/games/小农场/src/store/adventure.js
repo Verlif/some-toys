@@ -14,7 +14,8 @@ import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { MAP_TIERS, buildRun, describeReward, mapTier } from '../data/adventure.js';
 import { mapId, produceId, seedId } from '../data/keys.js';
-import { formatCoins } from './npc-sim.js';
+import { formatCoins } from '../core/utils.js';
+import { addDogBreed, ownedBreedIds } from './dogs.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
 
@@ -22,9 +23,10 @@ import { notify } from './notify.js';
 let run = null;
 
 async function persist() {
-  await commit({ player: state.player }, { bag: state.bag });
+  await commit({ farms: [state.farm], bag: state.bag, news: state.news });
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
+  emit(EVENTS.PETS);
 }
 
 /** 背包里还有哪些藏宝图 */
@@ -48,6 +50,7 @@ function applyReward(reward) {
   if (reward.kind === 'coin') player.addCoins(reward.n);
   else if (reward.kind === 'item') inventory.add(reward.id, reward.n);
   else if (reward.kind === 'produce') inventory.add(produceId(reward.id), reward.n);
+  else if (reward.kind === 'dog') addDogBreed(reward.id);
   else inventory.add(seedId(reward.id), reward.n);
 }
 
@@ -65,7 +68,8 @@ export async function startRun(tier) {
     return null;
   }
 
-  run = buildRun(tier);
+  // 守护犬：低概率附带，且不会给已经收集过的品种
+  run = buildRun(tier, { dog: { owned: ownedBreedIds() } });
   player.addLog('🗺️', `用掉 ${map.name}，进入寻宝`);
   await persist();
   return run;

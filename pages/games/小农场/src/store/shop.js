@@ -14,13 +14,13 @@ import { completeGuide } from './codex.js';
 import { notify } from './notify.js';
 
 async function persist() {
-  await commit({ player: state.player }, { bag: state.bag });
+  await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
 }
 
 /** 该作物对当前等级是否已解锁 */
-export const isSeedUnlocked = (cropId) => state.player.level >= CROPS[cropId].lv;
+export const isSeedUnlocked = (cropId) => state.farm.level >= CROPS[cropId].lv;
 
 /**
  * 购买种子
@@ -83,7 +83,7 @@ export async function buyItem(itemId) {
 export async function buyMap(tier) {
   const map = mapTier(tier);
   if (!map) return false;
-  if (state.player.level < map.unlock) {
+  if (state.farm.level < map.unlock) {
     notify(`需要 Lv.${map.unlock} 才能购买 ${map.name}`);
     return false;
   }

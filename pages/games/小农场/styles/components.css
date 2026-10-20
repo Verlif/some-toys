@@ -1641,3 +1641,37 @@
   font-weight: 600;
 }
 .title-banner b { font-size: 14px; }
+
+/* ---------- 狗窝：品种网格 ---------- */
+.dog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  padding: 0 13px 4px;
+}
+.dog-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 11px 6px 9px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  text-align: center;
+}
+.dog-card.active {
+  border-color: var(--green-l);
+  background: #f4faf1;
+  box-shadow: 0 0 0 2px rgba(124, 197, 118, .18);
+}
+.dog-card.locked {
+  background: #f7f8f5;
+  border-style: dashed;
+  border-color: #dfe4da;
+}
+.dog-card .dog-emoji { font-size: 24px; line-height: 1.1; }
+.dog-card .dog-name { font-size: 12px; font-weight: 600; color: #40503c; }
+.dog-card .dog-rate { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dog-card .dog-hint { font-size: 10px; color: #a0aa9c; }
+.dog-card .btn { margin-top: 3px; }

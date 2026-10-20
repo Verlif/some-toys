@@ -51,7 +51,7 @@ function renderLog() {
   const cutoff = now - KEEP_DAYS * DAY_MS;
 
   // 邻居结算是补写过去的，数组本身不保证有序，展示前统一排一次
-  const entries = [...(state.player.log || [])]
+  const entries = [...(state.farm.log || [])]
     .filter((entry) => entry.at >= cutoff)
     .sort((a, b) => b.at - a.at);
 

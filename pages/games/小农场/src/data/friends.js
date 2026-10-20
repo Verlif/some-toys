@@ -3,14 +3,14 @@
  *
  * 每位邻居 = 性格 + 职业 + 上线节奏 + 偷菜倾向。
  * 这四样叠起来决定他这座农场长什么样、什么时候上线、
- * 会不会摸到玩家家里顺菜 —— 20 位邻居因此各有各的发展轨迹。
+ * 会不会摸到玩家家里顺菜 —— 32 位邻居因此各有各的发展轨迹。
  *
- * 邻居是完全离线的：玩家什么时候打开游戏、什么时候进入邻居页，
+ * 邻居是完全离线的：玩家什么时候打开游戏、什么时候进邻居页，
  * 都不影响他们的节奏；进度由「上次结算时间 → 现在」的时间差补算出来。
+ * 玩家在线时他们的动作会一条一条地演出来，见 store/social.js。
  */
 import { CROPS } from './crops.js';
-import { ITEMS } from './items.js';
-import { randInt, safeNum } from '../core/utils.js';
+import { randInt } from '../core/utils.js';
 
 /* ---------- 性格：决定上线时各行为的权重 ---------- */
 export const PERSONALITIES = {
@@ -42,7 +42,7 @@ export const STEAL_LABELS = {
   always: '见菜就偷',
 };
 
-/* ---------- 20 位邻居 ---------- */
+/* ---------- 32 位邻居 ---------- */
 
 /**
  * 邻居的起始等级。
@@ -120,6 +120,30 @@ export const NPCS = [
     schedule: { type: 'fixed', hours: [5, 17] }, steal: 'rare' },
   { id: 'npc20', name: '米雪', avatar: '🍰', personality: 'thrifty', profession: '烘焙师',
     schedule: { type: 'interval', min: 3, max: 10 }, steal: 'often' },
+  { id: 'npc21', name: '胖婶', avatar: '👩‍🍳', personality: 'greedy', profession: '早点摊主',
+    schedule: { type: 'interval', min: 5, max: 11 }, steal: 'often' },
+  { id: 'npc22', name: '老葛', avatar: '🧑‍🔧', personality: 'leisurely', profession: '退休木匠',
+    schedule: { type: 'fixed', hours: [7, 19] }, steal: 'rare' },
+  { id: 'npc23', name: '二丫', avatar: '🐑', personality: 'friendly', profession: '放羊娃',
+    schedule: { type: 'interval', min: 4, max: 9 }, steal: 'never' },
+  { id: 'npc24', name: '金链哥', avatar: '🕶️', personality: 'greedy', profession: '二手车商',
+    schedule: { type: 'interval', min: 3, max: 7 }, steal: 'always' },
+  { id: 'npc25', name: '秦阿姨', avatar: '🧹', personality: 'thrifty', profession: '保洁员',
+    schedule: { type: 'fixed', hours: [6, 17] }, steal: 'rare' },
+  { id: 'npc26', name: '大勇', avatar: '🔧', personality: 'diligent', profession: '修理工',
+    schedule: { type: 'interval', min: 5, max: 12 }, steal: 'often' },
+  { id: 'npc27', name: '柳先生', avatar: '📚', personality: 'scholar', profession: '中学老师',
+    schedule: { type: 'fixed', hours: [7, 20] }, steal: 'never' },
+  { id: 'npc28', name: '花姐', avatar: '🎀', personality: 'merchant', profession: '婚庆老板',
+    schedule: { type: 'interval', min: 6, max: 14 }, steal: 'often' },
+  { id: 'npc29', name: '老K', avatar: '🧢', personality: 'boss', profession: '网吧老板',
+    schedule: { type: 'interval', min: 4, max: 10 }, steal: 'often' },
+  { id: 'npc30', name: '石头', avatar: '🧒', personality: 'diligent', profession: '学徒工',
+    schedule: { type: 'fixed', hours: [6, 18] }, steal: 'rare' },
+  { id: 'npc31', name: '吴姐', avatar: '🍼', personality: 'thrifty', profession: '月嫂',
+    schedule: { type: 'interval', min: 8, max: 16 }, steal: 'never' },
+  { id: 'npc32', name: '赵六', avatar: '🧤', personality: 'greedy', profession: '收废品的',
+    schedule: { type: 'interval', min: 2, max: 8 }, steal: 'always' },
 ];
 
 /* ---------- 模拟节奏 ---------- */
@@ -134,6 +158,24 @@ const DEFAULT_INTERVAL = { min: 8, max: 16 };
 
 /** 每次上线平均执行的动作数 */
 export const ACTIONS_PER_VISIT = [2, 4];
+
+/**
+ * 玩家在线时，邻居每做一个动作之间要隔多久（毫秒）。
+ *
+ * 离线结算是「一口气算完」的，玩家看不见；在线时则要看得出来
+ * 邻居正在自己农场里忙：先上线打个招呼，然后隔几秒做一件事。
+ */
+export const LIVE_STEP_MS = [3000, 7000];
+
+/**
+ * 邻居挑目标时给「玩家农场」的权重。
+ *
+ * 偷菜先挑农场、再挑地块。玩家有 40 块地，是镇上最扎眼的一座 ——
+ * 所以给他 2 倍权重：邻居越多，玩家被顺的次数才会跟着涨。
+ * 不加这个权重的话，新增邻居只是在稀释「我」被偷的概率，
+ * 邻居再多也不会有危机感。
+ */
+export const PLAYER_FARM_WEIGHT = 2;
 
 /**
  * 精细模拟的时间窗口：只有这段时间内的上线会被逐条执行并写进动态日志，
@@ -191,56 +233,12 @@ export function expectedGapMs(npc) {
 /* ---------- 守护犬 ---------- */
 
 /**
- * 守护犬用「饱腹度」表示状态：0~100，随时间匀速下降。
+ * 邻居家的狗：品种 + 饱腹度。
  *
- * 之前用 fedUntil 时间戳，只有「喂过一次 = 守护 30 分钟」这一种状态，
- * 玩家既看不出还剩多久，也不知道狗到底有没有用。
- * 改成饱腹度之后，进度条、剩余时长、拦截概率都能从这一个数字算出来。
+ * 玩家的狗有十个品种可选（见 data/dogs.js），邻居的狗也有 ——
+ * 等级越高越可能养得起好狗。他们的狗只看「基础拦截率 × 饱腹度」，
+ * 和玩家同一套公式。
  */
-export const DOG_SATIETY_MAX = 100;
-
-/** 每份狗粮恢复的饱腹度 */
-export const DOG_FOOD_SATIETY = 45;
-
-/** 每小时掉多少饱腹度：喂满一次大约守护 16 小时 */
-export const DOG_SATIETY_DECAY = 6.25;
-
-/**
- * 饱腹度 → 偷菜被赶走的概率。
- *
- * 饿扁了就是 0：狗不吃饭不会替你看门。
- * 刚喂饱时七成能拦住，快饿完时只剩一成半 —— 狗粮是消耗品，
- * 不喂就没有防护，这是它和「一次性道具」的区别。
- * @param {number} satiety 0~100
- * @returns {number} 0~1
- */
-export function dogCatchChance(satiety) {
-  if (satiety <= 0) return 0;
-  const ratio = Math.max(0, Math.min(1, satiety / DOG_SATIETY_MAX));
-  return 0.15 + ratio * 0.55;
-}
-
-/** 邻居给狗添一次食要花的钱：和玩家买一份狗粮同价 */
-export const DOG_FOOD_PRICE = ITEMS.dogFood.price;
-
-/** 邻居家的狗开局时的饱腹度：有的刚喂过，有的已经饿了一阵 */
-export const rollNpcDogSatiety = () => randInt(0, 70);
-
-/**
- * 某位邻居的狗在 at 时刻的饱腹度。
- *
- * 和玩家的狗用同一套「存快照 + 按小时衰减」的算法，
- * 所以邻居离线再久也不会一直满饱腹地替他看着农场。
- *
- * @param {object} npc
- * @param {number} at
- * @returns {number} 0~100
- */
-export function npcDogSatietyAt(npc, at) {
-  const satiety = safeNum(npc.dogSatiety, 0);
-  const hours = Math.max(0, (at - safeNum(npc.dogAt, 0)) / HOUR);
-  return Math.max(0, Math.min(DOG_SATIETY_MAX, satiety - hours * DOG_SATIETY_DECAY));
-}
 
 /** 每个邻居保留的操作记录条数（玩家页最多显示 10 条） */
 export const LOG_LIMIT = 10;
@@ -342,6 +340,8 @@ export function generateNpcPlots(npc, at = Date.now()) {
     // 已生长 0~90%，其中一部分已经成熟可偷
     const elapsed = Math.random() * total * 0.9;
     return {
+      /** 地块在一座农场里的序号：plot 表用 [farmId, id] 做主键 */
+      id: i,
       cropId,
       harvested: 0,
       plantedAt: at - elapsed,

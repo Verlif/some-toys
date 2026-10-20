@@ -1,26 +1,37 @@
 /**
  * IndexedDB 连接层。
  *
- * 设计要点：
- * 1. 表结构用 SCHEMA 声明，新增表只需加一行，升级逻辑自动生效；
- * 2. 所有请求包装为 Promise，并提供事务级的 write() 以便一次提交多张表；
- * 3. write() 的回调必须「同步」发出所有请求——IndexedDB 事务在
- *    事件循环回到空转时会自动提交，中途 await 会导致事务失效。
+ * 表结构用 SCHEMA 声明，新增表只需加一行，升级逻辑自动生效。
+ *
+ * 设计原则：**没有「只有一条记录」的表**。
+ * 每座农场都是 `farm` 里的一行（玩家自己也是其中一行），
+ * 地块 / 日志各自成表、用 farmId 关联回农场 ——
+ * 农场规模再怎么长，也不会把某一条记录撑成巨无霸。
+ *
+ * write() 的回调必须「同步」发出所有请求：IndexedDB 事务在
+ * 事件循环回到空转时会自动提交，中途 await 会导致事务失效。
  */
 
-/** 全新存档库名（本次重构不复用旧库，旧库 homeland_farm_v2 保留在浏览器中不动） */
-export const DB_NAME = 'sun_farm_v1';
+/** 全新存档库名。旧库 sun_farm_v1 / homeland_farm_v2 原样留在浏览器里，不迁移也不复用 */
+export const DB_NAME = 'sun_farm_v2';
 
 /** 结构版本：字段不兼容时 +1，并在 upgrade 中补迁移逻辑 */
 export const DB_VERSION = 1;
 
-/** 表结构声明：store 名 → 配置 */
+/**
+ * 表结构声明：store 名 → 配置。
+ *
+ * 只有 farm 是「一个实体一行」的宽表，其余都是按 farmId 拆开的子表：
+ *   farm      1 ── N plot（[farmId, 地块序号]）
+ *   farm      1 ── N log （[farmId, 序号]，0 = 最新一条）
+ *   news           全镇时报，farmId 只标明来源
+ */
 export const SCHEMA = {
-  player: { keyPath: 'id' },
-  plots: { keyPath: 'id' },
+  farm: { keyPath: 'id' },
+  plot: { keyPath: ['farmId', 'id'] },
+  log: { keyPath: ['farmId', 'seq'] },
+  news: { keyPath: 'seq' },
   inventory: { keyPath: 'itemId' },
-  friends: { keyPath: 'id' },
-  pets: { keyPath: 'id' },
 };
 
 let db = null;
@@ -72,45 +83,22 @@ function promisify(request) {
   });
 }
 
-function tx(stores, mode) {
-  return db.transaction(stores, mode);
-}
-
-/** 读取单条 */
-export function get(store, key) {
-  return promisify(tx(store, 'readonly').objectStore(store).get(key));
-}
-
-/** 读取全表 */
+/** 读取整张表 */
 export function getAll(store) {
-  return promisify(tx(store, 'readonly').objectStore(store).getAll());
-}
-
-/** 写入/覆盖单条 */
-export function put(store, value) {
-  return promisify(tx(store, 'readwrite').objectStore(store).put(value));
-}
-
-/** 删除单条 */
-export function remove(store, key) {
-  return promisify(tx(store, 'readwrite').objectStore(store).delete(key));
+  return promisify(db.transaction(store, 'readonly').objectStore(store).getAll());
 }
 
 /**
  * 在单个事务里跨表写入，保证一次操作的数据一致性。
- * @param {string|string[]} stores
- * @param {(tx: IDBTransaction) => any} work 必须同步执行
- * @returns {Promise<any>} 事务提交后 resolve
+ * @param {string[]} stores
+ * @param {(tx: IDBTransaction) => void} work 必须同步执行
+ * @returns {Promise<void>} 事务提交后 resolve
  */
 export function write(stores, work) {
-  const t = tx(stores, 'readwrite');
-  const result = work(t);
-  return transactionDone(t, result);
-}
-
-function transactionDone(t, result) {
+  const t = db.transaction(stores, 'readwrite');
+  work(t);
   return new Promise((resolve, reject) => {
-    t.oncomplete = () => resolve(result);
+    t.oncomplete = () => resolve();
     t.onerror = () => reject(t.error);
     t.onabort = () => reject(t.error || new Error('事务被中断'));
   });

@@ -20,7 +20,7 @@ const isOpen = () => Boolean(root?.classList.contains('show'));
 
 /** 同步子页面顶部的金币显示 */
 export function syncCoins() {
-  if (coinsEl) coinsEl.textContent = state.player.coins;
+  if (coinsEl) coinsEl.textContent = state.farm.coins;
 }
 
 /**

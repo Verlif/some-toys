@@ -1,53 +1,49 @@
 /**
- * 社交领域：邻居农场（拜访 / 偷菜 / 帮忙照料）与守护犬。
+ * 社交领域：邻居农场（拜访 / 偷菜 / 帮忙照料）与在线演出。
  *
- * 邻居的成长不在这里算，而是交给 npc-sim.js：玩家每次进入邻居页时，
- * 先跑一次 createSettler() 把离线期间的成长补算完，再展示最新状态。
- * 被偷过的地块用 stolenAt 时间戳标记，时间到了自然恢复，
- * 因此不需要任何后台定时器。
+ * 邻居的成长不在这个文件里算，而是交给 npc-sim.js；
+ * 这里负责三件事：
+ *   1. **结算**：把邻居从上次结算点推进到现在（分帧，离线久了也不卡）；
+ *   2. **演出**：玩家在线时，邻居的动作不再瞬间完成，而是隔几秒做一件；
+ *   3. **互动**：玩家自己的偷菜与帮忙照料。
  *
- * 帮忙照料没有「一键打理」：玩家必须在**具体那块地**上点浇水或捉虫，
- * 才能拿到经验。这样邻居的农场才需要一块一块地看，而不是点一下就完事。
+ * 被偷过的地块用 stolenCount / stolenAt 标记，收获时按数量扣掉，
+ * 因此不需要任何后台定时器去「清理状态」。
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state, getFriend } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
-import { estimateWork, simulateNpc } from './npc-sim.js';
+import { estimateWork, planVisit, runStep, simulateNpcUntil } from './npc-sim.js';
 import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
 import {
   BOOST_CAP,
-  DOG_FOOD_SATIETY,
-  DOG_SATIETY_DECAY,
-  DOG_SATIETY_MAX,
+  LIVE_STEP_MS,
   LOG_LIMIT,
   PEST_INTERVAL,
   PEST_YIELD_BONUS,
   WATER_INTERVAL,
-  dogCatchChance,
-  npcDogSatietyAt,
 } from '../data/friends.js';
+import { catchChance, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { guardChance } from './dogs.js';
 import { PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
+import { randInt } from '../core/utils.js';
 
 /* ---------- 邻居状态查询 ---------- */
 
-/**
- * 这块地本轮原本能产多少个（不考虑偷菜与虫子）
- */
+/** 这块地本轮原本能产多少个（不考虑偷菜与虫子） */
 export function baseYield(plot) {
   if (!plot.cropId) return 0;
   const crop = CROPS[plot.cropId];
   return Math.round(crop.yield[1] * (1 + (plot.boost || 0)));
 }
 
-/**
- * 这块地当前还剩多少产量（已被偷走的要扣掉）
- */
+/** 这块地当前还剩多少产量（已被偷走的要扣掉） */
 export function remainYield(plot) {
   return Math.max(0, baseYield(plot) - (plot.stolenCount || 0));
 }
@@ -85,87 +81,269 @@ export const careCount = (friend, now = Date.now()) =>
 /** 邻居有没有需要帮忙照料的地 */
 export const needsHelp = (friend, now = Date.now()) => careCount(friend, now) > 0;
 
-/* ---------- 离线结算 ---------- */
+/* ---------- 世界推进 ---------- */
 
 /**
- * 创建一个结算器，把所有邻居从上次结算点推进到「现在」。
+ * 构造交给模拟层的「玩家农场」视图。
  *
- * 返回的对象由调用方分帧驱动（UI 层会配一个等待画面），
- * 这样即使离线很久也不会把主线程卡死。
+ * 邻居会顺手偷一块成熟地、或帮一块缺水/生虫的地浇浇捉捉，
+ * 改动直接落在 state.farm.plots 上。用回调写日志，npc-sim 依然不认识 store。
  *
- * @returns {{total: number, done: number, finished: boolean, summary: {stolen: number, cared: number}, run: (budgetMs?: number) => boolean}}
+ * dogGuardChanceAt(t) 让模拟能还原「那一刻」的拦截率：
+ * 结算几天的离线时，狗不是一直满饱腹，而是随时间一路掉下去的。
+ *
+ * @returns {{id: string, plots: object[], stolen: number, cared: number, caught: number,
+ *            log: Function, news: Function, dogGuardChanceAt: Function}}
  */
-export function createSettler() {
-  const npcs = state.friends;
-  const now = Date.now();
-  const total = estimateWork(npcs, now);
-
-  /**
-   * 交给模拟层的「玩家农场」视图：邻居会顺手偷一块成熟地、
-   * 或帮一块缺水/生虫的地浇浇捉捉，改动直接落在 state.plots 上。
-   * 用回调写日志，npc-sim 依然不需要认识 store。
-   *
-   * dogSatietyAt(t) 让模拟能还原「那一刻」的饱腹度：
-   * 结算几天的离线时，狗不是一直满饱腹，而是随时间一路掉下去的。
-   */
-  const satietyNow = dogSatiety();
-  const farm = {
-    plots: state.plots,
+function farmView() {
+  const farm = state.farm;
+  return {
+    id: farm.id,
+    plots: farm.plots,
     stolen: 0,
     cared: 0,
     caught: 0,
     log: (at, emoji, text) => player.addLog(emoji, text, at),
-    news: (at, emoji, text) => addNews(emoji, text, at),
-    dogSatietyAt: (at) => Math.max(
-      0,
-      satietyNow - ((at - now) / 3600_000) * DOG_SATIETY_DECAY,
-    ),
+    news: (at, emoji, text) => addNews(emoji, text, at, farm.id),
+    dogGuardChanceAt: (at) => guardChance(at),
+  };
+}
+
+/** 本次在线会话的起点：早于它的上线都属于「你不在的时候」 */
+let sessionStart = Date.now();
+
+/** 正在进行的结算（同一时刻只会有一次） */
+let settlePromise = null;
+
+/** 标记本次在线会话的起点（打开游戏时调用一次） */
+export function markSessionStart(now = Date.now()) {
+  sessionStart = now;
+}
+
+/** 当前是否正在结算 */
+export const isSettling = () => Boolean(settlePromise);
+
+/**
+ * 还有多少会话要补算。UI 层用它决定要不要显示等待画面。
+ * @returns {number}
+ */
+export function pendingWork() {
+  return estimateWork(state.friends, Date.now());
+}
+
+/**
+ * 把所有邻居从上次结算点推进到「现在」。
+ *
+ * 分帧执行（每帧 12ms），离线很久也不会把主线程卡死。
+ * 同一时刻只会有一次结算在进行，重复调用会拿到同一个结果。
+ *
+ * 本次会话之后才到点的上线**不在这里执行**，只把游标推过去，
+ * 交给下面的在线演出一步步做（见 runLiveStep）。
+ *
+ * @param {(done: number, total: number) => void} [onProgress]
+ * @returns {Promise<{total: number, visits: object[], deferred: object[], summary: object}>}
+ */
+export function settleWorld(onProgress) {
+  if (settlePromise) return settlePromise;
+  settlePromise = runSettle(onProgress).finally(() => { settlePromise = null; });
+  return settlePromise;
+}
+
+/** 真正干活的结算 */
+async function runSettle(onProgress) {
+  const npcs = state.friends;
+  const now = Date.now();
+  const total = estimateWork(npcs, now);
+  const farm = farmView();
+  const visits = [];
+  const deferred = [];
+
+  const collect = (npc) => (visit) => {
+    if (visit.deferred) {
+      deferred.push({ npc, at: visit.at, levelBefore: visit.levelBefore, steps: planVisit(npc) });
+    } else {
+      visits.push({ npc, ...visit });
+    }
   };
 
   let index = 0;
   let done = 0;
+  while (index < npcs.length) {
+    const until = performance.now() + 12;
+    while (index < npcs.length && performance.now() < until) {
+      const npc = npcs[index];
+      done += simulateNpcUntil(npc, npcs, now, farm, collect(npc), sessionStart);
+      index += 1;
+    }
+    onProgress?.(done, total);
+    // 让出一帧，页面才不会卡住
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+
+  // 没有新事情就别写库：轮询是定时跑的，每次都落盘太浪费
+  if (visits.length) await persistFriends();
 
   return {
     total,
-    get done() { return done; },
-    get finished() { return index >= npcs.length; },
-    /** 这段时间邻居在玩家农场上做了多少事，用于结算后的汇总提示 */
-    get summary() { return { stolen: farm.stolen, cared: farm.cared, caught: farm.caught }; },
-
-    /**
-     * 在给定的时间预算内结算一批会话
-     * @param {number} [budgetMs] 单帧预算，默认 12ms
-     * @returns {boolean} 是否已全部结算完
-     */
-    run(budgetMs = 12) {
-      const until = performance.now() + budgetMs;
-      while (index < npcs.length && performance.now() < until) {
-        done += simulateNpc(npcs[index], npcs, now, farm);
-        index += 1;
-      }
-      return index >= npcs.length;
-    },
+    visits,
+    deferred,
+    summary: { stolen: farm.stolen, cared: farm.cared, caught: farm.caught },
   };
 }
 
 /**
- * 把结算结果落盘。
+ * 把整批农场落盘。
  *
- * 邻居结算也会动玩家的地块（被顺走 / 被照料）和日志，
- * 所以这里要连 plots + player 一起提交，不能只写 friends。
+ * 结算会同时动玩家的地块与日志，所以玩家农场与邻居一起提交。
  */
 export async function persistFriends() {
-  await commit({ player: state.player }, { plots: state.plots, friends: state.friends });
+  await commit({ farms: [state.farm, ...state.friends], news: state.news });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.FARM);
   emit(EVENTS.PLAYER);
 }
 
-/** 往邻居的农场日志里写一条（玩家的操作也记进对方那边） */
+/**
+ * 往某位邻居的动态里插一条（最新的排在最前）。
+ *
+ * 这是「玩家侧」写的动态：偷菜、帮忙照料、被狗抓住。
+ * 邻居自己上线时写的动态由 npc-sim 负责，两边共用同一个 log 数组。
+ *
+ * @param {object} friend 邻居农场
+ * @param {number} at 发生时刻（毫秒时间戳）
+ * @param {string} emoji 动态图标
+ * @param {string} text 动态文案
+ */
 function logFriend(friend, at, emoji, text) {
   friend.log ??= [];
   friend.log.unshift({ at, emoji, text });
   if (friend.log.length > LOG_LIMIT) friend.log.length = LOG_LIMIT;
+}
+
+/* ---------- 在线演出 ---------- */
+
+/**
+ * 玩家在线时，邻居的上线不再「一瞬间做完」。
+ *
+ * 一趟上线在 npc-sim 里是被拆成动作序列的，这里隔几秒执行一步：
+ * 玩家会先看到「谁上线了」，然后一件一件地看见他顺菜 / 打理 / 帮你的忙。
+ *
+ * 每完成一步就落盘一次 —— 玩家这时关掉页面，
+ * 已经发生的事（尤其是被顺走的菜）都不会白丢。
+ */
+const liveQueue = [];
+let liveTimer = 0;
+
+/** 空动作的间隔：只为了让出一帧，不是给玩家看的 */
+const LIVE_SKIP_MS = 260;
+
+/** 把一次「到点了」的上线排进演出队列（游标已在结算里推进过） */
+function enqueueVisit(visit) {
+  liveQueue.push({ ...visit, index: 0 });
+  pendingArrivals.push({
+    name: visit.npc.name,
+    avatar: visit.npc.avatar,
+    text: '正在你的农场里转悠',
+  });
+  scheduleLive();
+}
+
+/**
+ * 排下一步。
+ *
+ * 有实际动作时等 3~7 秒，让玩家「看得见」；
+ * 什么都没做成（没成熟的地可收、没空地可种）就快速跳过，
+ * 否则一串空动作会把队列堵住好几十秒。
+ *
+ * @param {number} [delay] 毫秒；不传就掷一个演出间隔
+ */
+function scheduleLive(delay) {
+  if (liveTimer || !liveQueue.length) return;
+  liveTimer = setTimeout(runLiveStep, delay ?? randInt(LIVE_STEP_MS[0], LIVE_STEP_MS[1]));
+}
+
+/** 执行队首那位邻居的下一个动作 */
+async function runLiveStep() {
+  liveTimer = 0;
+  const visit = liveQueue[0];
+  if (!visit) return;
+
+  let spoke = false;
+  const npc = visit.npc;
+  const kind = visit.steps[visit.index];
+  visit.index += 1;
+
+  try {
+    const entry = runStep(npc, visit.at, kind, { neighbours: state.friends, farm: farmView() });
+    if (entry) {
+      spoke = true;
+      // 落盘：这位邻居 + 玩家农场（可能刚被他顺走一块地 / 帮他浇了水）
+      await commit({ farms: [state.farm, npc], news: state.news });
+      emit(EVENTS.FARM);
+      emit(EVENTS.FRIENDS);
+      emit(EVENTS.PLAYER);
+      notify(`${npc.avatar} ${npc.name}：${entry.emoji} ${entry.text}`);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  if (visit.index >= visit.steps.length) {
+    liveQueue.shift();
+    if (npc.level > visit.levelBefore) {
+      addNews('🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, visit.at, npc.id);
+      await commit({ farms: [npc], news: state.news }).catch(() => {});
+      emit(EVENTS.NEWS);
+    }
+  }
+
+  scheduleLive(spoke ? undefined : LIVE_SKIP_MS);
+}
+
+/* ---------- 在线提醒 ---------- */
+
+/**
+ * 「你不在的时候」发生的事，暂存在这里，等 UI 层来取。
+ *
+ * 存起来而不是直接弹提示，是为了让邻居页仍然能给出那句
+ * 「🏡 你不在时：被顺走 3 个作物」—— 那是玩家最需要知道的一句话。
+ */
+let pendingOffline = { stolen: 0, cared: 0, caught: 0, count: 0 };
+
+/** 玩家在线期间上线的邻居，同样先存着，等 UI 层取走 */
+const pendingArrivals = [];
+
+/** 取走「你不在时」的汇总（取过就没有了） */
+export function takeOfflineSummary() {
+  const out = pendingOffline;
+  pendingOffline = { stolen: 0, cared: 0, caught: 0, count: 0 };
+  return out;
+}
+
+/** 取走「刚刚上线」的邻居列表（取过就没有了） */
+export function takeArrivals() {
+  return pendingArrivals.splice(0).slice();
+}
+
+/**
+ * 结算一次世界，把发生的事分门别类地存起来。
+ *
+ * 早于本次会话起点的上线已经逐条算完了，汇总进离线摘要；
+ * 玩家正看着时到点的上线则排进演出队列，动作会一件一件发生。
+ *
+ * 提示由 UI 层发出（见 ui/views/friends.js），这里只负责把结果算出来。
+ *
+ * @param {(done: number, total: number) => void} [onProgress] 启动画面用它画进度
+ */
+export async function pollOnline(onProgress) {
+  const { visits, deferred, summary } = await settleWorld(onProgress);
+
+  pendingOffline.count += visits.length;
+  pendingOffline.stolen += summary.stolen;
+  pendingOffline.cared += summary.cared;
+  pendingOffline.caught += summary.caught;
+
+  for (const visit of deferred) enqueueVisit(visit);
 }
 
 /* ---------- 玩家与邻居互动 ---------- */
@@ -176,7 +354,7 @@ function logFriend(friend, at, emoji, text) {
  * 偷菜**不给经验** —— 经验只来自自己的收获和照料邻居，
  * 否则「到处偷」就变成了最优解。
  *
- * @returns {Promise<{ok: boolean, reason?: string, cropId?: string}>}
+ * @returns {Promise<{ok: boolean, reason?: string, caught?: boolean, cropId?: string}>}
  */
 export async function steal(friendId, index) {
   const friend = getFriend(friendId);
@@ -187,18 +365,19 @@ export async function steal(friendId, index) {
     return { ok: false, reason: '这块地现在不能偷' };
   }
 
-  // 邻居的狗也在看家：饱腹度越高，被当场逮住的概率越大。
+  // 邻居的狗也在看家：品种决定它的能耐，饱腹度决定它现在有没有力气。
   // 一旦被逮住，这座农场**当前所有作物**这一轮都进不去了 ——
   // 和「每块地已被偷过」是同一个效果，只是原因不同。
-  const satiety = npcDogSatietyAt(friend, now);
-  if (satiety > 0 && Math.random() < dogCatchChance(satiety)) {
+  const breed = dogBreed(friend.dog.breed);
+  const chance = breed ? catchChance(breed.rate, dogSatietyAt(friend.dog, now)) : 0;
+  if (chance > 0 && Math.random() < chance) {
     for (const plot of friend.plots) {
       if (plot.cropId) plot.guarded = true;
     }
     logFriend(friend, now, '🐕', '守护犬抓住了想偷菜的 农场主，这座农场这一轮都进不去了');
-    addNews('🐕', `${friend.name} 的守护犬抓住了前来偷菜的农场主`);
+    addNews('🐕', `${friend.name} 的守护犬抓住了前来偷菜的农场主`, now, friend.id);
 
-    await commit({ player: state.player }, { friends: [friend] });
+    await commit({ farms: [state.farm, friend], news: state.news });
     emit(EVENTS.FRIENDS);
     emit(EVENTS.PLAYER);
 
@@ -215,7 +394,7 @@ export async function steal(friendId, index) {
   inventory.add(produceId(target.cropId), 1);
   logFriend(friend, now, '🥷', `被 农场主 顺走了 ${crop.emoji}${crop.name} ×1`);
 
-  await commit({ player: state.player }, { bag: state.bag, friends: [friend] });
+  await commit({ farms: [state.farm, friend], bag: state.bag });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.INVENTORY);
   emit(EVENTS.PLAYER);
@@ -245,7 +424,7 @@ export async function waterNeighborPlot(friendId, index) {
   player.addExpRaw(exp);
   logFriend(friend, now, '💧', '农场主 来帮忙浇了水');
 
-  await commit({ player: state.player }, { friends: [friend] });
+  await commit({ farms: [state.farm, friend] });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
 
@@ -275,7 +454,7 @@ export async function catchPestNeighborPlot(friendId, index) {
   player.addExpRaw(exp);
   logFriend(friend, now, '🐛', '农场主 来帮忙捉了虫');
 
-  await commit({ player: state.player }, { friends: [friend] });
+  await commit({ farms: [state.farm, friend] });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
 
@@ -314,7 +493,7 @@ export async function waterAllNeighborPlots(friendId) {
   player.addExpRaw(exp);
   logFriend(friend, now, '🚿', `农场主 用洒水器帮他给 ${targets.length} 块地浇了水`);
 
-  await commit({ player: state.player }, { bag: state.bag, friends: [friend] });
+  await commit({ farms: [state.farm, friend], bag: state.bag });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
@@ -355,68 +534,12 @@ export async function catchPestAllNeighborPlots(friendId) {
   player.addExpRaw(exp);
   logFriend(friend, now, '🧴', `农场主 用杀虫剂帮他给 ${targets.length} 块地除了虫`);
 
-  await commit({ player: state.player }, { bag: state.bag, friends: [friend] });
+  await commit({ farms: [state.farm, friend], bag: state.bag });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
 
   await completeGuide('care');
   notify(`🧴 帮 ${friend.name} 除了 ${targets.length} 块地的虫（经验 +${exp}）`, 'gold');
-  return true;
-}
-
-/* ---------- 守护犬 ---------- */
-
-/**
- * 当前饱腹度（0~100）。
- *
- * 存档里只存「上次结算时的饱腹度 + 那个时刻」，这里按经过的小时数现算。
- * 好处是不需要任何后台定时器：页面关十天再打开，一读就是掉光的 0。
- */
-export function dogSatiety(now = Date.now()) {
-  const satiety = Math.max(0, state.pet.satiety || 0);
-  const hours = Math.max(0, (now - (state.pet.updatedAt || 0)) / 3600_000);
-  return Math.max(0, Math.min(DOG_SATIETY_MAX, satiety - hours * DOG_SATIETY_DECAY));
-}
-
-/** 守护犬是否还在守护（有饱腹度就在岗） */
-export function isDogGuarding(now = Date.now()) {
-  return dogSatiety(now) > 0.5;
-}
-
-/** 还能守护多久（毫秒） */
-export function guardRemainMs(now = Date.now()) {
-  return Math.round((dogSatiety(now) / DOG_SATIETY_DECAY) * 3600_000);
-}
-
-/**
- * 喂狗：消耗 1 份狗粮，饱腹度 +45
- * @returns {Promise<boolean>}
- */
-export async function feedDog() {
-  if (dogSatiety() >= DOG_SATIETY_MAX - 1) {
-    notify('🐕 它已经吃得饱饱的了');
-    return false;
-  }
-  if (!inventory.take('dogFood', 1)) {
-    notify('没有狗粮，去商店买吧');
-    return false;
-  }
-
-  const now = Date.now();
-  // 先把「到此刻为止」的饱腹度结算掉，再往上加，避免叠加时把过期的时间也算进去
-  const next = Math.min(DOG_SATIETY_MAX, dogSatiety(now) + DOG_FOOD_SATIETY);
-  state.pet.satiety = next;
-  state.pet.updatedAt = now;
-
-  player.addLog('🦴', `喂了守护犬，饱腹度 ${Math.round(next)}%（约能守 ${Math.round(next / DOG_SATIETY_DECAY)} 小时）`);
-  // pet 必须放在第一个参数里：commit() 只认 singles.pet，
-  // 放进 collections 会被静默忽略，饱腹度就永远存不下来
-  await commit({ player: state.player, pet: state.pet }, { bag: state.bag });
-  emit(EVENTS.PETS);
-  emit(EVENTS.INVENTORY);
-
-  await completeGuide('feed');
-  notify(`🐕 守护犬吃饱了，饱腹度 ${Math.round(next)}%`, 'gold');
   return true;
 }

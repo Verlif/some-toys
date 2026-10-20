@@ -16,6 +16,7 @@
  */
 import { CROPS, SPECIAL_CROP_IDS } from './crops.js';
 import { ITEMS, ITEM_IDS } from './items.js';
+import { rollDogBreed } from './dogs.js';
 import { randInt } from '../core/utils.js';
 
 /* ---------- 藏宝图 ---------- */
@@ -97,6 +98,15 @@ const REWARD_CARD_RATIO = 0.3;
 export const NPC_ADVENTURE_CHANCE = 0.12;
 
 /**
+ * 每张图额外附带一只守护犬的概率。
+ *
+ * 守护犬是**低概率**的长期目标：十个品种只有冒险这一条来源，
+ * 而狗的品阶还受图的档位限制（低级图只能出田园犬、柴犬）。
+ * 它是预算之外的额外奖励，不占奖励位，也不折算成金币。
+ */
+export const DOG_REWARD_CHANCE = [0, 0.15, 0.18, 0.22, 0.26, 0.3];
+
+/**
  * 除限定种子外，其余奖励的构成。
  *
  * 金币占 1/4。种子按种子价记账，但种下去能卖出 2~3 倍种子价的产出，
@@ -162,9 +172,11 @@ function roundValue(n) {
  * 生成一张地图的奖励池。
  *
  * @param {number} tier
+ * @param {{dog?: {owned: string[]}}} [opts]
+ *   传 opts.dog 才会产出守护犬；owned 是玩家已收集的品种（不会重复给）。
  * @returns {{map: object, rewards: object[], totalValue: number}}
  */
-export function buildRewardPool(tier) {
+export function buildRewardPool(tier, opts = {}) {
   const map = mapTier(tier);
   if (!map) return { map: null, rewards: [], totalValue: 0 };
 
@@ -245,12 +257,39 @@ export function buildRewardPool(tier) {
     }));
   }
 
+  // 守护犬：预算之外的额外奖励，低概率，且不会重复
+  const dogReward = rollDogReward(map, opts.dog);
+
   return {
     map,
-    rewards: [...specials, ...rewards],
+    rewards: [...specials, ...rewards, ...(dogReward ? [dogReward] : [])],
     totalValue: rewards.reduce((sum, r) => sum + r.value, 0)
       + specials.reduce((sum, r) => sum + r.value, 0),
   };
+}
+
+/**
+ * 掷一只守护犬奖励。
+ *
+ * @param {object} map 藏宝图档位
+ * @param {{owned: string[]}} [opt] 玩家已收集的品种
+ * @returns {?object} 奖励对象；没掷中或已收集齐时返回 null
+ */
+function rollDogReward(map, opt) {
+  if (!opt) return null;
+  if (Math.random() >= (DOG_REWARD_CHANCE[map.tier] || 0)) return null;
+
+  const breed = rollDogBreed(map.tier, opt.owned || []);
+  if (!breed) return null;
+
+  return reward('dog', {
+    id: breed.id,
+    n: 1,
+    emoji: breed.emoji,
+    name: breed.name,
+    // 守护犬不折算金币：它是长期收藏品，不是这一趟的收入
+    value: 0,
+  });
 }
 
 /**
@@ -260,13 +299,14 @@ export function buildRewardPool(tier) {
  * 只有被抽中的那几张牌才真的带奖励，其余牌的两次选择都是空的。
  *
  * @param {number} tier
+ * @param {{dog?: {owned: string[]}}} [opts] 传给奖励池（守护犬）
  * @returns {object} 一趟冒险的全部状态
  */
-export function buildRun(tier) {
+export function buildRun(tier, opts = {}) {
   const map = mapTier(tier);
   if (!map) return null;
 
-  const pool = buildRewardPool(tier);
+  const pool = buildRewardPool(tier, opts);
   const cards = [];
 
   // 先给每张牌定一个「会不会有奖励」，再把这些位置随机打散
@@ -301,6 +341,7 @@ export function buildRun(tier) {
 export function describeReward(r) {
   if (!r) return '';
   if (r.kind === 'coin') return `💰 ${r.n.toLocaleString()} 金币`;
+  if (r.kind === 'dog') return `${r.emoji} ${r.name}（守护犬）`;
   return `${r.emoji} ${r.name} ×${r.n}`;
 }
 

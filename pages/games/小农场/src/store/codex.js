@@ -25,22 +25,22 @@ export const SPECIMEN_COST = 50;
 
 /** 补齐后来新增的字段 */
 export function ensureStats() {
-  if (!state.player.cropStats) state.player.cropStats = {};
-  if (!state.player.specimens) state.player.specimens = {};
-  if (!state.player.guide) state.player.guide = {};
+  if (!state.farm.progress.cropStats) state.farm.progress.cropStats = {};
+  if (!state.farm.progress.specimens) state.farm.progress.specimens = {};
+  if (!state.farm.progress.guide) state.farm.progress.guide = {};
 }
 
 /** 取某种作物的统计，没有记录时返回零值 */
 export function statOf(cropId) {
-  return state.player.cropStats?.[cropId] || { planted: 0, harvested: 0 };
+  return state.farm.progress.cropStats?.[cropId] || { planted: 0, harvested: 0 };
 }
 
 /** 累加一次统计（内存操作，由调用方决定何时落盘） */
 function bump(cropId, field, delta) {
   ensureStats();
-  const entry = state.player.cropStats[cropId] || { planted: 0, harvested: 0 };
+  const entry = state.farm.progress.cropStats[cropId] || { planted: 0, harvested: 0 };
   entry[field] = (entry[field] || 0) + delta;
-  state.player.cropStats[cropId] = entry;
+  state.farm.progress.cropStats[cropId] = entry;
 }
 
 /** 记一次播种 */
@@ -62,16 +62,16 @@ export const touchCodex = () => emit(EVENTS.CODEX);
  */
 export async function completeGuide(key) {
   ensureStats();
-  if (state.player.guide[key]) return false;
+  if (state.farm.progress.guide[key]) return false;
 
   const guide = GUIDES.find((g) => g.key === key);
   if (!guide) return false;
 
-  state.player.guide[key] = true;
+  state.farm.progress.guide[key] = true;
   addCoins(guide.coins);
   addExpRaw(guide.exp);
 
-  await commit({ player: state.player });
+  await commit({ farms: [state.farm] });
   emit(EVENTS.CODEX);
   emit(EVENTS.PLAYER);
 
@@ -81,13 +81,13 @@ export async function completeGuide(key) {
 
 /** 引导进度列表 */
 export function guideStates() {
-  const done = state.player.guide || {};
+  const done = state.farm.progress.guide || {};
   return GUIDES.map((g) => ({ ...g, done: Boolean(done[g.key]) }));
 }
 
 /** 引导完成数 */
 export function guideProgress() {
-  const done = state.player.guide || {};
+  const done = state.farm.progress.guide || {};
   return {
     done: GUIDES.filter((g) => done[g.key]).length,
     total: GUIDES.length,
@@ -99,7 +99,7 @@ export function guideProgress() {
 /** 是否已经做好标本 */
 export function hasSpecimen(cropId) {
   ensureStats();
-  return Boolean(state.player.specimens[cropId]);
+  return Boolean(state.farm.progress.specimens[cropId]);
 }
 
 /** 仓库里够不够做一份标本 */
@@ -127,9 +127,9 @@ export async function makeSpecimen(cropId) {
   }
 
   take(produceId(cropId), SPECIMEN_COST);
-  state.player.specimens[cropId] = true;
+  state.farm.progress.specimens[cropId] = true;
 
-  await commit({ player: state.player }, { bag: state.bag });
+  await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.CODEX);
   emit(EVENTS.INVENTORY);
 
@@ -144,7 +144,7 @@ export async function makeSpecimen(cropId) {
  *                 specimen, canMake, owned}>}
  */
 export function codexEntries() {
-  const level = state.player.level;
+  const level = state.farm.level;
   ensureStats();
 
   return CROP_IDS.map((id) => {

@@ -1,90 +1,119 @@
 /**
  * 全局状态：整个游戏只有这一份内存状态。
  *
+ * 对象结构与存档结构一一对应：
+ *   state.farm     玩家农场（farm 表里 kind='player' 的那一行）
+ *   state.friends  邻居农场（同一张表里 kind='npc' 的行）
+ *   state.news     全镇时报
+ *
+ * 每座农场都自带 plots / log —— 它们其实来自 plot / log 两张子表，
+ * 读档时按 farmId 挂回农场，写档时再拆回去（见 core/storage.js）。
+ * 这样 store 与 ui 都能像操作一个完整对象那样操作一座农场，
+ * 而库里不会有任何一条记录被日志撑爆。
+ *
  * 规则：
  * - 只有 store/ 下的领域模块可以改它，ui/ 只读；
  * - 任何改动都必须落到 IndexedDB，再由事件总线通知 UI 重渲染；
  * - 这里不包含任何 DOM 操作。
  */
-import { loadSave, saveFriend } from '../core/storage.js';
-import { INITIAL_COINS, TOTAL_PLOTS } from '../data/progression.js';
-import { NPCS, generateNpcPlots, nextVisitAt, npcStartCoins, rollNpcLevel } from '../data/friends.js';
-import { normalizeNpc } from './npc-sim.js';
+import { commit, dropFarms, loadSave } from '../core/storage.js';
+import { INITIAL_COINS, MAX_LEVEL, TOTAL_PLOTS } from '../data/progression.js';
+import {
+  NPCS,
+  PERSONALITIES,
+  STEAL_CHANCE,
+  emptyNpcPlot,
+  generateNpcPlots,
+  nextVisitAt,
+  npcStartCoins,
+  rollNpcLevel,
+} from '../data/friends.js';
+import {
+  FIRST_DOG_ID,
+  dogBreed,
+  rollNpcDogBreed,
+  rollNpcDogSatiety,
+} from '../data/dogs.js';
 import { randInt, safeNum } from '../core/utils.js';
 
-/** @type {{player: object, plots: object[], bag: Record<string, number>, friends: object[], pet: object}} */
+/** 玩家农场的 id：farm 表的主键，也是地块 / 日志表里的 farmId */
+export const PLAYER_ID = 'player';
+
+/** 一小时内有多少毫秒，读档时给邻居补「上次上线」用 */
+const HOUR = 3600_000;
+
+/** 地块上所有「时间戳」字段，读档时要逐个清洗成有限数 */
+const PLOT_TIMES = ['plantedAt', 'readyAt', 'total', 'waterAt', 'pestAt', 'stolenAt'];
+
+/** @type {{farm: object, friends: object[], bag: Record<string, number>, news: object[]}} */
 export const state = {
-  player: null,
-  plots: [],
-  bag: {},
+  farm: null,
   friends: [],
-  pet: { id: 'dog', satiety: 0, updatedAt: 0 },
+  bag: {},
+  news: [],
 };
 
-/**
- * 守护犬存档的字段迁移。
- *
- * 旧版只有 fedUntil（喂一次守 30 分钟），现在改成饱腹度 + 结算时刻。
- * 旧字段直接丢掉：最多也就守着半小时，不值得为它算迁移。
- */
-function normalizePet(pet) {
-  return {
-    id: pet.id || 'dog',
-    satiety: safeNum(pet.satiety, 0),
-    updatedAt: safeNum(pet.updatedAt, 0),
-  };
-}
+/* ============================================================
+   新建
+   ============================================================ */
 
-/** 新玩家档案 */
-export function createPlayer() {
+/** 新玩家农场 */
+function createPlayerFarm() {
   return {
-    id: 'player',
+    id: PLAYER_ID,
+    kind: 'player',
     name: '农场主',
+    avatar: '🧑‍🌾',
     level: 1,
     exp: 0,
     coins: INITIAL_COINS,
     createdAt: Date.now(),
-    // 签到
-    lastSign: 0,
-    signStreak: 0,
-    signTotal: 0,
-    // 图鉴：作物 id → { planted, harvested }
-    cropStats: {},
-    // 标本：作物 id → true。做了标本才算点亮图鉴
-    specimens: {},
-    // 称号：{ claimed: { id: true }, equipped: id }
-    titles: { claimed: {}, equipped: '' },
-    // 新手引导：已完成的引导项
-    guide: {},
-    // 农场日志：{ at, emoji, text }，只保留最近 7 天
+    /** 看家狗：owned 记已收集的品种，breed 是上岗的那只（空串 = 全部下岗） */
+    dog: {
+      owned: { [FIRST_DOG_ID]: true },
+      breed: FIRST_DOG_ID,
+      satiety: 0,
+      at: Date.now(),
+    },
+    /** 农场主的成长档案：签到 / 图鉴 / 称号 / 引导 */
+    progress: {
+      /** 上次签到时间；两个 sign 字段是连续天数与累计天数 */
+      lastSign: 0,
+      signStreak: 0,
+      signTotal: 0,
+      /** 作物 id → { planted, harvested } */
+      cropStats: {},
+      /** 作物 id → true，做了标本才算点亮图鉴 */
+      specimens: {},
+      titles: { claimed: {}, equipped: '' },
+      guide: {},
+    },
+    plots: [],
     log: [],
-    // 时报：{ at, emoji, text }，最近 7 天 / 80 条
-    news: [],
   };
 }
 
-/** 新地块的初始结构 */
-export function createPlot(id) {
+/** 新地块 */
+function createPlot(id) {
   return {
     id,
     cropId: null,
-    /** 本轮作物已经收获过几次，用于多次收获作物的再生判定 */
+    /** 本轮已经收获过几次，用于多茬作物的再生判定 */
     harvested: 0,
     plantedAt: 0,
     readyAt: 0,
     total: 0,
     soil: 'normal',
-    /** 本轮是否已经施过肥（任何种类都算，用掉唯一一次额度） */
+    /** 本轮是否已经施过肥（任何肥料共用这一个额度） */
     fert: false,
     /** 增产剂带来的产量加成（0.1 / 0.2 / 0.3），本轮有效 */
     yieldBonus: 0,
-    /** 产量加成，捉一次虫 +10% */
+    /** 捉虫带来的产量加成，每捉一次 +10% */
     boost: 0,
-    /** 下次需要浇水的时间戳 */
+    /** 下次需要浇水 / 捉虫的时间戳 */
     waterAt: 0,
-    /** 下次需要捉虫的时间戳 */
     pestAt: 0,
-    /** 本轮是否已经被邻居顺走过（重新种下后刷新） */
+    /** 本轮是否已被邻居顺走过，重新种下后刷新 */
     stolen: false,
     /** 本轮被顺走了几个，收获时扣掉 */
     stolenCount: 0,
@@ -94,116 +123,201 @@ export function createPlot(id) {
 }
 
 /**
- * 新建一位邻居。等级与身家都按分布现掷，而不是写死在名单里；
- * lastVisitAt 定在过去、nextVisitAt 按他的上线节奏排，
+ * 新建一位邻居农场。
+ *
+ * 等级与身家都按分布现掷，而不是写死在名单里；
+ * lastVisitAt 定在过去、nextVisitAt 按他上线节奏排，
  * 这样玩家第一次进来就能看到他们已经「离线了一段时间」。
  */
 function createNpc(def, now) {
-  const lastVisitAt = now - randInt(2 * 3600_000, 20 * 3600_000);
+  const lastVisitAt = now - randInt(2 * HOUR, 20 * HOUR);
   const level = rollNpcLevel();
   const npc = {
     id: def.id,
+    kind: 'npc',
     name: def.name,
     avatar: def.avatar,
-    personality: def.personality,
-    profession: def.profession,
     level,
     exp: 0,
     coins: npcStartCoins(level),
+    createdAt: lastVisitAt,
+    personality: def.personality,
+    profession: def.profession,
     schedule: def.schedule,
     steal: def.steal,
     lastVisitAt,
     nextVisitAt: nextVisitAt(def, lastVisitAt),
+    dog: { breed: rollNpcDogBreed(level).id, satiety: rollNpcDogSatiety(), at: lastVisitAt },
+    plots: [],
     log: [],
   };
   npc.plots = generateNpcPlots(npc, now);
   return npc;
 }
 
-/** 补齐后来新增的字段，兼容旧存档 */
-function normalizePlot(plot) {
-  if (plot.harvested === undefined) plot.harvested = 0;
-  if (plot.boost === undefined) plot.boost = 0;
-  // 施肥标记：老存档里普通化肥用 fert、有机化肥用 organic，
-  // 现在一株作物一轮只许施一次肥，两个标记合并成一个
-  if (plot.organic) plot.fert = true;
-  plot.fert = Boolean(plot.fert);
-  plot.yieldBonus = safeNum(plot.yieldBonus, 0);
-  delete plot.organic;
-  // 被邻居顺走的计数是后加的字段
-  plot.stolenCount = safeNum(plot.stolenCount, 0);
-  plot.stolen = Boolean(plot.stolen);
-  // 时间戳必须逐个清洗成有限数：IndexedDB 用结构化克隆保存，
-  // undefined 会被原样存下来，界面上就会冒出 "NaN小时" 这种东西。
-  for (const key of ['plantedAt', 'readyAt', 'total', 'waterAt', 'pestAt', 'stolenAt']) {
-    plot[key] = safeNum(plot[key], 0);
+/* ============================================================
+   读档补齐
+   ============================================================ */
+
+/** 时间戳字段逐个清洗：IndexedDB 用结构化克隆保存，undefined 会被原样存下来 */
+function cleanTimes(target) {
+  for (const key of PLOT_TIMES) target[key] = safeNum(target[key], 0);
+  return target;
+}
+
+/** 玩家地块 */
+function normalizePlot(plot, index) {
+  const merged = cleanTimes({ ...createPlot(index), ...plot });
+  merged.id = safeNum(merged.id, index);
+  merged.fert = Boolean(merged.fert);
+  merged.yieldBonus = safeNum(merged.yieldBonus, 0);
+  merged.boost = safeNum(merged.boost, 0);
+  merged.harvested = safeNum(merged.harvested, 0);
+  merged.stolen = Boolean(merged.stolen);
+  merged.stolenCount = safeNum(merged.stolenCount, 0);
+  return merged;
+}
+
+/** 邻居地块 */
+function normalizeNpcPlot(plot, index) {
+  const merged = cleanTimes({ ...emptyNpcPlot(), ...plot });
+  merged.id = safeNum(merged.id, index);
+  merged.boost = safeNum(merged.boost, 0);
+  merged.harvested = safeNum(merged.harvested, 0);
+  merged.guarded = Boolean(merged.guarded);
+  merged.stolen = Boolean(merged.stolen);
+  merged.stolenCount = safeNum(merged.stolenCount, 0);
+  return merged;
+}
+
+/** 玩家农场：缺什么补什么，多余的字段留着不动 */
+function normalizePlayerFarm(row, save) {
+  const base = createPlayerFarm();
+  const progress = { ...base.progress, ...(row.progress || {}) };
+  progress.titles = { ...base.progress.titles, ...(progress.titles || {}) };
+
+  const dog = { ...base.dog, ...(row.dog || {}) };
+  dog.owned = { ...dog.owned };
+  for (const id of Object.keys(dog.owned)) if (!dogBreed(id)) delete dog.owned[id];
+  if (!Object.keys(dog.owned).length) dog.owned[FIRST_DOG_ID] = true;
+  // 存档里记的品种要是已经不认识了，退回最低档，别让农场凭空不设防
+  if (dog.breed && !dog.owned[dog.breed]) dog.breed = FIRST_DOG_ID;
+  dog.satiety = safeNum(dog.satiety, 0);
+  dog.at = safeNum(dog.at, Date.now());
+
+  const farm = {
+    id: PLAYER_ID,
+    kind: 'player',
+    name: row.name || base.name,
+    avatar: row.avatar || base.avatar,
+    level: safeNum(row.level, 1),
+    exp: safeNum(row.exp, 0),
+    coins: safeNum(row.coins, 0),
+    createdAt: safeNum(row.createdAt, base.createdAt),
+    dog,
+    progress,
+    plots: [],
+    log: save.logs[PLAYER_ID] || [],
+  };
+
+  // 地块：不足 TOTAL_PLOTS 就补齐，多的不删
+  const saved = (save.plots[PLAYER_ID] || []).map(normalizePlot);
+  for (let id = 0; id < TOTAL_PLOTS; id += 1) {
+    if (!saved.some((p) => p.id === id)) farm.plots.push(createPlot(id));
   }
-  // 杂草机制已废弃（从来不会真的滋长），清掉残留字段
-  delete plot.weed;
-  delete plot.watered;
-  return plot;
+  farm.plots.push(...saved);
+  farm.plots.sort((a, b) => a.id - b.id);
+  return farm;
 }
 
 /**
- * 读档 + 补齐缺失数据。任何一条补丁都会立即写回。
+ * 邻居农场。
+ *
+ * 性格 / 职业 / 上线节奏 / 偷菜倾向以名单为准（它们决定「这个人是谁」），
+ * 等级、身家、地块、游标以存档为准 —— 邻居是一路长大的，不能被版本打回原形。
+ */
+function normalizeNpc(row, def, save) {
+  const fresh = createNpc(def, Date.now());
+  const npc = {
+    ...fresh,
+    ...row,
+    id: def.id,
+    kind: 'npc',
+    name: row.name || def.name,
+    avatar: row.avatar || def.avatar,
+    personality: PERSONALITIES[row.personality] ? row.personality : def.personality,
+    profession: row.profession || def.profession,
+    schedule: row.schedule || def.schedule,
+    steal: STEAL_CHANCE[row.steal] === undefined ? def.steal : row.steal,
+    level: safeNum(row.level, fresh.level),
+    exp: safeNum(row.exp, 0),
+    coins: safeNum(row.coins, 0) || fresh.coins,
+    lastVisitAt: safeNum(row.lastVisitAt, fresh.lastVisitAt),
+    nextVisitAt: safeNum(row.nextVisitAt, fresh.nextVisitAt),
+    dog: { ...fresh.dog, ...(row.dog || {}) },
+    plots: [],
+    log: save.logs[def.id] || [],
+  };
+  if (npc.level < 1 || npc.level > MAX_LEVEL) npc.level = rollNpcLevel();
+  if (!dogBreed(npc.dog.breed)) npc.dog.breed = rollNpcDogBreed(npc.level).id;
+  npc.dog.satiety = safeNum(npc.dog.satiety, rollNpcDogSatiety());
+  npc.dog.at = safeNum(npc.dog.at, npc.lastVisitAt);
+
+  const saved = (save.plots[def.id] || []).map(normalizeNpcPlot);
+  npc.plots = saved.length ? saved : fresh.plots;
+  return npc;
+}
+
+/* ============================================================
+   入口
+   ============================================================ */
+
+/**
+ * 读档 + 补齐缺失数据，并把补齐后的结果原样写回一次。
+ *
+ * 一次性回写让「名单里新增的邻居」「新加的字段」都能立刻落盘，
+ * 省掉一堆「某处补丁要顺手存一下」的散落逻辑。
  * @returns {Promise<typeof state>}
  */
 export async function initState() {
   const save = await loadSave();
+  const now = Date.now();
 
-  state.player = save.player || createPlayer();
-  state.player.cropStats ??= {};
-  state.player.specimens ??= {};
-  state.player.titles ??= { claimed: {}, equipped: '' };
-  state.player.titles.claimed ??= {};
-  state.player.guide ??= {};
-  state.player.signStreak ??= 0;
-  state.player.signTotal ??= 0;
-  state.player.log ??= [];
-  state.player.news ??= [];
-  state.pet = normalizePet(save.pet);
-
-  // 地块：不足 TOTAL_PLOTS 就补齐，多的不删
-  // （新建的地块不用立刻落盘，下次被玩家操作时 persist 会一并写回）
-  for (let id = 0; id < TOTAL_PLOTS; id += 1) {
-    if (!save.plots.some((p) => p.id === id)) state.plots.push(createPlot(id));
+  const playerRow = save.farms.find((row) => row.id === PLAYER_ID);
+  state.farm = playerRow ? normalizePlayerFarm(playerRow, save) : createPlayerFarm();
+  // 新档：地块全部空着，等玩家自己开垦
+  if (!playerRow) {
+    for (let id = 0; id < TOTAL_PLOTS; id += 1) state.farm.plots.push(createPlot(id));
   }
-  for (const plot of save.plots) state.plots.push(normalizePlot(plot));
-  state.plots.sort((a, b) => a.id - b.id);
 
   state.bag = save.bag;
+  state.news = save.news;
 
-  // 邻居：首次进入时按固定名单建好 15 座农场，之后只补字段不重建
-  const now = Date.now();
-  if (save.friends.length) {
-    state.friends = save.friends
-      .map((npc) => normalizeNpc(npc, NPCS.find((d) => d.id === npc.id) || NPCS[0]))
-      .filter((npc) => npc.id && npc.name);
-  } else {
-    state.friends = NPCS.map((def) => createNpc(def, now));
-    await Promise.all(state.friends.map(saveFriend));
-  }
+  const rows = new Map(save.farms.filter((row) => row.id !== PLAYER_ID).map((row) => [row.id, row]));
+  state.friends = NPCS.map((def) => {
+    const row = rows.get(def.id);
+    rows.delete(def.id);
+    return row ? normalizeNpc(row, def, save) : createNpc(def, now);
+  });
 
-  // 名单里后加的邻居（本轮从 15 位扩到 20 位）：老存档也要补进来，
-  // 否则已经玩过的玩家永远见不到新面孔
-  const known = new Set(state.friends.map((npc) => npc.id));
-  const newcomers = NPCS
-    .filter((def) => !known.has(def.id))
-    .map((def) => createNpc(def, now));
-  if (newcomers.length) {
-    state.friends.push(...newcomers);
-    await Promise.all(newcomers.map(saveFriend));
-  }
+  // 名单里已经没有的邻居：连地块与日志一起清掉，免得留下孤儿数据
+  await dropFarms([...rows.keys()]);
+
+  await commit({
+    farms: [state.farm, ...state.friends],
+    bag: state.bag,
+    news: state.news,
+  });
 
   return state;
 }
 
-/** 按 id 取地块 */
+/** 按序号取玩家地块 */
 export function getPlot(plotId) {
-  return state.plots.find((p) => p.id === plotId);
+  return state.farm.plots.find((plot) => plot.id === plotId);
 }
 
-/** 按 id 取邻居 */
+/** 按 id 取邻居农场 */
 export function getFriend(friendId) {
-  return state.friends.find((f) => f.id === friendId);
+  return state.friends.find((friend) => friend.id === friendId);
 }

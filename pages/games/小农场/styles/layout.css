@@ -256,7 +256,7 @@
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(74px + env(safe-area-inset-bottom));
+  bottom: calc(74px + env(safe-area-inset-bottom) + var(--farm-tools-h));
   z-index: 58;
   display: none;
   align-items: center;
@@ -279,9 +279,15 @@ body[data-page="farm"] .log-fab { display: inline-flex; }
 .log-fab:active { transform: translateX(-50%) scale(.95); }
 .log-fab span { font-size: 14px; line-height: 1; }
 
-/* ---------- 一键浇水 / 杀虫 ----------
-   只在农场页、且背包里真有道具时出现，浮在日志按钮下面一行。
-   有这一行时把日志按钮整体抬高，两者不会叠在一起。 */
+/* ---------- 底部工具条：守护犬 + 一键照料 ----------
+   一条竖着的堆叠：上面是上岗的守护犬，下面才是一键按钮。
+   整条的**实际高度**由 renderFarmTools() 量出来写进 --farm-tools-h，
+   日志按钮再用它抬起自己 —— 狗行有没有、按钮行有没有，都不会叠上去。 */
+body {
+  /* 兜底值：工具条还没渲染时日志按钮停在原位 */
+  --farm-tools-h: 0px;
+}
+
 .farm-tools {
   position: fixed;
   left: 0;
@@ -289,13 +295,56 @@ body[data-page="farm"] .log-fab { display: inline-flex; }
   bottom: calc(74px + env(safe-area-inset-bottom));
   z-index: 59;
   display: none;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
   padding: 0 12px;
 }
 body[data-page="farm"] .farm-tools { display: flex; }
 .farm-tools[hidden] { display: none; }
-body.has-farm-tools .log-fab { bottom: calc(128px + env(safe-area-inset-bottom)); }
+
+/* 农场页底部浮着三样东西：导航 74px + 工具条（高度不定）+ 日志按钮 34px。
+   滚动内容要给它们让位，否则滚到底时最后一排地块永远压在工具条底下。
+   118 = 74（导航）+ 34（日志按钮）+ 10（余量）。 */
+body[data-page="farm"] .app {
+  padding-bottom: calc(118px + env(safe-area-inset-bottom) + var(--farm-tools-h));
+}
+
+/* 上岗的守护犬：农场的常驻信息，独占一行 */
+.farm-dog-row { width: 100%; display: flex; justify-content: center; }
+.farm-dog {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #40503c;
+  background: #fff;
+  border: 1px solid #d8e6cf;
+  box-shadow: 0 4px 12px rgba(50, 90, 45, .1);
+  white-space: nowrap;
+}
+.farm-dog.off { color: #a0aa9c; border-color: #e6ebe1; }
+.farm-dog-bar {
+  display: inline-block;
+  width: 42px;
+  height: 5px;
+  border-radius: 99px;
+  background: #eef1ea;
+  overflow: hidden;
+}
+.farm-dog-bar > b {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--gold);
+  transition: width .3s ease;
+}
+
+/* 一键工具按钮排成一行 */
+.farm-tool-row { display: flex; justify-content: center; gap: 8px; }
 
 .tool-btn {
   display: inline-flex;
@@ -636,6 +685,56 @@ body.has-farm-tools .log-fab { bottom: calc(128px + env(safe-area-inset-bottom))
   pointer-events: none;
   width: 100%;
 }
+
+/* ---------- 启动等待画面 ---------- */
+#boot {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+  transition: opacity .24s ease;
+}
+#boot[hidden] { display: none; }
+/* 关闭时淡出，再交给 hidden 收尾 */
+#boot.done { opacity: 0; pointer-events: none; }
+
+.boot-card { width: min(86vw, 320px); text-align: center; }
+.boot-logo { font-size: 44px; line-height: 1; animation: pulse 1.8s ease-in-out infinite; }
+.boot-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #40503c;
+  margin: 14px 0 6px;
+  letter-spacing: .5px;
+}
+.boot-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  min-height: 18px;
+}
+.boot-bar {
+  height: 6px;
+  background: #e3e9dd;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+.boot-bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--green-l), var(--green));
+  transition: width .3s ease;
+}
+/* 失败时收掉动画与进度条，只留一句能读的错因 */
+#boot.fail .boot-logo { animation: none; }
+#boot.fail .boot-bar { display: none; }
+#boot.fail .boot-sub { color: var(--danger); }
 
 /* ---------- 离线结算等待画面 ---------- */
 #simOverlay {

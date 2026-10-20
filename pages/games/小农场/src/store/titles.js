@@ -24,9 +24,9 @@ const MIN_REWARD_COINS = 30;
 
 /** 玩家已领取的称号集合 */
 function claimedMap() {
-  state.player.titles ??= { claimed: {}, equipped: '' };
-  state.player.titles.claimed ??= {};
-  return state.player.titles.claimed;
+  state.farm.progress.titles ??= { claimed: {}, equipped: '' };
+  state.farm.progress.titles.claimed ??= {};
+  return state.farm.progress.titles.claimed;
 }
 
 /**
@@ -34,7 +34,7 @@ function claimedMap() {
  * 称号奖励随农场等级缩放，低等级领到的与高等级领到的不是同一个数。
  */
 function coinBase() {
-  const level = state.player.level;
+  const level = state.farm.level;
   const best = Object.values(CROPS)
     .filter((c) => c.lv <= level)
     .reduce((max, c) => Math.max(max, c.sell), 12);
@@ -43,7 +43,7 @@ function coinBase() {
 
 /** 称号条件是否已达成 */
 export function isUnlocked(title) {
-  if (title.need.type === 'level') return state.player.level >= title.need.value;
+  if (title.need.type === 'level') return state.farm.level >= title.need.value;
   if (title.need.type === 'codex') return codexSummary().lit >= title.need.value;
   return false;
 }
@@ -54,7 +54,7 @@ export function isUnlocked(title) {
  */
 export function titleStates() {
   const claimed = claimedMap();
-  const equipped = state.player.titles?.equipped || '';
+  const equipped = state.farm.progress.titles?.equipped || '';
   return TITLES.map((t) => ({
     ...t,
     claimed: Boolean(claimed[t.id]),
@@ -65,7 +65,7 @@ export function titleStates() {
 
 /** 当前佩戴的称号（没佩戴过就是 null） */
 export function equippedTitle() {
-  const id = state.player.titles?.equipped || '';
+  const id = state.farm.progress.titles?.equipped || '';
   return id ? titleById(id) : null;
 }
 
@@ -102,9 +102,9 @@ export async function claimTitle(id) {
   for (const [itemId, n] of Object.entries(items)) add(itemId, n);
 
   // 还没佩戴过任何称号时，领到的第一个直接戴上
-  if (!state.player.titles.equipped) state.player.titles.equipped = id;
+  if (!state.farm.progress.titles.equipped) state.farm.progress.titles.equipped = id;
 
-  await commit({ player: state.player }, { bag: state.bag });
+  await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
   emit(EVENTS.TITLES);
@@ -130,10 +130,10 @@ export async function equipTitle(id) {
     notify('这个称号还没领取');
     return false;
   }
-  if (state.player.titles.equipped === id) return true;
+  if (state.farm.progress.titles.equipped === id) return true;
 
-  state.player.titles.equipped = id;
-  await commit({ player: state.player });
+  state.farm.progress.titles.equipped = id;
+  await commit({ farms: [state.farm] });
   emit(EVENTS.PLAYER);
   emit(EVENTS.TITLES);
 

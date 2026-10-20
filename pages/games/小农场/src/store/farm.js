@@ -33,10 +33,10 @@ const MIN_REGROW_MS = 30_000;
 /* ---------- 查询 ---------- */
 
 /** 地块是否已解锁 */
-const isUnlocked = (plot) => plot.id < countUnlocked(state.player.level);
+const isUnlocked = (plot) => plot.id < countUnlocked(state.farm.level);
 
 /** 当前已解锁的地块总数 */
-export const unlockedPlotCount = () => countUnlocked(state.player.level);
+export const unlockedPlotCount = () => countUnlocked(state.farm.level);
 
 /** 地块状态：'locked' | 'empty' | 'growing' | 'ripe' */
 export function plotStatus(plot) {
@@ -70,7 +70,7 @@ export const needsPest = (plot, now = Date.now()) =>
 
 /** 可升级为指定土地的空闲普通地块 */
 export function upgradeablePlots(soilId) {
-  return state.plots.filter(
+  return state.farm.plots.filter(
     (p) => isUnlocked(p) && p.soil === 'normal' && !p.cropId,
   );
 }
@@ -86,8 +86,10 @@ function scheduleCare(plot, now) {
   plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
 }
 
-async function persist(plot) {
-  await commit({ player: state.player }, { plots: plot ? [plot] : [], bag: state.bag });
+async function persist() {
+  // 地块、金币、经验、背包都在玩家农场这一座里，一次提交全部写回；
+  // 升级会同时写时报，所以把 news 也带上，免得关掉页面就丢了
+  await commit({ farms: [state.farm], bag: state.bag, news: state.news });
   emit(EVENTS.PLAYER);
   emit(EVENTS.FARM);
   emit(EVENTS.INVENTORY);
@@ -179,7 +181,7 @@ export async function plant(plotId, cropId) {
   const { crop, soil } = applyPlant(plot, cropId);
   recordPlanted(cropId);
   player.addLog('🌱', `种下 ${crop.name}（${soil.name}）`);
-  await persist(plot);
+  await persist();
   await completeGuide('plant');
   notify(`${crop.emoji} 种下了 ${crop.name}（${soil.name}）`);
   return true;
@@ -210,7 +212,7 @@ export async function water(plotId) {
   player.addExpRaw(crop.lv);
   player.addLog('💧', `给 ${crop.name} 浇水，当前阶段 -${Math.round(WATER_SPEEDUP * 100)}%`);
 
-  await persist(plot);
+  await persist();
   await completeGuide('water');
   notify(
     `💧 浇水成功，当前阶段缩短 ${Math.round(WATER_SPEEDUP * 100)}%（约 ${fmtSaved(saved)}）　经验 +${crop.lv}`,
@@ -239,7 +241,7 @@ export async function catchPest(plotId) {
   player.addExpRaw(crop.lv);
   player.addLog('🐛', `给 ${crop.name} 捉虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%`);
 
-  await persist(plot);
+  await persist();
   const gain = Math.round((plot.boost - before) * 100);
   notify(`🐛 捉虫成功，产量 +${gain}%（当前 +${Math.round(plot.boost * 100)}%）　经验 +${crop.lv}`);
   return true;
@@ -255,7 +257,7 @@ export async function catchPest(plotId) {
  */
 export async function waterAll() {
   const now = Date.now();
-  const targets = state.plots.filter((p) => isUnlocked(p) && needsWater(p, now));
+  const targets = state.farm.plots.filter((p) => isUnlocked(p) && needsWater(p, now));
   if (!targets.length) {
     notify('现在没有需要浇水的地');
     return false;
@@ -279,7 +281,7 @@ export async function waterAll() {
   player.addExpRaw(exp);
   player.addLog('🚿', `用洒水器给 ${targets.length} 块地浇了水，经验 +${exp}`);
 
-  await commit({ player: state.player }, { plots: targets, bag: state.bag });
+  await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.PLAYER);
   emit(EVENTS.FARM);
   emit(EVENTS.INVENTORY);
@@ -294,7 +296,7 @@ export async function waterAll() {
  */
 export async function catchPestAll() {
   const now = Date.now();
-  const targets = state.plots.filter((p) => isUnlocked(p) && needsPest(p, now));
+  const targets = state.farm.plots.filter((p) => isUnlocked(p) && needsPest(p, now));
   if (!targets.length) {
     notify('现在没有需要捉虫的地');
     return false;
@@ -315,7 +317,7 @@ export async function catchPestAll() {
   player.addExpRaw(exp);
   player.addLog('🧴', `用杀虫剂给 ${targets.length} 块地除了虫，经验 +${exp}`);
 
-  await commit({ player: state.player }, { plots: targets, bag: state.bag });
+  await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.PLAYER);
   emit(EVENTS.FARM);
   emit(EVENTS.INVENTORY);
@@ -360,7 +362,7 @@ export async function fertilize(plotId, itemId) {
     plot.yieldBonus = item.boost;
     plot.fert = true;
     player.addLog(item.emoji, `给 ${crop.name} 施了${item.name}（本轮产量 +${Math.round(item.boost * 100)}%）`);
-    await persist(plot);
+    await persist();
     notify(`${item.emoji} ${item.name}生效，${crop.name} 的产量 +${Math.round(item.boost * 100)}%`, 'gold');
     return true;
   }
@@ -380,7 +382,7 @@ export async function fertilize(plotId, itemId) {
     `给 ${crop.name} 施了${item.name}（成熟 −${fmtSaved(saved)}）`,
   );
 
-  await persist(plot);
+  await persist();
   notify(
     item.instant
       ? '⚗️ 有机化肥生效，作物直接成熟！'
@@ -440,7 +442,7 @@ export async function harvest(plotId) {
   const stolenNote = stolen ? `（被顺走 ${stolen} 个）` : '';
   player.addLog('🌾', `${desc}，经验 +${exp}${stolenNote}`);
 
-  await persist(plot);
+  await persist();
   await completeGuide('harvest');
   notify(
     `${desc}　经验 +${exp}`
@@ -464,7 +466,7 @@ export async function upgradeSoil(plotId, soilId) {
     notify('这块地当前无法升级');
     return false;
   }
-  if (state.player.level < soil.unlock) {
+  if (state.farm.level < soil.unlock) {
     notify(`需要 Lv.${soil.unlock} 才能升级`);
     return false;
   }
@@ -475,7 +477,7 @@ export async function upgradeSoil(plotId, soilId) {
 
   plot.soil = soilId;
   player.addLog('🟫', `地块 ${plotId + 1} 升级为 ${soil.name}`);
-  await persist(plot);
+  await persist();
   await completeGuide('upgrade');
   notify(`🟫 地块 ${plotId + 1} 升级为 ${soil.name}`);
   return true;

@@ -35,7 +35,7 @@ export const ITEMS = {
   boost10:    { name: '增产剂 10%',    emoji: '✨', price: 1000, desc: '本轮产量 +10%', fert: true, boost: 0.10 },
   boost20:    { name: '增产剂 20%',    emoji: '🌟', price: 3000, desc: '本轮产量 +20%', fert: true, boost: 0.20 },
   boost30:    { name: '增产剂 30%',    emoji: '💫', price: 8000, desc: '本轮产量 +30%', fert: true, boost: 0.30 },
-  dogFood:    { name: '狗粮',          emoji: '🦴', price: 50,   desc: '喂养守护犬，饱腹度 +45%', fert: false },
+  dogFood:    { name: '狗粮',          emoji: '🦴', price: 50,   desc: '往共享狗粮槽里添一份，存量 +45%', fert: false },
   [SPRINKLER_ID]: { name: '洒水器', emoji: '🚿', price: 200, desc: '一次性：给整座农场所有缺水的地浇水', fert: false, all: 'water' },
   [PESTICIDE_ID]: { name: '杀虫剂', emoji: '🧴', price: 200, desc: '一次性：给整座农场所有生虫的地捉虫', fert: false, all: 'pest' },
 };

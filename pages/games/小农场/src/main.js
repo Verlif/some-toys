@@ -2,13 +2,17 @@
  * 组合根：负责启动顺序与跨模块的订阅接线。
  *
  * 启动流程：
- *   打开数据库 → 读档 → 挂载各 UI 模块 → 首次渲染 → 启动心跳
+ *   打开数据库 → 读档 → 挂载各 UI 模块 → 首帧渲染 → 补算邻居近况 → 启动心跳
+ *
+ * 前两步和最后的补算都要花时间，所以整个流程用启动画面裹起来，
+ * 并把当前在做的事写在画面上（「正在连接到农场」/「正在进入农场」）。
  */
 import { openDatabase } from './core/db.js';
 import { on, EVENTS } from './core/bus.js';
 import { initState } from './store/state.js';
 import { autoSignIn } from './store/signin.js';
 
+import { bootDone, bootFail, bootProgress, bootStage } from './ui/boot.js';
 import { mountToast } from './ui/toast.js';
 import { mountModal } from './ui/modal.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
@@ -20,17 +24,32 @@ import { mountAdventure } from './ui/adventure.js';
 import { mountTabs, activatePage, currentPage } from './ui/tabs.js';
 import { mountFarm, renderFarm } from './ui/views/farm.js';
 import { mountShop, renderShop } from './ui/views/shop.js';
-import { mountFriends, renderFriends } from './ui/views/friends.js';
+import { mountFriends, renderFriends, checkOnlineVisits } from './ui/views/friends.js';
 import { mountNews, renderNews } from './ui/views/news.js';
+import { markSessionStart, pollOnline } from './store/social.js';
 
 /** 地块倒计时刷新间隔 */
 const TICK_MS = 500;
 
+/**
+ * 邻居上线检查间隔。
+ *
+ * 邻居的上线节奏是几小时一次，所以一分钟查一次足够；
+ * 但也不能太慢 —— 玩家切回标签页时该立刻看到「谁上线了」。
+ */
+const VISIT_POLL_MS = 60_000;
+
 async function boot() {
+  /* ① 连接数据库 */
+  bootStage('正在连接到农场', '打开本地存档…', 8);
   await openDatabase();
+
+  /* ② 读档：所有农场、地块、日志、背包一次读全 */
+  bootStage('正在进入农场', '读取农场档案…', 22);
   await initState();
 
-  // 1. 先挂载，2. 再首帧渲染，顺序反了会漏掉事件
+  /* ③ 挂载界面，再首帧渲染（顺序反了会漏掉事件） */
+  bootStage('正在进入农场', '搭建农场…', 34);
   mountToast();
   mountModal();
   mountSignCelebrate();
@@ -61,17 +80,40 @@ async function boot() {
   on(EVENTS.CODEX, renderCurrent);
   on(EVENTS.TITLES, renderCurrent);
 
-  // 邻居的成长不在这里推进——它只在切到邻居页时结算一次，见 enterFriendsPage。
-  // 心跳同样只在农场页可见时刷新地块。
+  /* ④ 补算玩家不在时邻居做的事。离线久了会分很多帧，所以带进度 */
+  bootStage('正在进入农场', '看看邻居们干了什么…', 44);
+  markSessionStart();
+  await pollOnline((done, total) => {
+    // total 只是估算（上线间隔带随机），所以夹住比例，别让进度条冲过头
+    const ratio = total > 0 ? Math.min(1, done / total) : 1;
+    bootProgress(
+      44 + Math.round(ratio * 50),
+      total > 0 ? '邻居们正在打理农场…' : '邻居们最近很清闲',
+    );
+  });
+
+  await bootDone();
+
+  /* ⑤ 心跳与轮询 */
+  // 心跳只在农场页可见时刷新地块
   setInterval(() => {
     if (currentPage() === 'farm') renderFarm();
   }, TICK_MS);
+
+  // 邻居的成长在玩家在线时持续推进：他们上线时弹一条提示，
+  // 之后每做一件事（顺菜、照料）都隔几秒才发生，见 store/social.js
+  setInterval(() => {
+    if (document.hidden) return;
+    checkOnlineVisits();
+  }, VISIT_POLL_MS);
 
   // 从后台切回来时立刻补一次渲染，避免看到过期的倒计时
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
     renderFarm();
     renderCurrent();
+    // 切回来时可能已经过了邻居的上线点，立刻查一次
+    checkOnlineVisits();
   });
 
   // 打开页面就结算今天的签到：已签过什么都不做，未签则发奖并播庆祝画面。
@@ -83,13 +125,7 @@ async function boot() {
   }
 }
 
-function showFatal(error) {
+boot().catch((error) => {
   console.error(error);
-  document.body.innerHTML = `
-    <div style="padding:40px;text-align:center;font-family:sans-serif">
-      <h2>😵 初始化失败</h2>
-      <p style="color:#888;margin-top:10px">${error.message}</p>
-    </div>`;
-}
-
-boot().catch(showFatal);
+  bootFail(error?.message || '未知错误，刷新页面再试试');
+});

@@ -1,10 +1,10 @@
 /**
- * 商店页：按售卖类型分三个 tab。
+ * 商店页：按售卖类型分四个 tab（种子 / 道具 / 土地 / 藏宝图）。
  *
  * 交互要点：
  *  - tab 与筛选条放在 sticky 容器里，始终吸附在顶栏下方，不跟列表滚走；
- *  - 三个面板横向排列，支持原生左右滑动，点击 tab 则平滑滚动到对应面板；
- *  - 重绘（买东西之后）会保留当前的横向滚动位置，不会跳回第一个 tab。
+ *  - 四个面板横向排列，支持原生左右滑动，点击 tab 则平滑滚动到对应面板；
+ *  - 重绘（买东西之后）会同时保留横向位置与当前面板的纵向滚动位置。
  */
 import { byId, delegate, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
@@ -48,7 +48,7 @@ function owned(id) {
 function matchFilter(id) {
   const crop = CROPS[id];
   if (seedFilter === 'all') return true;
-  if (seedFilter === 'affordable') return state.player.coins >= crop.seed;
+  if (seedFilter === 'affordable') return state.farm.coins >= crop.seed;
   return shop.isSeedUnlocked(id);
 }
 
@@ -73,7 +73,7 @@ function seedPanel() {
 
   const rows = shown.map((id) => {
     const crop = CROPS[id];
-    const locked = state.player.level < crop.lv;
+    const locked = state.farm.level < crop.lv;
     return `
       <div class="shop-item seed-item ${locked ? 'locked' : ''}"
            data-action="seed-detail" data-id="${id}" role="button" tabindex="0">
@@ -115,7 +115,7 @@ function itemPanel() {
 function soilPanel() {
   const rows = UPGRADEABLE_SOIL_IDS.map((id) => {
     const soil = SOILS[id];
-    const locked = state.player.level < soil.unlock;
+    const locked = state.farm.level < soil.unlock;
     return `
       <div class="shop-item ${locked ? 'locked' : ''}">
         <div class="si-emoji">${soil.emoji}</div>
@@ -142,7 +142,7 @@ function soilPanel() {
  */
 function mapPanel() {
   const rows = MAP_TIERS.map((map) => {
-    const locked = state.player.level < map.unlock;
+    const locked = state.farm.level < map.unlock;
     const owned = count(mapId(map.tier));
     return `
       <div class="shop-item ${locked ? 'locked' : ''}">
@@ -181,7 +181,9 @@ export function renderShop() {
   const root = byId('shop');
   const panels = root.querySelector('.shop-panels');
   const keepLeft = panels ? panels.scrollLeft : 0;
-  const activePanel = panels?.querySelector(`.shop-panel[data-panel="${activeTab}"]`);
+  // 记下重绘时所在的面板：下面的重建过程会改写 activeTab，不能拿它当 key
+  const tabAtRender = activeTab;
+  const activePanel = panels?.querySelector(`.shop-panel[data-panel="${tabAtRender}"]`);
   const keepTop = keepPanelScroll && activePanel ? activePanel.scrollTop : 0;
   keepPanelScroll = true;
 
@@ -193,7 +195,7 @@ export function renderShop() {
             <span>${t.icon}</span>${t.label}
           </button>`).join('')}
       </div>
-      ${activeTab === 'seed' ? filterHTML() : ''}
+      ${filterHTML()}
     </div>
     <div class="shop-panels">
       <div class="shop-panel" data-panel="seed">${seedPanel()}</div>
@@ -205,10 +207,13 @@ export function renderShop() {
   const nextPanels = root.querySelector('.shop-panels');
   // scroll 事件不冒泡，只能直接挂在每次重绘后新建的容器上
   nextPanels.addEventListener('scroll', onPanelScroll, { passive: true });
-  syncTabFromScroll(nextPanels);
+  // 顺序很要紧：先恢复横向位置，再同步 tab。
+  // 反过来的话 syncTabFromScroll 读到的是 scrollLeft = 0，
+  // 会把 activeTab 误判成第一个 tab，纵向滚动就恢复到了错误的面板上。
   if (keepLeft) nextPanels.scrollLeft = keepLeft;
+  syncTabFromScroll(nextPanels);
   if (keepTop) {
-    const panel = nextPanels.querySelector(`.shop-panel[data-panel="${activeTab}"]`);
+    const panel = nextPanels.querySelector(`.shop-panel[data-panel="${tabAtRender}"]`);
     if (panel) panel.scrollTop = keepTop;
   }
 }
@@ -367,7 +372,7 @@ function openSeedModal(cropId) {
     <div class="sd-gain">一株完整周期预计收入 <b>${coin.toLocaleString()}</b>（按平均产量估算）</div>
 
     ${locked
-      ? `<div class="sd-lock">还差 ${crop.lv - state.player.level} 级解锁，Lv.${crop.lv} 就能种了</div>`
+      ? `<div class="sd-lock">还差 ${crop.lv - state.farm.level} 级解锁，Lv.${crop.lv} 就能种了</div>`
       : ''}
 
     <div class="sd-buybar">
@@ -388,7 +393,7 @@ function openSeedModal(cropId) {
   /** 数量变化后只改数字与按钮状态，不重建弹窗 —— 否则连发会被打断 */
   function refresh() {
     const total = crop.seed * qty;
-    const affordable = state.player.coins >= total;
+    const affordable = state.farm.coins >= total;
     const setText = (role, text) => {
       const el = card.querySelector(`[data-role="${role}"]`);
       if (el) el.textContent = text;
@@ -428,7 +433,7 @@ function openSeedModal(cropId) {
 
 function openSoilModal(soilId) {
   const soil = SOILS[soilId];
-  if (state.player.level < soil.unlock) {
+  if (state.farm.level < soil.unlock) {
     renderShop();
     return;
   }

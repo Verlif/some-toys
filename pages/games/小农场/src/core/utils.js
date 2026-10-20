@@ -57,6 +57,18 @@ export function clamp(value, min, max) {
 }
 
 /**
+ * 金币数量的短文本：万以内显示原数，再往上用「万 / 亿」缩写，
+ * 避免顶栏与列表被长数字撑破。
+ * @param {number} n
+ * @returns {string}
+ */
+export function formatCoins(n) {
+  if (n < 10_000) return String(n);
+  if (n < 100_000_000) return `${(n / 10_000).toFixed(1)}万`;
+  return `${(n / 100_000_000).toFixed(2)}亿`;
+}
+
+/**
  * 本地日期键 YYYY-M-D（不用 toISOString，避免时区偏移）
  * @param {number} [ts]
  * @returns {string}

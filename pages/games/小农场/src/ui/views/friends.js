@@ -9,13 +9,13 @@ import { byId, delegate, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
 import { getFriend, state } from '../../store/state.js';
 import * as social from '../../store/social.js';
-import { formatCoins } from '../../store/npc-sim.js';
 import { CROPS } from '../../data/crops.js';
-import { PERSONALITIES, STEAL_LABELS, npcDogSatietyAt } from '../../data/friends.js';
+import { PERSONALITIES, STEAL_LABELS } from '../../data/friends.js';
+import { dogBreed, dogSatietyAt } from '../../data/dogs.js';
 import { PESTICIDE_ID, SPRINKLER_ID } from '../../data/items.js';
 import { count } from '../../store/inventory.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
-import { fmtDuration } from '../../core/utils.js';
+import { fmtDuration, formatCoins } from '../../core/utils.js';
 import { openModal } from '../modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
 import { showToast } from '../toast.js';
@@ -125,10 +125,11 @@ export function renderFriends() {
       : '<div class="empty-tip">🌾<br>这个档位下暂时没有邻居<br>换个筛选看看</div>'}</div>`);
 }
 
-/* ---------- 离线结算 ---------- */
+/* ---------- 结算与上线提醒 ---------- */
 
 /**
  * 进入邻居页：先补算离线期间的成长，再渲染。
+ *
  * 结算用 requestAnimationFrame 分帧驱动；离线太久时远期部分走聚合公式，
  * 所以无论多久没上线都是常数级开销。
  */
@@ -137,33 +138,58 @@ export async function enterFriendsPage() {
   settling = true;
 
   try {
-    const settler = social.createSettler();
-    const overlay = settler.total > 0 ? showSimOverlay() : null;
+    // 还有积压没算（比如刚从后台切回来）就显示等待画面
+    const work = social.pendingWork();
+    const overlay = work > 0 ? showSimOverlay() : null;
 
-    if (overlay) {
-      await new Promise((resolve) => {
-        const frame = () => {
-          const finished = settler.run();
-          overlay.update(settler.done, settler.total);
-          if (finished) resolve();
-          else requestAnimationFrame(frame);
-        };
-        requestAnimationFrame(frame);
-      });
-      await social.persistFriends();
-      await overlay.close();
+    await social.settleWorld((done, total) => overlay?.update(done, total));
+    if (overlay) await overlay.close();
 
-      // 邻居这段时间在玩家农场上的动作，合并成一条提示；
-      // 逐条弹的话离线久了会连弹十几条
-      const { stolen, cared, caught } = settler.summary;
+    // 离线期间的事：合并成一条提示，逐条弹的话离线久了会连弹十几条
+    const offline = social.takeOfflineSummary();
+    if (offline.count > 0) {
       const parts = [];
-      if (stolen) parts.push(`被顺走 ${stolen} 个作物`);
-      if (cared) parts.push(`邻居帮你照料了 ${cared} 块地`);
-      if (caught) parts.push(`守护犬赶走了 ${caught} 次`);
+      if (offline.stolen) parts.push(`被顺走 ${offline.stolen} 个作物`);
+      if (offline.cared) parts.push(`邻居帮你照料了 ${offline.cared} 块地`);
+      if (offline.caught) parts.push(`守护犬赶走了 ${offline.caught} 次`);
       if (parts.length) showToast(`🏡 你不在时：${parts.join('，')}`);
     }
 
     renderFriends();
+  } finally {
+    settling = false;
+  }
+}
+
+/**
+ * 在线期间的邻居上线提醒。
+ *
+ * 玩家挂在游戏里不动，邻居也会按自己的节奏上线 —— 上线时弹一条提示，
+ * 顺便把这次上线在玩家农场上做的事说出来（顺菜、被狗赶走）。
+ *
+ * @returns {Promise<number>} 本次上线的邻居数量
+ */
+export async function checkOnlineVisits() {
+  if (settling) return 0;
+  settling = true;
+
+  try {
+    await social.pollOnline();
+    const online = social.takeArrivals();
+    if (!online.length) return 0;
+
+    if (online.length === 1) {
+      const a = online[0];
+      showToast(`${a.avatar} ${a.name} 上线了 · ${a.text}`, 'gold');
+    } else {
+      // 一次来了好几位：只报前几个名字
+      const names = online.slice(0, 3).map((o) => o.name).join('、');
+      const more = online.length > 3 ? ` 等 ${online.length} 位` : '';
+      showToast(`👋 ${names}${more} 上线了`, 'gold');
+    }
+
+    renderFriends();
+    return online.length;
   } finally {
     settling = false;
   }
@@ -314,13 +340,19 @@ function openFriendModal(friendId) {
   if (!friend) return;
   const now = Date.now();
   const stealable = social.stealableCount(friend, now);
-  const dogSatiety = Math.round(npcDogSatietyAt(friend, now));
+  const dogSatiety = Math.round(dogSatietyAt(friend.dog, now));
+  const dogBreedInfo = dogBreed(friend.dog.breed);
 
   const stats = [
     { k: '等级', v: `Lv.${friend.level}` },
     { k: '身家', v: `${formatCoins(friend.coins)} 💰` },
     { k: '地块', v: `${friend.plots.length} 块` },
-    { k: '守护犬', v: dogSatiety > 0 ? `🐕 ${dogSatiety}% 在看家` : '🐶 饿着，不设防' },
+    {
+      k: '守护犬',
+      v: dogBreedInfo
+        ? `${dogBreedInfo.emoji} ${dogBreedInfo.name} · ${dogSatiety > 0 ? `${dogSatiety}% 在看家` : '饿着，不设防'}`
+        : '🐶 没有狗',
+    },
     { k: '偷菜', v: STEAL_LABELS[friend.steal] || '偶尔顺菜' },
   ];
 
