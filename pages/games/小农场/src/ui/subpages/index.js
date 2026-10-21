@@ -8,6 +8,7 @@ import { titlesPage } from './titles.js';
 import { signPage } from './sign.js';
 import { guidePage } from './guide.js';
 import { dogPage } from './dog.js';
+import { workshopPage } from './workshop.js';
 import { placeholderPage } from './placeholder.js';
 
 /** @type {Record<string, {render: (body: HTMLElement, ctx: any) => void, actions?: Record<string, Function>}>} */
@@ -19,8 +20,7 @@ export const subpages = {
   sign: signPage,
   guide: guidePage,
   dog: dogPage,
+  seedshop: workshopPage,
   ranch: placeholderPage,
-  workshop: placeholderPage,
-  market: placeholderPage,
   settings: placeholderPage,
 };

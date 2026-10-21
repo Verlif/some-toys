@@ -83,9 +83,10 @@ export const bagPage = {
                   aria-pressed="${on}" aria-label="选择${crop.name}">${on ? '✓' : ''}</button>
           <div class="si-emoji">${crop.emoji}</div>
           <div class="si-body">
-            <div class="si-name">${crop.name} <span class="si-own">×${n}</span></div>
+            <div class="si-name">${crop.name}</div>
             <div class="si-meta">单价 ${crop.sell} · 共值 ${n * crop.sell} 金币</div>
           </div>
+          <span class="si-count">×${n}</span>
           <button class="btn small ghost" data-action="sell" data-id="${id}">卖出</button>
         </div>`;
     }).join('');

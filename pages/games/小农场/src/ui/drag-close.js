@@ -46,15 +46,23 @@ export function dragToClose(panel, { onClose, scrollArea = null }) {
     shift = 0;
   }
 
-  /** 是否可以从当前位置开始接管手势 */
-  function canStart() {
-    // 内部已滚动说明用户想看内容而不是关掉它
+  /**
+   * 是否可以从当前位置开始接管手势。
+   *
+   * 从标题栏 / 把手起手时永远允许 —— 它们不在滚动容器里，
+   * 内容滚到哪儿都该能一把拉下来关掉。其余区域在内容已滚动时
+   * 让给原生滚动。
+   *
+   * @param {?EventTarget} target 按下时的目标
+   */
+  function canStart(target) {
+    if (target instanceof Element && target.closest('.modal-head, .sheet-handle')) return true;
     const scroller = typeof scrollArea === 'function' ? scrollArea() : scrollArea;
     return !(scroller && scroller.scrollTop > 0);
   }
 
-  function begin(clientY) {
-    ignored = !canStart();
+  function begin(clientY, target) {
+    ignored = !canStart(target);
     if (ignored) return;
     startY = clientY;
     shift = 0;
@@ -92,7 +100,7 @@ export function dragToClose(panel, { onClose, scrollArea = null }) {
   /* ---------- 触摸 ---------- */
   const onTouchStart = (e) => {
     if (e.touches.length !== 1) return;
-    begin(e.touches[0].clientY);
+    begin(e.touches[0].clientY, e.target);
   };
   const onTouchMove = (e) => {
     if (e.touches.length !== 1) return;
@@ -111,7 +119,7 @@ export function dragToClose(panel, { onClose, scrollArea = null }) {
   };
   const onMouseDown = (e) => {
     if (e.button !== 0) return;
-    begin(e.clientY);
+    begin(e.clientY, e.target);
     if (!tracking) return;
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);

@@ -9,6 +9,7 @@ import { byId, delegate, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
 import { getFriend, state } from '../../store/state.js';
 import * as social from '../../store/social.js';
+import { completeGuide } from '../../store/codex.js';
 import { CROPS } from '../../data/crops.js';
 import { PERSONALITIES, STEAL_LABELS } from '../../data/friends.js';
 import { dogBreed, dogSatietyAt } from '../../data/dogs.js';
@@ -35,6 +36,9 @@ const SORTS = [
 ];
 
 let sortMode = 'lv-asc';
+
+/** 搜索关键词（按邻居名字过滤，与排序叠加生效） */
+let searchQuery = '';
 
 /* ---------- 卡片 ---------- */
 
@@ -87,10 +91,15 @@ function cardHTML(friend, now) {
 
 /**
  * 按当前档位挑出并排序邻居
+ *
+ * 搜索与排序叠加：先按名字过滤，再按档位筛 / 排。
  * @returns {object[]} 新数组，不改动 state.friends
  */
 function friendsShown(now) {
-  const list = [...state.friends];
+  const q = searchQuery.trim();
+  const list = q
+    ? state.friends.filter((f) => f.name.includes(q))
+    : [...state.friends];
   if (sortMode === 'steal') {
     return list
       .filter((f) => social.stealableCount(f, now) > 0)
@@ -106,23 +115,69 @@ function friendsShown(now) {
     : list.sort((a, b) => a.level - b.level);
 }
 
-/** 重绘邻居列表 */
+/**
+ * 排序芯片（带数量角标）。
+ * 「可偷摘 / 可帮忙」上的数字是**邻居人数** —— 与筛选语义一致：
+ * 点它筛出来的就是这些邻居。数量按全部邻居统计，不受搜索影响。
+ */
+function sortChips(now) {
+  const counts = {
+    steal: state.friends.filter((f) => social.stealableCount(f, now) > 0).length,
+    care: state.friends.filter((f) => social.needsHelp(f, now)).length,
+  };
+  return SORTS.map((s) => `
+    <button class="filter-chip ${s.key === sortMode ? 'active' : ''}"
+            data-action="sort-friends" data-id="${s.key}">${s.label}${
+      counts[s.key] === undefined ? '' : `<i class="chip-num">${counts[s.key]}</i>`
+    }</button>`).join('');
+}
+
+/** 列表为空时的提示：区分「筛选没结果」和「搜索没结果」 */
+function emptyFriendsHTML() {
+  const q = searchQuery.trim();
+  if (q) return `<div class="empty-tip">🔍<br>没有名字带「${escapeText(q)}」的邻居<br>换个关键词试试</div>`;
+  if (sortMode === 'steal') return '<div class="empty-tip">🥷<br>现在没有能顺的作物<br>等谁家的菜熟了再来</div>';
+  if (sortMode === 'care') return '<div class="empty-tip">💧<br>大家的地都打理得很好<br>没有需要帮忙的</div>';
+  return '<div class="empty-tip">🌾<br>这个档位下暂时没有邻居<br>换个筛选看看</div>';
+}
+
+/**
+ * 排序条左右滑动：切到上一个 / 下一个排序档。
+ * 滑完之后把激活的芯片滚进可见区域。
+ * @param {number} delta +1 下一个，-1 上一个
+ */
+function shiftSort(delta) {
+  const index = SORTS.findIndex((s) => s.key === sortMode);
+  const next = SORTS[(index + delta + SORTS.length) % SORTS.length];
+  if (!next || next.key === sortMode) return;
+  sortMode = next.key;
+  renderFriends();
+  byId('friends')?.querySelector('.filter-chip.active')
+    ?.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+/**
+ * 重绘邻居列表。
+ *
+ * 只重绘 #friendsBody（排序条 + 列表）—— 顶部的标题与搜索框是静态结构，
+ * 不参与重绘：中文输入法拼拼音时重建输入框元素会打断候选过程。
+ */
 export function renderFriends() {
   const now = Date.now();
   const list = friendsShown(now);
-  const chips = SORTS.map((s) => `
-    <button class="filter-chip ${s.key === sortMode ? 'active' : ''}"
-            data-action="sort-friends" data-id="${s.key}">${s.label}</button>`).join('');
 
-  setHTML(byId('friends'), `
-    <div class="section-title">👥 邻居农场</div>
-    <div class="friend-sort">
-      ${chips}
+  setHTML(byId('friendsBody'), `
+    <div class="filter-bar">
+      ${sortChips(now)}
       <span class="shop-filter-count">${list.length} / ${state.friends.length}</span>
     </div>
     <div class="friend-list">${list.length
       ? list.map((friend) => cardHTML(friend, now)).join('')
-      : '<div class="empty-tip">🌾<br>这个档位下暂时没有邻居<br>换个筛选看看</div>'}</div>`);
+      : emptyFriendsHTML()}</div>`);
+
+  // 清空按钮只在有关键词时出现
+  const clear = byId('friends')?.querySelector('.friend-search-clear');
+  if (clear) clear.hidden = !searchQuery.trim();
 }
 
 /* ---------- 结算与上线提醒 ---------- */
@@ -211,7 +266,9 @@ export async function checkOnlineVisits() {
 function plotCardHTML(friend, index, now) {
   const plot = friend.plots[index];
   // data-slot 让操作之后能只替换这一格，而不是整窗重开（滚动位置也就不会丢）
-  const base = (extra) => `<div class="npc-plot ${extra.cls || ''}" data-slot="${index}">${
+  // 土地档位的底纹：邻居的地也会升级，左侧换成那块地的颜色
+  const soil = plot.soil && plot.soil !== 'normal' ? ` soilbg-${plot.soil}` : '';
+  const base = (extra) => `<div class="npc-plot ${extra.cls || ''}${soil}" data-slot="${index}">${
     boostBadge(plot)}${flagBadge(plot)}${extra.body}</div>`;
 
   if (!plot.cropId) {
@@ -338,6 +395,8 @@ function quickButtons(friend, now) {
 function openFriendModal(friendId) {
   const friend = getFriend(friendId);
   if (!friend) return;
+  // 串门本身就是引导目标：打开任意一座邻居农场就算「第一次串门」
+  completeGuide('visit');
   const now = Date.now();
   const stealable = social.stealableCount(friend, now);
   const dogSatiety = Math.round(dogSatietyAt(friend.dog, now));
@@ -406,7 +465,7 @@ function openFriendModal(friendId) {
   }
 
   openModal(`
-    <div class="npc-head">
+    <div class="modal-head npc-head">
       <div class="npc-avatar">${friend.avatar}</div>
       <div class="npc-id">
         <div class="npc-name">${escapeText(friend.name)}</div>
@@ -475,6 +534,12 @@ const FRIEND_ACTIONS = {
       : el.dataset.id;
     renderFriends();
   },
+  'clear-search': () => {
+    searchQuery = '';
+    const search = byId('friendSearch');
+    if (search) search.value = '';
+    renderFriends();
+  },
 };
 
 export function mountFriends() {
@@ -489,6 +554,58 @@ export function mountFriends() {
     if (!card) return;
     event.preventDefault();
     FRIEND_ACTIONS.visit(card);
+  });
+
+  // 搜索框是静态的，直接绑一次：输入即时过滤，不重建输入框本身
+  const search = byId('friendSearch');
+  search?.addEventListener('input', () => {
+    searchQuery = search.value;
+    renderFriends();
+  });
+
+  // 排序条支持左右滑动切换档位（触屏 + 鼠标双通道）。
+  // 与 drag-close 同一套纪律：move 里先确认 tracking、横向位移占优才接管、
+  // 松手立刻移除 document 上的监听；触屏用 Touch + preventDefault。
+  let drag = null;
+  const onSortBar = (event) => (
+    event.target instanceof Element ? event.target.closest('.filter-bar') : null
+  );
+  root.addEventListener('touchstart', (event) => {
+    if (!onSortBar(event)) return;
+    const t = event.touches[0];
+    drag = { x: t.clientX, y: t.clientY, used: false };
+  }, { passive: true });
+  root.addEventListener('touchmove', (event) => {
+    if (!drag || drag.used) return;
+    const t = event.touches[0];
+    const dx = t.clientX - drag.x;
+    const dy = t.clientY - drag.y;
+    // 横向位移占优且超过阈值才算「滑动切换」，否则让给纵向滚动
+    if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return;
+    drag.used = true;
+    shiftSort(dx < 0 ? 1 : -1);
+    if (event.cancelable) event.preventDefault();
+  }, { passive: false });
+  root.addEventListener('touchend', () => { drag = null; }, { passive: true });
+
+  root.addEventListener('mousedown', (event) => {
+    if (!onSortBar(event)) return;
+    drag = { x: event.clientX, y: event.clientY, used: false };
+    const onMove = (e) => {
+      if (!drag || drag.used) return;
+      const dx = e.clientX - drag.x;
+      const dy = e.clientY - drag.y;
+      if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return;
+      drag.used = true;
+      shiftSort(dx < 0 ? 1 : -1);
+    };
+    const onUp = () => {
+      drag = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 
   on(EVENTS.FRIENDS, renderFriends);

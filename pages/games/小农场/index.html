@@ -55,14 +55,34 @@
         <div class="hud-cell"><span class="k">地块</span><span class="v" id="dPlots">6 / 40</span></div>
         <div class="hud-cell"><span class="k">连续签到</span><span class="v" id="dStreak">0 天</span></div>
         <div class="hud-cell"><span class="k">图鉴收集</span><span class="v" id="dCodex">0 / 200</span></div>
+        <div class="hud-cell wide"><span class="k">当前土地</span><span class="v" id="dSoil">普通 ×6</span></div>
       </div>
       <div class="hud-detail-tip">轻点顶栏收起</div>
     </div>
   </header>
 
   <main>
-    <section id="page-farm" class="page active"><div class="grid" id="plots"></div></section>
-    <section id="page-friends" class="page"><div id="friends"></div></section>
+    <section id="page-farm" class="page active">
+      <!-- 顶部条：农场名 + 全镇被偷计数（玩家与邻居累计，sticky 贴在顶栏下方） -->
+      <div class="grid" id="plots"></div>
+    </section>
+    <section id="page-friends" class="page">
+      <div id="friends">
+        <!-- 顶部一行是静态结构：搜索框不参与列表重绘，
+             否则中文输入法拼拼音时重建元素会打断候选 -->
+        <div class="friend-top">
+          <div class="section-title">👥 邻居农场</div>
+          <label class="friend-search">
+            <span class="friend-search-icon">🔍</span>
+            <input id="friendSearch" type="text" placeholder="搜名字" autocomplete="off"
+                   aria-label="搜索邻居名字">
+            <button class="friend-search-clear" data-action="clear-search"
+                    aria-label="清空搜索" hidden>✕</button>
+          </label>
+        </div>
+        <div id="friendsBody"></div>
+      </div>
+    </section>
     <section id="page-news" class="page"><div id="news"></div></section>
     <section id="page-shop" class="page"><div id="shop"></div></section>
   </main>

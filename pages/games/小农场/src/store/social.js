@@ -12,7 +12,7 @@
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
-import { state, getFriend } from './state.js';
+import { PLAYER_ID, state, getFriend } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { estimateWork, planVisit, runStep, simulateNpcUntil } from './npc-sim.js';
@@ -27,12 +27,12 @@ import {
   PEST_YIELD_BONUS,
   WATER_INTERVAL,
 } from '../data/friends.js';
-import { catchChance, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { catchChance, DOG_FINE_MULTIPLE, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
-import { randInt } from '../core/utils.js';
+import { formatCoins, randInt } from '../core/utils.js';
 
 /* ---------- 邻居状态查询 ---------- */
 
@@ -103,9 +103,12 @@ function farmView() {
     stolen: 0,
     cared: 0,
     caught: 0,
-    log: (at, emoji, text) => player.addLog(emoji, text, at),
-    news: (at, emoji, text) => addNews(emoji, text, at, farm.id),
+    // who 是「涉及的人」：邻居模拟层传进来，玩家自己的动作不传（默认农场主）
+    log: (at, emoji, text, who) => player.addLog(emoji, text, at, who),
+    news: (at, emoji, text, who) => addNews(emoji, text, at, who),
     dogGuardChanceAt: (at) => guardChance(at),
+    /** 守护犬拦下小偷时玩家入账的罚款（内存操作，随当次结算一起落盘） */
+    addCoins: (amount) => player.addCoins(amount),
   };
 }
 
@@ -364,24 +367,33 @@ export async function steal(friendId, index) {
   if (!friend || !target || !isStealable(target, now)) {
     return { ok: false, reason: '这块地现在不能偷' };
   }
+  const crop = CROPS[target.cropId];
 
   // 邻居的狗也在看家：品种决定它的能耐，饱腹度决定它现在有没有力气。
   // 一旦被逮住，这座农场**当前所有作物**这一轮都进不去了 ——
   // 和「每块地已被偷过」是同一个效果，只是原因不同。
+  // 此外还要按这个果实的价值 ×DOG_FINE_MULTIPLE 缴纳罚款，钱归邻居；
+  // 玩家钱不够就倾家荡产，不记负债。
   const breed = dogBreed(friend.dog.breed);
   const chance = breed ? catchChance(breed.rate, dogSatietyAt(friend.dog, now)) : 0;
   if (chance > 0 && Math.random() < chance) {
     for (const plot of friend.plots) {
       if (plot.cropId) plot.guarded = true;
     }
-    logFriend(friend, now, '🐕', '守护犬抓住了想偷菜的 农场主，这座农场这一轮都进不去了');
-    addNews('🐕', `${friend.name} 的守护犬抓住了前来偷菜的农场主`, now, friend.id);
+    const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE);
+    const paid = Math.min(state.farm.coins, fine);
+    player.addCoins(-paid);
+    friend.coins += paid;
+    logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 农场主，罚了 ${formatCoins(paid)} 金币`);
+    // 这条里玩家是小偷、邻居是被偷的：两个头像都要带
+    player.addLog('🐕', `偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
+    addNews('🐕', `农场主 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
 
     await commit({ farms: [state.farm, friend], news: state.news });
     emit(EVENTS.FRIENDS);
     emit(EVENTS.PLAYER);
 
-    notify(`🐕 被 ${friend.name} 家的守护犬抓住了！这一轮他家的作物都不敢碰了`, 'gold');
+    notify(`🐕 被 ${friend.name} 家的守护犬抓住了！罚款 ${formatCoins(paid)} 金币，这一轮他家的作物都不敢碰了`, 'gold');
     return { ok: false, caught: true, reason: '被守护犬抓住了' };
   }
 
@@ -390,7 +402,6 @@ export async function steal(friendId, index) {
   target.stolenCount = (target.stolenCount || 0) + 1;
   target.stolenAt = now;
 
-  const crop = CROPS[target.cropId];
   inventory.add(produceId(target.cropId), 1);
   logFriend(friend, now, '🥷', `被 农场主 顺走了 ${crop.emoji}${crop.name} ×1`);
 
@@ -399,6 +410,7 @@ export async function steal(friendId, index) {
   emit(EVENTS.INVENTORY);
   emit(EVENTS.PLAYER);
 
+  await completeGuide('steal');
   notify(`偷到 ${crop.emoji}${crop.name} ×1（这块地这轮只能偷一次）`, 'gold');
   return { ok: true, cropId: target.cropId };
 }
@@ -428,6 +440,8 @@ export async function waterNeighborPlot(friendId, index) {
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
 
+  // 在邻居家浇水也算「第一次浇水」——引导不该分自家还是别人家
+  await completeGuide('water');
   await completeGuide('care');
   notify(`💧 帮 ${friend.name} 浇了水（经验 +${exp}）`);
   return true;
@@ -498,6 +512,7 @@ export async function waterAllNeighborPlots(friendId) {
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
 
+  await completeGuide('water');
   await completeGuide('care');
   notify(`🚿 帮 ${friend.name} 浇了 ${targets.length} 块地（经验 +${exp}）`, 'gold');
   return true;

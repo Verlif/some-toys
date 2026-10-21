@@ -78,6 +78,44 @@ export function upgradeablePlots(soilId) {
 /* ---------- 内部工具 ---------- */
 
 /**
+ * 摇一次本轮产量。
+ *
+ * 与土地倍率、捉虫加成、增产剂都相关；成熟后这三样都不会再变，
+ * 所以「成熟那一刻摇一次、之后存起来」和「收获时才摇」等价，
+ * 但能让地块上提前显示确定的「可收 X / 本应 Y」。
+ * @returns {number} ≥1
+ */
+function rollYield(plot) {
+  const crop = CROPS[plot.cropId];
+  const soil = SOILS[plot.soil];
+  let amount = randInt(crop.yield[0], crop.yield[1]);
+  amount = Math.floor(amount * soil.yieldMul);
+  // 每捉一次虫 +10% 产量
+  amount = Math.floor(amount * (1 + (plot.boost || 0)));
+  // 增产剂：本轮产量加成
+  amount = Math.floor(amount * (1 + (plot.yieldBonus || 0)));
+  return Math.max(1, amount);
+}
+
+/**
+ * 给刚成熟的地块摇定本轮产量（存进 plot.pendingYield）。
+ *
+ * 渲染前调用：pendingYield ≥ 1 表示已摇定，0 表示还没摇。
+ * 收获时直接取用这个数，不再重摇 —— 玩家看到的「可收 X」就是到手的数。
+ *
+ * @returns {number} 这次新摇定了几块地（> 0 时调用方应落盘）
+ */
+export function rollRipeYields(now = Date.now()) {
+  let rolled = 0;
+  for (const plot of state.farm.plots) {
+    if (!plot.cropId || plot.pendingYield || now < plot.readyAt) continue;
+    plot.pendingYield = rollYield(plot);
+    rolled += 1;
+  }
+  return rolled;
+}
+
+/**
  * 照料计时：给一块地安排「下次需要浇水 / 捉虫」的时间。
  * 加 ±30% 的随机浮动，让各个地不会整齐划一地同时出问题。
  */
@@ -113,6 +151,7 @@ function applyPlant(plot, cropId) {
   plot.stolen = false;
   plot.stolenCount = 0;
   plot.stolenAt = 0;
+  plot.pendingYield = 0;
   scheduleCare(plot, now);
   return { crop, soil };
 }
@@ -140,6 +179,7 @@ function beginRegrow(plot, crop, soil) {
   plot.stolen = false;
   plot.stolenCount = 0;
   plot.stolenAt = 0;
+  plot.pendingYield = 0;
   scheduleCare(plot, now);
   return true;
 }
@@ -160,6 +200,7 @@ function clearPlot(plot) {
     stolen: false,
     stolenCount: 0,
     stolenAt: 0,
+    pendingYield: 0,
   });
 }
 
@@ -242,6 +283,7 @@ export async function catchPest(plotId) {
   player.addLog('🐛', `给 ${crop.name} 捉虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%`);
 
   await persist();
+  await completeGuide('pest');
   const gain = Math.round((plot.boost - before) * 100);
   notify(`🐛 捉虫成功，产量 +${gain}%（当前 +${Math.round(plot.boost * 100)}%）　经验 +${crop.lv}`);
   return true;
@@ -363,6 +405,7 @@ export async function fertilize(plotId, itemId) {
     plot.fert = true;
     player.addLog(item.emoji, `给 ${crop.name} 施了${item.name}（本轮产量 +${Math.round(item.boost * 100)}%）`);
     await persist();
+    await completeGuide('fert');
     notify(`${item.emoji} ${item.name}生效，${crop.name} 的产量 +${Math.round(item.boost * 100)}%`, 'gold');
     return true;
   }
@@ -383,6 +426,7 @@ export async function fertilize(plotId, itemId) {
   );
 
   await persist();
+  await completeGuide('fert');
   notify(
     item.instant
       ? '⚗️ 有机化肥生效，作物直接成熟！'
@@ -412,13 +456,9 @@ export async function harvest(plotId) {
   const crop = CROPS[plot.cropId];
   const soil = SOILS[plot.soil];
 
-  let amount = randInt(crop.yield[0], crop.yield[1]);
-  amount = Math.floor(amount * soil.yieldMul);
-  // 每捉一次虫 +10% 产量
-  amount = Math.floor(amount * (1 + (plot.boost || 0)));
-  // 增产剂：本轮产量加成
-  amount = Math.floor(amount * (1 + (plot.yieldBonus || 0)));
-  amount = Math.max(1, amount);
+  // 产量在成熟那一刻就已摇定并存进 pendingYield，这里直接取用；
+  // 玩家在地块上看到的「可收 X」就是本次到手的数（极端缺存档时现场补摇）。
+  let amount = plot.pendingYield || rollYield(plot);
 
   // 被邻居顺走的要真的扣掉：偷一个就少一个，不做翻倍惩罚
   const stolen = plot.stolenCount || 0;

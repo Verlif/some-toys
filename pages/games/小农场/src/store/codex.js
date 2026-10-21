@@ -14,9 +14,9 @@ import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
 import { CROP_IDS, CROPS } from '../data/crops.js';
 import { MAX_LEVEL } from '../data/progression.js';
-import { GUIDES } from '../data/guide.js';
+import { GUIDES, guideRewardText } from '../data/guide.js';
 import { produceId } from '../data/keys.js';
-import { count, take } from './inventory.js';
+import { add, count, take } from './inventory.js';
 import { addCoins, addExpRaw } from './player.js';
 import { notify } from './notify.js';
 
@@ -57,6 +57,8 @@ export const touchCodex = () => emit(EVENTS.CODEX);
 /**
  * 标记某个引导项完成并**立即发放**奖励。
  * 已经在业务动作里埋好点，玩家不需要记得回来领，奖励不会因为忘记点而损失。
+ *
+ * 奖励 = 零头金币 + 经验 + 道具（化肥 / 狗粮 / 藏宝图…）。
  * @param {string} key 引导项 key
  * @returns {Promise<boolean>} 是否是新完成的引导项
  */
@@ -68,14 +70,16 @@ export async function completeGuide(key) {
   if (!guide) return false;
 
   state.farm.progress.guide[key] = true;
-  addCoins(guide.coins);
+  addCoins(guide.coins || 0);
   addExpRaw(guide.exp);
+  for (const [itemId, n] of Object.entries(guide.items || {})) add(itemId, n);
 
-  await commit({ farms: [state.farm] });
+  await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.CODEX);
   emit(EVENTS.PLAYER);
+  emit(EVENTS.INVENTORY);
 
-  notify(`🏅 ${guide.emoji} ${guide.name}　+${guide.coins} 💰 +${guide.exp} 经验`, 'gold');
+  notify(`🏅 ${guide.emoji} ${guide.name}　${guideRewardText(guide)}`, 'gold');
   return true;
 }
 
@@ -133,6 +137,7 @@ export async function makeSpecimen(cropId) {
   emit(EVENTS.CODEX);
   emit(EVENTS.INVENTORY);
 
+  await completeGuide('specimen');
   notify(`${crop.emoji} 做好了${crop.name}的标本，图鉴已点亮`, 'gold');
   return true;
 }

@@ -93,4 +93,15 @@ export function mountSubpage() {
     event.preventDefault();
     Promise.resolve(handler(el, { closeSubpage, renderCurrent, syncCoins, setFoot })).then(renderCurrent);
   });
+
+  // 卡片类元素（role=button + tabindex，如图鉴卡片、邻居卡片）支持回车/空格触发，
+  // 与点击同一套分发 —— 键盘用户不用tab到按钮也能操作。
+  delegate(body, 'keydown', '[role="button"][data-action]', (el, event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    const page = subpages[current];
+    const handler = page?.actions?.[el.dataset.action];
+    if (!handler) return;
+    Promise.resolve(handler(el, { closeSubpage, renderCurrent, syncCoins, setFoot })).then(renderCurrent);
+  });
 }

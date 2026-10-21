@@ -10,6 +10,8 @@
  * 玩家在线时他们的动作会一条一条地演出来，见 store/social.js。
  */
 import { CROPS } from './crops.js';
+import { SOILS } from './soils.js';
+import { unlockedPlotCount } from './progression.js';
 import { randInt } from '../core/utils.js';
 
 /* ---------- 性格：决定上线时各行为的权重 ---------- */
@@ -265,9 +267,88 @@ export const BOOST_CAP = 1;
 
 /* ---------- 农场生成 ---------- */
 
-/** 邻居的地块数量随等级增长 */
-function npcPlotCount(level) {
-  return Math.min(12, 4 + Math.floor(level / 8));
+/* 邻居的地块数量与玩家完全一致：按 PLOT_UNLOCK_LV 逐块解锁，最多 40 块。
+   等级越高地越多，升级当场补上新地块（见 syncNpcPlots）。 */
+
+/**
+ * 一块「正在生长」的随机地块。
+ *
+ * 已生长 0~90%，其中一部分已经成熟可偷 —— 玩家一进去就有得看。
+ * @param {number} id 地块在一座农场里的序号（plot 表用 [farmId, id] 做主键）
+ * @param {string[]} pool 候选作物 id（已洗牌）
+ * @param {number} at 参照时刻
+ */
+function randomNpcPlot(id, pool, at, soil = 'normal') {
+  const cropId = pool[id % pool.length];
+  const crop = CROPS[cropId];
+  const total = npcGrowMs(crop);
+  const elapsed = Math.random() * total * 0.9;
+  return {
+    id,
+    // 邻居的土地：等级够得着的档位里随机——他们不买地，但也该有点家底
+    soil,
+    cropId,
+    harvested: 0,
+    plantedAt: at - elapsed,
+    readyAt: at - elapsed + total,
+    total,
+    stolenAt: 0,
+    stolen: false,
+    stolenCount: 0,
+    boost: 0,
+    waterAt: 0,
+    pestAt: 0,
+  };
+}
+
+/**
+ * 生成一座邻居农场的初始地块。
+ *
+ * 地块**全部种满**且尽量不重样：一座满地空地的农场，玩家没有拜访的欲望。
+ * 每块地的生长进度各不相同。
+ */
+export function generateNpcPlots(npc, at = Date.now()) {
+  const pool = shuffled(cropsNearLevel(npc.level));
+  return Array.from(
+    { length: unlockedPlotCount(npc.level) },
+    (_, i) => randomNpcPlot(i, pool, at, rollNpcSoil(npc.level)),
+  );
+}
+
+/**
+ * 邻居地块的土地档位。
+ *
+ * 邻居不会去买地，但等级高的人家总该有几块好地 ——
+ * 否则玩家点进邻居页，看到的永远是 40 格一模一样的黄土地。
+ * 只从「等级够得着」的档位里挑，所以低等级邻居依然是普通地。
+ *
+ * @param {number} level 邻居等级
+ * @returns {string} SOILS 的键
+ */
+export function rollNpcSoil(level) {
+  if (Math.random() >= Math.min(0.5, level / 90)) return 'normal';
+  const pool = Object.keys(SOILS).filter((id) => id !== 'normal' && SOILS[id].unlock <= level);
+  if (!pool.length) return 'normal';
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/**
+ * 把地块数量补齐到等级对应的解锁数。
+ *
+ * 三个调用场景：邻居升级（模拟中）、读档时旧档只有寥寥几块地、
+ * 以及远期聚合后等级跳了一截。补的地块**直接种上**随机作物 ——
+ * 和初始生成一个口径，农场看起来是「活着」的。
+ *
+ * @param {object} npc 邻居农场
+ * @param {number} [at] 参照时刻
+ */
+export function syncNpcPlots(npc, at = Date.now()) {
+  const want = unlockedPlotCount(npc.level);
+  if (npc.plots.length >= want) return;
+  const pool = shuffled(cropsNearLevel(npc.level));
+  for (let id = npc.plots.length; id < want; id += 1) {
+    npc.plots.push(randomNpcPlot(id, pool, at, rollNpcSoil(npc.level)));
+  }
 }
 
 /**
@@ -321,40 +402,6 @@ export function shuffled(list) {
  */
 export function npcGrowMs(crop) {
   return crop.grow * 1000;
-}
-
-/**
- * 生成一座邻居农场的初始状态。
- *
- * 地块**全部种满**且尽量不重样：一座满地空地的农场，玩家没有拜访的欲望。
- * 每块地的生长进度各不相同，这样玩家一进去就有得看。
- */
-export function generateNpcPlots(npc, at = Date.now()) {
-  const pool = shuffled(cropsNearLevel(npc.level));
-  const count = npcPlotCount(npc.level);
-
-  return Array.from({ length: count }, (_, i) => {
-    const cropId = pool[i % pool.length];
-    const crop = CROPS[cropId];
-    const total = npcGrowMs(crop);
-    // 已生长 0~90%，其中一部分已经成熟可偷
-    const elapsed = Math.random() * total * 0.9;
-    return {
-      /** 地块在一座农场里的序号：plot 表用 [farmId, id] 做主键 */
-      id: i,
-      cropId,
-      harvested: 0,
-      plantedAt: at - elapsed,
-      readyAt: at - elapsed + total,
-      total,
-      stolenAt: 0,
-      stolen: false,
-      stolenCount: 0,
-      boost: 0,
-      waterAt: 0,
-      pestAt: 0,
-    };
-  });
 }
 
 /** 空地 */

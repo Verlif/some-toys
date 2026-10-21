@@ -14,11 +14,12 @@ import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
 import { addCoins } from './player.js';
 import { add } from './inventory.js';
-import { CYCLE_DAYS, DAILY_ITEM, daysLeftInCycle, isBigDay, rewardFor } from '../data/signin.js';
+import { CYCLE_DAYS, DAILY_ITEM, daysLeftInCycle, isBigDay, rewardFor, SIGN_KEEP_DAYS } from '../data/signin.js';
 import { CROPS } from '../data/crops.js';
 import { MAP_TIERS, buildRewardPool } from '../data/adventure.js';
 import { produceId, seedId } from '../data/keys.js';
 import { dayKey, isSameDay, randInt } from '../core/utils.js';
+import { completeGuide } from './codex.js';
 
 const DAY_MS = 86_400_000;
 
@@ -27,12 +28,22 @@ export function ensureSignFields() {
   const p = state.farm.progress;
   if (p.signStreak === undefined) p.signStreak = 0;
   if (p.signTotal === undefined) p.signTotal = 0;
+  if (!Array.isArray(p.signDays)) p.signDays = [];
 }
 
 /** 今天是否已经签过 */
 export function signedToday(now = Date.now()) {
   const { lastSign } = state.farm.progress;
   return Boolean(lastSign) && isSameDay(lastSign, now);
+}
+
+/**
+ * 某个日期键有没有签过到（日历标「已签」用）
+ * @param {number} ts 当天的任意时刻
+ * @returns {boolean}
+ */
+export function signedOn(ts) {
+  return (state.farm.progress.signDays || []).includes(dayKey(ts));
 }
 
 /**
@@ -153,6 +164,11 @@ export async function signIn(now = Date.now()) {
   state.farm.progress.lastSign = now;
   state.farm.progress.signTotal += 1;
 
+  // 签到历史：记下这一天，日历上才能看出「哪天签过、哪天断了」
+  const days = state.farm.progress.signDays;
+  days.push(dayKey(now));
+  if (days.length > SIGN_KEEP_DAYS) days.splice(0, days.length - SIGN_KEEP_DAYS);
+
   const day = todayStreakDay(now);
   const reward = todayReward(now);
   addCoins(reward.coins);
@@ -190,6 +206,7 @@ export async function signIn(now = Date.now()) {
     box,
   };
   emit(EVENTS.SIGN, payload);
+  await completeGuide('sign');
   return payload;
 }
 
@@ -206,8 +223,8 @@ export async function autoSignIn(now = Date.now()) {
 /**
  * 生成当月日历
  * @param {number} [now]
- * @returns {{title: string, head: string[], cells: Array<{day:number, state:'signed'|'today'|'future'|'missed'|'none'}>}}
- *   state: signed 已签 / today 今天未签 / future 未来 / missed 已错过 / none 空白补位
+ * @returns {{title: string, head: string[], cells: Array<{day:number, state:'signed'|'today'|'past'|'future'|'none', at:number, big:boolean}>}}
+ *   state: signed 已签 / today 今天未签 / past 已错过 / future 未来 / none 空白补位
  */
 export function calendarOf(now = Date.now()) {
   const date = new Date(now);
@@ -228,9 +245,8 @@ export function calendarOf(now = Date.now()) {
     if (isToday) {
       state = signedToday(at) ? 'signed' : 'today';
     } else if (at < now) {
-      state = 'past';
-    } else {
-      state = 'future';
+      // 过去的日子按签到历史标：签过的是 signed，没签过的留 past
+      state = signedOn(at) ? 'signed' : 'past';
     }
 
     cells.push({ day, state, at, big: isBigDay(at) });

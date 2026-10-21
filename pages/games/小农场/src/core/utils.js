@@ -79,6 +79,18 @@ export function dayKey(ts = Date.now()) {
 }
 
 /**
+ * 把「单个 id / id 数组 / 空值」统一成 id 数组。
+ *
+ * 日志与时报条目上的「涉及的人」（who）用这个形状：
+ * 一条新闻里可能出现多个人（小偷 + 被偷的农场主），都要带头像。
+ * @param {string|string[]|undefined|null} who
+ * @returns {string[]}
+ */
+export const idList = (who) => (
+  Array.isArray(who) ? who.filter(Boolean) : who ? [who] : []
+);
+
+/**
  * 两个时间戳是否落在同一个自然日
  * @param {number} a
  * @param {number} b

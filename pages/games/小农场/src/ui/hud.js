@@ -15,6 +15,7 @@ import {
   TOTAL_PLOTS,
   unlockedPlotCount,
 } from '../data/progression.js';
+import { SOILS } from '../data/soils.js';
 import { codexSummary } from '../store/codex.js';
 import { currentStreak } from '../store/signin.js';
 import { equippedTitle, titleStates } from '../store/titles.js';
@@ -38,6 +39,7 @@ function collect() {
     dPlots: byId('dPlots'),
     dStreak: byId('dStreak'),
     dCodex: byId('dCodex'),
+    dSoil: byId('dSoil'),
   };
 }
 
@@ -88,9 +90,52 @@ export function renderHud() {
 
   els.dNextTitle.textContent = nextTitle();
   els.dPlots.textContent = `${unlockedPlotCount(level)} / ${TOTAL_PLOTS}`;
+  const soil = soilStats();
+  els.dSoil.textContent = soilText(soil);
+  els.dSoil.title = soilTitle(soil);
   els.dStreak.textContent = `${currentStreak()} 天`;
   const codex = codexSummary();
   els.dCodex.textContent = `${codex.lit} / ${codex.total}（${codex.percent}%）`;
+}
+
+/**
+ * 已解锁地块按土地档位分类。
+ * @returns {{counts: Record<string, number>, unlocked: number, avgMul: number}}
+ */
+function soilStats() {
+  const unlocked = unlockedPlotCount(state.farm.level);
+  const counts = {};
+  let mulSum = 0;
+  for (const plot of state.farm.plots) {
+    if (plot.id >= unlocked) continue;
+    const soil = SOILS[plot.soil] || SOILS.normal;
+    counts[plot.soil || 'normal'] = (counts[plot.soil || 'normal'] || 0) + 1;
+    mulSum += soil.yieldMul;
+  }
+  return { counts, unlocked, avgMul: unlocked ? mulSum / unlocked : 1 };
+}
+
+/**
+ * 土地构成的一句话摘要。
+ *
+ * 全是普通地就只写数量；有升级过的就按档次从高到低列，
+ * 最多列 3 档，再多就折成「等 N 档」—— 顶栏这一格放不下长句子。
+ */
+function soilText({ counts, unlocked }) {
+  const upgraded = Object.keys(SOILS).filter((id) => id !== 'normal' && counts[id]);
+  if (!upgraded.length) return `普通 ×${unlocked}`;
+  const ordered = upgraded.reverse();
+  const parts = ordered.slice(0, 3).map((id) => `${SOILS[id].tag} ×${counts[id]}`);
+  return parts.join(' · ') + (ordered.length > 3 ? ` 等 ${ordered.length} 档` : '');
+}
+
+/** 悬停时给出完整明细与平均产量倍率 */
+function soilTitle({ counts, avgMul }) {
+  const rows = Object.keys(SOILS)
+    .filter((id) => counts[id])
+    .map((id) => `${SOILS[id].name} ×${counts[id]}（产量 ×${SOILS[id].yieldMul.toFixed(2)}）`);
+  const bonus = Math.round((avgMul - 1) * 100);
+  return `${rows.join('\n')}\n平均产量 ${bonus >= 0 ? '+' : ''}${bonus}%`;
 }
 
 /** 下一块待解锁土地要多少级，用于「下一块地」提示 */

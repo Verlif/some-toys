@@ -13,6 +13,7 @@ import { byId, delegate, escapeHtml } from '../core/dom.js';
 import { on, EVENTS } from '../core/bus.js';
 import { state } from '../store/state.js';
 import { dragToClose } from './drag-close.js';
+import { stripWhoName, whoChipHTML } from './who-chip.js';
 
 /** 展示窗口：与 store/player.js 的保留天数一致 */
 const KEEP_DAYS = 7;
@@ -69,8 +70,9 @@ function renderLog() {
     return `${head}
       <div class="log-item">
         <span class="log-time">${timeLabel(entry.at)}</span>
+        ${whoChipHTML(entry.who, { small: true })}
         <span class="log-emoji">${entry.emoji}</span>
-        <span class="log-text">${escapeHtml(entry.text)}</span>
+        <span class="log-text">${escapeHtml(stripWhoName(entry.text, entry.who))}</span>
       </div>`;
   }).join('');
 }

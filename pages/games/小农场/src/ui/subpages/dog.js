@@ -48,7 +48,7 @@ function dogCardHTML(breed, active, chance, owned) {
       <div class="dog-rate">基础 ${Math.round(breed.rate * 100)}%</div>
       <div class="dog-hint">${active ? `当前拦截 ${Math.round(chance * 100)}%` : `品阶 ${breed.tier}`}</div>
       <button class="btn small ${active ? 'ghost' : ''}" data-action="dog-active" data-id="${breed.id}">
-        ${active ? '下岗' : '上岗'}
+        ${active ? '休息' : '上岗'}
       </button>
     </div>`;
 }
@@ -63,7 +63,7 @@ export const dogPage = {
     const ownedIds = new Set(owned.map((b) => b.id));
     const progress = breedProgress();
 
-    // 全部下岗：槽里的粮不会消耗，但农场也完全不设防
+    // 全部休息：槽里的粮不会消耗，但农场也完全不设防
     const offDuty = !active;
 
     body.innerHTML = `
@@ -81,7 +81,7 @@ export const dogPage = {
             <div class="si-meta">
               存量 ${Math.round(satiety)}%
               ${offDuty
-                ? '· 全部下岗，槽不消耗'
+                ? '· 全部休息，槽不消耗'
                 : satiety > 0
                   ? `· 还能守 ${fmtDuration(guardRemainMs())}`
                   : '· 喂点粮才有人看家'}
@@ -104,7 +104,7 @@ export const dogPage = {
       <div class="dog-facts">
         <div>· 同一时刻只有一只狗上岗，上岗的那只决定基础拦截率</div>
         <div>· 狗粮槽是<b>全窝共用</b>的一份存货，每份 +${DOG_FOOD_SATIETY}%，每小时 −6.25%</div>
-        <div>· 全部下岗时槽不消耗，但农场也完全不设防</div>
+        <div>· 全部休息时槽不消耗，但农场也完全不设防</div>
         <div>· 十个品种只能从<b>冒险</b>里获得（低概率，按藏宝图档位分品阶，不重复）</div>
         ${active ? `<div>· 当前：${active.emoji} <b>${active.name}</b>，实际拦截率 <b>${Math.round(chance * 100)}%</b></div>` : ''}
       </div>
@@ -117,7 +117,7 @@ export const dogPage = {
     },
     async 'dog-active'(el) {
       const id = el.dataset.id;
-      // 点已上岗的那只 = 全部下岗
+      // 点已上岗的那只 = 让它休息，农场暂时不设防
       await setActiveBreed(activeBreed()?.id === id ? null : id);
     },
   },

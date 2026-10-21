@@ -6,14 +6,14 @@ import { on, EVENTS } from '../core/bus.js';
 import { renderFarm } from './views/farm.js';
 import { renderShop, setShopTab } from './views/shop.js';
 import { enterFriendsPage } from './views/friends.js';
-import { renderNews } from './views/news.js';
+import { enterNewsPage } from './views/news.js';
 import { openSheet } from './sheet.js';
 
 /** 页面 id → 进入该页时要做的事。邻居页特殊一些：进入时要先补算离线结算。 */
 const PAGE_ENTER = {
   farm: renderFarm,
   friends: enterFriendsPage,
-  news: renderNews,
+  news: enterNewsPage,
   shop: renderShop,
 };
 

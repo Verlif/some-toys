@@ -15,6 +15,7 @@ import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
 import { expForLevel, MAX_LEVEL, unlockedPlotCount } from '../data/progression.js';
+import { idList } from '../core/utils.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
 
@@ -97,10 +98,13 @@ const LOG_CAP = 60;
  * @param {string} emoji
  * @param {string} text
  * @param {number} [at] 事件发生时间，补算历史时用
+ * @param {string|string[]} [who] 涉及的人（农场 id）。
+ *   玩家自己的操作不传 —— 渲染时默认带头像的是农场主；
+ *   邻居相关的事件传上，日志行里就能看出「是谁」。
  */
-export function addLog(emoji, text, at = Date.now()) {
+export function addLog(emoji, text, at = Date.now(), who = '') {
   const log = state.farm.log ?? (state.farm.log = []);
-  log.unshift({ at, emoji, text });
+  log.unshift({ at, emoji, text, who: idList(who) });
 
   const cutoff = Date.now() - LOG_KEEP_DAYS * 86_400_000;
   const kept = log.filter((entry) => entry.at >= cutoff).slice(0, LOG_CAP);

@@ -105,6 +105,8 @@
   gap: 3px;
   min-width: 0;
 }
+/* 土地构成这一格要跨满两列：红土 ×3 · 黑土 ×2 · 黄金 ×1 一行写不下 */
+.hud-cell.wide { grid-column: 1 / -1; }
 .hud-cell .k {
   font-size: 10.5px;
   color: var(--muted);
@@ -200,11 +202,20 @@
 }
 
 /* ---------- 地块网格 ---------- */
+/* 列数按视口宽度收口：手机 2 列、平板 3 列、PC 4 列。
+   以前用 auto-fill，宽屏上一路排到 5~6 列，地块被拉得又窄又高；
+   现在操作按钮固定在右侧纵排，格子宽一点才放得开。 */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 11px;
   padding: 15px;
+}
+@media (min-width: 720px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 960px) {
+  .grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* 解锁地块变多后由 JS 切上紧凑排布，避免手机上要滚十几屏 */
@@ -213,6 +224,13 @@
   gap: 8px;
   padding: 12px 10px;
 }
+@media (min-width: 720px) {
+  .grid.dense { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 960px) {
+  .grid.dense { grid-template-columns: repeat(4, 1fr); }
+}
+
 
 /* ---------- 底部主导航 ---------- */
 .tabbar {
@@ -651,6 +669,22 @@ body[data-page="farm"] .app {
   margin-bottom: 12px;
   touch-action: none;
 }
+/* 标题栏由 ui/modal.js 提到滚动区外面 —— 滚多远都停在上方，也才拖得动。
+   离开 .modal-body 后少了它的左右内边距，这里补回来。 */
+.modal-card > .modal-head {
+  padding-left: 17px;
+  padding-right: 17px;
+}
+/* 没有标题的弹窗：只留一条右边的关闭按钮，别占掉一大条空白 */
+.modal-head.bare {
+  justify-content: flex-end;
+  min-height: 28px;
+  margin-bottom: 2px;
+}
+/* 邻居详情那种自定义头部：靠左排，关闭按钮推到最右 */
+.modal-head.npc-head { justify-content: flex-start; }
+.modal-head.npc-head .close { margin-left: auto; }
+
 .modal-head h3 {
   font-size: 15.5px;
   font-weight: 700;

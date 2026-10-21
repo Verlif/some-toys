@@ -57,49 +57,62 @@ const SOILS = [
  * 全部称号都要**手动领取**：
  *   等级称号  条件是农场等级
  *   图鉴称号  条件是点亮的图鉴数量
+ *   金币称号  条件是当前持有的金币数量
  * 领取后可以佩戴一个，佩戴的称号显示在顶栏。
  *
  * skin  是配色编号，CSS 里定义了对应的底色（1~10）；
- * coins 是「一次正常收获」的倍数，实际金额按玩家等级缩放（见 store/titles.js）；
- * items 是直接发放的道具组合，图鉴称号按收集难度逐级加重。
+ * items 是领取时直接发放的道具组合 —— **奖励只有道具，没有金币**
+ *   （第 20 轮调整：称号是里程碑，不该变成按等级缩放的自动提款机）。
+ * 道具按称号难度逐级加重：洒水器 / 杀虫剂至少 5 个起，越高档给得越多；
+ * 图鉴称号必定附一张藏宝图（按收集难度升档），等级称号间隔着给图
+ * （lv22/50/86/128/200 对应 1~5 级），金币称号各送一颗固定特殊种子。
  */
 const TITLES = [
   // ── 等级称号（26 档）──────────────────────────────
-  { id: 'lv1', name: '新手农夫', emoji: '🌱', skin: 1, need: { type: 'level', value: 1 }, coins: 1, items: {} },
-  { id: 'lv5', name: '田间好手', emoji: '🌾', skin: 1, need: { type: 'level', value: 5 }, coins: 1.1, items: {} },
-  { id: 'lv9', name: '种植达人', emoji: '🌻', skin: 2, need: { type: 'level', value: 9 }, coins: 1.2, items: {} },
-  { id: 'lv13', name: '丰收专家', emoji: '🧺', skin: 2, need: { type: 'level', value: 13 }, coins: 1.3, items: {} },
-  { id: 'lv17', name: '园艺能手', emoji: '🌷', skin: 2, need: { type: 'level', value: 17 }, coins: 1.4, items: {} },
-  { id: 'lv22', name: '农场主', emoji: '🏡', skin: 3, need: { type: 'level', value: 22 }, coins: 1.5, items: {} },
-  { id: 'lv27', name: '庄园主', emoji: '🏰', skin: 3, need: { type: 'level', value: 27 }, coins: 1.6, items: {} },
-  { id: 'lv32', name: '农业大亨', emoji: '💰', skin: 4, need: { type: 'level', value: 32 }, coins: 1.7, items: {} },
-  { id: 'lv38', name: '土地所有者', emoji: '⛏️', skin: 4, need: { type: 'level', value: 38 }, coins: 1.8, items: {} },
-  { id: 'lv44', name: '丰收节冠军', emoji: '🏅', skin: 4, need: { type: 'level', value: 44 }, coins: 1.9, items: {} },
-  { id: 'lv50', name: '十里洋场', emoji: '🌍', skin: 5, need: { type: 'level', value: 50 }, coins: 2, items: {} },
-  { id: 'lv57', name: '一方霸主', emoji: '👑', skin: 5, need: { type: 'level', value: 57 }, coins: 2.1, items: {} },
-  { id: 'lv64', name: '农业宗师', emoji: '🎓', skin: 5, need: { type: 'level', value: 64 }, coins: 2.2, items: {} },
-  { id: 'lv71', name: '田园诗人', emoji: '🖋️', skin: 6, need: { type: 'level', value: 71 }, coins: 2.3, items: {} },
-  { id: 'lv78', name: '作物学家', emoji: '🔬', skin: 6, need: { type: 'level', value: 78 }, coins: 2.4, items: {} },
-  { id: 'lv86', name: '生态农场主', emoji: '🌿', skin: 6, need: { type: 'level', value: 86 }, coins: 2.5, items: {} },
-  { id: 'lv94', name: '田园领主', emoji: '⚜️', skin: 7, need: { type: 'level', value: 94 }, coins: 2.6, items: {} },
-  { id: 'lv102', name: '粮仓巨头', emoji: '🏬', skin: 7, need: { type: 'level', value: 102 }, coins: 2.7, items: {} },
-  { id: 'lv110', name: '四季常青', emoji: '🍃', skin: 7, need: { type: 'level', value: 110 }, coins: 2.8, items: {} },
-  { id: 'lv118', name: '瓜果王国', emoji: '🍈', skin: 8, need: { type: 'level', value: 118 }, coins: 2.9, items: {} },
-  { id: 'lv128', name: '花果之乡', emoji: '🌸', skin: 8, need: { type: 'level', value: 128 }, coins: 3, items: {} },
-  { id: 'lv138', name: '田园帝国', emoji: '🏞️', skin: 8, need: { type: 'level', value: 138 }, coins: 3.1, items: {} },
-  { id: 'lv150', name: '大地主', emoji: '🎩', skin: 9, need: { type: 'level', value: 150 }, coins: 3.2, items: {} },
-  { id: 'lv165', name: '农业传奇', emoji: '🗿', skin: 9, need: { type: 'level', value: 165 }, coins: 3.3, items: {} },
-  { id: 'lv180', name: '田园之神', emoji: '☀️', skin: 9, need: { type: 'level', value: 180 }, coins: 3.4, items: {} },
-  { id: 'lv200', name: '阳光牧场主', emoji: '🌞', skin: 10, need: { type: 'level', value: 200 }, coins: 3.5, items: {} },
+  { id: 'lv1', name: '新手农夫', emoji: '🌱', skin: 1, need: { type: 'level', value: 1 }, items: { fertilizer: 3 } },
+  { id: 'lv5', name: '田间好手', emoji: '🌾', skin: 1, need: { type: 'level', value: 5 }, items: { fertilizer: 3, dogFood: 2 } },
+  { id: 'lv9', name: '种植达人', emoji: '🌻', skin: 2, need: { type: 'level', value: 9 }, items: { fert1h: 2, dogFood: 2 } },
+  { id: 'lv13', name: '丰收专家', emoji: '🧺', skin: 2, need: { type: 'level', value: 13 }, items: { fert1h: 3, sprinkler: 2 } },
+  { id: 'lv17', name: '园艺能手', emoji: '🌷', skin: 2, need: { type: 'level', value: 17 }, items: { fert2h: 2, sprinkler: 2, pesticide: 2 } },
+  { id: 'lv22', name: '农场主', emoji: '🏡', skin: 3, need: { type: 'level', value: 22 }, items: { sprinkler: 5, pesticide: 5, map_1: 1 } },
+  { id: 'lv27', name: '庄园主', emoji: '🏰', skin: 3, need: { type: 'level', value: 27 }, items: { sprinkler: 5, pesticide: 5, dogFood: 5 } },
+  { id: 'lv32', name: '农业大亨', emoji: '💰', skin: 4, need: { type: 'level', value: 32 }, items: { fert6h: 2, sprinkler: 5, pesticide: 5 } },
+  { id: 'lv38', name: '土地所有者', emoji: '⛏️', skin: 4, need: { type: 'level', value: 38 }, items: { organic: 1, sprinkler: 5, pesticide: 5 } },
+  { id: 'lv44', name: '丰收节冠军', emoji: '🏅', skin: 4, need: { type: 'level', value: 44 }, items: { boost10: 2, sprinkler: 5, pesticide: 5 } },
+  { id: 'lv50', name: '十里洋场', emoji: '🌍', skin: 5, need: { type: 'level', value: 50 }, items: { boost10: 2, boost20: 1, sprinkler: 8, pesticide: 8, map_2: 1 } },
+  { id: 'lv57', name: '一方霸主', emoji: '👑', skin: 5, need: { type: 'level', value: 57 }, items: { fert18h: 1, sprinkler: 8, pesticide: 8 } },
+  { id: 'lv64', name: '农业宗师', emoji: '🎓', skin: 5, need: { type: 'level', value: 64 }, items: { organic: 2, sprinkler: 8, pesticide: 8 } },
+  { id: 'lv71', name: '田园诗人', emoji: '🖋️', skin: 6, need: { type: 'level', value: 71 }, items: { boost20: 2, sprinkler: 8, pesticide: 8 } },
+  { id: 'lv78', name: '作物学家', emoji: '🔬', skin: 6, need: { type: 'level', value: 78 }, items: { boost20: 2, dogFood: 10, sprinkler: 10, pesticide: 10 } },
+  { id: 'lv86', name: '生态农场主', emoji: '🌿', skin: 6, need: { type: 'level', value: 86 }, items: { boost30: 1, sprinkler: 10, pesticide: 10, map_3: 1 } },
+  { id: 'lv94', name: '田园领主', emoji: '⚜️', skin: 7, need: { type: 'level', value: 94 }, items: { organic: 3, sprinkler: 10, pesticide: 10 } },
+  { id: 'lv102', name: '粮仓巨头', emoji: '🏬', skin: 7, need: { type: 'level', value: 102 }, items: { boost30: 2, dogFood: 15, sprinkler: 12, pesticide: 12 } },
+  { id: 'lv110', name: '四季常青', emoji: '🍃', skin: 7, need: { type: 'level', value: 110 }, items: { fert18h: 2, sprinkler: 12, pesticide: 12 } },
+  { id: 'lv118', name: '瓜果王国', emoji: '🍈', skin: 8, need: { type: 'level', value: 118 }, items: { boost30: 3, sprinkler: 12, pesticide: 12 } },
+  { id: 'lv128', name: '花果之乡', emoji: '🌸', skin: 8, need: { type: 'level', value: 128 }, items: { organic: 5, sprinkler: 15, pesticide: 15, map_4: 1 } },
+  { id: 'lv138', name: '田园帝国', emoji: '🏞️', skin: 8, need: { type: 'level', value: 138 }, items: { boost30: 5, dogFood: 20, sprinkler: 15, pesticide: 15 } },
+  { id: 'lv150', name: '大地主', emoji: '🎩', skin: 9, need: { type: 'level', value: 150 }, items: { organic: 8, sprinkler: 20, pesticide: 20 } },
+  { id: 'lv165', name: '农业传奇', emoji: '🗿', skin: 9, need: { type: 'level', value: 165 }, items: { boost30: 8, sprinkler: 20, pesticide: 20 } },
+  { id: 'lv180', name: '田园之神', emoji: '☀️', skin: 9, need: { type: 'level', value: 180 }, items: { organic: 10, sprinkler: 25, pesticide: 25 } },
+  { id: 'lv200', name: '阳光牧场主', emoji: '🌞', skin: 10, need: { type: 'level', value: 200 }, items: { boost30: 10, dogFood: 30, sprinkler: 30, pesticide: 30, map_5: 1 } },
 
   // ── 图鉴称号（按点亮的图鉴数量，7 档）──────────────
-  { id: 'cx10', name: '拾穗学徒', emoji: '🌾', skin: 1, need: { type: 'codex', value: 10 }, coins: 2, items: { fertilizer: 3 } },
-  { id: 'cx30', name: '苗圃园丁', emoji: '🌱', skin: 2, need: { type: 'codex', value: 30 }, coins: 3, items: { fert1h: 2, dogFood: 2 } },
-  { id: 'cx60', name: '丰穑之士', emoji: '🪴', skin: 3, need: { type: 'codex', value: 60 }, coins: 5, items: { organic: 1, sprinkler: 1, pesticide: 1 } },
-  { id: 'cx100', name: '四季农师', emoji: '🍂', skin: 5, need: { type: 'codex', value: 100 }, coins: 8, items: { organic: 1, boost30: 2, sprinkler: 2, pesticide: 2 } },
-  { id: 'cx140', name: '种脉传家', emoji: '🧬', skin: 7, need: { type: 'codex', value: 140 }, coins: 12, items: { organic: 2, boost30: 4, sprinkler: 3, pesticide: 3, dogFood: 5 } },
-  { id: 'cx170', name: '一方农宗', emoji: '🏛️', skin: 8, need: { type: 'codex', value: 170 }, coins: 18, items: { organic: 3, boost30: 6, sprinkler: 4, pesticide: 4, dogFood: 8 } },
-  { id: 'cx200', name: '万物图典', emoji: '📖', skin: 10, need: { type: 'codex', value: 200 }, coins: 26, items: { organic: 5, boost30: 10, sprinkler: 6, pesticide: 6, dogFood: 12 } },
+  // 图鉴称号必定附一张藏宝图：收集本身就是往图鉴里填限定种子，给图是闭环
+  { id: 'cx10', name: '拾穗学徒', emoji: '🌾', skin: 1, need: { type: 'codex', value: 10 }, items: { fertilizer: 5, dogFood: 5, map_1: 1 } },
+  { id: 'cx30', name: '苗圃园丁', emoji: '🌱', skin: 2, need: { type: 'codex', value: 30 }, items: { fert1h: 5, sprinkler: 5, map_2: 1 } },
+  { id: 'cx60', name: '丰穑之士', emoji: '🪴', skin: 3, need: { type: 'codex', value: 60 }, items: { organic: 2, sprinkler: 10, pesticide: 10, map_3: 1 } },
+  { id: 'cx100', name: '四季农师', emoji: '🍂', skin: 5, need: { type: 'codex', value: 100 }, items: { boost20: 3, sprinkler: 10, pesticide: 10, map_3: 1 } },
+  { id: 'cx140', name: '种脉传家', emoji: '🧬', skin: 7, need: { type: 'codex', value: 140 }, items: { boost30: 3, dogFood: 15, sprinkler: 15, pesticide: 15, map_4: 1 } },
+  { id: 'cx170', name: '一方农宗', emoji: '🏛️', skin: 8, need: { type: 'codex', value: 170 }, items: { organic: 5, sprinkler: 20, pesticide: 20, map_4: 1 } },
+  { id: 'cx200', name: '万物图典', emoji: '📖', skin: 10, need: { type: 'codex', value: 200 }, items: { boost30: 8, dogFood: 30, sprinkler: 30, pesticide: 30, map_5: 1 } },
+
+  // ── 金币称号（按当前持有的金币，5 档）──────────────
+  // 存钱也是玩法：每一档送一颗固定特殊种子（平时只能从藏宝图碰运气）
+  { id: 'coin1k', name: '小有积蓄', emoji: '💰', skin: 2, need: { type: 'coins', value: 1000 }, items: { fertilizer: 5, seed_糖霜萝卜: 1 } },
+  { id: 'coin5k', name: '家底渐厚', emoji: '🪙', skin: 3, need: { type: 'coins', value: 5000 }, items: { fert2h: 3, dogFood: 5, seed_蜜露番茄: 1 } },
+  { id: 'coin20k', name: '仓廪初实', emoji: '🏦', skin: 4, need: { type: 'coins', value: 20000 }, items: { sprinkler: 5, pesticide: 5, seed_星屑玉米: 1 } },
+  { id: 'coin100k', name: '富甲一方', emoji: '💎', skin: 6, need: { type: 'coins', value: 100000 }, items: { boost30: 2, sprinkler: 10, seed_龙鳞瓜: 1 } },
+  { id: 'coin1m', name: '家财万贯', emoji: '👑', skin: 10, need: { type: 'coins', value: 1000000 }, items: { organic: 5, dogFood: 20, seed_云顶稻: 1 } },
 ];
 
 /**
@@ -511,7 +524,14 @@ crops.sort((a, b) => a.lv - b.lv || a.seed - b.seed);
  *
  * 等级是手写的，不参与上面的解锁计划 —— 它们要覆盖 Lv1~60，
  * 这样每一档藏宝图（要求 Lv10/20/30/40/50）都有对应的限定种子可挖。
- * 产出比同级的普通作物贵 30%，但因为种子来路有限，不至于变成印钞机。
+ *
+ * 属性口径（第 20 轮调整，共 55 种）：
+ *   - **至少 2 茬**：限定种子要么多收几轮，要么就不该叫限定。
+ *     等级越高茬数越多（2~5 茬），一茬一茬收回来；
+ *   - **整轮收益 = 同级商店种子的 2~3 倍**（按作物轮换错开，见 SPECIAL_PREMIUM）。
+ *     注意比的是「一整轮」：特殊种子周期也长（再生 0.45），
+ *     折算成每小时金币只比普通种子高一点，不会变成印钞机；
+ *   - 名义种子价照旧翻倍 —— 限定种子不卖，这个数字只用于奖励池估值。
  */
 const SPECIAL_CATALOG = [
   ['糖霜萝卜', '🍬', 'root', 5], ['露珠生菜', '💧', 'leaf', 8],
@@ -532,19 +552,50 @@ const SPECIAL_CATALOG = [
   ['月影樱桃', '🌒', 'fruit', 56], ['星尘麦穗', '☄️', 'grain', 57],
   ['极光芒果', '🥭', 'fruit', 58], ['熔心椒', '🌶️', 'fruit', 59],
   ['云顶稻', '🍚', 'grain', 60],
+  // ── 第二批（补 Lv2~37 的空档，让每档图都有新鲜货）──
+  ['白玉麦芽', '🌾', 'grain', 2], ['珊瑚萝卜', '🪸', 'root', 4],
+  ['星星豌豆', '⭐', 'legume', 6], ['月芽豆角', '🌙', 'legume', 7],
+  ['蜜心薯', '🍯', 'root', 9], ['云片菇', '☁️', 'fungus', 10],
+  ['风信子铃', '🔔', 'flower', 12], ['琉璃苣', '🧊', 'flower', 13],
+  ['金粟谷', '🌽', 'grain', 15], ['霞光丝瓜', '🌅', 'fruit', 16],
+  ['龙须菜', '🐲', 'shoot', 18], ['墨玉豆', '🖤', 'legume', 21],
+  ['糖晶果', '🍬', 'fruit', 23], ['雨前茶', '🍃', 'leaf', 25],
+  ['霹雳椒', '⚡', 'fruit', 27], ['银月花', '🌛', 'flower', 29],
+  ['昆仑雪莲', '🏔️', 'flower', 31], ['赤炎椒', '🔥', 'fruit', 33],
+  ['青金桔', '🟢', 'fruit', 35], ['碧波藻', '🌊', 'leaf', 37],
 ];
 
-const specialCrops = SPECIAL_CATALOG.map(([name, emoji, form, level]) => {
+/** 限定种子的茬数：至少 2 茬，等级越高收得越多 */
+const specialHarvests = (level) => (level <= 10 ? 2 : level <= 25 ? 3 : level <= 45 ? 4 : 5);
+
+/**
+ * 限定溢价：整轮收益相对「同级商店种子」的倍数，按序轮换错开。
+ * 2.0~3.0 是需求口径；轮换而不是一刀切，是让 55 种种子之间有价差层次。
+ */
+const SPECIAL_PREMIUM = [2.0, 2.25, 2.5, 2.75, 3.0];
+
+/** 某个等级的商店种子整轮收入（同级多种取平均；没有则取最近的一级） */
+function normalIncomeAt(level) {
+  const same = crops.filter((c) => c.lv === level);
+  if (same.length) {
+    return same.reduce((sum, c) => sum + cycleIncome(c), 0) / same.length;
+  }
+  const near = crops.filter((c) => c.lv < level).at(-1) || crops[0];
+  return cycleIncome(near);
+}
+
+const specialCrops = SPECIAL_CATALOG.map(([name, emoji, form, level], index) => {
   const kind = kindOf(form);
-  const harvests = level <= 20 ? 1 : level <= 40 ? 2 : 3;
+  const harvests = specialHarvests(level);
   const yld = yieldRange(level, form);
   // 名义种子价：限定种子不卖，这里只是给奖励池估值
   const seed = Math.round(seedPrice(level) * 2);
   // 限定种子长得比普通作物慢一点，免得一挖到就能立刻变现
   const grow = Math.round(growSeconds(level, 'plain', kind) * 1.15);
   const regrow = 0.45;
-  // 基础收益按同级普通种子的价格算，再乘 1.3 的限定溢价
-  const revenue = cycleRevenue(level, seedPrice(level), cycleHours(grow, regrow, harvests)) * 1.3;
+  // 收益直接锚定「同级商店种子的整轮收入 × 限定溢价」——
+  // 不管茬数怎么变，「收益是同级 2~3 倍」这句话都成立
+  const revenue = normalIncomeAt(level) * SPECIAL_PREMIUM[index % SPECIAL_PREMIUM.length];
   const sell = Math.max(1, Math.round(revenue / (((yld[0] + yld[1]) / 2) * harvests)));
 
   return {
@@ -562,6 +613,8 @@ const specialCrops = SPECIAL_CATALOG.map(([name, emoji, form, level]) => {
     regrow,
     harvests,
     yield: yld,
+    // 限定种子至少 2 茬，全部算「多茬」（UI 的多茬标签读这个字段）
+    multi: harvests > 1,
   };
 });
 
@@ -636,6 +689,15 @@ for (const cap of [20, 30, 40, 50, 60]) {
     `Lv${cap} 以内的限定作物不足 3 种，藏宝图凑不出奖励`);
 }
 
+// 限定作物的属性口径（第 20 轮）：至少 2 茬；整轮收益 = 同级商店种子 2~3 倍。
+// 上限给到 3.2 是留舍入余量（sell 取整 + 同级多作物取平均都会带来小偏差）。
+check(specialCrops.every((c) => c.harvests >= 2), '存在只有一茬的限定作物');
+for (const c of specialCrops) {
+  const ratio = cycleIncome(c) / normalIncomeAt(c.lv);
+  check(ratio >= 1.9 && ratio <= 3.2,
+    `${c.name} 的整轮收益是同级商店种子的 ${ratio.toFixed(2)} 倍，超出 2~3 倍口径`);
+}
+
 // 同一形态内，产量与等级应当单调（产量由形态决定，形态之间不比较）
 for (const form of Object.keys(FORM_YIELD)) {
   // 多茬作物每茬只摘几个，产量天然低于同形态的单茬作物
@@ -704,11 +766,22 @@ check(new Set(TITLES.map((t) => t.id)).size === TITLES.length, '称号 id 重复
 {
   const lvTitles = TITLES.filter((t) => t.need.type === 'level');
   const cxTitles = TITLES.filter((t) => t.need.type === 'codex');
+  const coinTitles = TITLES.filter((t) => t.need.type === 'coins');
   check(lvTitles.every((t, i) => i === 0 || t.need.value > lvTitles[i - 1].need.value), '等级称号门槛未递增');
   check(cxTitles.every((t, i) => i === 0 || t.need.value > cxTitles[i - 1].need.value), '图鉴称号门槛未递增');
+  check(coinTitles.every((t, i) => i === 0 || t.need.value > coinTitles[i - 1].need.value), '金币称号门槛未递增');
   for (const t of TITLES) {
     for (const id of Object.keys(t.items)) {
-      check(ITEMS[id], `称号「${t.name}」引用了不存在的道具 ${id}`);
+      // 奖励道具可能是三类背包 key：普通道具 / 藏宝图（map_N）/ 种子（seed_作物名）
+      if (id.startsWith('map_')) {
+        check(specialCrops.length && Number(id.slice(4)) >= 1 && Number(id.slice(4)) <= 5,
+          `称号「${t.name}」引用了不存在的藏宝图档位 ${id}`);
+      } else if (id.startsWith('seed_')) {
+        check(allCrops.some((c) => `seed_${c.name}` === id),
+          `称号「${t.name}」引用了不存在的种子 ${id}`);
+      } else {
+        check(ITEMS[id], `称号「${t.name}」引用了不存在的道具 ${id}`);
+      }
     }
   }
 }

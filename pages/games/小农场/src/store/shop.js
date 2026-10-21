@@ -49,6 +49,7 @@ export async function buySeed(cropId, n = 1) {
   inventory.add(seedId(cropId), qty);
   player.addLog('🛒', `买入 ${crop.name}种子 ×${qty}，-${crop.seed * qty} 💰`);
   await persist();
+  await completeGuide('shop');
   notify(`购买 ${crop.emoji}${crop.name}种子 ×${qty}`);
   return true;
 }
@@ -68,6 +69,7 @@ export async function buyItem(itemId) {
   inventory.add(itemId, 1);
   player.addLog('🛒', `买入 ${item.name} ×1，-${item.price} 💰`);
   await persist();
+  await completeGuide('shop');
   notify(`购买 ${item.emoji}${item.name} ×1`);
   return true;
 }
@@ -95,6 +97,7 @@ export async function buyMap(tier) {
   inventory.add(mapId(map.tier), 1);
   player.addLog('🗺️', `买入 ${map.name}，-${map.price} 💰`);
   await persist();
+  await completeGuide('map');
   notify(`购买 ${map.name} ×1（去「其他 → 冒险」出发）`);
   return true;
 }

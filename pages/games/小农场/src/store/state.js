@@ -18,6 +18,7 @@
  */
 import { commit, dropFarms, loadSave } from '../core/storage.js';
 import { INITIAL_COINS, MAX_LEVEL, TOTAL_PLOTS } from '../data/progression.js';
+import { SIGN_KEEP_DAYS } from '../data/signin.js';
 import {
   NPCS,
   PERSONALITIES,
@@ -27,13 +28,19 @@ import {
   nextVisitAt,
   npcStartCoins,
   rollNpcLevel,
+  rollNpcSoil,
+  syncNpcPlots,
 } from '../data/friends.js';
+import { SOILS } from '../data/soils.js';
 import {
+  BREED_MIGRATION,
   FIRST_DOG_ID,
+  LEGACY_BREED_MAP,
   dogBreed,
   rollNpcDogBreed,
   rollNpcDogSatiety,
 } from '../data/dogs.js';
+import { WORKSHOP_MAX_LEVEL } from '../data/workshop.js';
 import { randInt, safeNum } from '../core/utils.js';
 
 /** 玩家农场的 id：farm 表的主键，也是地块 / 日志表里的 farmId */
@@ -68,19 +75,23 @@ function createPlayerFarm() {
     exp: 0,
     coins: INITIAL_COINS,
     createdAt: Date.now(),
-    /** 看家狗：owned 记已收集的品种，breed 是上岗的那只（空串 = 全部下岗） */
+    /** 看家狗：owned 记已收集的品种，breed 是上岗的那只（空串 = 全部休息） */
     dog: {
       owned: { [FIRST_DOG_ID]: true },
       breed: FIRST_DOG_ID,
       satiety: 0,
       at: Date.now(),
     },
+    /** 种子制造间：level 0 = 还没开张，uses 是累计制造次数（升级只看它） */
+    workshop: { level: 0, uses: 0 },
     /** 农场主的成长档案：签到 / 图鉴 / 称号 / 引导 */
     progress: {
       /** 上次签到时间；两个 sign 字段是连续天数与累计天数 */
       lastSign: 0,
       signStreak: 0,
       signTotal: 0,
+      /** 签到历史：最近 SIGN_KEEP_DAYS 天的日期键（dayKey），日历标「已签」用 */
+      signDays: [],
       /** 作物 id → { planted, harvested } */
       cropStats: {},
       /** 作物 id → true，做了标本才算点亮图鉴 */
@@ -119,6 +130,8 @@ function createPlot(id) {
     stolenCount: 0,
     /** 最近一次被顺走的时间，仅用于展示与排查 */
     stolenAt: 0,
+    /** 成熟那一刻摇定的本轮产量（0 = 还没摇；收获与「可收 X」都用这个数） */
+    pendingYield: 0,
   };
 }
 
@@ -175,13 +188,20 @@ function normalizePlot(plot, index) {
   merged.harvested = safeNum(merged.harvested, 0);
   merged.stolen = Boolean(merged.stolen);
   merged.stolenCount = safeNum(merged.stolenCount, 0);
+  merged.pendingYield = safeNum(merged.pendingYield, 0);
   return merged;
 }
 
-/** 邻居地块 */
-function normalizeNpcPlot(plot, index) {
+/**
+ * 邻居地块。
+ * @param {object} plot 存档里的那一行
+ * @param {number} index 地块序号
+ * @param {number} level 邻居等级（旧档没有土地字段，按它补一个）
+ */
+function normalizeNpcPlot(plot, index, level = 1) {
   const merged = cleanTimes({ ...emptyNpcPlot(), ...plot });
   merged.id = safeNum(merged.id, index);
+  if (!SOILS[merged.soil]) merged.soil = rollNpcSoil(level);
   merged.boost = safeNum(merged.boost, 0);
   merged.harvested = safeNum(merged.harvested, 0);
   merged.guarded = Boolean(merged.guarded);
@@ -195,15 +215,33 @@ function normalizePlayerFarm(row, save) {
   const base = createPlayerFarm();
   const progress = { ...base.progress, ...(row.progress || {}) };
   progress.titles = { ...base.progress.titles, ...(progress.titles || {}) };
+  // 签到历史：旧档没有这个字段，补空数组；有就裁到保留窗口内
+  progress.signDays = Array.isArray(progress.signDays)
+    ? progress.signDays.slice(-SIGN_KEEP_DAYS)
+    : [];
 
   const dog = { ...base.dog, ...(row.dog || {}) };
   dog.owned = { ...dog.owned };
+  // 品种改名只迁一次：先算出一整套新键，再整体替换 ——
+  // 逐条改的话 huli→tuyuan 的结果会被紧接着的 tuyuan→bixiong 二次改写
+  if (dog.migrated !== BREED_MIGRATION) {
+    const next = {};
+    for (const id of Object.keys(dog.owned)) next[LEGACY_BREED_MAP[id] || id] = true;
+    dog.owned = next;
+    dog.breed = LEGACY_BREED_MAP[dog.breed] || dog.breed;
+    dog.migrated = BREED_MIGRATION;
+  }
   for (const id of Object.keys(dog.owned)) if (!dogBreed(id)) delete dog.owned[id];
   if (!Object.keys(dog.owned).length) dog.owned[FIRST_DOG_ID] = true;
   // 存档里记的品种要是已经不认识了，退回最低档，别让农场凭空不设防
   if (dog.breed && !dog.owned[dog.breed]) dog.breed = FIRST_DOG_ID;
   dog.satiety = safeNum(dog.satiety, 0);
   dog.at = safeNum(dog.at, Date.now());
+
+  // 种子制造间：旧档没有这个字段，补 0（未解锁）；等级与次数都夹在合法区间
+  const workshop = { ...base.workshop, ...(row.workshop || {}) };
+  workshop.level = Math.min(WORKSHOP_MAX_LEVEL, Math.max(0, safeNum(workshop.level, 0)));
+  workshop.uses = Math.max(0, safeNum(workshop.uses, 0));
 
   const farm = {
     id: PLAYER_ID,
@@ -215,6 +253,7 @@ function normalizePlayerFarm(row, save) {
     coins: safeNum(row.coins, 0),
     createdAt: safeNum(row.createdAt, base.createdAt),
     dog,
+    workshop,
     progress,
     plots: [],
     log: save.logs[PLAYER_ID] || [],
@@ -263,8 +302,10 @@ function normalizeNpc(row, def, save) {
   npc.dog.satiety = safeNum(npc.dog.satiety, rollNpcDogSatiety());
   npc.dog.at = safeNum(npc.dog.at, npc.lastVisitAt);
 
-  const saved = (save.plots[def.id] || []).map(normalizeNpcPlot);
+  const saved = (save.plots[def.id] || []).map((plot, i) => normalizeNpcPlot(plot, i, npc.level));
   npc.plots = saved.length ? saved : fresh.plots;
+  // 旧档的地块数还是老口径（≤12）：按当前等级补齐到解锁数，补的直接种上
+  syncNpcPlots(npc, Date.now());
   return npc;
 }
 
@@ -320,4 +361,34 @@ export function getPlot(plotId) {
 /** 按 id 取邻居农场 */
 export function getFriend(friendId) {
   return state.friends.find((friend) => friend.id === friendId);
+}
+
+/**
+ * 某座农场的头像（日志 / 时报里标识「是谁」用）。
+ *
+ * 留空、或是对手农场已经不在名单里时，退回农场主头像 ——
+ * 日志行总要有个头像，空白反而像没渲染完。
+ * @param {string} [farmId]
+ * @returns {string} 头像 emoji
+ */
+export function avatarOf(farmId) {
+  if (farmId && farmId !== PLAYER_ID) {
+    const friend = state.friends.find((f) => f.id === farmId);
+    if (friend?.avatar) return friend.avatar;
+  }
+  return state.farm?.avatar || '🧑‍🌾';
+}
+
+/**
+ * 某座农场的名字 —— 和头像配对使用，口径与 avatarOf 完全一致：
+ * 认不出来（留空 / 名单里已经没这个人）就退回农场主。
+ * @param {string} [farmId]
+ * @returns {string}
+ */
+export function nameOf(farmId) {
+  if (farmId && farmId !== PLAYER_ID) {
+    const friend = state.friends.find((f) => f.id === farmId);
+    if (friend?.name) return friend.name;
+  }
+  return state.farm?.name || '农场主';
 }

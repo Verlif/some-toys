@@ -9,6 +9,7 @@ import { byId, delegate } from '../../core/dom.js';
 import { emit, on, EVENTS } from '../../core/bus.js';
 import { state } from '../../store/state.js';
 import * as farm from '../../store/farm.js';
+import * as player from '../../store/player.js';
 import { count } from '../../store/inventory.js';
 import { CROPS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
 import { FERTILIZER_IDS, ITEMS, PESTICIDE_ID, SPRINKLER_ID } from '../../data/items.js';
@@ -28,19 +29,32 @@ let grid = null;
 
 /* ---------- 单块地的内容 ---------- */
 
+/**
+ * 地块采用「主内容 + 右侧操作列」的两段结构：
+ *   .plot-main  作物 / 名称 / 进度 / 倒计时，纵向居中
+ *   .plot-side  操作按钮（播种 / 收获 / 浇水 / 捉虫 / 施肥）纵向排列，
+ *               固定宽度、不撑开格子，按钮再多也不会挤出滚动条
+ */
+
 function lockedHTML(plot) {
   return `
-    <div class="plot-lock">🔒</div>
-    <div class="plot-sub">Lv.${PLOT_UNLOCK_LV[plot.id]} 解锁</div>`;
+    <div class="plot-main">
+      <div class="plot-lock">🔒</div>
+      <div class="plot-sub">Lv.${PLOT_UNLOCK_LV[plot.id]} 解锁</div>
+    </div>`;
 }
 
 function emptyHTML(plot) {
   const soil = SOILS[plot.soil];
   return `
-    <div class="plot-emoji empty">🌱</div>
-    <div class="plot-sub">空闲土地</div>
-    <span class="soil-tag ${soil.cls}">${soil.tag}</span>
-    <button class="btn small" data-action="plant" data-id="${plot.id}">播 种</button>`;
+    <div class="plot-main">
+      <div class="plot-emoji empty">🌱</div>
+      <div class="plot-sub">空闲土地</div>
+      <span class="soil-tag ${soil.cls}">${soil.tag}</span>
+    </div>
+    <div class="plot-side">
+      <button class="btn small" data-action="plant" data-id="${plot.id}">播种</button>
+    </div>`;
 }
 
 /** 缺水 / 生虫的提示条 */
@@ -84,13 +98,15 @@ function growingHTML(plot) {
   const crop = CROPS[plot.cropId];
   return `
     ${boostHTML(plot)}
-    <div class="plot-emoji" data-role="stage">${crop.emoji}</div>
-    <div class="plot-name">${crop.name}</div>
-    <div class="plot-sub" data-role="phase"></div>
-    ${careWarnHTML(plot)}
-    <div class="bar"><i style="width:0%"></i></div>
-    <div class="ptime"></div>
-    <div class="plot-acts">
+    <div class="plot-main">
+      <div class="plot-emoji" data-role="stage">${crop.emoji}</div>
+      <div class="plot-name">${crop.name}</div>
+      <div class="plot-sub" data-role="phase"></div>
+      ${careWarnHTML(plot)}
+      <div class="bar"><i style="width:0%"></i></div>
+      <div class="ptime"></div>
+    </div>
+    <div class="plot-side">
       ${careButtonsHTML(plot)}
       ${plot.fert ? '' : '<button class="icon-btn" data-action="fert" data-id="' + plot.id + '" title="施肥">🧪</button>'}
     </div>`;
@@ -99,14 +115,26 @@ function growingHTML(plot) {
 function ripeHTML(plot) {
   const crop = CROPS[plot.cropId];
   const left = crop.harvests - (plot.harvested || 0);
+  // 产量在成熟那一刻就已摇定：可收 = 摇定值 − 被顺走的，本应 = 摇定值
+  const total = plot.pendingYield || 0;
+  const stolen = plot.stolenCount || 0;
+  const remain = Math.max(0, total - stolen);
+  const yieldLine = total > 0
+    ? `<div class="plot-sub yield-line">可收 <b class="yield-now">${remain}</b>${
+        stolen > 0 ? ` / 本应 <b class="yield-was">${total}</b>` : ''
+      }</div>`
+    : '';
   return `
     ${boostHTML(plot)}
-    <div class="plot-emoji">${crop.emoji}</div>
-    <div class="plot-name">${crop.name} · 成熟</div>
-    <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
-    ${careWarnHTML(plot)}
-    <div class="plot-acts ripe-acts">${careButtonsHTML(plot)}</div>
-    <button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收 获</button>`;
+    <div class="plot-main">
+      <div class="plot-emoji">${crop.emoji}</div>
+      <div class="plot-name">${crop.name} · 成熟</div>
+      ${yieldLine}
+      <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
+    </div>
+    <div class="plot-side">
+      <button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收获</button>
+    </div>`;
 }
 
 function plotInnerHTML(plot, status) {
@@ -115,6 +143,9 @@ function plotInnerHTML(plot, status) {
   if (status === 'ripe') return ripeHTML(plot);
   return growingHTML(plot);
 }
+
+/** 升级过的土地挂一个底纹类；普通地什么都不挂 */
+const soilBgClass = (soilId) => (soilId && soilId !== 'normal' ? ` soilbg-${soilId}` : '');
 
 /** 决定一块地是否需要重建 DOM 的指纹 */
 function plotKey(plot, status) {
@@ -126,6 +157,9 @@ function plotKey(plot, status) {
     // 缺水 / 生虫是随时间出现的，指纹里要带上，否则按钮不会冒出来
     farm.needsWater(plot, now) ? 1 : 0,
     farm.needsPest(plot, now) ? 1 : 0,
+    // 被偷数变化时要重画「可收 X / 本应 Y」
+    plot.stolenCount || 0,
+    plot.pendingYield || 0,
   ].join('|');
 }
 
@@ -156,6 +190,10 @@ function foldHTML(count, nextLv) {
 export function renderFarm() {
   if (!grid) grid = byId('plots');
   if (!grid) return;
+
+  // 刚成熟的地块先把产量摇定：没有这一步，地块上的「可收 X」就没有数字。
+  // 顺手落盘一次，让摇定的值跨会话稳定（不落盘的话下次打开会重摇一个）。
+  if (farm.rollRipeYields()) player.flushPlayer();
 
   const unlocked = farm.unlockedPlotCount();
   const lockedCount = state.farm.plots.length - unlocked;
@@ -189,7 +227,9 @@ export function renderFarm() {
     nodes.delete(FOLD_KEY);
   }
 
-  grid.classList.toggle('dense', unlocked > DENSE_THRESHOLD);
+  // 紧凑排布两个触发条件：解锁地块多（装不下），或手机竖屏
+  // （两列时普通高度太高了）。心跳每 500ms 会跑到，横竖屏切换当场生效。
+  grid.classList.toggle('dense', unlocked > DENSE_THRESHOLD || window.innerWidth < 720);
   renderFarmTools();
 }
 
@@ -280,7 +320,7 @@ function updateNode(node, plot, status, key) {
         : warn ? ' warn'
           : status === 'ripe' ? ' ripe'
             : status === 'growing' ? ' growing' : ''
-    );
+    ) + (status === 'locked' ? '' : soilBgClass(plot.soil));
     node.el.innerHTML = plotInnerHTML(plot, status);
     node.bar = node.el.querySelector('.bar > i');
     node.time = node.el.querySelector('.ptime');
@@ -477,4 +517,5 @@ export function mountFarm() {
   on(EVENTS.INVENTORY, renderFarm);
   // 换狗、喂狗、狗粮槽变化都要更新顶上的守护犬信息
   on(EVENTS.PETS, renderFarmTools);
+  // 邻居被偷计数变化时更新右上角的「全镇被偷」
 }

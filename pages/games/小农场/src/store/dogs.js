@@ -12,7 +12,7 @@
  * 邻居的狗用的是同一个 `farm.dog` 结构（没有 owned / 只能有一只），
  * 所以「拦截率」在玩家与邻居两边是同一套公式，见 data/dogs.js。
  *
- * 品种来源：初始赠送田园犬（最低档，20%），
+ * 品种来源：初始赠送比熊（最低档，20%），
  * 之后只能从冒险的奖励池里挖到（低概率、按藏宝图档位分品阶、不重复）。
  */
 import { commit } from '../core/storage.js';
@@ -147,7 +147,7 @@ export async function feedDog() {
 }
 
 /**
- * 换一只狗上岗（或全部下岗）。
+ * 换一只狗上岗（或让所有狗休息）。
  *
  * @param {string|null} breedId 品种 id；传 null 表示一只都不上岗
  * @returns {Promise<boolean>}
@@ -163,7 +163,7 @@ export async function setActiveBreed(breedId) {
   const breed = breedId ? dogBreed(breedId) : null;
   player.addLog('🐕', breed
     ? `让${breed.emoji}${breed.name}上岗看家`
-    : '让所有守护犬下岗，农场暂时不设防');
+    : '让所有守护犬休息，农场暂时不设防');
 
   await commit({ farms: [state.farm] });
   emit(EVENTS.PETS);
@@ -171,7 +171,7 @@ export async function setActiveBreed(breedId) {
 
   notify(breed
     ? `🐕 ${breed.name}上岗了（基础拦截 ${Math.round(breed.rate * 100)}%）`
-    : '🐕 所有守护犬都下岗了', breed ? 'gold' : '');
+    : '🐕 所有守护犬都休息了', breed ? 'gold' : '');
   return true;
 }
 

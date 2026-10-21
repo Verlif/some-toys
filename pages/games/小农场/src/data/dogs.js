@@ -30,6 +30,15 @@ export const DOG_SATIETY_DECAY = 6.25;
 /** 邻居给狗添一次食要花的钱：和玩家买一份狗粮同价 */
 export const DOG_FOOD_PRICE = ITEMS.dogFood.price;
 
+/**
+ * 被守护犬抓住的罚款倍数。
+ *
+ * 偷菜被狗拦截时，除了这一趟白跑，还要按**想偷的那个果实售价 × 这个倍数**
+ * 缴纳罚款，罚金归被偷的农场主（玩家或邻居都算）。
+ * 小偷钱不够就倾家荡产 —— 有多少罚多少，不记负债。
+ */
+export const DOG_FINE_MULTIPLE = 5;
+
 /* ---------- 品种表 ---------- */
 
 /**
@@ -37,19 +46,36 @@ export const DOG_FOOD_PRICE = ITEMS.dogFood.price;
  *
  * rate 是**满槽时**的拦截概率。名字取的都是常见犬种，
  * 越靠后越少见 —— 冒险里能挖到龙犬，得跑不少趟高等级图。
+ *
+ * 第一名是新手开场就送的那只（比熊，20%）；田园犬排在第 7 档（58%），
+ * 属于「老玩家才养得起」的主力。
  */
 export const DOG_BREEDS = [
-  { id: 'tuyuan', name: '田园犬', emoji: '🐕', tier: 1, rate: 0.20 },
+  { id: 'bixiong', name: '比熊', emoji: '🧸', tier: 1, rate: 0.20 },
   { id: 'chai', name: '柴犬', emoji: '🐶', tier: 2, rate: 0.28 },
   { id: 'guibin', name: '贵宾犬', emoji: '🐩', tier: 3, rate: 0.34 },
   { id: 'bianmu', name: '边牧', emoji: '🐕‍🦺', tier: 4, rate: 0.40 },
   { id: 'daobian', name: '导盲犬', emoji: '🦮', tier: 5, rate: 0.46 },
   { id: 'xuelang', name: '雪狼犬', emoji: '🐺', tier: 6, rate: 0.52 },
-  { id: 'huli', name: '狐狸犬', emoji: '🦊', tier: 7, rate: 0.58 },
+  { id: 'tuyuan', name: '田园犬', emoji: '🐕', tier: 7, rate: 0.58 },
   { id: 'liebao', name: '猎豹犬', emoji: '🐯', tier: 8, rate: 0.64 },
   { id: 'shizong', name: '狮鬃犬', emoji: '🦁', tier: 9, rate: 0.72 },
   { id: 'longquan', name: '龙犬', emoji: '🐉', tier: 10, rate: 0.80 },
 ];
+
+/**
+ * 第 18 轮改名单时的迁移表：旧品种 → 接替它的新品种。
+ *
+ * - `huli`（狐狸犬，58%）被删掉，由 `tuyuan`（田园犬，58%）顶上；
+ * - 旧的 `tuyuan` 是**开局送的那只**（20%），换成新的开局犬 `bixiong`（比熊）。
+ *
+ * ⚠️ 这张表只能**一次性**套用（`normalizePlayerFarm` 用 `dog.migrated` 打标记）：
+ * 直接每次读档都套，会把玩家后来正经收集到的田园犬又降成比熊。
+ */
+export const LEGACY_BREED_MAP = { tuyuan: 'bixiong', huli: 'tuyuan' };
+
+/** 品种改名的存档版本标记，写在 `dog.migrated` 上 */
+export const BREED_MIGRATION = 'r18';
 
 /** 品种 id 列表 */
 export const DOG_BREED_IDS = DOG_BREEDS.map((b) => b.id);

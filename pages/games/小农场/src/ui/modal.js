@@ -8,6 +8,9 @@
 import { byId, delegate } from '../core/dom.js';
 import { dragToClose } from './drag-close.js';
 
+/** 右上角的关闭按钮：所有弹窗都有，不用各自写 */
+const CLOSE_HTML = '<button class="close" data-close aria-label="关闭">✕</button>';
+
 let root = null;
 let card = null;
 let unbindAction = null;
@@ -25,6 +28,20 @@ export function openModal(html, onAction) {
   // handle 留在卡片上（拖动时它不能跟着内容滚走），内容包进可滚动的 body。
   // body 自己才是滚动容器，这样能在它身上做「边缘渐隐」而不会把卡片背景也淡掉。
   card.innerHTML = `<div class="sheet-handle"></div><div class="modal-body">${html}</div>`;
+
+  const body = card.querySelector('.modal-body');
+  const head = body.querySelector(':scope > .modal-head');
+  if (head) {
+    // 标题栏挪出滚动区：内容滚得再远，标题和关闭按钮都停在上方 ——
+    // 塞在滚动容器里的话，往下滚一点就摸不到标题，也就没法「拖标题关闭」了
+    body.before(head);
+    if (!head.querySelector('[data-close]')) head.insertAdjacentHTML('beforeend', CLOSE_HTML);
+  } else {
+    // 没有标题的弹窗（比如邻居详情那种自定义头部）也补一条窄栏，只放关闭按钮
+    card.querySelector('.sheet-handle')
+      .insertAdjacentHTML('afterend', `<div class="modal-head bare">${CLOSE_HTML}</div>`);
+  }
+
   root.classList.add('show');
 
   unbindAction?.();

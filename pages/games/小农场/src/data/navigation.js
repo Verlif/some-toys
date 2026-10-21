@@ -12,9 +12,8 @@ export const MORE_MENU_ITEMS = [
   { key: 'guide',       icon: '🏅', label: '引导',   ready: true },
   { key: 'dog',         icon: '🐕', label: '狗窝',   ready: true },
   { key: 'adventure',   icon: '🧭', label: '冒险',   ready: true, action: 'adventure' },
+  { key: 'seedshop',    icon: '🌱', label: '种子制造间', ready: true },
   { key: 'ranch',       icon: '🐄', label: '牧场',   ready: false },
-  { key: 'workshop',    icon: '⚒️', label: '加工坊', ready: false },
-  { key: 'market',      icon: '🏪', label: '交易行', ready: false },
   { key: 'settings',    icon: '⚙️', label: '设置',   ready: false },
 ];
 
@@ -27,9 +26,8 @@ export const SUBPAGE_TITLES = {
   sign: '📅 每日签到',
   guide: '🏅 新手引导',
   dog: '🐕 狗窝',
+  seedshop: '🌱 种子制造间',
   ranch: '🐄 牧场',
-  workshop: '⚒️ 加工坊',
-  market: '🏪 交易行',
   settings: '⚙️ 设置',
 };
 

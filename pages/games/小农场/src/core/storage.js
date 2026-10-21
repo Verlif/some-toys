@@ -15,6 +15,7 @@
  * 整体重写比分条增量更容易保证一致，也不会漏字段。
  */
 import { getAll, write } from './db.js';
+import { idList } from './utils.js';
 
 /** 复合主键里的序号上界：地块序号与日志序号都是小整数，不可能到十亿 */
 const SEQ_MAX = 1e9;
@@ -62,9 +63,12 @@ export async function loadSave() {
     plots,
     logs: Object.fromEntries(Object.entries(logs).map(([id, rows]) => [
       id,
-      bySeq(rows).map(({ at, emoji, text }) => ({ at, emoji, text })),
+      bySeq(rows).map(({ at, emoji, text, who }) => ({ at, emoji, text, who: idList(who) })),
     ])),
-    news: bySeq(newsRows).map(({ at, emoji, text, farmId }) => ({ at, emoji, text, farmId })),
+    // 旧档时报只有 farmId（单个来源农场），读档时并入 who 数组
+    news: bySeq(newsRows).map(({ at, emoji, text, farmId, who }) => ({
+      at, emoji, text, who: idList(who || farmId),
+    })),
     bag,
   };
 }
@@ -113,6 +117,8 @@ function writeFarm(tx, farm) {
     at: entry.at,
     emoji: entry.emoji,
     text: entry.text,
+    // 涉及的人（带头像用）：玩家自己的操作不写，渲染时默认农场主
+    who: idList(entry.who),
   }));
 }
 
@@ -134,7 +140,8 @@ function writeNews(tx, news) {
     at: entry.at,
     emoji: entry.emoji,
     text: entry.text,
-    farmId: entry.farmId || '',
+    // 这条新闻涉及的人（可能多个：小偷 + 被偷的农场主）
+    who: idList(entry.who),
   }));
 }
 

@@ -44,11 +44,16 @@ import {
   nextVisitAt,
   npcGrowMs,
   shuffled,
+  syncNpcPlots,
 } from '../data/friends.js';
+import { SOILS } from '../data/soils.js';
 import {
+  DOG_FINE_MULTIPLE,
   DOG_FOOD_PRICE,
   DOG_FOOD_SATIETY,
   DOG_SATIETY_MAX,
+  catchChance,
+  dogBreed,
   dogSatietyAt,
 } from '../data/dogs.js';
 
@@ -118,9 +123,14 @@ function gainExp(npc, amount) {
    单个动作
    ============================================================ */
 
-/** 这块地在这一刻是不是「成熟且本轮没被顺过」 */
+/**
+ * 这块地在这一刻是不是「成熟且本轮没被顺过」。
+ * guarded = 这座农场被守护犬盯上过（玩家偷菜被抓住时整片标记），
+ * 邻居之间也认这个标记 —— 与 social.isStealable 保持同一套口径。
+ */
 const stealable = (plot, at) =>
-  Boolean(plot.cropId) && Boolean(CROPS[plot.cropId]) && at >= plot.readyAt && !plot.stolen;
+  Boolean(plot.cropId) && Boolean(CROPS[plot.cropId])
+  && at >= plot.readyAt && !plot.stolen && !plot.guarded;
 
 /** 收获所有成熟的地 */
 function actHarvest(npc, at) {
@@ -132,8 +142,9 @@ function actHarvest(npc, at) {
     const crop = CROPS[plot.cropId];
 
     const amount = randInt(crop.yield[0], crop.yield[1]);
-    // 邻居捉过虫的地也有产量加成
-    let boosted = Math.floor(amount * (1 + (plot.boost || 0)));
+    // 邻居捉过虫的地也有产量加成；土地倍率与玩家同一套
+    const soilMul = SOILS[plot.soil]?.yieldMul || 1;
+    let boosted = Math.floor(amount * (1 + (plot.boost || 0)) * soilMul);
     // 被顺走过几个就少收几个 —— 不做「减半」这种翻倍惩罚
     boosted = Math.max(0, boosted - (plot.stolenCount || 0));
     totalValue += boosted * crop.sell;
@@ -248,6 +259,19 @@ function actFeedDog(npc, at) {
 }
 
 /**
+ * 邻居农场的守护犬在 at 时刻的拦截概率。
+ * 与玩家农场同一套公式：品种基础率 × 饱腹度修正。
+ * @param {object} owner 邻居农场
+ * @param {number} at 毫秒时间戳
+ * @returns {number} 0~1
+ */
+function npcGuardChance(owner, at) {
+  const breed = dogBreed(owner.dog?.breed);
+  if (!breed) return 0;
+  return catchChance(breed.rate, dogSatietyAt(owner.dog, at));
+}
+
+/**
  * 顺菜。
  *
  * 先按这位邻居的偷菜倾向掷一次，再**挑农场**、最后挑地块。
@@ -256,7 +280,9 @@ function actFeedDog(npc, at) {
  * 而不是被一堆 NPC 农场把概率稀释掉。
  *
  * 邻居家与玩家农场一视同仁 —— 偷玩家的时候会写进玩家日志，
- * 玩家收获时按 stolenCount 扣掉。
+ * 玩家收获时按 stolenCount 扣掉。守护犬也是同一套：
+ * 不管偷谁，被狗抓住都要按想偷的果实价值 ×DOG_FINE_MULTIPLE 罚款，
+ * 罚金归被偷的农场主；小偷钱不够就倾家荡产。
  */
 function actSteal(npc, neighbours, farm, at) {
   const chance = STEAL_CHANCE[npc.steal] || 0;
@@ -277,16 +303,30 @@ function actSteal(npc, neighbours, farm, at) {
   const crop = CROPS[plot.cropId];
   const isPlayer = owner === farm;
 
-  // 玩家农场有守护犬：品种决定基础拦截率，饱腹度决定它现在有没有力气。
-  // 被赶走时这一趟白跑 —— 作物没少、邻居也没拿到钱。
-  if (isPlayer && farm.dogGuardChanceAt) {
-    const guard = farm.dogGuardChanceAt(at);
-    if (guard > 0 && Math.random() < guard) {
+  // 守护犬：玩家农场与邻居农场一视同仁。品种决定基础拦截率，
+  // 饱腹度决定它现在有没有力气。被赶走时这一趟白跑 ——
+  // 作物没少、邻居也没拿到钱，还要倒贴一笔罚款。
+  const guard = isPlayer && farm.dogGuardChanceAt
+    ? farm.dogGuardChanceAt(at)
+    : npcGuardChance(owner, at);
+  if (guard > 0 && Math.random() < guard) {
+    const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE);
+    // 有多少罚多少：NPC 也可能穷到叮当响，不记负债
+    const paid = Math.min(npc.coins, fine);
+    npc.coins -= paid;
+
+    if (isPlayer) {
       farm.caught += 1;
-      farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了（拦截率 ${Math.round(guard * 100)}%）`);
-      farm.news?.(at, '🐕', `${npc.name} 溜进你的农场想顺菜，被守护犬赶了出来`);
-      return { emoji: '🐕', text: '溜进 农场主 家想顺菜，被守护犬赶了出来' };
+      farm.addCoins?.(paid);
+      farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了，罚了 ${formatCoins(paid)} 金币（拦截率 ${Math.round(guard * 100)}%）`, [npc.id, farm.id]);
+      farm.news?.(at, '🐕', `${npc.name} 溜进你的农场想顺菜，被守护犬赶了出来并罚了款`, [npc.id, farm.id]);
+      return { emoji: '🐕', text: `溜进 农场主 家想顺菜，被守护犬抓住罚了 ${formatCoins(paid)} 金币` };
     }
+
+    owner.coins += paid;
+    log(owner, at, '🐕', `守护犬抓住了想顺菜的 ${npc.name}，罚了 ${formatCoins(paid)} 金币`);
+    farm?.news?.(at, '🐕', `${npc.name} 想顺 ${owner.name} 家的菜，被守护犬抓住罚了款`, [npc.id, owner.id]);
+    return { emoji: '🐕', text: `想顺 ${owner.name} 家的菜，被守护犬抓住罚了 ${formatCoins(paid)} 金币` };
   }
 
   plot.stolen = true;
@@ -299,11 +339,11 @@ function actSteal(npc, neighbours, farm, at) {
 
   if (isPlayer) {
     farm.stolen += 1;
-    farm.log(at, '🥷', `${npc.name} 来你的农场，顺走了 ${crop.emoji}${crop.name} ×1`);
-    farm.news?.(at, '🥷', `${npc.name} 溜进你的农场，顺走了 ${crop.emoji}${crop.name}`);
+    farm.log(at, '🥷', `${npc.name} 来你的农场，顺走了 ${crop.emoji}${crop.name} ×1`, [npc.id, farm.id]);
+    farm.news?.(at, '🥷', `${npc.name} 溜进你的农场，顺走了 ${crop.emoji}${crop.name}`, [npc.id, farm.id]);
   } else {
     // 邻居之间的偷菜是时报最喜欢的素材
-    farm?.news?.(at, '🥷', `${npc.name} 从 ${owner.name} 家顺走了 ${crop.emoji}${crop.name}`);
+    farm?.news?.(at, '🥷', `${npc.name} 从 ${owner.name} 家顺走了 ${crop.emoji}${crop.name}`, [npc.id, owner.id]);
   }
 
   return {
@@ -337,14 +377,14 @@ function actHelpPlayer(npc, farm, at) {
   if (at >= (plot.waterAt || 0)) {
     plot.waterAt = at + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
     farm.cared += 1;
-    farm.log(at, '💧', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 浇了水`);
+    farm.log(at, '💧', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 浇了水`, [npc.id, farm.id]);
     return { emoji: '🤝', text: `帮 农场主 给 ${crop.emoji}${crop.name} 浇了水` };
   }
 
   plot.pestAt = at + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
   plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
   farm.cared += 1;
-  farm.log(at, '🐛', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 捉了虫`);
+  farm.log(at, '🐛', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 捉了虫`, [npc.id, farm.id]);
   return { emoji: '🤝', text: `帮 农场主 给 ${crop.emoji}${crop.name} 捉了虫` };
 }
 
@@ -360,7 +400,7 @@ function actAdventure(npc, farm, at) {
   const net = trip.net >= 0 ? `赚了 ${formatCoins(trip.net)}` : `亏了 ${formatCoins(-trip.net)}`;
   // 赚回图价以上才算「大奖」，亏本的不配上时报
   if (trip.net >= trip.map.price) {
-    farm?.news?.(at, '💰', `${npc.name} 寻宝挖到大奖，一张${trip.map.name}赚了 ${formatCoins(trip.net)} 💰`);
+    farm?.news?.(at, '💰', `${npc.name} 寻宝挖到大奖，一张${trip.map.name}赚了 ${formatCoins(trip.net)} 💰`, npc.id);
   }
   return { emoji: '🗺️', text: `买了${trip.map.name}去寻宝，${net} 💰` };
 }
@@ -416,7 +456,8 @@ export function planVisit(npc) {
 }
 
 /**
- * 开始一次上线：把狗的饱腹度结算到这一刻，并把游标推到下一次上线。
+ * 开始一次上线：把狗的饱腹度结算到这一刻，把地块补齐到等级对应的解锁数，
+ * 并把游标推到下一次上线。
  *
  * 游标**必须**在这里推进：玩家在线时动作是隔几秒逐个执行的，
  * 不推进的话下一次轮询会把同一趟上线再演一遍。
@@ -429,6 +470,8 @@ export function beginVisit(npc, at) {
   const levelBefore = npc.level;
   npc.dog.satiety = dogSatietyAt(npc.dog, at);
   npc.dog.at = at;
+  // 地块数量和玩家一样按等级解锁：升了级就该有新地（直接种上，和初始生成一致）
+  syncNpcPlots(npc, at);
   npc.lastVisitAt = at;
   npc.nextVisitAt = nextVisitAt(npc, at);
   return levelBefore;
@@ -458,9 +501,12 @@ function runVisit(npc, neighbours, at, farm) {
 
   for (const kind of planVisit(npc)) runStep(npc, at, kind, ctx);
 
+  // 这次上线可能连升几级：地块解锁数跟着等级走，当场补上
+  syncNpcPlots(npc, at);
+
   // 农场升级也是新闻：一次上线涨好几级的时候只报最终等级
   if (npc.level > levelBefore) {
-    farm?.news?.(at, '🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`);
+    farm?.news?.(at, '🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, npc.id);
   }
   return levelBefore;
 }
@@ -517,6 +563,8 @@ function bulkAdvance(npc, until) {
       pestAt: until + PEST_INTERVAL * (1 - CARE_JITTER + randFloat() * CARE_JITTER * 2),
     });
   });
+  // 这段时间可能连升了好几级：把新解锁的地块补上
+  syncNpcPlots(npc, until);
 
   npc.lastVisitAt = until;
   npc.nextVisitAt = nextVisitAt(npc, until);

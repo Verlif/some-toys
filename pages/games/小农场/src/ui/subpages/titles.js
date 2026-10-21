@@ -1,30 +1,35 @@
 /**
  * 称号页：展示全部称号，达成条件后手动领取，领取后可以佩戴一个。
  *
- * 两类称号分开展示：
- *   等级称号  条件是农场等级（26 档）
+ * 三类称号分开展示：
  *   图鉴称号  条件是点亮的图鉴数量（7 档）
+ *   等级称号  条件是农场等级（26 档）
+ *   金币称号  条件是当前持有的金币（5 档）
  *
  * 徽章的配色由 skin 决定（CSS 里定义了 10 套底色），
  * 越往后越「亮」，一眼能看出哪个更稀有。
+ *
+ * 奖励只有道具（第 20 轮起移除金币倍率）—— 化肥 / 增产剂 / 狗粮 /
+ * 洒水器 / 特殊种子 / 藏宝图，按称号难度加重。
  */
-import { ITEMS } from '../../data/items.js';
 import { claimTitle, equippedTitle, equipTitle, titleStates } from '../../store/titles.js';
 import { codexSummary } from '../../store/codex.js';
+import { itemLabel } from '../../data/keys.js';
+import { formatCoins } from '../../core/utils.js';
 
 /** 条件的中文说法 */
 function needText(title) {
-  return title.need.type === 'level'
-    ? `农场 Lv.${title.need.value}`
-    : `点亮 ${title.need.value} 种图鉴`;
+  if (title.need.type === 'level') return `农场 Lv.${title.need.value}`;
+  if (title.need.type === 'codex') return `点亮 ${title.need.value} 种图鉴`;
+  if (title.need.type === 'coins') return `持有 ${formatCoins(title.need.value)} 金币`;
+  return '';
 }
 
-/** 奖励的简短描述 */
+/** 奖励的简短描述（只有道具，没有金币） */
 function rewardText(title) {
-  const items = Object.entries(title.items || {})
-    .map(([id, n]) => `${ITEMS[id]?.name || id} ×${n}`)
-    .join('、');
-  return [items, `${title.coins}× 收成金币`].filter(Boolean).join(' · ');
+  return Object.entries(title.items || {})
+    .map(([id, n]) => `${itemLabel(id)} ×${n}`)
+    .join(' · ');
 }
 
 /** 一枚称号徽章 */
@@ -67,8 +72,9 @@ export const titlesPage = {
     const equipped = equippedTitle();
     const summary = codexSummary();
 
-    const levelTitles = all.filter((t) => t.need.type === 'level');
     const codexTitles = all.filter((t) => t.need.type === 'codex');
+    const levelTitles = all.filter((t) => t.need.type === 'level');
+    const coinTitles = all.filter((t) => t.need.type === 'coins');
     const ready = all.filter((t) => t.unlocked && !t.claimed);
 
     body.innerHTML = `
@@ -90,6 +96,7 @@ export const titlesPage = {
 
       ${sectionHTML(`📖 图鉴称号（已点亮 ${summary.lit} / ${summary.total}）`, codexTitles)}
       ${sectionHTML('🏅 等级称号', levelTitles)}
+      ${sectionHTML('🪙 金币称号', coinTitles)}
     `;
   },
 

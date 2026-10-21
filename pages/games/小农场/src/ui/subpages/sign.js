@@ -62,7 +62,7 @@ function cycleHTML() {
       <div class="cycle-dots">${dots}</div>
       <div class="cycle-foot">
         <span>${leftInCycle() > 0 ? `本轮还差 ${leftInCycle()} 天` : '本轮已完成'}</span>
-        <span>今天 +${reward.coins} 💰${items ? ` · ${items}` : ''} · 随机种子（≤Lv.${reward.seedLv}）</span>
+        <span>今天 +${reward.coins} 💰${items ? ` · ${items}` : ''} · 随机种子（≤Lv.${reward.seedLv}）${reward.big ? ' · 🎁 盲盒' : ''}</span>
       </div>
     </div>`;
 }

@@ -24,6 +24,9 @@
 .btn.ghost:hover { background: #f2f9ef; }
 .btn.harvest { background: linear-gradient(135deg, #ffb238, #f08a1e); box-shadow: 0 3px 10px rgba(240, 160, 40, .32); }
 .btn.danger { background: var(--danger); box-shadow: 0 2px 6px rgba(224, 90, 78, .25); }
+/* 幽灵 + 危险：白底红字的轻量按钮，包裹里的「丢弃」用 */
+.btn.ghost.danger { background: #fff; color: var(--danger); border: 1px solid #f2b8b2; }
+.btn.ghost.danger:hover { background: #fdeceb; }
 .btn:disabled { opacity: .42; cursor: not-allowed; transform: none; box-shadow: none; }
 
 .icon-btn {
@@ -43,14 +46,18 @@
 .icon-btn:active { transform: scale(.9); }
 
 /* ---------- 地块 ---------- */
+/* 两段结构：主内容（flex:1）+ 右侧操作列（固定宽）。
+   操作列宽度写死，按钮再多也撑不开格子；主内容 min-width:0，
+   长名字自动收窄，不会把格子顶出滚动条。
+   高度按「最坏情况的内容 + 内边距」收口：生长中且缺水生虫时主内容
+   约 126px，加 24px 内边距 = 150，再留 2px 余量。 */
 .plot {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 168px;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 7px;
+  min-height: 152px;
   padding: 12px 9px;
   background: linear-gradient(180deg, #fffefa, #f8f2e6);
   border: 1px solid #ece2cf;
@@ -58,6 +65,32 @@
   box-shadow: 0 2px 6px rgba(70, 90, 60, .06);
   transition: .18s;
   text-align: center;
+}
+.plot-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.plot-side {
+  flex-shrink: 0;
+  width: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  /* 按钮纵向排布，再多也不会撑开格子或挤出滚动条 */
+  overflow: hidden;
+}
+.plot-side .btn.small {
+  width: 100%;
+  padding: 6px 2px;
+  font-size: 10.5px;
+  letter-spacing: 0;
 }
 .plot::after {
   content: '';
@@ -113,25 +146,29 @@
 .plot-corner.b2, .np-boost.b2 { background: #e0912f; }
 .plot-corner.b3, .np-boost.b3 { background: #d1483f; }
 
-.plot-acts {
-  display: flex;
-  gap: 5px;
-  margin-top: 1px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-/* 紧凑模式（.grid.dense 下生效）：地块缩小以容纳 40 块 */
-.grid.dense .plot { min-height: 116px; padding: 9px 6px; gap: 4px; }
+/* 紧凑模式（.grid.dense 下生效，手机竖屏也走这套）：地块缩小以容纳 40 块。
+   最坏情况（生长中 + 缺水生虫）内容约 118px，留一点余量不贴边框。 */
+.grid.dense .plot { min-height: 122px; padding: 9px 6px; gap: 4px; }
+.grid.dense .plot-main { gap: 3px; }
 .grid.dense .plot-emoji { font-size: 27px; }
 .grid.dense .plot-emoji.empty { font-size: 21px; }
 .grid.dense .plot-name { font-size: 11px; }
 .grid.dense .plot-sub { font-size: 10px; }
 .grid.dense .plot-lock { font-size: 19px; }
-.grid.dense .plot-acts { gap: 3px; }
-.grid.dense .plot-acts .icon-btn { width: 26px; height: 26px; font-size: 13px; }
-.grid.dense .btn.small { padding: 5px 9px; font-size: 11px; }
+.grid.dense .plot-side { width: 30px; gap: 3px; }
+.grid.dense .plot-side .icon-btn { width: 26px; height: 26px; font-size: 13px; }
+.grid.dense .plot-side .btn.small { padding: 5px 1px; font-size: 10px; }
 .grid.dense .bar { width: 88%; }
+
+/* 成熟地块的产量行：可收（绿）/ 本应（灰、删除线，直观看出被顺走几个） */
+.plot-sub.yield-line b { font-variant-numeric: tabular-nums; }
+.plot-sub .yield-now { color: var(--green-d); font-weight: 800; }
+.plot-sub .yield-was {
+  color: #a8b3a5;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-color: rgba(209, 72, 63, .55);
+}
 
 /* ---------- 地块网格折叠行 ---------- */
 .plot-fold {
@@ -175,9 +212,6 @@
   font-weight: 700;
 }
 
-/* 成熟地块上如果还有缺水/生虫，警示按钮排在收获按钮上面 */
-.ripe-acts { margin-top: 0; }
-
 /* ---------- 商店筛选切换 ---------- */
 .filter-chip {
   border: 1px solid var(--line);
@@ -198,6 +232,19 @@
   border-color: var(--green-d);
   color: #fff;
 }
+
+/* 筛选芯片上的数量角标：「可偷摘 / 可帮忙」后面跟的邻居人数 */
+.chip-num {
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 700;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .07);
+  font-variant-numeric: tabular-nums;
+}
+.filter-chip.active .chip-num { background: rgba(255, 255, 255, .26); }
 
 /* ---------- 商店 tab 栏（吸附在顶栏下方） ---------- */
 .shop-top {
@@ -281,6 +328,9 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scroll-snap-align: start;
+  /* 快速滑动时必须逐页咬合，不能一次飞过两个面板
+     （否则「滑一下切了好几个 tab」） */
+  scroll-snap-stop: always;
   padding: 13px 0 24px;
 }
 .shop-panel .list { padding: 0 13px; }
@@ -418,6 +468,17 @@
 .si-meta { font-size: 11px; color: var(--muted); line-height: 1.5; }
 .si-price { font-size: 12.5px; font-weight: 700; color: var(--gold); white-space: nowrap; }
 
+/* 包裹 / 仓库的数量：黑色粗体，固定在行右侧（操作按钮左边） */
+.si-count {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #20291e;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* ---------- 弹窗内的小网格（土地升级选地块） ---------- */
 .seed-grid {
   display: grid;
@@ -426,6 +487,55 @@
 }
 
 /* ---------- 邻居卡片 ---------- */
+/* 顶部一行：标题 + 搜索框（按名字动态过滤） */
+.friend-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 13px 0;
+}
+.friend-top .section-title { padding: 11px 0 8px; }
+.friend-search {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+.friend-search:focus-within { border-color: #b8d8ac; }
+.friend-search-icon { font-size: 11px; opacity: .55; }
+.friend-search input {
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  width: 84px;
+  min-width: 0;
+  padding: 0;
+}
+.friend-search-clear {
+  border: none;
+  background: #eef1ea;
+  color: #7c8a78;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+.friend-search-clear:hover { background: #e2e8dc; color: #5c6b57; }
+
 .friend-card {
   display: flex;
   align-items: flex-start;
@@ -487,8 +597,9 @@
 .friend-chip.job { background: #eaf0f8; color: #4b6288; }
 
 /* 邻居页顶部的排序条：横向可滑，筛选档不会把宽度撑爆 */
-/* 排序条固定在顶栏下方，滚列表时不跟着走 */
-.friend-sort {
+/* 排序条固定在顶栏下方，滚列表时不跟着走。
+   邻居页与时报页共用这套筛选条（.filter-bar）。 */
+.filter-bar {
   position: sticky;
   top: var(--hud-h, 64px);
   z-index: 20;
@@ -500,8 +611,8 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-.friend-sort .filter-chip { flex-shrink: 0; }
-.friend-sort .shop-filter-count { margin-left: auto; padding-left: 8px; }
+.filter-bar .filter-chip { flex-shrink: 0; }
+.filter-bar .shop-filter-count { margin-left: auto; padding-left: 8px; }
 .friend-list { padding: 0 13px; }
 
 /* 邻居动态流水 */
@@ -903,6 +1014,10 @@
   transition: .16s;
 }
 .codex-card:hover { border-color: #cfe3c6; transform: translateY(-2px); }
+/* 已解锁的卡片可以点开看详情：手型 + 更明显的悬停反馈 */
+.codex-card.clickable { cursor: pointer; }
+.codex-card.clickable:hover { border-color: var(--green-d); box-shadow: 0 4px 12px rgba(70, 110, 60, .12); }
+.codex-card.clickable:active { transform: translateY(0); }
 .codex-emoji { font-size: 30px; line-height: 1; }
 .codex-name {
   font-size: 12px;
@@ -1000,7 +1115,7 @@
 }
 .log-item {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   padding: 7px 0;
   border-bottom: 1px dashed #eef2ea;
@@ -1014,8 +1129,66 @@
   color: #a8b3a5;
   font-variant-numeric: tabular-nums;
 }
-.log-emoji { flex-shrink: 0; }
+/* 事件图标做成一枚小方块：带边框和淡绿底，与右侧正文拉开层次。
+   尺寸固定，emoji 字体回退也不会撑行高。 */
+.log-emoji {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  font-size: 12px;
+  line-height: 1;
+  background: #f6f9f1;
+  border: 1px solid #e3ecd9;
+  border-radius: 6px;
+}
 .log-text { color: #40503c; line-height: 1.55; word-break: break-word; }
+
+/* ---------- 头像 + 名字胶囊：日志 / 时报里标识「是谁」 ---------- */
+/* 头像和名字共用一个浅绿底，读起来是一个整体，不用猜那枚圆片是谁。
+   一条事件可能涉及多个人（小偷 + 被偷的农场主）：头像叠着放、
+   名字用「、」连起来，仍然只有一个胶囊。
+   名字过长会省略 —— 胶囊占了宽度，正文才不会被挤成火柴棍。 */
+.who-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 46%;
+  padding: 2px 9px 2px 2px;
+  border-radius: 99px;
+  background: #eef7e9;
+  border: 1px solid #e2efd8;
+}
+.who-chip .ava {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #e4efdb;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1;
+}
+.who-chip .ava + .ava { margin-left: -8px; }
+.who-chip .who-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4c5f47;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 农场日志一行更密，胶囊整体缩一号 */
+.who-chip.small { gap: 4px; padding: 1px 7px 1px 1px; }
+.who-chip.small .ava { width: 18px; height: 18px; font-size: 11px; }
+.who-chip.small .who-name { font-size: 10.5px; }
 
 /* ---------- 签到日历 ---------- */
 .cycle {
@@ -1111,6 +1284,12 @@
   color: var(--green-d);
   box-shadow: 0 0 0 3px rgba(76, 175, 80, .14);
 }
+/* 大奖日（周六）：金边 + 淡金底。必须排在各状态样式之后 ——
+   同为两级类名，后来的才赢；已签的周六保留绿底只换金边，
+   今天的周六保留绿色描边，不被金边盖掉。 */
+.cal-cell.big { border-color: #f0c060; box-shadow: 0 0 0 2px rgba(240, 192, 96, .22); }
+.cal-cell.big.past, .cal-cell.big.future { background: linear-gradient(180deg, #fffdf2, #fdf4dd); }
+.cal-cell.big.today { border-color: var(--green); }
 .cal-cell.big .cal-cycle { font-size: 13px; }
 .cal-day { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .cal-cycle { font-size: 9.5px; opacity: .75; font-weight: 600; }
@@ -1533,10 +1712,38 @@
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-.news-emoji { font-size: 18px; line-height: 1.25; flex: 0 0 auto; }
-.news-body { min-width: 0; }
+/* 图标固定在左侧做「种类」轨道，人和时间放在正文第一行 ——
+   胶囊宽度随名字变，摆在轨道里会让正文左边缘参差不齐。 */
+/* 时报图标同样是带底的方块，比日志那枚大一号 */
+.news-emoji {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+  line-height: 1;
+  background: linear-gradient(180deg, #f8fbf3, #eef4e4);
+  border: 1px solid #e0ebd2;
+  border-radius: 9px;
+}
+.news-body { min-width: 0; flex: 1; }
+.news-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.news-head .who-chip { max-width: none; }
 .news-text { font-size: 12.5px; color: #3c4a39; line-height: 1.55; }
-.news-when { font-size: 10.5px; color: #a8b3a5; margin-top: 3px; }
+.news-when {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: #a8b3a5;
+  font-variant-numeric: tabular-nums;
+}
 .news-foot {
   text-align: center;
   font-size: 11px;
@@ -1675,3 +1882,173 @@
 .dog-card .dog-rate { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .dog-card .dog-hint { font-size: 10px; color: #a0aa9c; }
 .dog-card .btn { margin-top: 3px; }
+
+/* ============================================================
+   土地档位的底纹
+   ------------------------------------------------------------
+   升级过的地块，左侧带一点这块地的土地色，向右渐变回普通地色 ——
+   一进农场就能看出「哪几块是花钱改过的」，但又不至于花得看不清作物。
+
+   用伪元素叠一层，而不是改 background：成熟 / 缺水 / 已偷
+   各有一套状态背景，直接覆盖会把状态提示吃掉。
+   ============================================================ */
+.plot[class*="soilbg-"]::before,
+.npc-plot[class*="soilbg-"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--soil-tint, transparent) 0%, transparent 46%);
+}
+.soilbg-red {
+  --soil-tint: rgba(196, 82, 58, .20);
+}
+.soilbg-black {
+  --soil-tint: rgba(64, 58, 48, .17);
+}
+.soilbg-silver {
+  --soil-tint: rgba(138, 160, 174, .22);
+}
+.soilbg-gold {
+  --soil-tint: rgba(206, 156, 36, .24);
+}
+.soilbg-crystal {
+  --soil-tint: rgba(88, 172, 210, .24);
+}
+.soilbg-myth {
+  --soil-tint: rgba(228, 118, 56, .26);
+}
+/* 彩虹地单独一条：左侧本身就是多色，一段单色渐变表达不了 */
+.plot.soilbg-rainbow::before,
+.npc-plot.soilbg-rainbow::before {
+  background: linear-gradient(90deg,
+    rgba(255, 148, 158, .26) 0%,
+    rgba(255, 212, 132, .24) 16%,
+    rgba(146, 218, 158, .23) 32%,
+    rgba(126, 196, 236, .23) 48%,
+    transparent 72%);
+}
+
+/* ============================================================
+   种子制造间
+   ============================================================ */
+.ws-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 16px 14px;
+  /* 子页面容器本身没有左右内边距（各页面自己管），这里和 .list 对齐 */
+  margin: 14px 13px 14px;
+  background: #fff;
+  border: 1px solid #e8efe2;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(70, 90, 60, .06);
+  text-align: center;
+}
+.ws-hero-emoji { font-size: 34px; line-height: 1; }
+.ws-hero-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #40503c;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ws-uses {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ws-hero-desc {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #67765f;
+}
+.ws-req {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ws-req > span {
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: #f4f6f1;
+}
+.ws-req > span.ok { background: #eaf6e4; color: var(--green-d); font-weight: 700; }
+
+/* 概率条 */
+.ws-odds {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 2px;
+}
+.ws-odd { flex: 1; min-width: 0; }
+.ws-odd-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: #eef1ea;
+  overflow: hidden;
+}
+.ws-odd-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--green-l), var(--green));
+  transition: width .3s ease;
+}
+/* 3 个那档更稀有，用金色标出来 */
+.ws-odd:last-child .ws-odd-bar > i { background: linear-gradient(90deg, #f3d98a, var(--gold)); }
+.ws-odd-text {
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ws-odd-text b { color: #40503c; font-variant-numeric: tabular-nums; }
+.ws-expect {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ws-expect b { color: var(--green-d); }
+
+/* 升级区 */
+.ws-upgrade {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px dashed #e6ebe1;
+  width: 100%;
+}
+.ws-upgrade.maxed {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.ws-up-line {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ws-up-line b { color: #40503c; }
+.ws-up-line.ok, .ws-up-line.ok b { color: var(--green-d); }
+.ws-upgrade .btn { width: 100%; max-width: 220px; }
+
+.ws-tips {
+  margin: 14px 17px 0;
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--muted);
+}

@@ -218,14 +218,25 @@ export function renderShop() {
   }
 }
 
-/** 横向滚动 → 更新 tab 高亮。用 rAF 合并高频 scroll */
+/**
+ * 横向滚动 → 更新 tab 高亮。
+ *
+ * 必须**等滚动停下**再同步：一次快速滑动会连续发出几十个 scroll 事件，
+ * 每个都同步的话，高亮会在一帧里连跳好几个 tab —— 玩家看到的就是
+ * 「左右滑一下，却一次切换了好几个类型标签」。所以等 140ms
+ * 没有新事件，才认最终停下来的那一页。
+ */
 let ticking = false;
+let syncTimer = 0;
 function onPanelScroll() {
   if (ticking) return;
   ticking = true;
   requestAnimationFrame(() => {
     ticking = false;
-    syncTabFromScroll(byId('shop').querySelector('.shop-panels'));
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      syncTabFromScroll(byId('shop').querySelector('.shop-panels'));
+    }, 140);
   });
 }
 

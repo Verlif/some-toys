@@ -34,6 +34,14 @@ export const CYCLE_DAYS = SIGN_CYCLE.length;
 export const DAILY_ITEM = 'fertilizer';
 
 /**
+ * 签到历史保留天数。
+ *
+ * 日历上「哪天签过」要靠这份历史，只存最近这些天就够了 ——
+ * 再往前连日历都不显示（日历只看当月）。
+ */
+export const SIGN_KEEP_DAYS = 90;
+
+/**
  * 取当天应得的奖励倍数
  * @param {number} streak 连续签到天数（从 1 开始）
  */
