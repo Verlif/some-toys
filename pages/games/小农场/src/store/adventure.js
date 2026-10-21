@@ -13,6 +13,7 @@ import { state } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { MAP_TIERS, buildRun, describeReward, mapTier } from '../data/adventure.js';
+import { CROPS } from '../data/crops.js';
 import { mapId, produceId, seedId } from '../data/keys.js';
 import { formatCoins } from '../core/utils.js';
 import { addDogBreed, ownedBreedIds } from './dogs.js';
@@ -76,6 +77,28 @@ export async function startRun(tier) {
 }
 
 /**
+ * 挖到限定种子上时报。
+ *
+ * 限定作物只能从藏宝图里挖到，是**一趟冒险最值得说的一件事**，所以单独上一条。
+ * 条目带上 `crop`：时报里那枚图标就是这株作物，点开能看它的详情
+ * （成熟多久、卖多少钱、一轮能收多少）；`cat` 显式写死成「寻宝」——
+ * 图标已经换成了作物表情，不能再靠图标去归类。
+ *
+ * @param {object} reward
+ * @param {object} card 挖到它的那张牌（用它的场景名当出处）
+ */
+function announceReward(reward, card) {
+  if (reward?.kind !== 'special') return;
+  const crop = CROPS[reward.id];
+  if (!crop) return;
+  addNews(crop.emoji, `${state.farm.name} 在「${card.title}」挖到限定种子 ${crop.name}`, {
+    who: state.farm.id,
+    crop: reward.id,
+    cat: 'adventure',
+  });
+}
+
+/**
  * 选一条路。
  *
  * @param {'left'|'right'} side
@@ -93,6 +116,7 @@ export async function choose(side) {
     run.earned.push(got);
     applyReward(got);
     player.addLog('🗺️', `寻宝挖到 ${describeReward(got)}`);
+    announceReward(got, card);
     await persist();
   }
 
@@ -123,7 +147,9 @@ export async function finishRun() {
   // 大赚要上电视：跑一趟拿回的价值超过图价两倍才算「大奖」
   const map = MAP_TIERS.find((m) => m.tier === run.tier);
   if (map && value > map.price * 2) {
-    addNews('💰', `你在${map.name}里挖到大奖，带回约 ${formatCoins(value)} 的奖励`);
+    addNews('💰', `${state.farm.name} 在${map.name}里挖到大奖，带回约 ${formatCoins(value)} 的奖励`, {
+      who: state.farm.id,
+    });
   }
 
   run = null;

@@ -2,11 +2,15 @@
  * 种子制造间领域：解锁、制造、升级。
  *
  * 三件事：**解锁**（一次性条件 + 金币）、**制造**（吃产出换种子）、
- * **升级**（累计制造次数 + 金币 → 更好的概率）。
+ * **升级**（造过的作物种类数 + 金币 → 更好的概率）。
  *
- * 状态存在 `farm.workshop = { level, uses }`：`level = 0` 表示还没解锁，
- * `uses` 是累计制造次数，升级只看它，不看当前等级 —— 所以不会因为
- * 「攒着不升级」而丢进度。
+ * 状态存在 `farm.workshop = { level, kinds }`：`level = 0` 表示还没解锁，
+ * `kinds` 是「作物 id → 造过几次」的记账，**升级只看它的 key 有几个**。
+ *
+ * 为什么门槛是种类而不是次数：按次数算的时候，最便宜的小麦造一次也算一次，
+ * 于是升级的最优解是拿小麦刷几百次 —— 跟经营无关，纯属磨洋工。
+ * 按种类算之后，同一种作物造一百次也只算 1 种，想升级必须什么作物都造一点。
+ * `kinds` 仍然记次数（UI 里显示「造过 3 次」），但**不参与升级判定**。
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
@@ -33,8 +37,14 @@ const ws = () => state.farm.workshop;
 /** 制造间等级，0 = 未解锁 */
 export const workshopLevel = () => ws().level || 0;
 
-/** 累计制造次数 */
-export const workshopUses = () => ws().uses || 0;
+/** 造过的作物种类数（升级门槛看这个） */
+export const workshopKinds = () => Object.keys(ws().kinds || {}).length;
+
+/** 某一种作物造过几次 */
+export const kindTimes = (cropId) => ws().kinds?.[cropId] || 0;
+
+/** 这种作物造过没有（列表里给个「已造过」标记） */
+export const kindDone = (cropId) => kindTimes(cropId) > 0;
 
 /** 是否已解锁 */
 export const isUnlocked = () => workshopLevel() > 0;
@@ -56,15 +66,16 @@ export function unlockState() {
 
 /**
  * 升级还差什么。满级时 `maxed = true`。
- * @returns {{maxed: boolean, next: ?object, usesOk: boolean, coinsOk: boolean, ok: boolean}}
+ * @returns {{maxed: boolean, next: ?object, kinds: number, kindsOk: boolean, coinsOk: boolean, ok: boolean}}
  */
 export function upgradeState() {
   const level = workshopLevel();
   const next = nextLevelRow(level);
-  if (!next) return { maxed: true, next: null, usesOk: false, coinsOk: false, ok: false };
-  const usesOk = workshopUses() >= next.uses;
+  const kinds = workshopKinds();
+  if (!next) return { maxed: true, next: null, kinds, kindsOk: false, coinsOk: false, ok: false };
+  const kindsOk = kinds >= next.kinds;
   const coinsOk = state.farm.coins >= next.cost;
-  return { maxed: false, next, usesOk, coinsOk, ok: usesOk && coinsOk };
+  return { maxed: false, next, kinds, kindsOk, coinsOk, ok: kindsOk && coinsOk };
 }
 
 /**
@@ -157,7 +168,9 @@ export async function craft(cropId) {
 
   const got = rollSeeds(workshopLevel());
   inventory.add(seedId(cropId), got);
-  ws().uses = workshopUses() + 1;
+  // 记账：这一种作物 +1 次。升级只看「有几种」，不看每种造了几次
+  const kinds = ws().kinds;
+  kinds[cropId] = (kinds[cropId] || 0) + 1;
 
   player.addLog('⚒️', `${crop.emoji}${crop.name} ×${need} + 💰${fee} → 种子 ×${got}`);
   await commit({ farms: [state.farm], bag: state.bag });
@@ -179,8 +192,8 @@ export async function upgrade() {
     notify(`已经满级（Lv.${WORKSHOP_MAX_LEVEL}）`);
     return false;
   }
-  if (!st.usesOk) {
-    notify(`还差 ${st.next.uses - workshopUses()} 次制造才能升级`);
+  if (!st.kindsOk) {
+    notify(`还差 ${st.next.kinds - st.kinds} 种作物（每种都要造一次）`);
     return false;
   }
   if (!st.coinsOk) {

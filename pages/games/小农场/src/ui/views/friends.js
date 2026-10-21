@@ -1,23 +1,20 @@
 /**
- * 邻居页：拜访邻居农场、偷成熟作物、帮忙打理。
+ * 邻居页：邻居列表（拜访、筛选、搜索）。
  *
  * 进入本页时会先跑一次离线结算（见 social.createSettler），
  * 把玩家不在这段时间里邻居们自己发生的事补算出来，
  * 结算过程用等待画面覆盖，不会让页面卡住。
+ *
+ * 「打开某座邻居农场」的弹窗不在这里 —— 它在 `ui/friend-modal.js`，
+ * 因为记录里的人名标签、时报里的人名标签也要用同一个弹窗。
  */
-import { byId, delegate, setHTML } from '../../core/dom.js';
+import { byId, delegate, escapeHtml, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
-import { getFriend, state } from '../../store/state.js';
+import { state } from '../../store/state.js';
 import * as social from '../../store/social.js';
-import { completeGuide } from '../../store/codex.js';
-import { CROPS } from '../../data/crops.js';
-import { PERSONALITIES, STEAL_LABELS } from '../../data/friends.js';
-import { dogBreed, dogSatietyAt } from '../../data/dogs.js';
-import { PESTICIDE_ID, SPRINKLER_ID } from '../../data/items.js';
-import { count } from '../../store/inventory.js';
-import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
-import { fmtDuration, formatCoins } from '../../core/utils.js';
-import { openModal } from '../modal.js';
+import { formatCoins } from '../../core/utils.js';
+import { recordItemsHTML } from '../records.js';
+import { openFriendModal } from '../friend-modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
 import { showToast } from '../toast.js';
 
@@ -42,27 +39,15 @@ let searchQuery = '';
 
 /* ---------- 卡片 ---------- */
 
-/** 动态里的时间戳 → 「3 分钟前」这样的相对时间 */
-function relativeTime(at, now) {
-  const diff = Math.max(0, now - at);
-  if (diff < 60_000) return '刚刚';
-  if (diff < 3600_000) return `${Math.floor(diff / 60_000)}分钟前`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3600_000)}小时前`;
-  return `${Math.floor(diff / 86_400_000)}天前`;
-}
-
+/**
+ * 邻居卡片上的三条动态预览。
+ *
+ * 和农场日志、拜访弹窗里的「最近操作」、时报共用 `ui/records.js` ——
+ * 同一个游戏里记录只有一种长相。卡片位置小，所以用 compact（字号小一号）+ 相对时间。
+ */
 function logHTML(friend, now, limit = 3) {
   if (!friend.log?.length) return '';
-  return friend.log.slice(0, limit).map((entry) => `
-    <div class="friend-log-item">
-      <span class="when">${relativeTime(entry.at, now)}</span>
-      <span>${entry.emoji} ${escapeText(entry.text)}</span>
-    </div>`).join('');
-}
-
-/** 动态文案里混着邻居名，这里做一次转义，避免名字里的符号破坏结构 */
-function escapeText(text) {
-  return String(text).replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+  return recordItemsHTML(friend.log, { now, limit, compact: true, relative: true });
 }
 
 function cardHTML(friend, now) {
@@ -74,12 +59,12 @@ function cardHTML(friend, now) {
       <div class="friend-avatar">${friend.avatar}</div>
       <div class="friend-body">
         <div class="friend-name">
-          ${escapeText(friend.name)}
+          ${escapeHtml(friend.name)}
           <span class="lv">Lv.${friend.level}</span>
           <span class="friend-chevron">›</span>
         </div>
         <div class="friend-stats">
-          <span class="friend-chip job">${escapeText(friend.profession || '邻居')}</span>
+          <span class="friend-chip job">${escapeHtml(friend.profession || '邻居')}</span>
           <span class="friend-chip">💰 ${formatCoins(friend.coins)}</span>
           ${ripe > 0 ? `<span class="friend-chip ripe">🟡 ${ripe} 块可偷</span>` : ''}
           ${care > 0 ? `<span class="friend-chip care">💧 ${care} 块待照料</span>` : ''}
@@ -135,7 +120,7 @@ function sortChips(now) {
 /** 列表为空时的提示：区分「筛选没结果」和「搜索没结果」 */
 function emptyFriendsHTML() {
   const q = searchQuery.trim();
-  if (q) return `<div class="empty-tip">🔍<br>没有名字带「${escapeText(q)}」的邻居<br>换个关键词试试</div>`;
+  if (q) return `<div class="empty-tip">🔍<br>没有名字带「${escapeHtml(q)}」的邻居<br>换个关键词试试</div>`;
   if (sortMode === 'steal') return '<div class="empty-tip">🥷<br>现在没有能顺的作物<br>等谁家的菜熟了再来</div>';
   if (sortMode === 'care') return '<div class="empty-tip">💧<br>大家的地都打理得很好<br>没有需要帮忙的</div>';
   return '<div class="empty-tip">🌾<br>这个档位下暂时没有邻居<br>换个筛选看看</div>';
@@ -248,278 +233,6 @@ export async function checkOnlineVisits() {
   } finally {
     settling = false;
   }
-}
-
-/* ---------- 拜访弹窗 ---------- */
-
-/**
- * 弹窗里一块地的卡片。
- *
- * 缺水 / 生虫的地会多出对应的操作按钮 —— 玩家必须在**具体那块地**上
- * 点一下才能拿到经验，没有「一键打理」这种捷径。
- *
- * 两个角标固定在格子角上，不占正文的流：
- *   左上角 = 产量加成百分比（按档位换颜色）
- *   右上角 = 这一轮不能再偷的原因（🥷 已被偷 / 🐕 被狗盯上）
- * 这样无论地里有几个按钮，操作区都不会被挤下去。
- */
-function plotCardHTML(friend, index, now) {
-  const plot = friend.plots[index];
-  // data-slot 让操作之后能只替换这一格，而不是整窗重开（滚动位置也就不会丢）
-  // 土地档位的底纹：邻居的地也会升级，左侧换成那块地的颜色
-  const soil = plot.soil && plot.soil !== 'normal' ? ` soilbg-${plot.soil}` : '';
-  const base = (extra) => `<div class="npc-plot ${extra.cls || ''}${soil}" data-slot="${index}">${
-    boostBadge(plot)}${flagBadge(plot)}${extra.body}</div>`;
-
-  if (!plot.cropId) {
-    return base({ cls: 'empty', body: `<div class="np-emoji">🟫</div><div class="np-name">空地</div><div class="np-meta">闲置中</div>` });
-  }
-
-  const crop = CROPS[plot.cropId];
-  const wantWater = social.needsWater(plot, now);
-  const wantPest = social.needsPest(plot, now);
-
-  // 照料按钮：只有真的缺水 / 生虫时才出现
-  // 做成小图标按钮，这样一格里能同时放下「偷」和两个照料按钮，格子高度才统一
-  const care = [
-    wantWater ? `<button class="icon-btn warn" data-action="npc-water" data-id="${friend.id}"
-      data-plot="${index}" title="帮忙浇水（+经验）">💧</button>` : '',
-    wantPest ? `<button class="icon-btn warn" data-action="npc-pest" data-id="${friend.id}"
-      data-plot="${index}" title="帮忙捉虫（+经验）">🐛</button>` : '',
-  ].join('');
-
-  if (social.isStealable(plot, now)) {
-    const left = crop.harvests - (plot.harvested || 0);
-    return base({
-      cls: 'ripe',
-      body: `
-        <div class="np-emoji">${crop.emoji}</div>
-        <div class="np-name">${crop.name}</div>
-        <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>
-        <div class="np-acts">
-          <button class="btn small harvest" data-action="steal" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>
-          ${care}
-        </div>`,
-    });
-  }
-
-  if (now >= plot.readyAt) {
-    const stolen = plot.stolenCount || 0;
-    const note = plot.guarded
-      ? '🐕 被守护犬盯着，这轮偷不了'
-      : stolen ? `已被顺走 ${stolen} 个` : '这块刚被顺过';
-    return base({
-      cls: 'stolen',
-      body: `
-        <div class="np-emoji">${crop.emoji}</div>
-        <div class="np-name">${crop.name}</div>
-        <div class="np-meta">${note}</div>
-        <div class="np-acts">${care}</div>`,
-    });
-  }
-
-  const stage = stageOf(plot, crop, now);
-  return base({
-    cls: wantWater || wantPest ? 'care' : '',
-    body: `
-      <div class="np-emoji">${stageEmoji(crop, stage)}</div>
-      <div class="np-name">${crop.name}</div>
-      <div class="np-meta">${stageName(stage)}</div>
-      <div class="np-time">${fmtDuration(plot.readyAt - now)}</div>
-      ${care ? `<div class="np-acts">${care}</div>` : ''}`,
-  });
-}
-
-/** 产量加成角标：10~30% 绿、40~60% 橙、70~100% 金红 */
-function boostBadge(plot) {
-  if (!plot.boost) return '';
-  const pct = Math.round(plot.boost * 100);
-  const tier = Math.min(3, Math.ceil(pct / 30));
-  return `<span class="np-corner np-boost b${tier}" title="捉虫带来的产量加成">+${pct}%</span>`;
-}
-
-/** 右上角：这一轮为什么不能再偷 */
-function flagBadge(plot) {
-  if (plot.stolen) return '<span class="np-corner np-flag stolen" title="这一轮已经被偷过了">🥷</span>';
-  if (plot.guarded) return '<span class="np-corner np-flag guarded" title="被守护犬抓住，这一轮都偷不了">🐕</span>';
-  return '';
-}
-
-/** 弹窗底部那句提示，状态变了要跟着换 */
-function tipText(friend, now) {
-  return social.needsHelp(friend, now)
-    ? '有地缺水或生虫了 —— 在对应的地块上点 💧 或 🐛 帮忙，能拿到经验。'
-    : '偷菜会让邻居不高兴，但也是一种社交方式。';
-}
-
-/** 弹窗里的操作记录：最多 10 条，放在固定高度的滚动区里 */
-function logBoxHTML(friend, now) {
-  const items = logHTML(friend, now, 10);
-  return items
-    ? `<div class="friend-log npc-log" data-role="log">${items}</div>`
-    : '<div class="npc-log empty" data-role="log">还没有值得记下的事</div>';
-}
-
-/**
- * 底部的一键照料条。
- *
- * 只有背包里真有洒水器 / 杀虫剂时才出现；数量为 0 的那一项不显示。
- * 一次消耗 1 个，把他家所有需要照料的地一起处理掉。
- */
-function quickButtons(friend, now) {
-  const water = count(SPRINKLER_ID);
-  const pest = count(PESTICIDE_ID);
-  if (!water && !pest) return '';
-
-  const needWater = friend.plots.filter((p) => social.needsWater(p, now)).length;
-  const needPest = friend.plots.filter((p) => social.needsPest(p, now)).length;
-
-  return [
-    water ? `<button class="btn small ghost" data-action="npc-water-all" data-id="${friend.id}"
-      ${needWater ? '' : 'disabled'}>🚿 一键浇水 ${needWater ? `（${needWater} 块）` : '· 暂无需求'}
-      <span class="tool-count">×${water}</span></button>` : '',
-    pest ? `<button class="btn small ghost" data-action="npc-pest-all" data-id="${friend.id}"
-      ${needPest ? '' : 'disabled'}>🧴 一键杀虫 ${needPest ? `（${needPest} 块）` : '· 暂无需求'}
-      <span class="tool-count">×${pest}</span></button>` : '',
-  ].join('');
-}
-
-/**
- * 拜访弹窗。顶部的信息区拆成独立的卡片，而不是把一堆文字挤在一行里。
- * 地块格子统一高度：按钮用 margin-top:auto 顶到底部，
- * 这样「偷完之后少了按钮」也不会让同一行看起来参差不齐。
- *
- * 操作之后**不重开弹窗**：只替换那一格地块卡、角标和底部提示，
- * 滚动位置与日志区的视口都保持不变。
- */
-function openFriendModal(friendId) {
-  const friend = getFriend(friendId);
-  if (!friend) return;
-  // 串门本身就是引导目标：打开任意一座邻居农场就算「第一次串门」
-  completeGuide('visit');
-  const now = Date.now();
-  const stealable = social.stealableCount(friend, now);
-  const dogSatiety = Math.round(dogSatietyAt(friend.dog, now));
-  const dogBreedInfo = dogBreed(friend.dog.breed);
-
-  const stats = [
-    { k: '等级', v: `Lv.${friend.level}` },
-    { k: '身家', v: `${formatCoins(friend.coins)} 💰` },
-    { k: '地块', v: `${friend.plots.length} 块` },
-    {
-      k: '守护犬',
-      v: dogBreedInfo
-        ? `${dogBreedInfo.emoji} ${dogBreedInfo.name} · ${dogSatiety > 0 ? `${dogSatiety}% 在看家` : '饿着，不设防'}`
-        : '🐶 没有狗',
-    },
-    { k: '偷菜', v: STEAL_LABELS[friend.steal] || '偶尔顺菜' },
-  ];
-
-  /** 刷新跟着操作的角标 / 提示 / 日志 / 一键条 */
-  function refreshChrome(current, at) {
-    const badge = document.querySelector('#modal [data-role="badge"]');
-    const left = social.stealableCount(current, at);
-    if (badge) {
-      badge.textContent = left > 0 ? `可偷 ${left}` : '暂无可偷';
-      badge.classList.toggle('ripe', left > 0);
-    }
-
-    const tip = document.querySelector('#modal [data-role="tip"]');
-    if (tip) tip.textContent = tipText(current, at);
-
-    const quick = document.querySelector('#modal [data-role="quick"]');
-    if (quick) quick.innerHTML = quickButtons(current, at);
-
-    const logBox = document.querySelector('#modal [data-role="log"]');
-    if (logBox) {
-      // 记录区自己也有滚动位置，重绘后要还回去
-      const keep = logBox.scrollTop;
-      logBox.outerHTML = logBoxHTML(current, at);
-      const next = document.querySelector('#modal [data-role="log"]');
-      if (next) next.scrollTop = keep;
-    }
-  }
-
-  /** 只刷新受影响的这一格 */
-  function refreshPlot(index) {
-    const current = getFriend(friendId);
-    if (!current) return;
-    const at = Date.now();
-
-    const slot = document.querySelector(`#modal .npc-plot[data-slot="${index}"]`);
-    if (slot) slot.outerHTML = plotCardHTML(current, index, at);
-
-    refreshChrome(current, at);
-  }
-
-  /** 整片地块重绘：被狗抓住、一键照料这类会同时改动很多格的操作走这里 */
-  function refreshAll() {
-    const current = getFriend(friendId);
-    if (!current) return;
-    const at = Date.now();
-
-    const grid = document.querySelector('#modal .npc-plots');
-    if (grid) grid.innerHTML = current.plots.map((_, i) => plotCardHTML(current, i, at)).join('');
-
-    refreshChrome(current, at);
-  }
-
-  openModal(`
-    <div class="modal-head npc-head">
-      <div class="npc-avatar">${friend.avatar}</div>
-      <div class="npc-id">
-        <div class="npc-name">${escapeText(friend.name)}</div>
-        <div class="npc-sub">
-          ${escapeText(PERSONALITIES[friend.personality]?.name || '邻居')}
-          · ${escapeText(friend.profession || '农户')}
-        </div>
-      </div>
-      <div class="npc-badge ${stealable > 0 ? 'ripe' : ''}" data-role="badge">
-        ${stealable > 0 ? `可偷 ${stealable}` : '暂无可偷'}
-      </div>
-    </div>
-
-    <div class="npc-stats">
-      ${stats.map((s) => `<div class="npc-stat"><span>${s.k}</span><b>${s.v}</b></div>`).join('')}
-    </div>
-
-    <div class="npc-section-title">🟫 农场（${friend.plots.length} 块）</div>
-    <div class="npc-plots">
-      ${friend.plots.map((_, i) => plotCardHTML(friend, i, now)).join('')}
-    </div>
-    <div class="npc-quick" data-role="quick">${quickButtons(friend, now)}</div>
-
-    <div class="npc-section-title">📜 最近操作</div>
-    ${logBoxHTML(friend, now)}
-
-    <p class="npc-tip" data-role="tip">${tipText(friend, now)}</p>
-  `, async (action, el) => {
-    const index = Number(el.dataset.plot);
-    if (action === 'steal') {
-      const result = await social.steal(el.dataset.id, index);
-      // 被守护犬抓住会封锁整座农场，只刷一格不够
-      if (result?.caught) refreshAll();
-      else refreshPlot(index);
-      return;
-    }
-    if (action === 'npc-water') {
-      await social.waterNeighborPlot(el.dataset.id, index);
-      refreshPlot(index);
-      return;
-    }
-    if (action === 'npc-pest') {
-      await social.catchPestNeighborPlot(el.dataset.id, index);
-      refreshPlot(index);
-      return;
-    }
-    if (action === 'npc-water-all') {
-      if (await social.waterAllNeighborPlots(el.dataset.id)) refreshAll();
-      return;
-    }
-    if (action === 'npc-pest-all') {
-      if (await social.catchPestAllNeighborPlots(el.dataset.id)) refreshAll();
-    }
-  });
 }
 
 /* ---------- 挂载 ---------- */

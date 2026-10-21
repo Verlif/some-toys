@@ -107,7 +107,7 @@ function farmView() {
     caught: 0,
     // who 是「涉及的人」：邻居模拟层传进来，玩家自己的动作不传（默认农场主）
     log: (at, emoji, text, who) => player.addLog(emoji, text, at, who),
-    news: (at, emoji, text, who) => addNews(emoji, text, at, who),
+    news: (at, emoji, text, who) => addNews(emoji, text, { at, who }),
     dogGuardChanceAt: (at) => guardChance(at),
     /** 守护犬拦下小偷时玩家入账的罚款（内存操作，随当次结算一起落盘） */
     addCoins: (amount) => player.addCoins(amount),
@@ -296,7 +296,7 @@ async function runLiveStep() {
   if (visit.index >= visit.steps.length) {
     liveQueue.shift();
     if (npc.level > visit.levelBefore) {
-      addNews('🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, visit.at, npc.id);
+      addNews('🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, { at: visit.at, who: npc.id });
       await commit({ farms: [npc], news: state.news }).catch(() => {});
       emit(EVENTS.NEWS);
     }
@@ -390,7 +390,10 @@ export async function steal(friendId, index) {
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
     logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币`);
     player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
-    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
+    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, {
+      at: now,
+      who: [PLAYER_ID, friend.id],
+    });
 
     await commit({ farms: [state.farm, friend], news: state.news });
     emit(EVENTS.FRIENDS);

@@ -20,17 +20,26 @@ import {
 
 const DAY_MS = 86_400_000;
 
-/** 一格日历 */
+/**
+ * 一格日历。
+ *
+ * 下半格只放**有意义的状态**：
+ *   - 签过 → ✓（这是玩家最想知道的一件事）
+ *   - 没签的周六 → 🎁（大奖日）
+ *   - 其余留空
+ *
+ * 以前这里印的是「`(日 - 1) % 7 + 1`」，跟连续签到的天数毫无关系，
+ * 每个格子都挂个 1~7 的数字，看着像排班表 —— 已经删掉。
+ */
 function cellHTML(cell) {
   if (cell.state === 'none') return '<div class="cal-cell blank"></div>';
 
-  const cycleDay = ((cell.day - 1) % CYCLE_DAYS) + 1;
-  // 大奖日按日历上的星期几算（周六），与连续签到的第几天无关
-  const isBig = cell.big;
+  const mark = cell.state === 'signed' ? '✓' : cell.big ? '🎁' : '';
+  const cls = mark === '✓' ? 'cal-mark ok' : mark ? 'cal-mark gift' : 'cal-mark';
   return `
-    <div class="cal-cell ${cell.state} ${isBig ? 'big' : ''}">
+    <div class="cal-cell ${cell.state} ${cell.big ? 'big' : ''}">
       <div class="cal-day">${cell.day}</div>
-      <div class="cal-cycle">${isBig ? '🎁' : cycleDay}</div>
+      <div class="${cls}">${mark}</div>
     </div>`;
 }
 
@@ -83,9 +92,9 @@ export const signPage = {
         ${head}
         ${cells}
         <div class="cal-legend">
-          <span><i class="dot signed"></i>已签到</span>
+          <span><i class="dot signed"></i>✓ 已签到</span>
           <span><i class="dot today"></i>今天</span>
-          <span><i class="dot big"></i>周六 · 大奖日</span>
+          <span><i class="dot big"></i>🎁 周六 · 大奖日</span>
         </div>
       </div>
       <div style="padding:0 16px 26px">
@@ -109,8 +118,11 @@ export const signPage = {
 /** 「明天再签可获得 X」提示 */
 function nextStreakHint() {
   const tomorrow = new Date(Date.now() + DAY_MS);
-  const cycleDay = (tomorrow.getDate() % CYCLE_DAYS) + 1;
+  // 「第几天」是**连续签到的第几天**，不能拿日期去取模 ——
+  // 以前写的是 `(明天的号数 % 7) + 1`，跟连签轮次毫无关系
+  const today = todayStreakDay();
+  const next = today >= CYCLE_DAYS ? 1 : today + 1;
   const big = tomorrow.getDay() === 6;
-  const text = big ? '🎁 明天是大奖日，有盲盒' : `明天签到可得第 ${cycleDay} 天奖励`;
+  const text = big ? '🎁 明天是大奖日，有盲盒' : `明天签到是连签第 ${next} 天`;
   return `连签不会清零 · ${text}`;
 }

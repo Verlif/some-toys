@@ -5,88 +5,87 @@
 
 ## 工程约定
 
-- 分层 `ui → store → core`，`data` 谁都能读。store 是唯一改状态的地方、**禁止 DOM 符号**，
-  提示走 `notify()` → 事件总线 → toast。ui 只渲染、只转交点击。
-- **不做测试**：改动后只跑 `npm run check`，一次性验证脚本用完即删。
+- 分层 `ui → store → core`，`data` 谁都能读。store 唯一改状态、**禁 DOM 符号**，提示走 `notify()` → 总线 → toast。
+- **不做测试**，只跑 `npm run check`，验证脚本用完即删。中文注释 + JSDoc，主动清死代码。
 - 作物/土地/经验/称号由 `tools/gen-data.mjs` 产出，**不手改** `data/{crops,soils,progression}.js`。
-- 多表写入必须同一事务：`commit({ farms, bag, news })`。无后台定时器，到点恢复用时间戳判定。
-- 中文注释 + JSDoc，主动清死代码。
+- 多表写入同一事务 `commit({ farms, bag, news })`；无后台定时器，到点恢复用时间戳判定。
 
 ## 存档
 
 `state = { farm, friends[32], bag{itemId:count}, news[] }`，玩家与邻居同形状。
-五张表：`farm`(id) / `plot`([farmId,id]) / `log`([farmId,seq]) / `news`(seq) / `inventory`(itemId)。
-`plots`、`log` 只在内存挂在农场上，写档拆回子表。⚠️ 复合主键每段必须有值。
+五表：`farm`(id) / `plot`([farmId,id]) / `log`([farmId,seq]) / `news`(seq) / `inventory`(itemId)。
+`plots`、`log` 只在内存挂农场上，写档拆回子表。⚠️ 复合主键每段必须有值。
 新字段在 `normalizePlot`/`normalizeNpc`/`normalizePlayerFarm` 里给旧档补。
 
 ## 数值
 
-- 经验：`expForLevel(n) = 100n(n+1)`（200 级 = `Infinity`，折算走 `expForProgress()`）；
-  只看产出：每份 `(作物等级 + 2) × 土地 expMul`。
-- 售价不自由：`整轮收益 = (种子价×1.2 + 等级×10) × (1 + 0.05×整轮小时)`；只该比「每小时金币」。
-- 藏宝图：限定种子上限 = 需求等级+10，商店种子 = 需求等级×2。
-- **限定作物**（`special`）不进商店与 `cropsNearLevel`，只能挖；茬数 2~5 都带 `multi`；
-  整轮收益 = 同级商店种子 × 2.0~3.0。
-- **种子制造间**（`farm.workshop = { level, uses }`，0 = 未开张）：Lv.5 + 2000 解锁，1~10 级，
-  升级看累计次数 + 金币（满级 350 次 / 63.9 万），期望 1.22 → 2.00。
-  份数**按市价折算** `max(5, ceil(seed × 0.2 ÷ sell))` + **工本费 = 一颗种子价**。
-  总投入 ≈ 1.1~1.9 个种子价 → **低级亏（Lv1 −19%、Lv15 −35%）、Lv6 起转正、满级 +64%**，
-  升级因此有意义。限定作物不能造；金币与份数**都在扣之前查**（别留回滚路径）。
+- 经验 `expForLevel(n)=100n(n+1)`（200 级 = Infinity，折算 `expForProgress()`）；只看产出：
+  每份 `(作物等级+2) × 土地 expMul`。售价不自由：`整轮收益=(种子价×1.2+等级×10)×(1+0.05×整轮小时)`，
+  只该比「每小时金币」。藏宝图：限定种子上限 = 需求等级+10，商店 = 需求等级×2；**`special` 只能挖**。
+- **种子制造间**（`farm.workshop={level,kinds}`，0=未开张）：Lv.5+2000 解锁，1~10 级。
+  ⚠️ 升级看**造过的作物种类数**（3/6/10/15/21/28/36/45/55）不是次数（按次数刷小麦就行）。
+  `kinds` 记每种造几次（UI 标「已造过」）但**只数 key 个数**；旧档 `uses` 丢弃、等级保留。
+  份数 `max(5, ceil(seed×0.2÷sell))` + **工本费=一颗种子价** → 低级亏、Lv6 起转正、满级 +64%。
+  限定作物不能造；金币与份数**都在扣之前查**；制造要二次确认。
 
 ## UI 硬约束
 
-- 浮层统一：上滑进场、下拉关闭（`ui/drag-close.js`，>8px 接管、>72px 关闭）、最大宽 640px。
+- 浮层统一：上滑进场、下拉关闭（`ui/drag-close.js` >8px 接管、>72px 关闭）、最大宽 640px。
 - **拖拽三条铁律**：① `move()` 先查 `tracking` ② 鼠标 move/up 只在按下期间挂 ③ Touch + preventDefault。
-- **弹窗**：`openModal()` 把 `.modal-head` 提到 `.modal-body` 前（滚动区外）标题才拖得动；
-  关闭图标由它统一补；`canStart(target)` 从标题/把手起手时忽略「内容已滚动」。
-- 地块 = `.plot-main`(flex:1) + `.plot-side`(34px)；列数 手机2 / ≥720 3 / ≥960 4；
-  高度 152 / 紧凑 126（图标 47 / 38px，gap 收到 2px 才不撑破）。成熟摇定 `plot.pendingYield`。
-- **`.plot-side` 最多 4 个按钮**（水 / 虫 / 肥 / 铲）：`4×29+3×3=125 ≤ 128`、紧凑 `4×25+3×2=106 ≤ 110`。
-  加第 5 个前先重算，`overflow:hidden` 会静默裁掉。铲除用 `.icon-btn.danger`（红边）。
-- **土地底纹**：`soilbg-<id>` 用 `::before` 叠横向渐变（左土地色 → 右普通色），**不能改 `background`**
-  （`.ripe/.warn/.growing` 各有状态背景）；颜色只声明 `--soil-tint`。顶栏 `.hud-cell.wide` 显示构成。
-- **`.npc-plot` 底色/边框/底纹与 `.plot` 完全一致**；状态类**只改边框不改 `background`**
-  —— `.npc-plot.care` 曾写死 `#fffaf9`，缺水地一多整窗变白粉。
-- 商店滚动落在 `.shop-panel` 自己；筛选条在 `.shop-panels` 之外；重绘先恢复 `scrollLeft` 再同步 tab。
-  `.filter-bar` 邻居页与时报页共用（时报按 emoji 分类，不另存字段）。
-- 日志/时报的人物**内联在句子里**：`ui/who-chip.js` 的 `inlineWhoHTML(text)` 把正文里出现的农场名
-  换成 `.who-tag`（名字 + 头像共用一个 `#e5f2da` 底，`inline-flex` 不拆行）。
-  按全文匹配名字（不依赖 `who`）、长名优先、吃掉名字两侧空格（`[ \t]*`）。
-  文案里名字必须用真实的 `${state.farm.name}`，写死「农场主」改名后就匹配不到。
-  时报：图标最左 + 正文（含标签）+ 时间在下一行。邻居搜索框必须是 index.html 静态结构。
-- 弹窗内操作只替换受影响那一格，绝不整窗重开。
-- **列表拼接必须 `join('')`**：`map()` 出来的数组直接进模板字符串会调 `Array#toString()`，
-  每两项之间多一个逗号（包裹页踩过）。种子详情只有一份实现 `ui/seed-detail.js`
-  （`{ buy: true }` 商店下单 / `false` 包裹只读）。
+- **弹窗**：`openModal()` 把 `.modal-head` 提到 `.modal-body` 前标题才拖得动；关闭图标统一补；从标题/
+  把手起手忽略「内容已滚动」。**支持叠层**（整卡快照压栈，close 还原 scrollTop）。
+- 地块 = `.plot-main`(flex:1)+`.plot-side`(34px)；列数 手机2/≥720 3/≥960 4；高 152/紧凑 126（图标 47/38px）；
+  成熟摇定 `plot.pendingYield`。**`.plot-side` ≤4 按钮**（水/虫/肥/铲）：`4×29+3×3=125≤128`，
+  加第 5 个前先重算，`overflow:hidden` 会静默裁掉；铲除用 `.icon-btn.danger`。
+- **土地底纹** `soilbg-<id>` 用 `::before` 叠渐变，**不能改 `background`**（状态类各有背景），颜色只声明
+  `--soil-tint`。`.npc-plot` 底色/边框/底纹与 `.plot` 一致，状态类只改边框。
+- 商店横滚在 `.shop-panel` 自己；筛选条在 `.shop-panels` 之外；重绘先恢复 `scrollLeft` 再同步 tab。
+- **记录只有一种长相** `ui/records.js` 的 `recordItemsHTML`：农场日志 / 邻居弹窗 / 邻居卡片 /
+  **时报**同一套 `.log-item`，差异只剩 `withDay / limit / compact / relative`。别再为「展示记录」写第二套标记。
+  容器层面的差异（时报是白底面板）归外层。
+- **行内标签** `ui/inline-tags.js` 的 `inlineTagsHTML`：一次正则同时处理人名（`.who-tag`，人绿）
+  与作物名（`.crop-tag`，物黄）。全文匹配、长名优先、同长度人优先、吃掉两侧空格；
+  **作物标签连前面的 emoji 一起吃**；文案必须用真实 `${farm.name}`。
+  两者都是入口（`data-action="open-farm"` / `"crop-detail"`），由 `ui/inline-actions.js`
+  **在 document 上统一委托** —— 新地方渲染出标签就自动可点，视图不用绑事件。
+  **基线：`vertical-align: baseline` + `line-height: normal` + `margin: 0 4px`**（写死 1.15 会高 1px）。
+- **作物详情只有一个弹窗** `ui/crop-detail.js` 的 `openCropModal(cropId, {title,status,extra,foot,actions,onAction})`：
+  六处入口（自家地块、邻居地块、制造间产出、仓库农产品、图鉴卡片、记录里的作物标签/时报图标）。
+  想加新入口只写这四块，不要另拼卡片。`status` 是一串 `.sd-chip`。
+- **邻居农场弹窗只有一个** `ui/friend-modal.js`（邻居卡片 / 记录人名 / 时报人名共用）。
+  弹窗内操作只替换受影响那一格。列表拼接必须 `join('')`。
+  种子详情只一份 `ui/seed-detail.js`（`{buy:true}` 下单 / `false` 只读）。
 
 ## 守护犬
 
-10 档（**比熊 20%** → 龙犬 80%，田园犬第 7 档 58%），只有一只能上岗（空串 = 不设防）。
-改名用 `LEGACY_BREED_MAP` **只迁一次**（写 `dog.migrated='r18'`），否则正经收集的田园犬会被降成比熊。
-狗粮槽全窝共享，只在上岗时按 `6.25`/小时消耗；`catchChance(rate, sat) = rate × (0.5 + 0.5×sat/100)`。
-被抓住（偷谁都算）按 `crop.sell × 5` 罚给被偷者，钱不够倾家荡产、不记负债。
-偷邻居被逮住时 `emit(EVENTS.DOG_CAUGHT, {breed, owner, fine})` → `ui/dog-caught.js` 全屏闪狗
-（1.7s 自动淡出、点击可关，**不复用 #modal**，别打断正在看的弹窗）。
+10 档（**比熊 20%** → 龙犬 80%，田园犬第 7 档 58%），只有一只能上岗（空串=不设防）。改名用
+`LEGACY_BREED_MAP` **只迁一次**（`dog.migrated='r18'`）。狗粮槽全窝共享，只在上岗时按 `6.25`/小时消耗；
+`catchChance(rate,sat)=rate×(0.5+0.5×sat/100)`。被抓住按 `crop.sell×5` 罚给被偷者（钱不够倾家荡产）。
+偷邻居被逮住 `emit(EVENTS.DOG_CAUGHT,…)` → `ui/dog-caught.js` 全屏闪狗（**不复用 #modal**）。
 
 ## 邻居与世界
 
-- 邻居同用 `unlockedPlotCount(level)`；地块土地按 `rollNpcSoil(level)` 随机，收成吃 `yieldMul`。
-- 偷菜只减 1 个，每块每轮一次，`stealable()` 要带 `!plot.guarded`。
-- 成熟的地不再需要照料：`needsWater`/`needsPest` 必须带 `now < readyAt`。
-- NPC 模拟是纯计算，落盘由 `persistFriends()` 一次提交；远期聚合、近期 7 天逐条；
-  在线时上线拆成动作串演出，游标先推进、一步一落盘。`PLAYER_FARM_WEIGHT = 2`。
+- 邻居同用 `unlockedPlotCount(level)`；地块按 `rollNpcSoil(level)` 随机，收成吃 `yieldMul`。
+- 偷菜每块每轮一次，`stealable()` 要带 `!plot.guarded`；成熟的地 `needsWater/needsPest` 必须带 `now<readyAt`。
+- NPC 模拟纯计算，落盘 `persistFriends()` 一次提交；远期聚合、近期 7 天逐条；在线时拆动作串演出，
+  游标先推进、一步一落盘。`PLAYER_FARM_WEIGHT = 2`。
 
 ## 其它
 
-- 时报 7 天 / 80 条、日志 7 天 / 60 条，按 `at` 倒序。施肥额度唯一（`plot.fert`），增产与捉虫相乘。
-- 图鉴靠标本点亮（一份 50 个产出）；已解锁卡片可点开详情——动作属性必须写在 `class` 之外。
-- 称号 38 个（26 等级 + 7 图鉴 + 5 金币），手动领、只戴一个、奖励只有道具。
-  **按三类分 tab**（`.title-tabs` 吸顶）：tab 状态挂模块变量 + 切 tab 后 `scrollTop = 0`。
-- 引导 17 项，达成即自动发奖；每个 key 都要有真实调用点。背包展示名走 `itemLabel(id)`。
+- 时报 7 天/80 条、日志 7 天/60 条，按 `at` 倒序。施肥额度唯一（`plot.fert`），增产与捉虫相乘。
+- **时报条目** `{at, emoji, text, who[], crop, cat}`：`crop` 有值时图标换成该作物且可点；
+  `cat`（level/steal/dog/adventure）是筛选依据，不传按图标兜底 —— **图标被换掉时必须显式传**。
+  冒险挖到限定种子单独上一条（`store/adventure.js` 的 `announceReward`）。
+  旧档无 crop/cat 走兜底；`storage.js` 读写两处都要带上这两个字段。
+- 图鉴靠标本点亮（一份 50 个产出）；动作属性必须写在 `class` 之外。
+- 称号 38 个，手动领、只戴一个、奖励只有道具；**分三类 tab**（吸顶），tab 状态挂模块变量 + 切后 `scrollTop=0`。
+- 引导 17 项，每个 key 要有真实调用点。背包展示名走 `itemLabel(id)`。
 - 签到不发经验；历史存 `progress.signDays`（90 天）。「其他」已删加工坊/交易行，改放种子制造间。
+- **日历空位按「当月 1 号」周几算**（拿今天算会整月平移：21 号跑周二、🎁 跑周五）；下半格只放
+  ✓/🎁；读档把 `lastSign` 那天补进 `signDays`。
 
 ## 护栏与踩坑
 
 `npm run check` 盲区：抓不到私有函数丢失 → **删/搬函数后必须 `grep -rn` 搜全调用点**。
 e2e（真实 Chrome，脚本不入库）：等 `body[data-page]`；**全屏 `.sign-celebrate` 会吞点击**；
-多页面 DOM 并存要限定活动页；返回 `#subBack`、关模态 `[data-close]`。
+跨页选择器要限定活动页；返回 `#subBack`、关模态 `[data-close]`、toast 容器是 `#toasts`。

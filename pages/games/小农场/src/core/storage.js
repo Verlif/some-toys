@@ -65,9 +65,15 @@ export async function loadSave() {
       id,
       bySeq(rows).map(({ at, emoji, text, who }) => ({ at, emoji, text, who: idList(who) })),
     ])),
-    // 旧档时报只有 farmId（单个来源农场），读档时并入 who 数组
-    news: bySeq(newsRows).map(({ at, emoji, text, farmId, who }) => ({
-      at, emoji, text, who: idList(who || farmId),
+    // 旧档时报只有 farmId（单个来源农场），读档时并入 who 数组；
+    // crop / cat 是新字段，旧条目没有就留空（分类会按图标兜底）
+    news: bySeq(newsRows).map(({ at, emoji, text, farmId, who, crop, cat }) => ({
+      at,
+      emoji,
+      text,
+      who: idList(who || farmId),
+      crop: crop || '',
+      cat: cat || '',
     })),
     bag,
   };
@@ -142,6 +148,9 @@ function writeNews(tx, news) {
     text: entry.text,
     // 这条新闻涉及的人（可能多个：小偷 + 被偷的农场主）
     who: idList(entry.who),
+    // 相关的作物（有值时时报里那枚图标就是它，可点开详情）与筛选分类
+    crop: entry.crop || '',
+    cat: entry.cat || '',
   }));
 }
 

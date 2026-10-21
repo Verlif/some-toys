@@ -4,28 +4,21 @@
  * 数据全部来自 store/news.js（存在 state.news 里），
  * 这里只负责渲染，不产生任何状态。
  *
- * 顶部一排类型筛选（成长 / 偷菜 / 守护犬 / 寻宝）按条目的图标归类，
- * 芯片上的数字是该类型当前的条数；
- * 正文里出现的人名会就地变成「名字 + 头像」标签（`ui/who-chip.js`）——
- * 一句话里谁偷了谁、谁被狗抓住，读的时候不用回头配对。
+ * **长相与农场日志、邻居日志完全一致** —— 都走 `ui/records.js`：
+ * 日期分组 + 时分 + 图标方块 + 正文，正文里的人名与作物名是可点标签。
+ * 所以这里不再自己拼一套「卡片式」条目。
+ *
+ * 顶部一排类型筛选（成长 / 偷菜 / 守护犬 / 寻宝）按条目的分类字段归类，
+ * 芯片上的数字是该类型当前的条数。
  */
 import { byId, delegate, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
-import { inlineWhoHTML } from '../who-chip.js';
 import { completeGuide } from '../../store/codex.js';
 import { filterNews, NEWS_FILTERS, newsList } from '../../store/news.js';
+import { recordItemsHTML } from '../records.js';
 
 /** 当前选中的类型筛选 */
 let filter = 'all';
-
-/** 时间戳 → 「3 分钟前」 */
-function relativeTime(at, now) {
-  const diff = Math.max(0, now - at);
-  if (diff < 60_000) return '刚刚';
-  if (diff < 3600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3600_000)} 小时前`;
-  return `${Math.floor(diff / 86_400_000)} 天前`;
-}
 
 function filterChips(list) {
   return NEWS_FILTERS.map((f) => {
@@ -44,15 +37,6 @@ export function renderNews() {
   const all = newsList();
   const list = filterNews(all, filter);
 
-  const rows = list.map((entry) => `
-    <div class="news-item">
-      <span class="news-emoji">${entry.emoji}</span>
-      <div class="news-body">
-        <div class="news-text">${inlineWhoHTML(entry.text)}</div>
-        <div class="news-when">${relativeTime(entry.at, now)}</div>
-      </div>
-    </div>`).join('');
-
   const empty = filter === 'all'
     ? '📰<br>镇上还风平浪静<br>去闯点事出来吧'
     : '🔍<br>这个类型下暂时没有新闻<br>换个筛选看看';
@@ -63,7 +47,8 @@ export function renderNews() {
       ${filterChips(all)}
     </div>
     ${list.length
-      ? `<div class="news-list">${rows}</div><div class="news-foot">只保留最近 7 天的大新闻</div>`
+      ? `<div class="news-list">${recordItemsHTML(list, { now, withDay: true })}</div>
+         <div class="news-foot">只保留最近 7 天的大新闻</div>`
       : `<div class="empty-tip">${empty}</div>`}`);
 }
 

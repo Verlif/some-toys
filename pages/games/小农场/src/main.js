@@ -15,6 +15,7 @@ import { autoSignIn } from './store/signin.js';
 import { bootDone, bootFail, bootProgress, bootStage } from './ui/boot.js';
 import { mountToast } from './ui/toast.js';
 import { mountModal } from './ui/modal.js';
+import { mountInlineActions } from './ui/inline-actions.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
 import { mountDogCaught } from './ui/dog-caught.js';
 import { mountHud, renderHud } from './ui/hud.js';
@@ -53,6 +54,7 @@ async function boot() {
   bootStage('正在进入农场', '搭建农场…', 34);
   mountToast();
   mountModal();
+  mountInlineActions();
   mountSignCelebrate();
   mountDogCaught();
   mountHud();

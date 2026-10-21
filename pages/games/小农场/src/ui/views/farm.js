@@ -21,6 +21,7 @@ import { fmtDuration } from '../../core/utils.js';
 import { stackClass, yieldClass } from '../meta-tags.js';
 import { closeModal, openModal } from '../modal.js';
 import { activeBreed, dogSatiety, guardChanceNow } from '../../store/dogs.js';
+import { openCropModal, plotStatusHTML } from '../crop-detail.js';
 
 /** plotId → { el, key, bar, time } */
 const nodes = new Map();
@@ -104,7 +105,8 @@ function growingHTML(plot) {
   return `
     ${boostHTML(plot)}
     <div class="plot-main">
-      <div class="plot-emoji" data-role="stage">${crop.emoji}</div>
+      <div class="plot-emoji tappable" data-role="stage" data-action="crop-info"
+        data-id="${plot.id}" title="查看作物详情">${crop.emoji}</div>
       <div class="plot-name">${crop.name}</div>
       <div class="plot-sub" data-role="phase"></div>
       ${careWarnHTML(plot)}
@@ -133,7 +135,8 @@ function ripeHTML(plot) {
   return `
     ${boostHTML(plot)}
     <div class="plot-main">
-      <div class="plot-emoji">${crop.emoji}</div>
+      <div class="plot-emoji tappable" data-action="crop-info" data-id="${plot.id}"
+        title="查看作物详情">${crop.emoji}</div>
       <div class="plot-name">${crop.name} · 成熟</div>
       ${yieldLine}
       <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
@@ -538,7 +541,42 @@ function confirmRemove(plotId) {
   });
 }
 
+/**
+ * 点地块上的作物图标 → 作物详情。
+ *
+ * 只读信息：这一株是什么、还要多久、攒了多少加成、能收几个。
+ * 地块上的操作按钮（浇水 / 施肥 / 铲除）都还在，这里不重复给。
+ *
+ * @param {number} plotId
+ */
+function openPlotCrop(plotId) {
+  const plot = state.farm.plots[plotId];
+  if (!plot?.cropId) return;
+
+  const crop = CROPS[plot.cropId];
+  const now = Date.now();
+  const ripe = now >= plot.readyAt;
+  const stage = stageOf(plot, crop, now);
+  const leftRounds = Math.max(1, crop.harvests - (plot.harvested || 0));
+  const bonus = Math.round(((1 + (plot.boost || 0)) * (1 + (plot.yieldBonus || 0)) - 1) * 100);
+
+  openCropModal(plot.cropId, {
+    title: '作物详情',
+    status: plotStatusHTML({
+      stage: ripe ? '✅ 已成熟' : `${stageEmoji(crop, stage)} ${stageName(stage)}`,
+      leftMs: ripe ? 0 : plot.readyAt - now,
+      left: leftRounds,
+      bonus,
+      pending: ripe ? plot.pendingYield || 0 : 0,
+    }),
+    foot: ripe
+      ? '已经成熟了，点右侧「收获」拿收成'
+      : '作物在成熟前会缺水、生虫，照料一下能提高产量',
+  });
+}
+
 const PLOT_ACTIONS = {
+  'crop-info': (id) => openPlotCrop(id),
   plant: (id) => openPlantModal(id),
   water: (id) => farm.water(id),
   pest: (id) => farm.catchPest(id),

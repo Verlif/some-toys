@@ -72,7 +72,7 @@ export function addExpRaw(amount) {
 
   if (result.leveledUp) {
     notify(`🎉 升级！现在是 Lv.${farm.level}`, 'gold');
-    addNews('🎉', `${farm.name} 的农场升到了 Lv.${farm.level}`, Date.now(), farm.id);
+    addNews('🎉', `${farm.name} 的农场升到了 Lv.${farm.level}`, { who: farm.id });
     if (result.unlockedPlots > 0) {
       setTimeout(() => notify('🔓 新地块已解锁！'), 700);
     }

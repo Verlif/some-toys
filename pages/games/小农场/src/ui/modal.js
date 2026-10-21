@@ -4,6 +4,10 @@
  * 用法：openModal(html, actionHandler)
  * html 里带 data-close 的元素点击关闭；带 data-action="xxx" 的元素
  * 会把 action 名与元素一起交给 actionHandler，由调用方决定怎么处理。
+ *
+ * **支持叠层**：已经在显示一个弹窗时再 openModal，会把当前这张**整个快照压栈**，
+ * 关闭时原样还原（含滚动位置）。这样「邻居农场 → 点作物看详情 → 关闭」
+ * 能回到邻居农场，而不是把拜访弹窗顶掉。栈深一般就一两层，不做上限。
  */
 import { byId, delegate } from '../core/dom.js';
 import { dragToClose } from './drag-close.js';
@@ -16,6 +20,9 @@ let card = null;
 let unbindAction = null;
 let actionHandler = null;
 
+/** 被压在下面的弹窗快照：`{ html, handler, scrollTop }` */
+const stack = [];
+
 /**
  * 打开弹窗
  * @param {string} html 卡片内部 HTML
@@ -23,6 +30,15 @@ let actionHandler = null;
  */
 export function openModal(html, onAction) {
   if (!root) mountModal();
+
+  // 已经开着一个：把现在这张整卡快照压栈，关掉新的这一层时原样还回去
+  if (root.classList.contains('show') && card.innerHTML) {
+    stack.push({
+      html: card.innerHTML,
+      handler: actionHandler,
+      scrollTop: card.querySelector('.modal-body')?.scrollTop || 0,
+    });
+  }
 
   actionHandler = onAction || null;
   // handle 留在卡片上（拖动时它不能跟着内容滚走），内容包进可滚动的 body。
@@ -43,16 +59,31 @@ export function openModal(html, onAction) {
   }
 
   root.classList.add('show');
+  bindAction();
+}
 
+/** 把动作委托挂到当前这一层（换层之后必须重挂，否则回调还是上一层的） */
+function bindAction() {
   unbindAction?.();
   unbindAction = delegate(card, 'click', '[data-action]', (el, event) => {
     actionHandler?.(el.dataset.action, el, event);
   });
 }
 
-/** 关闭弹窗 */
+/** 关闭弹窗；有被压在下面的层就还回去，否则整窗收起 */
 export function closeModal() {
   if (!root) return;
+
+  const prev = stack.pop();
+  if (prev) {
+    card.innerHTML = prev.html;
+    actionHandler = prev.handler;
+    const body = card.querySelector('.modal-body');
+    if (body) body.scrollTop = prev.scrollTop;
+    bindAction();
+    return;
+  }
+
   root.classList.remove('show');
   card.innerHTML = '';
   unbindAction?.();

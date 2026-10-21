@@ -231,8 +231,11 @@ export function calendarOf(now = Date.now()) {
   const year = date.getFullYear();
   const month = date.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // ⚠️ 空位数必须按**当月 1 号**是星期几算，不能拿「今天」算 ——
+  // 拿今天算的话整月会被平移（10 月 21 日是周三，1 号却是周四，
+  // 于是 21 号显示在「二」下面、周六的大奖图标跑到「五」上）。
   // getDay(): 0=周日，这里把周一排到第一列
-  const lead = (date.getDay() + 6) % 7;
+  const lead = (new Date(year, month, 1).getDay() + 6) % 7;
 
   const cells = [];
   for (let i = 0; i < lead; i += 1) cells.push({ day: 0, state: 'none' });

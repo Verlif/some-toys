@@ -13,7 +13,7 @@ import { byId, delegate } from '../core/dom.js';
 import { on, EVENTS } from '../core/bus.js';
 import { state } from '../store/state.js';
 import { dragToClose } from './drag-close.js';
-import { inlineWhoHTML } from './who-chip.js';
+import { recordItemsHTML } from './records.js';
 
 /** 展示窗口：与 store/player.js 的保留天数一致 */
 const KEEP_DAYS = 7;
@@ -23,28 +23,6 @@ let root = null;
 let body = null;
 
 const isOpen = () => Boolean(root?.classList.contains('show'));
-
-/** 当天 0 点的时间戳，用来算「今天 / 昨天 / 几号」 */
-function dayStart(at) {
-  const d = new Date(at);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
-/** 日期分组标题 */
-function dayLabel(at, now) {
-  const diff = Math.round((dayStart(now) - dayStart(at)) / DAY_MS);
-  if (diff <= 0) return '今天';
-  if (diff === 1) return '昨天';
-  const d = new Date(at);
-  return `${d.getMonth() + 1} 月 ${d.getDate()} 日`;
-}
-
-/** 时分 */
-function timeLabel(at) {
-  const d = new Date(at);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
 
 /** 重绘日志内容 */
 function renderLog() {
@@ -62,18 +40,8 @@ function renderLog() {
     return;
   }
 
-  let currentDay = '';
-  body.innerHTML = entries.map((entry) => {
-    const day = dayLabel(entry.at, now);
-    const head = day === currentDay ? '' : `<div class="log-day">${day}</div>`;
-    currentDay = day;
-    return `${head}
-      <div class="log-item">
-        <span class="log-time">${timeLabel(entry.at)}</span>
-        <span class="log-emoji">${entry.emoji}</span>
-        <span class="log-text">${inlineWhoHTML(entry.text)}</span>
-      </div>`;
-  }).join('');
+  // 条目渲染与邻居弹窗、时报共用（ui/records.js），这里只负责筛选与分组
+  body.innerHTML = recordItemsHTML(entries, { now, withDay: true });
 }
 
 /** 打开日志 */

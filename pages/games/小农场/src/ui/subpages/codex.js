@@ -13,11 +13,12 @@
  * 种子与来源（商店买还是藏宝图挖）、成长数据、收益估算、自己的统计。
  * 还没解锁的卡片不给点（等级不够，看了也用不上）。
  */
-import { CROPS, cycleIncome, totalCycleSeconds } from '../../data/crops.js';
+import { CROPS } from '../../data/crops.js';
 import { MAP_TIERS } from '../../data/adventure.js';
 import { SPECIMEN_COST, codexEntries, codexSummary, makeSpecimen } from '../../store/codex.js';
-import { fmtDuration, formatCoins } from '../../core/utils.js';
+import { fmtDuration } from '../../core/utils.js';
 import { openModal, closeModal } from '../modal.js';
+import { openCropModal } from '../crop-detail.js';
 
 let onlyLit = false;
 
@@ -80,6 +81,9 @@ function cardHTML(entry) {
 
 /**
  * 作物详情弹窗：种子数据 + 来源 + 收益估算 + 个人统计。
+ *
+ * 卡片本身用的是全游戏唯一的作物弹窗（`ui/crop-detail.js`），
+ * 这里只补三块图鉴专属的内容：来源胶囊、我的统计、制作标本按钮。
  * @param {string} cropId
  */
 function openDetailModal(cropId) {
@@ -88,68 +92,38 @@ function openDetailModal(cropId) {
   const entry = codexEntries().find((e) => e.id === cropId);
   const stat = { planted: entry?.planted || 0, harvested: entry?.harvested || 0, owned: entry?.owned || 0 };
 
-  const avg = (crop.yield[0] + crop.yield[1]) / 2;
-  const income = cycleIncome(crop);
-  const hours = totalCycleSeconds(crop) / 3600;
-  const perHour = hours > 0 ? Math.round(income / hours) : 0;
-
   // 来源：商店买 vs 藏宝图挖
   const source = crop.special
     ? `🧭 藏宝图限定 · ${mapSources(crop) || '暂无可挖档位'}`
     : `🛒 商店购买 · 种子 💰 ${crop.seed}`;
 
-  const tags = [
+  const status = [
     crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : '',
     crop.multi ? '<span class="seed-row-kind kind-multi">多茬</span>' : '',
     crop.slow ? '<span class="seed-row-kind kind-slow">厚积薄发</span>' : '',
   ].filter(Boolean).join('');
 
-  openModal(`
-    <div class="modal-head">
-      <h3>${crop.emoji} ${crop.name}</h3>
-      <button class="close" data-close>✕</button>
-    </div>
-
-    <div class="sd-hero">
-      <div class="sd-emoji">${crop.emoji}</div>
-      <div class="sd-id">
-        <div class="sd-name">${crop.name}</div>
-        <div class="sd-tags">${tags}<span class="sd-lv">Lv.${crop.lv}</span></div>
-      </div>
-    </div>
-
-    <div class="sd-gain" style="margin-bottom:12px">${source}</div>
-
-    <div class="sd-grid">
-      <div class="sd-cell"><span>成熟时长</span><b>${fmtDuration(crop.grow * 1000)}</b></div>
-      <div class="sd-cell"><span>每茬产量</span><b>${crop.yield[0]}-${crop.yield[1]} 个</b></div>
-      <div class="sd-cell"><span>收获茬数</span><b>${crop.harvests} 茬${crop.harvests > 1 ? ` · 再生 ${fmtDuration(crop.grow * crop.regrow * 1000)}` : ''}</b></div>
-      <div class="sd-cell"><span>单个售价</span><b>💰 ${crop.sell}</b></div>
-      <div class="sd-cell"><span>整轮收益</span><b>约 ${formatCoins(income)} 💰</b></div>
-      <div class="sd-cell"><span>每小时金币</span><b>约 ${perHour} 💰</b></div>
-    </div>
-
-    <div class="sd-gain" style="margin-top:12px">
-      我的统计　种植 <b>${stat.planted}</b> 次 · 收获 <b>${stat.harvested}</b> 个
-      ${stat.planted || stat.harvested ? '' : '（还没有种过）'}
-    </div>
-  `, async (action, el) => {
-    if (action !== 'specimen-make') return;
-    if (await makeSpecimen(el.dataset.id)) closeModal();
-  });
-
-  // 仓库里攒够了就顺手给个制作入口，不用退回列表再点
-  const card = document.querySelector('#modal .modal-card');
-  const owned = stat.owned ?? 0;
-  if (card && owned >= SPECIMEN_COST) {
-    const bar = card.querySelector('.sd-grid');
-    bar?.insertAdjacentHTML('afterend', `
-      <div class="sd-buybar">
+  const actions = stat.owned >= SPECIMEN_COST
+    ? `<div class="sd-buybar">
         <button class="btn sd-buy" data-action="specimen-make" data-id="${cropId}">
           🧪 制作标本（花掉 ${SPECIMEN_COST} 个${crop.name}）
         </button>
-      </div>`);
-  }
+      </div>`
+    : '';
+
+  openCropModal(cropId, {
+    status,
+    extra: `<div class="sd-gain">
+      我的统计　种植 <b>${stat.planted}</b> 次 · 收获 <b>${stat.harvested}</b> 个
+      ${stat.planted || stat.harvested ? '' : '（还没有种过）'}
+    </div>`,
+    foot: source,
+    actions,
+    onAction: async (action, el) => {
+      if (action !== 'specimen-make') return;
+      if (await makeSpecimen(el.dataset.id)) closeModal();
+    },
+  });
 }
 
 /** 制作标本的确认框 */

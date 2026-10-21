@@ -31,6 +31,7 @@ import {
   rollNpcSoil,
   syncNpcPlots,
 } from '../data/friends.js';
+import { CROPS } from '../data/crops.js';
 import { SOILS } from '../data/soils.js';
 import {
   BREED_MIGRATION,
@@ -41,7 +42,7 @@ import {
   rollNpcDogSatiety,
 } from '../data/dogs.js';
 import { WORKSHOP_MAX_LEVEL } from '../data/workshop.js';
-import { randInt, safeNum } from '../core/utils.js';
+import { dayKey, randInt, safeNum } from '../core/utils.js';
 
 /** 玩家农场的 id：farm 表的主键，也是地块 / 日志表里的 farmId */
 export const PLAYER_ID = 'player';
@@ -82,8 +83,11 @@ function createPlayerFarm() {
       satiety: 0,
       at: Date.now(),
     },
-    /** 种子制造间：level 0 = 还没开张，uses 是累计制造次数（升级只看它） */
-    workshop: { level: 0, uses: 0 },
+    /**
+     * 种子制造间：level 0 = 还没开张。
+     * kinds 是「作物 id → 造过几次」，**升级只看它有几个 key**（造过多少种）
+     */
+    workshop: { level: 0, kinds: {} },
     /** 农场主的成长档案：签到 / 图鉴 / 称号 / 引导 */
     progress: {
       /** 上次签到时间；两个 sign 字段是连续天数与累计天数 */
@@ -219,6 +223,15 @@ function normalizePlayerFarm(row, save) {
   progress.signDays = Array.isArray(progress.signDays)
     ? progress.signDays.slice(-SIGN_KEEP_DAYS)
     : [];
+  // 老存档只有 lastSign、没有历史：至少把上次签到那天补进去 ——
+  // 否则日历上明明签过、格子却空白，玩家会以为记录丢了
+  if (progress.lastSign) {
+    const key = dayKey(progress.lastSign);
+    if (!progress.signDays.includes(key)) {
+      progress.signDays.push(key);
+      progress.signDays.sort();
+    }
+  }
 
   const dog = { ...base.dog, ...(row.dog || {}) };
   dog.owned = { ...dog.owned };
@@ -238,10 +251,16 @@ function normalizePlayerFarm(row, save) {
   dog.satiety = safeNum(dog.satiety, 0);
   dog.at = safeNum(dog.at, Date.now());
 
-  // 种子制造间：旧档没有这个字段，补 0（未解锁）；等级与次数都夹在合法区间
+  // 种子制造间：旧档没有这个字段，补 0（未解锁）
   const workshop = { ...base.workshop, ...(row.workshop || {}) };
   workshop.level = Math.min(WORKSHOP_MAX_LEVEL, Math.max(0, safeNum(workshop.level, 0)));
-  workshop.uses = Math.max(0, safeNum(workshop.uses, 0));
+  // 升级口径从「累计次数」换成了「造过的种类数」：旧的 uses 还原不出
+  // 具体造过哪几种，只能丢弃（等级保留，概率不会掉回去）
+  delete workshop.uses;
+  workshop.kinds = {};
+  for (const [id, times] of Object.entries(row.workshop?.kinds || {})) {
+    if (CROPS[id] && !CROPS[id].special) workshop.kinds[id] = Math.max(1, safeNum(times, 1));
+  }
 
   const farm = {
     id: PLAYER_ID,

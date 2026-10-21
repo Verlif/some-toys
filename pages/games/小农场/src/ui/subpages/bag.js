@@ -9,6 +9,7 @@ import { produceId } from '../../data/keys.js';
 import { count } from '../../store/inventory.js';
 import { sellProduce } from '../../store/shop.js';
 import { closeModal, openModal } from '../modal.js';
+import { openCropModal } from '../crop-detail.js';
 
 /** 勾选中的作物 id 集合 */
 const selected = new Set();
@@ -81,8 +82,9 @@ export const bagPage = {
         <div class="shop-item pickable ${on ? 'on' : ''}">
           <button class="pick-box" data-action="pick" data-id="${id}"
                   aria-pressed="${on}" aria-label="选择${crop.name}">${on ? '✓' : ''}</button>
-          <div class="si-emoji">${crop.emoji}</div>
-          <div class="si-body">
+          <div class="si-emoji tappable" data-action="crop-info" data-id="${id}"
+               title="查看作物详情">${crop.emoji}</div>
+          <div class="si-body" data-action="crop-info" data-id="${id}" role="button" tabindex="0">
             <div class="si-name">${crop.name}</div>
             <div class="si-meta">单价 ${crop.sell} · 共值 ${n * crop.sell} 金币</div>
           </div>
@@ -107,6 +109,22 @@ export const bagPage = {
   },
 
   actions: {
+    // 点作物图标 / 名字看详情：卖之前想确认这作物值不值（和地块、制造间同一个弹窗）
+    'crop-info'(el) {
+      const id = el.dataset.id;
+      const crop = CROPS[id];
+      if (!crop) return;
+      const n = count(produceId(id));
+      openCropModal(id, {
+        status: [
+          `<span class="sd-chip">仓库 ${n} 份</span>`,
+          `<span class="sd-chip">单价 💰${crop.sell}</span>`,
+          `<span class="sd-chip gold">共值 💰${n * crop.sell}</span>`,
+        ].join(''),
+        foot: '点右侧「卖出」按单价换金币 —— 卖出后不可撤销',
+      });
+    },
+
     pick(el) {
       const id = el.dataset.id;
       if (selected.has(id)) selected.delete(id);

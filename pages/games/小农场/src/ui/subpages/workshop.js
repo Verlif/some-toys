@@ -2,17 +2,24 @@
  * 种子制造间：把仓库里的农产品投进去，换回同种作物的种子。
  *
  * 页面分两块：
- *   1. **状态卡**：等级、累计制造次数、当前概率、升级进度；
- *   2. **产出列表**：仓库里够份数的作物，一行一个「制造」。
+ *   1. **状态卡**：等级、造过多少种、当前概率、升级进度；
+ *   2. **产出列表**：仓库里够份数的作物，一行一个（点行看作物详情，点按钮制造）。
  *
  * 消耗份数是按作物单价现算的（见 data/workshop.js），所以不同作物
  * 要吃的份数不一样 —— 列表里直接写清楚「需要 6 份」，玩家不用自己算。
+ *
+ * 两条与体验有关的约定：
+ *   - **升级门槛是「造过的作物种类数」**，不是次数。同一种作物造一百次也只算 1 种，
+ *     所以列表里会标出「已造过」，玩家一眼看得出哪些还没算进种类；
+ *   - **制造要点两次**：先弹确认框写清「吃几份 + 几金币 + 期望几个」，
+ *     点了确认才真扣。制造是同时消耗产出和金币的操作，误触代价不小。
  */
 import { CROPS } from '../../data/crops.js';
 import { produceId } from '../../data/keys.js';
 import { count } from '../../store/inventory.js';
 import {
   WORKSHOP_UNLOCK,
+  craftFee,
   expectedSeeds,
   levelRow,
   produceCost,
@@ -21,13 +28,17 @@ import {
   craft,
   craftables,
   isUnlocked,
+  kindDone,
+  kindTimes,
   unlock,
   unlockState,
   upgrade,
   upgradeState,
+  workshopKinds,
   workshopLevel,
-  workshopUses,
 } from '../../store/workshop.js';
+import { openCropModal } from '../crop-detail.js';
+import { closeModal, openModal } from '../modal.js';
 
 /** 未解锁时的开张卡片 */
 function lockedHTML() {
@@ -54,7 +65,7 @@ function lockedHTML() {
       <div>· 一次制造消耗的产出份数按<b>市价折算</b>，作物越贵吃得越多</div>
       <div>· 每次还要付一笔 <b>工本费</b>，等于一颗同种作物种子的售价</div>
       <div>· 限定作物只能从藏宝图挖，这里复刻不了</div>
-      <div>· 制造会累计次数，攒够了就能升级，概率跟着涨</div>
+      <div>· 升级看的是<b>造过多少种作物</b>，同一种造一百次也只算 1 种</div>
     </div>`;
 }
 
@@ -80,14 +91,15 @@ function oddsHTML(level) {
 /** 已解锁时的状态卡 */
 function statusHTML() {
   const level = workshopLevel();
-  const uses = workshopUses();
   const st = upgradeState();
+  const kinds = workshopKinds();
+  const total = Object.keys(CROPS).filter((id) => !CROPS[id].special).length;
 
   const upgradeBlock = st.maxed
     ? '<div class="ws-upgrade maxed">已是最高等级</div>'
     : `<div class="ws-upgrade">
-        <div class="ws-up-line ${st.usesOk ? 'ok' : ''}">
-          累计制造 <b>${uses}</b> / ${st.next.uses}
+        <div class="ws-up-line ${st.kindsOk ? 'ok' : ''}">
+          造过的作物 <b>${kinds}</b> / ${st.next.kinds} 种
         </div>
         <div class="ws-up-line ${st.coinsOk ? 'ok' : ''}">
           升级金币 <b>${st.next.cost}</b> 💰
@@ -100,7 +112,7 @@ function statusHTML() {
   return `
     <div class="ws-hero">
       <div class="ws-hero-emoji">⚒️</div>
-      <div class="ws-hero-name">Lv.${level} <span class="ws-uses">已制造 ${uses} 次</span></div>
+      <div class="ws-hero-name">Lv.${level} <span class="ws-uses">已造过 ${kinds} / ${total} 种</span></div>
       ${oddsHTML(level)}
       ${upgradeBlock}
     </div>`;
@@ -118,10 +130,14 @@ function listHTML() {
     <div class="section-title">🧺 可以制造的产出（${rows.length} 种）</div>
     <div class="list">
       ${rows.map(({ id, crop, have, need, fee, coinsOk }) => `
-        <div class="shop-item ws-item">
+        <div class="shop-item ws-item" data-action="crop-info" data-id="${id}"
+             role="button" tabindex="0">
           <div class="si-emoji">${crop.emoji}</div>
           <div class="si-body">
-            <div class="si-name">${crop.name}<span class="si-own">· 拥有 ${have}</span></div>
+            <div class="si-name">
+              ${crop.name}<span class="si-own">· 拥有 ${have}</span>
+              ${kindDone(id) ? `<span class="ws-kind" title="造过 ${kindTimes(id)} 次">已造过</span>` : ''}
+            </div>
             <div class="si-meta">
               ${need} 份 + <b class="${coinsOk ? '' : 'ws-lack'}">💰${fee}</b>
               <span class="ws-fee-tip">工本费</span>
@@ -153,6 +169,69 @@ function almostHTML() {
     </div>`;
 }
 
+/**
+ * 制造前的确认框。
+ *
+ * 一次制造同时吃掉**产出和金币**，误触的代价不小（尤其高等级作物，
+ * 工本费就是几万金币），所以先摆清楚三件事再让玩家点：
+ * 消耗多少份、花多少钱、大概能出几个。
+ *
+ * @param {string} cropId
+ * @param {{renderCurrent: Function}} ctx 子页面给的上下文，确认后要重绘列表
+ */
+function confirmCraft(cropId, ctx) {
+  const crop = CROPS[cropId];
+  if (!crop) return;
+
+  const need = produceCost(crop);
+  const fee = craftFee(crop);
+  const have = count(produceId(cropId));
+  const level = workshopLevel();
+  const expect = expectedSeeds(level);
+  const isNew = !kindDone(cropId);
+
+  openModal(`
+    <div class="modal-head">
+      <h3>制造种子</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+
+    <div class="sd-hero">
+      <div class="sd-emoji">${crop.emoji}</div>
+      <div class="sd-id">
+        <div class="sd-name">${crop.name}种子</div>
+        <div class="sd-tags">
+          <span class="sd-lv">Lv.${crop.lv}</span>
+          ${isNew ? '<span class="sd-chip gold">新种类 · 计入升级</span>' : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="sd-grid">
+      <div class="sd-cell"><span>消耗产出</span><b>${need} 份</b></div>
+      <div class="sd-cell"><span>仓库现有</span><b>${have} 份</b></div>
+      <div class="sd-cell"><span>工本费</span><b>💰 ${fee}</b></div>
+      <div class="sd-cell"><span>产出</span><b>1~3 个</b></div>
+      <div class="sd-cell"><span>期望</span><b>${expect} 个</b></div>
+      <div class="sd-cell"><span>制造后剩余</span><b>${have - need} 份</b></div>
+    </div>
+
+    <div class="sd-gain">
+      确认后扣掉 <b>${need} 份${crop.name}</b> 与 <b>💰 ${fee}</b>
+    </div>
+
+    <div class="rm-actions">
+      <button class="btn ghost" data-close>再想想</button>
+      <button class="btn" data-action="craft-ok">确认制造</button>
+    </div>
+  `, async (action) => {
+    if (action !== 'craft-ok') return;
+    closeModal();
+    await craft(cropId);
+    ctx?.renderCurrent?.();
+  });
+}
+
 export const workshopPage = {
   render(body) {
     if (!isUnlocked()) {
@@ -164,7 +243,24 @@ export const workshopPage = {
 
   actions: {
     unlock: () => unlock(),
-    craft: (el) => craft(el.dataset.id),
+    craft: (el, ctx) => confirmCraft(el.dataset.id, ctx),
+    // 点产出那一行（不是制造按钮）看详情：制造前想知道这作物值不值
+    'crop-info': (el) => {
+      const crop = CROPS[el.dataset.id];
+      if (!crop) return;
+      const need = produceCost(crop);
+      const fee = craftFee(crop);
+      openCropModal(el.dataset.id, {
+        status: [
+          `<span class="sd-chip">仓库 ${count(produceId(el.dataset.id))} 份</span>`,
+          `<span class="sd-chip">造一次吃 ${need} 份</span>`,
+          `<span class="sd-chip gold">工本费 💰${fee}</span>`,
+        ].join(''),
+        foot: kindDone(el.dataset.id)
+          ? `这种已经造过 ${kindTimes(el.dataset.id)} 次 · 升级按种类算，再造不增加种类`
+          : '还没造过这种 · 造一次会 +1 个种类',
+      });
+    },
     upgrade: () => upgrade(),
   },
 };
