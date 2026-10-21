@@ -29,6 +29,8 @@ export const EVENTS = {
   NEWS: 'state:news',
   /** 领域层请求弹一条提示，由 UI 层的 toast 组件消费 */
   NOTIFY: 'ui:notify',
+  /** 请求播放「被守护犬抓住」的全屏提示，payload 为 { breed, owner, fine } */
+  DOG_CAUGHT: 'ui:dog-caught',
   /** 请求切换主页面，payload 为页面名（farm / friends / news / shop） */
   NAVIGATE: 'ui:navigate',
 };

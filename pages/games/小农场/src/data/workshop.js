@@ -7,10 +7,13 @@
  * 一份小麦只值 1 金币，它的种子却要 10 金币。所以「固定消耗 5 份」在低等级就是 2.4 倍，
  * 到 Lv200 会变成 12 倍 —— 等于白送钱，商店的种子就没人买了。
  *
- * 这里改成按市价折算：让「需要的产出」始终约等于 **0.6 个种子**的价格，
- * 于是不管什么作物，制造都稳定赚一倍左右（满级约 3 倍）。
- * 下限钉在 5 份，一是照顾低等级作物（小麦正好 6 份），
- * 二是别让「刚解锁就无限印种子」这种情况出现。
+ * 这里改成按市价折算，并且**每次还要收一笔工本费**（`craftFee`，等于一颗种子的售价）。
+ *
+ * 于是每次制造的总投入 ≈ `PRODUCE_FACTOR + 1` 个种子的价钱：
+ * 1 级（期望 1.22 个）基本持平，满级（期望 2.00 个）约赚 67%。
+ * 这也把「工本费」变成除了产出之外的第二个消耗口 —— 金币不会只进不出。
+ *
+ * 下限钉在 5 份，一是照顾低等级作物，二是别让「刚解锁就无限印种子」。
  */
 import { CROPS } from './crops.js';
 
@@ -20,8 +23,13 @@ export const WORKSHOP_UNLOCK = { level: 5, cost: 2000 };
 /** 最高等级 */
 export const WORKSHOP_MAX_LEVEL = 10;
 
-/** 产出份数按「种子价 × 这个系数 ÷ 农产品单价」折算 */
-export const PRODUCE_FACTOR = 0.6;
+/**
+ * 产出份数按「种子价 × 这个系数 ÷ 农产品单价」折算。
+ *
+ * 第 21 轮加了工本费（1.0 个种子价）之后从 0.6 降到 0.2 ——
+ * 否则总投入 1.6 个种子价，而 1 级只产出 1.22 个，全场都是亏本买卖。
+ */
+export const PRODUCE_FACTOR = 0.2;
 
 /** 每次制造最少要吃的份数 */
 export const PRODUCE_MIN = 5;
@@ -82,6 +90,19 @@ export function produceCost(crop) {
 /** 某个作物 id 的消耗份数；不认识的作物返回 0 */
 export function costOf(cropId) {
   return CROPS[cropId] ? produceCost(CROPS[cropId]) : 0;
+}
+
+/**
+ * 一次制造的工本费 = **一颗同种作物种子的售价**。
+ *
+ * 制造不该是「产出换种子」的免费午餐：产出的份数已经按市价折算过，
+ * 再收一道与种子等价的工本费，玩家才会在「买种子」和「自己造」之间真的权衡。
+ *
+ * @param {{seed: number}} crop
+ * @returns {number} 金币
+ */
+export function craftFee(crop) {
+  return Math.max(0, Math.round(crop?.seed || 0));
 }
 
 /**

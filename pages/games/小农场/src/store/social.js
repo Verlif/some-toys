@@ -395,6 +395,8 @@ export async function steal(friendId, index) {
     await commit({ farms: [state.farm, friend], news: state.news });
     emit(EVENTS.FRIENDS);
     emit(EVENTS.PLAYER);
+    // 全屏闪一下这只狗：玩家正盯着地块点偷，toast 很容易看漏
+    emit(EVENTS.DOG_CAUGHT, { breed: friend.dog.breed, owner: friend.name, fine: paid });
 
     notify(`🐕 被 ${friend.name} 家的守护犬抓住了！罚款 ${formatCoins(paid)} 金币，这一轮他家的作物都不敢碰了`, 'gold');
     return { ok: false, caught: true, reason: '被守护犬抓住了' };

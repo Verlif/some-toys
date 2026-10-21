@@ -52,6 +52,7 @@ function lockedHTML() {
     </div>
     <div class="ws-tips">
       <div>· 一次制造消耗的产出份数按<b>市价折算</b>，作物越贵吃得越多</div>
+      <div>· 每次还要付一笔 <b>工本费</b>，等于一颗同种作物种子的售价</div>
       <div>· 限定作物只能从藏宝图挖，这里复刻不了</div>
       <div>· 制造会累计次数，攒够了就能升级，概率跟着涨</div>
     </div>`;
@@ -116,14 +117,19 @@ function listHTML() {
   return `
     <div class="section-title">🧺 可以制造的产出（${rows.length} 种）</div>
     <div class="list">
-      ${rows.map(({ id, crop, have, need }) => `
+      ${rows.map(({ id, crop, have, need, fee, coinsOk }) => `
         <div class="shop-item ws-item">
           <div class="si-emoji">${crop.emoji}</div>
           <div class="si-body">
             <div class="si-name">${crop.name}<span class="si-own">· 拥有 ${have}</span></div>
-            <div class="si-meta">需要 ${need} 份 · 可得 1~3 个种子</div>
+            <div class="si-meta">
+              ${need} 份 + <b class="${coinsOk ? '' : 'ws-lack'}">💰${fee}</b>
+              <span class="ws-fee-tip">工本费</span>
+            </div>
           </div>
-          <button class="btn small" data-action="craft" data-id="${id}">制造</button>
+          <button class="btn small" data-action="craft" data-id="${id}" ${coinsOk ? '' : 'disabled'}>
+            ${coinsOk ? '制造' : '金币不足'}
+          </button>
         </div>`).join('')}
     </div>`;
 }

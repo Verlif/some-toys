@@ -16,6 +16,7 @@ import { bootDone, bootFail, bootProgress, bootStage } from './ui/boot.js';
 import { mountToast } from './ui/toast.js';
 import { mountModal } from './ui/modal.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
+import { mountDogCaught } from './ui/dog-caught.js';
 import { mountHud, renderHud } from './ui/hud.js';
 import { mountSubpage, renderCurrent, syncCoins } from './ui/subpage.js';
 import { mountSheet } from './ui/sheet.js';
@@ -53,6 +54,7 @@ async function boot() {
   mountToast();
   mountModal();
   mountSignCelebrate();
+  mountDogCaught();
   mountHud();
   mountSubpage();
   mountSheet();

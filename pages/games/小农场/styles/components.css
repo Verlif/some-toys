@@ -44,6 +44,9 @@
 }
 .icon-btn:hover { background: #f0f8ec; border-color: #b8d8ac; transform: translateY(-1px); }
 .icon-btn:active { transform: scale(.9); }
+/* 危险操作（铲除）：红边红字，和其他照料按钮区分开 */
+.icon-btn.danger { color: #c2504a; border-color: #f0cfcb; background: #fffafa; }
+.icon-btn.danger:hover { background: #fdeeee; border-color: #e8a0a0; }
 
 /* ---------- 地块 ---------- */
 /* 两段结构：主内容（flex:1）+ 右侧操作列（固定宽）。
@@ -82,7 +85,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  /* 最挤的时候是 4 个按钮（浇水 / 捉虫 / 施肥 / 铲除）：
+     4×29 + 3×3 = 125，刚好卡在 152 − 24 的可用高度里 */
+  gap: 3px;
   /* 按钮纵向排布，再多也不会撑开格子或挤出滚动条 */
   overflow: hidden;
 }
@@ -156,8 +161,8 @@
 .grid.dense .plot-name { font-size: 11px; }
 .grid.dense .plot-sub { font-size: 10px; }
 .grid.dense .plot-lock { font-size: 22px; }
-.grid.dense .plot-side { width: 30px; gap: 3px; }
-.grid.dense .plot-side .icon-btn { width: 26px; height: 26px; font-size: 13px; }
+.grid.dense .plot-side { width: 30px; gap: 2px; }
+.grid.dense .plot-side .icon-btn { width: 25px; height: 25px; font-size: 12.5px; }
 .grid.dense .plot-side .btn.small { padding: 5px 1px; font-size: 10px; }
 .grid.dense .bar { width: 88%; }
 
@@ -854,6 +859,83 @@
 .toast.out { animation: toastOut .28s ease forwards; }
 .toast.gold { background: linear-gradient(135deg, #f5a623, #e8871e); }
 
+/* ---------- 被守护犬抓住（全屏闪一下） ----------
+   偷菜被狗逮住是玩家吃瘪的时刻，一条 toast 很容易看漏，
+   所以整屏压暗、狗图标从中间弹出来，1.7 秒后自己淡出。 */
+.dog-caught {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 42%, rgba(78, 50, 28, .58), rgba(24, 18, 12, .87));
+  cursor: pointer;
+  animation: fade .16s ease;
+}
+.dog-caught.out { animation: dcOut .3s ease forwards; }
+
+/* 中间那圈光，从狗身后扩散两下 */
+.dc-glow {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 190px;
+  height: 190px;
+  border: 3px solid rgba(255, 226, 150, .75);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: dcRing .85s ease-out .05s 2 both;
+}
+.dc-emoji {
+  font-size: 112px;
+  line-height: 1;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, .5));
+  animation: dcPop .9s cubic-bezier(.2, 1.6, .45, 1) both;
+}
+.dc-title {
+  margin-top: 14px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #fff6e4;
+  letter-spacing: .5px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+  animation: fade .3s ease .12s both;
+}
+.dc-sub {
+  font-size: 12.5px;
+  color: rgba(255, 246, 228, .82);
+  animation: fade .3s ease .2s both;
+}
+.dc-fine {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffd764;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .5);
+  animation: fade .3s ease .26s both;
+}
+
+@keyframes dcPop {
+  0% { transform: scale(.35) rotate(-14deg); opacity: 0; }
+  42% { transform: scale(1.12) rotate(5deg); opacity: 1; }
+  58% { transform: scale(1) rotate(-3deg); }
+  70% { transform: translateX(-9px) rotate(2deg); }
+  82% { transform: translateX(9px) rotate(-2deg); }
+  100% { transform: translateX(0) rotate(0); }
+}
+@keyframes dcRing {
+  0% { transform: scale(.55); opacity: .9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes dcOut {
+  to { opacity: 0; }
+}
+
 /* ---------- 签到庆祝 ---------- */
 .sign-celebrate {
   position: fixed;
@@ -1500,6 +1582,13 @@
   text-align: center;
 }
 .sd-note b { color: #40503c; font-variant-numeric: tabular-nums; }
+/* 确认类弹窗（铲除 / 卖出）的底部按钮行 */
+.rm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.rm-actions .btn { flex: 1; }
 .qty {
   display: flex;
   align-items: center;
@@ -2128,6 +2217,13 @@
 .ws-up-line b { color: #40503c; }
 .ws-up-line.ok, .ws-up-line.ok b { color: var(--green-d); }
 .ws-upgrade .btn { width: 100%; max-width: 220px; }
+
+.ws-lack { color: #d1483f; }
+.ws-fee-tip {
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--muted);
+}
 
 .ws-tips {
   margin: 14px 17px 0;

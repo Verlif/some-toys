@@ -80,6 +80,11 @@ function careButtonsHTML(plot) {
   return out.join('');
 }
 
+/** 铲除按钮：认赔腾地用的，所以配色偏警示 */
+function removeButtonHTML(plot) {
+  return `<button class="icon-btn danger" data-action="remove" data-id="${plot.id}" title="铲除作物">🪓</button>`;
+}
+
 /**
  * 产量加成角标：钉在地块左上角，不占正文的流。
  *
@@ -109,6 +114,7 @@ function growingHTML(plot) {
     <div class="plot-side">
       ${careButtonsHTML(plot)}
       ${plot.fert ? '' : '<button class="icon-btn" data-action="fert" data-id="' + plot.id + '" title="施肥">🧪</button>'}
+      ${removeButtonHTML(plot)}
     </div>`;
 }
 
@@ -134,6 +140,7 @@ function ripeHTML(plot) {
     </div>
     <div class="plot-side">
       <button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收获</button>
+      ${removeButtonHTML(plot)}
     </div>`;
 }
 
@@ -484,12 +491,60 @@ function openFertModal(plotId) {
 
 /* ---------- 挂载 ---------- */
 
+/**
+ * 铲除确认框。
+ *
+ * 铲除不可逆 —— 种子、化肥、捉虫攒的加成一并作废，所以必须先问一次。
+ * 已经成熟的地也允许铲，但会多一句「先收获更划算」：
+ * 玩家有时就是想立刻腾地，劝阻一次就够了。
+ * @param {number} plotId
+ */
+function confirmRemove(plotId) {
+  const plot = state.farm.plots[plotId];
+  const crop = plot?.cropId ? CROPS[plot.cropId] : null;
+  if (!crop) return;
+
+  const left = plot.readyAt - Date.now();
+  const ripe = left <= 0;
+  const boost = Math.round(((1 + (plot.boost || 0)) * (1 + (plot.yieldBonus || 0)) - 1) * 100);
+
+  openModal(`
+    <div class="modal-head">
+      <h3>铲除作物</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="sd-hero">
+      <div class="sd-emoji">${crop.emoji}</div>
+      <div class="sd-id">
+        <div class="sd-name">${crop.name}</div>
+        <div class="sd-tags">
+          <span class="sd-lv">${ripe ? '已成熟' : `还需 ${fmtDuration(left)}`}</span>
+          ${boost > 0 ? `<span class="sd-lv">产量 +${boost}%</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="sd-gain">
+      铲除后这块地会变回空地，<b>种子、化肥和产量加成都不会返还</b>。
+    </div>
+    ${ripe ? '<div class="sd-lock">这块已经成熟了，先「收获」再铲更划算</div>' : ''}
+    <div class="rm-actions">
+      <button class="btn ghost" data-close>再想想</button>
+      <button class="btn danger" data-action="remove-ok">确认铲除</button>
+    </div>
+  `, async (action) => {
+    if (action !== 'remove-ok') return;
+    closeModal();
+    await farm.removeCrop(plotId);
+  });
+}
+
 const PLOT_ACTIONS = {
   plant: (id) => openPlantModal(id),
   water: (id) => farm.water(id),
   pest: (id) => farm.catchPest(id),
   fert: (id) => openFertModal(id),
   harvest: (id) => farm.harvest(id),
+  remove: (id) => confirmRemove(id),
 };
 
 /** 底部一键照料按钮：与地块上的单块操作是两套入口 */

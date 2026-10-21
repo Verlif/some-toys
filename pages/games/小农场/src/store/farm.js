@@ -495,6 +495,30 @@ export async function harvest(plotId) {
 }
 
 /**
+ * 铲除：把种着作物的地恢复成空地。
+ *
+ * 不做任何返还 —— 种子、化肥、捉虫攒下的产量加成全部作废，
+ * 所以 UI 那边一定要先弹确认框。成熟的作物也允许铲
+ * （有人就是想腾地重种），但确认框里会提示「先收再铲更划算」。
+ *
+ * @param {number} plotId
+ * @returns {Promise<boolean>}
+ */
+export async function removeCrop(plotId) {
+  const plot = getPlot(plotId);
+  if (!plot || !plot.cropId) return false;
+
+  const crop = CROPS[plot.cropId];
+  const ripe = Date.now() >= plot.readyAt;
+  clearPlot(plot);
+
+  player.addLog('🪓', `铲除了 ${crop.emoji}${crop.name}${ripe ? '（已成熟，没收获）' : ''}`);
+  await persist();
+  notify(`🪓 铲除了 ${crop.emoji}${crop.name}，地块已清空`);
+  return true;
+}
+
+/**
  * 把一块空闲普通土地升级为指定类型
  */
 export async function upgradeSoil(plotId, soilId) {

@@ -18,6 +18,7 @@ import { produceId, seedId } from '../data/keys.js';
 import {
   WORKSHOP_MAX_LEVEL,
   WORKSHOP_UNLOCK,
+  craftFee,
   levelRow,
   nextLevelRow,
   produceCost,
@@ -67,10 +68,13 @@ export function upgradeState() {
 }
 
 /**
- * 仓库里**现在就能造**的作物：`{ id, crop, have, need }`，按作物等级从低到高。
+ * 仓库里**份数够了**的作物：`{ id, crop, have, need, fee, coinsOk }`，按作物等级从低到高。
  *
  * 差几个的走 UI 的「再攒一点就能造」，不混进这张单子 ——
  * 否则标题上的「可以制造（3 种）」会把造不了的也算进去。
+ *
+ * 金币不够的**仍然列出来**（`coinsOk: false`），只是按钮灰掉：
+ * 玩家得看得见「差 12 金币」，而不是整行凭空消失。
  */
 export function craftables() {
   const out = [];
@@ -81,7 +85,8 @@ export function craftables() {
     const need = produceCost(crop);
     const have = inventory.count(produceId(id));
     if (have < need) continue;
-    out.push({ id, crop, have, need });
+    const fee = craftFee(crop);
+    out.push({ id, crop, have, need, fee, coinsOk: state.farm.coins >= fee });
   }
   return out;
 }
@@ -116,8 +121,9 @@ export async function unlock() {
 /**
  * 制造一次。
  *
- * 先扣产出、再摇数量，两个动作在同一个事务里落盘 ——
- * 中途关页面不会出现「产出没了、种子也没到」。
+ * 两道消耗：**产出份数**（按市价折算）+ **工本费**（一颗同种作物种子的价钱）。
+ * 都先扣、再摇数量，所有改动在同一个事务里落盘 ——
+ * 中途关页面不会出现「产出没了、金币扣了、种子却没到」。
  *
  * @param {string} cropId 作物 id
  * @returns {Promise<number>} 得到的种子数，失败为 0
@@ -131,21 +137,33 @@ export async function craft(cropId) {
   const crop = CROPS[cropId];
   if (!crop || crop.special) return 0;
 
+  // 先在**扣东西之前**把两道关卡都过一遍：扣了产出再发现金币不够，
+  // 就得把它原样加回去，多一条容易漏的回滚路径
+  const fee = craftFee(crop);
+  if (state.farm.coins < fee) {
+    notify(`工本费还差 ${fee - state.farm.coins} 金币`);
+    return 0;
+  }
+
   const need = produceCost(crop);
   if (!inventory.take(produceId(cropId), need)) {
     notify(`还需要 ${need} 份${crop.emoji}${crop.name}`);
     return 0;
   }
 
+  // 工本费：一颗同种作物种子的价钱。和产出一起扣，同一个事务落盘 ——
+  // 中途关页面不会出现「产出没了、金币也扣了、种子却没到」
+  player.spendCoins(fee);
+
   const got = rollSeeds(workshopLevel());
   inventory.add(seedId(cropId), got);
   ws().uses = workshopUses() + 1;
 
-  player.addLog('⚒️', `${crop.emoji}${crop.name} ×${need} → 种子 ×${got}`);
+  player.addLog('⚒️', `${crop.emoji}${crop.name} ×${need} + 💰${fee} → 种子 ×${got}`);
   await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.INVENTORY);
   emit(EVENTS.PLAYER);
-  notify(`🌱 ${crop.emoji}${crop.name}种子 ×${got}`, got > 1 ? 'gold' : '');
+  notify(`🌱 ${crop.emoji}${crop.name}种子 ×${got}（工本费 -${fee} 💰）`, got > 1 ? 'gold' : '');
   return got;
 }
 
