@@ -63,7 +63,7 @@
       <a href="https://github.com/Verlif" target="_blank" rel="noopener" class="foot-link">
         <i class="fab fa-github"></i><span>GitHub</span>
       </a>
-      <p class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> <time class="gen-time" datetime="2026-10-21T09:08:09.552Z">2026-10-21 17:08</time></p>
+      <p class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> <time class="gen-time" datetime="2026-10-21T11:50:38.627Z">2026-10-21 19:50</time></p>
     </div>
   </aside>
 
@@ -353,7 +353,7 @@ js/
       <span class="card-title">🌾 阳光牧场 · 文字版</span>
     </span>
     <span class="card-desc">一个零构建的原生 ESM 网页小游戏，玩法参考 3G 时代腾讯网页家园的《阳光牧场》： 种地、照料、收获、逛邻居家偷菜、喂守护犬，还能买藏宝图去挖限定种子。</span>
-    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>884 KB</span><span class="meta-item meta-date" data-iso="2026-10-21"><i class="fas fa-clock"></i>2026-10-21</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":2}'>共 2 页</span></span></span>
+    <span class="card-meta"><span class="meta-item meta-size"><i class="fas fa-database"></i>937 KB</span><span class="meta-item meta-date" data-iso="2026-10-21"><i class="fas fa-clock"></i>2026-10-21</span><span class="meta-item meta-pages"><i class="fas fa-layer-group"></i><span data-i18n="nav.pages" data-i18n-vars='{"n":2}'>共 2 页</span></span></span>
   </a>
   <span class="card-tag" data-i18n="nav.projectTag">项目</span>
   <template class="card-readme" data-source="https://github.com/Verlif/someToys/blob/main/pages/games/%E5%B0%8F%E5%86%9C%E5%9C%BA/README.md"><h4 id="阳光牧场-文字版" class="md-h1">阳光牧场 · 文字版</h4><p>一个零构建的原生 ESM 网页小游戏，玩法参考 3G 时代腾讯网页家园的《阳光牧场》：种地、照料、收获、逛邻居家偷菜、喂守护犬，还能买藏宝图去挖限定种子。存档落在浏览器 IndexedDB，不需要服务器。</p><blockquote>原始版本是 1368 行的单文件 HTML，现已重构为规范的多目录多文件工程。历史文件保留在 <code>archive/legacy-single-file.html</code> 供对照。</blockquote><p>📖 <strong>开发文档在 <a href="https://github.com/Verlif/someToys/blob/main/pages/games/%E5%B0%8F%E5%86%9C%E5%9C%BA/docs/README.md" target="_blank" rel="noopener">docs/</a>，按模块分成 12 份</strong>，改动前建议先看对应那篇。</p><h5 id="快速开始" class="md-h2">快速开始</h5><pre class="md-pre" data-lang="bash"><code>node server.mjs        # 或 npm start，默认 http://localhost:5173
@@ -387,6 +387,8 @@ npm run check          # 静态校验（9 项，零依赖）
 │   │   ├── soils.js         8 档土地（生成产物，勿手改）
 │   │   ├── progression.js   经验曲线 / 40 块地解锁 / 称号（生成产物，勿手改）
 │   │   ├── stages.js        生长阶段定义与阶段推进算法
+│   │   ├── care.js          照料排程（按次数随机）与减产规则，玩家/邻居共用
+│   │   ├── relation.js      好感度的规则：起点、增减、分档、对行为的权重
 │   │   ├── friends.js       32 位邻居（性格 / 职业 / 上线节奏 / 偷菜倾向 / 等级分布）
 │   │   ├── adventure.js     藏宝图档位、岔路模板、奖励池（含守护犬）
 │   │   ├── dogs.js          10 个守护犬品种、狗粮槽常量、拦截概率
@@ -404,6 +406,7 @@ npm run check          # 静态校验（9 项，零依赖）
 │   │   ├── shop.js          买卖与交易
 │   │   ├── social.js        世界推进（离线结算 / 在线轮询）/ 偷菜 / 帮忙照料
 │   │   ├── dogs.js          守护犬：狗窝 / 上岗 / 共享狗粮槽 / 添粮
+│   │   ├── relation.js      好感度的读写（state.relations + relation 表）
 │   │   ├── adventure.js     藏宝图使用 / 逐张选路 / 奖励发放
 │   │   ├── signin.js        签到与连续签到
 │   │   ├── codex.js         图鉴统计 + 标本制作 + 新手引导
@@ -421,6 +424,7 @@ npm run check          # 静态校验（9 项，零依赖）
 │       ├── inline-tags.js    记录里的人名与作物名标签（都可点）
 │       ├── inline-actions.js 行内标签的点击路由
 │       ├── sign-celebrate.js 签到庆祝浮层
+│       ├── gift.js           收到赠礼（在线 toast / 离线整屏补播）
 │       ├── views/           农场 / 邻居 / 时报 / 商店 四个主页面
 │       └── subpages/        仓库 / 包裹 / 图鉴 / 称号 / 签到 / 引导 / 狗窝 / 种子制造间 / 占位页
 ├── tools/
@@ -796,7 +800,7 @@ python -m http.server 8080</code></pre><p>然后访问 <code>http://localhost:80
         <a href="https://github.com/Verlif/someToys/blob/main/docs/%E5%BC%80%E5%8F%91%E6%96%87%E6%A1%A3.md" target="_blank" rel="noopener" data-i18n="nav.devDocLink">开发文档</a>
         <a href="https://github.com/Verlif" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
       </nav>
-      <span class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> <time class="gen-time" datetime="2026-10-21T09:08:09.552Z">2026-10-21 17:08</time></span>
+      <span class="foot-note"><span data-i18n="nav.generatedAt">生成于</span> <time class="gen-time" datetime="2026-10-21T11:50:38.627Z">2026-10-21 19:50</time></span>
     </footer>
   </div>
 </div>
