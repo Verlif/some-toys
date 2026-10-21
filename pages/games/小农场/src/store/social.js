@@ -92,13 +92,15 @@ export const needsHelp = (friend, now = Date.now()) => careCount(friend, now) > 
  * dogGuardChanceAt(t) 让模拟能还原「那一刻」的拦截率：
  * 结算几天的离线时，狗不是一直满饱腹，而是随时间一路掉下去的。
  *
- * @returns {{id: string, plots: object[], stolen: number, cared: number, caught: number,
+ * @returns {{id: string, name: string, plots: object[], stolen: number, cared: number, caught: number,
  *            log: Function, news: Function, dogGuardChanceAt: Function}}
  */
 function farmView() {
   const farm = state.farm;
   return {
     id: farm.id,
+    // 邻居的动态文案里要写玩家的真实名字（「帮 XX 浇水」），不能硬编码「农场主」
+    name: farm.name,
     plots: farm.plots,
     stolen: 0,
     cared: 0,
@@ -384,10 +386,11 @@ export async function steal(friendId, index) {
     const paid = Math.min(state.farm.coins, fine);
     player.addCoins(-paid);
     friend.coins += paid;
-    logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 农场主，罚了 ${formatCoins(paid)} 金币`);
-    // 这条里玩家是小偷、邻居是被偷的：两个头像都要带
-    player.addLog('🐕', `偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
-    addNews('🐕', `农场主 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
+    // 文案里要写真实名字（不是硬编码「农场主」）：日志与时报会把名字就地
+    // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
+    logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币`);
+    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
+    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
 
     await commit({ farms: [state.farm, friend], news: state.news });
     emit(EVENTS.FRIENDS);

@@ -11,12 +11,18 @@ import { mapId, seedId } from '../../data/keys.js';
 import { count, discardItem } from '../../store/inventory.js';
 import { fmtDuration } from '../../core/utils.js';
 import { closeModal, openModal } from '../modal.js';
+import { openSeedModal } from '../seed-detail.js';
 import { showToast } from '../toast.js';
 
 /** 包裹里三种东西共用一套丢弃弹窗：背包 key → 展示信息 */
 const LABELS = new Map();
 for (const cropId of CROP_IDS) {
-  LABELS.set(seedId(cropId), { emoji: CROPS[cropId].emoji, name: `${CROPS[cropId].name}种子` });
+  LABELS.set(seedId(cropId), {
+    emoji: CROPS[cropId].emoji,
+    name: `${CROPS[cropId].name}种子`,
+    // 种子行点开是「种子详情」，所以要把作物 id 一起带上
+    cropId,
+  });
 }
 for (const map of MAP_TIERS) {
   LABELS.set(mapId(map.tier), { emoji: map.emoji, name: map.name });
@@ -25,14 +31,33 @@ for (const id of ITEM_IDS) {
   LABELS.set(id, { emoji: ITEMS[id].emoji, name: ITEMS[id].name });
 }
 
+/**
+ * 一个分区。
+ *
+ * ⚠️ `rows` 通常是 `map()` 出来的**数组**，必须自己 join ——
+ * 直接塞进模板字符串会调用 `Array#toString()`，于是每两项之间多出一个逗号
+ * （包裹里种子一多就露馅：「小麦种子 … , 🗺️ 一级藏宝图」）。
+ * @param {string} title
+ * @param {string[]|string} rows
+ */
 function section(title, rows) {
-  return rows ? `<div class="section-title">${title}</div><div class="list">${rows}</div>` : '';
+  const html = Array.isArray(rows) ? rows.join('') : rows;
+  return html ? `<div class="section-title">${title}</div><div class="list">${html}</div>` : '';
 }
 
-/** 单行：信息 + 数量（右侧粗体）+ 丢弃按钮 */
+/**
+ * 单行：信息 + 数量（右侧粗体）+ 丢弃按钮。
+ *
+ * 种子行整行可点（开种子详情）—— 玩家常常要判断「这颗种子值不值得种」，
+ * 而列表里只有名字和数量。丢弃按钮自带 `data-action`，点击时它比行更近，
+ * 所以不会连带把详情弹出来。
+ */
 function itemRow(id, meta) {
+  const clickable = meta.cropId
+    ? ` data-action="seed-info" data-crop="${meta.cropId}" role="button" tabindex="0"`
+    : '';
   return `
-    <div class="shop-item">
+    <div class="shop-item${meta.cropId ? ' pickable' : ''}"${clickable}>
       <div class="si-emoji">${meta.emoji}</div>
       <div class="si-body">
         <div class="si-name">${meta.name}</div>
@@ -124,6 +149,7 @@ export const packagePage = {
         emoji: CROPS[id].emoji,
         name: `${CROPS[id].name}种子`,
         desc: `${fmtDuration(CROPS[id].grow * 1000)}成熟 · 需 Lv.${CROPS[id].lv}`,
+        cropId: id,
       }));
 
     const maps = MAP_TIERS
@@ -148,6 +174,10 @@ export const packagePage = {
   actions: {
     discard(el) {
       openDiscardModal(el.dataset.id);
+    },
+    // 种子详情是只读的：包裹里种子已经在手上，没有「买」这一栏
+    'seed-info'(el) {
+      openSeedModal(el.dataset.crop, { buy: false });
     },
   },
 };

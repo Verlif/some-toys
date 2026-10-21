@@ -9,11 +9,11 @@
  *   - 按天分组，组内按时间倒序；
  *   - 打开期间玩家继续操作的话，日志会就地刷新。
  */
-import { byId, delegate, escapeHtml } from '../core/dom.js';
+import { byId, delegate } from '../core/dom.js';
 import { on, EVENTS } from '../core/bus.js';
 import { state } from '../store/state.js';
 import { dragToClose } from './drag-close.js';
-import { stripWhoName, whoChipHTML } from './who-chip.js';
+import { inlineWhoHTML } from './who-chip.js';
 
 /** 展示窗口：与 store/player.js 的保留天数一致 */
 const KEEP_DAYS = 7;
@@ -70,9 +70,8 @@ function renderLog() {
     return `${head}
       <div class="log-item">
         <span class="log-time">${timeLabel(entry.at)}</span>
-        ${whoChipHTML(entry.who, { small: true })}
         <span class="log-emoji">${entry.emoji}</span>
-        <span class="log-text">${escapeHtml(stripWhoName(entry.text, entry.who))}</span>
+        <span class="log-text">${inlineWhoHTML(entry.text)}</span>
       </div>`;
   }).join('');
 }

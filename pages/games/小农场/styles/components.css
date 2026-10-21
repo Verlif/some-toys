@@ -1169,51 +1169,33 @@
 }
 .log-text { color: #40503c; line-height: 1.55; word-break: break-word; }
 
-/* ---------- 头像 + 名字胶囊：日志 / 时报里标识「是谁」 ---------- */
-/* 头像和名字共用一个浅绿底，读起来是一个整体，不用猜那枚圆片是谁。
-   一条事件可能涉及多个人（小偷 + 被偷的农场主）：头像叠着放、
-   名字用「、」连起来，仍然只有一个胶囊。
-   名字过长会省略 —— 胶囊占了宽度，正文才不会被挤成火柴棍。 */
-.who-chip {
-  flex-shrink: 0;
+/* ---------- 句中的人名标签：日志 / 时报 ---------- */
+/* 就嵌在句子里：「[农场主🧑]偷[石头🧒]家被守护犬抓住，罚了 500 金币」。
+   名字与头像共用一个浅绿底 —— 一整句读下来，谁是谁不用回头配对。
+   用 inline-flex 是让它成为一个整体，中文换行时不会把名字和头像拆到两行。 */
+.who-tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  max-width: 46%;
-  padding: 2px 9px 2px 2px;
-  border-radius: 99px;
-  /* 底色要比页面背景（#f4f8f1）再深一档，否则「一个背景包住头像和名字」
-     看起来只是两个元素挨在一起 */
+  gap: 2px;
+  /* 上下不留 padding：留了会把行高撑开，多行日志会变得稀稀拉拉。
+     左右也只留 4px —— 再宽就像词与词之间多打了空格 */
+  padding: 0 4px;
+  border-radius: 6px;
+  /* 底色比页面底（#f4f8f1）深一档，否则「一个背景包住名字和头像」
+     看起来只是两个元素挨着 */
   background: #e5f2da;
   border: 1px solid #d3e6c2;
+  color: #3c5034;
+  font-weight: 700;
+  line-height: 1.55;
+  white-space: nowrap;
+  vertical-align: middle;
 }
-.who-chip .ava {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid #dcead0;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
+.who-tag .ava {
+  font-size: .92em;
   font-style: normal;
   line-height: 1;
 }
-.who-chip .ava + .ava { margin-left: -8px; }
-.who-chip .who-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #4c5f47;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* 农场日志一行更密，胶囊整体缩一号 */
-.who-chip.small { gap: 4px; padding: 1px 7px 1px 1px; }
-.who-chip.small .ava { width: 18px; height: 18px; font-size: 11px; }
-.who-chip.small .who-name { font-size: 10.5px; }
 
 /* ---------- 签到日历 ---------- */
 .cycle {
@@ -1509,6 +1491,15 @@
   gap: 10px;
   margin-top: 14px;
 }
+/* 包裹里打开详情时的底部提示：没有数量与购买栏，只有一句话 */
+.sd-note {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-align: center;
+}
+.sd-note b { color: #40503c; font-variant-numeric: tabular-nums; }
 .qty {
   display: flex;
   align-items: center;
@@ -1754,17 +1745,11 @@
   border-radius: 9px;
 }
 .news-body { min-width: 0; flex: 1; }
-.news-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.news-head .who-chip { max-width: none; }
-.news-text { font-size: 12.5px; color: #3c4a39; line-height: 1.55; }
+.news-text { font-size: 12.5px; color: #3c4a39; line-height: 1.6; }
+/* 时间退到正文下面一行：人物标签已经嵌在句子里，
+   再往右上角塞一个时间，正文的右边就会参差不齐 */
 .news-when {
-  margin-left: auto;
-  flex-shrink: 0;
+  margin-top: 4px;
   font-size: 10.5px;
   color: #a8b3a5;
   font-variant-numeric: tabular-nums;

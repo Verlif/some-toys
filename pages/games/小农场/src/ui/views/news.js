@@ -6,13 +6,12 @@
  *
  * 顶部一排类型筛选（成长 / 偷菜 / 守护犬 / 寻宝）按条目的图标归类，
  * 芯片上的数字是该类型当前的条数；
- * 每条左侧是「涉及的人」的头像 + 名字胶囊（`ui/who-chip.js`）——
- * 一条偷菜新闻里小偷和受害者都带，不用读全文也能看出是谁和谁。
- * 正文里若已经写了这个人的名字，渲染时会削掉，避免和胶囊重复。
+ * 正文里出现的人名会就地变成「名字 + 头像」标签（`ui/who-chip.js`）——
+ * 一句话里谁偷了谁、谁被狗抓住，读的时候不用回头配对。
  */
-import { byId, delegate, escapeHtml, setHTML } from '../../core/dom.js';
+import { byId, delegate, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
-import { stripWhoName, whoChipHTML } from '../who-chip.js';
+import { inlineWhoHTML } from '../who-chip.js';
 import { completeGuide } from '../../store/codex.js';
 import { filterNews, NEWS_FILTERS, newsList } from '../../store/news.js';
 
@@ -49,11 +48,8 @@ export function renderNews() {
     <div class="news-item">
       <span class="news-emoji">${entry.emoji}</span>
       <div class="news-body">
-        <div class="news-head">
-          ${whoChipHTML(entry.who)}
-          <span class="news-when">${relativeTime(entry.at, now)}</span>
-        </div>
-        <div class="news-text">${escapeHtml(stripWhoName(entry.text, entry.who))}</div>
+        <div class="news-text">${inlineWhoHTML(entry.text)}</div>
+        <div class="news-when">${relativeTime(entry.at, now)}</div>
       </div>
     </div>`).join('');
 

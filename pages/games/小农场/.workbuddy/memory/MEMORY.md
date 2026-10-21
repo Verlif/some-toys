@@ -46,10 +46,15 @@
   —— `.npc-plot.care` 曾写死 `#fffaf9`，缺水地一多整窗变白粉。
 - 商店滚动落在 `.shop-panel` 自己；筛选条在 `.shop-panels` 之外；重绘先恢复 `scrollLeft` 再同步 tab。
   `.filter-bar` 邻居页与时报页共用（时报按 emoji 分类，不另存字段）。
-- 日志/时报 `who` 是农场 id 数组 → `ui/who-chip.js` 的 `.who-chip`（头像 + 名字共用一个胶囊，底色
-  `#e5f2da` 要比页面底深一档）；`stripWhoName()` 削掉正文里重复的名字与紧跟的「的」。
-  时报图标固定最左、胶囊 + 时间放 `.news-head`。邻居搜索框必须是 index.html 静态结构。
+- 日志/时报的人物**内联在句子里**：`ui/who-chip.js` 的 `inlineWhoHTML(text)` 把正文里出现的农场名
+  换成 `.who-tag`（名字 + 头像共用一个 `#e5f2da` 底，`inline-flex` 不拆行）。
+  按全文匹配名字（不依赖 `who`）、长名优先、吃掉名字两侧空格（`[ \t]*`）。
+  文案里名字必须用真实的 `${state.farm.name}`，写死「农场主」改名后就匹配不到。
+  时报：图标最左 + 正文（含标签）+ 时间在下一行。邻居搜索框必须是 index.html 静态结构。
 - 弹窗内操作只替换受影响那一格，绝不整窗重开。
+- **列表拼接必须 `join('')`**：`map()` 出来的数组直接进模板字符串会调 `Array#toString()`，
+  每两项之间多一个逗号（包裹页踩过）。种子详情只有一份实现 `ui/seed-detail.js`
+  （`{ buy: true }` 商店下单 / `false` 包裹只读）。
 
 ## 守护犬
 

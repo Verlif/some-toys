@@ -320,7 +320,7 @@ function actSteal(npc, neighbours, farm, at) {
       farm.addCoins?.(paid);
       farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了，罚了 ${formatCoins(paid)} 金币（拦截率 ${Math.round(guard * 100)}%）`, [npc.id, farm.id]);
       farm.news?.(at, '🐕', `${npc.name} 溜进你的农场想顺菜，被守护犬赶了出来并罚了款`, [npc.id, farm.id]);
-      return { emoji: '🐕', text: `溜进 农场主 家想顺菜，被守护犬抓住罚了 ${formatCoins(paid)} 金币` };
+      return { emoji: '🐕', text: `溜进 ${farm.name} 家想顺菜，被守护犬抓住罚了 ${formatCoins(paid)} 金币` };
     }
 
     owner.coins += paid;
@@ -378,14 +378,14 @@ function actHelpPlayer(npc, farm, at) {
     plot.waterAt = at + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
     farm.cared += 1;
     farm.log(at, '💧', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 浇了水`, [npc.id, farm.id]);
-    return { emoji: '🤝', text: `帮 农场主 给 ${crop.emoji}${crop.name} 浇了水` };
+    return { emoji: '🤝', text: `帮 ${farm.name} 给 ${crop.emoji}${crop.name} 浇了水` };
   }
 
   plot.pestAt = at + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
   plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
   farm.cared += 1;
   farm.log(at, '🐛', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 捉了虫`, [npc.id, farm.id]);
-  return { emoji: '🤝', text: `帮 农场主 给 ${crop.emoji}${crop.name} 捉了虫` };
+  return { emoji: '🤝', text: `帮 ${farm.name} 给 ${crop.emoji}${crop.name} 捉了虫` };
 }
 
 /**
