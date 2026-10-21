@@ -19,14 +19,10 @@ import { estimateWork, planVisit, runStep, simulateNpcUntil } from './npc-sim.js
 import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
-import {
-  BOOST_CAP,
-  LIVE_STEP_MS,
-  LOG_LIMIT,
-  PEST_INTERVAL,
-  PEST_YIELD_BONUS,
-  WATER_INTERVAL,
-} from '../data/friends.js';
+import { BOOST_CAP, LIVE_STEP_MS, LOG_LIMIT, PEST_YIELD_BONUS } from '../data/friends.js';
+import { needsPest, needsWater, serveCare } from '../data/care.js';
+import { REL_PER_CARE, giftRelGain, stealRelLoss } from '../data/relation.js';
+import { adjustRelation, getRelation } from './relation.js';
 import { catchChance, DOG_FINE_MULTIPLE, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
@@ -66,13 +62,8 @@ export function stealableCount(friend, now = Date.now()) {
   return friend.plots.filter((p) => isStealable(p, now)).length;
 }
 
-/** 邻居的地是否缺水（成熟后就不再需要照料） */
-export const needsWater = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.waterAt || 0);
-
-/** 邻居的地是否生虫（同上） */
-export const needsPest = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.pestAt || 0);
+/** 邻居的地是否缺水 / 生虫：判定在 data/care.js，与玩家农场同一套规则 */
+export { needsWater, needsPest };
 
 /** 邻居有几块地需要照料（缺水或生虫） */
 export const careCount = (friend, now = Date.now()) =>
@@ -111,6 +102,55 @@ function farmView() {
     dogGuardChanceAt: (at) => guardChance(at),
     /** 守护犬拦下小偷时玩家入账的罚款（内存操作，随当次结算一起落盘） */
     addCoins: (amount) => player.addCoins(amount),
+  };
+}
+
+/**
+ * 邻居送来礼物。
+ *
+ * 三种去处：产出进背包、两边各记一条动态、再广播一条 GIFT 事件交给 UI ——
+ * 在线时是一条 toast，离线攒下的那些等上线时用整屏动画补给他。
+ *
+ * @param {number} at 送出时刻
+ * @param {object} npc 送礼的邻居
+ * @param {string} cropId
+ * @param {number} n
+ */
+function receiveGift(at, npc, cropId, n = 1) {
+  const crop = CROPS[cropId];
+  if (!crop) return null;
+
+  inventory.add(produceId(cropId), n);
+  player.addLog('🎁', `${npc.name} 送来 ${crop.emoji}${crop.name} ×${n}`, at, npc.id);
+  logFriend(npc, at, '🎁', `给 ${state.farm.name} 送去一份 ${crop.emoji}${crop.name}`);
+  emit(EVENTS.GIFT, {
+    at,
+    from: npc.name,
+    avatar: npc.avatar,
+    cropId,
+    name: crop.name,
+    emoji: crop.emoji,
+    n,
+    offline: at < sessionStart,
+  });
+  return crop;
+}
+
+/**
+ * 交给模拟层的上下文。
+ *
+ * npc-sim 是纯计算、不认识 store，所以「好感度怎么读怎么写」「收到礼物怎么办」
+ * 都由这里注进去。farm 只建一次：一次结算里所有邻居看到的是同一份计数。
+ *
+ * @param {?object} farm 玩家农场视图
+ */
+function simCtx(farm = farmView()) {
+  return {
+    neighbours: state.friends,
+    farm,
+    rel: getRelation,
+    relAdjust: adjustRelation,
+    receiveGift,
   };
 }
 
@@ -160,6 +200,7 @@ async function runSettle(onProgress) {
   const now = Date.now();
   const total = estimateWork(npcs, now);
   const farm = farmView();
+  const ctx = simCtx(farm);
   const visits = [];
   const deferred = [];
 
@@ -177,7 +218,7 @@ async function runSettle(onProgress) {
     const until = performance.now() + 12;
     while (index < npcs.length && performance.now() < until) {
       const npc = npcs[index];
-      done += simulateNpcUntil(npc, npcs, now, farm, collect(npc), sessionStart);
+      done += simulateNpcUntil(npc, ctx, now, collect(npc), sessionStart);
       index += 1;
     }
     onProgress?.(done, total);
@@ -202,7 +243,11 @@ async function runSettle(onProgress) {
  * 结算会同时动玩家的地块与日志，所以玩家农场与邻居一起提交。
  */
 export async function persistFriends() {
-  await commit({ farms: [state.farm, ...state.friends], news: state.news });
+  await commit({
+    farms: [state.farm, ...state.friends],
+    news: state.news,
+    relations: state.relations,
+  });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.FARM);
   emit(EVENTS.PLAYER);
@@ -279,11 +324,15 @@ async function runLiveStep() {
   visit.index += 1;
 
   try {
-    const entry = runStep(npc, visit.at, kind, { neighbours: state.friends, farm: farmView() });
+    const entry = runStep(npc, visit.at, kind, simCtx());
     if (entry) {
       spoke = true;
-      // 落盘：这位邻居 + 玩家农场（可能刚被他顺走一块地 / 帮他浇了水）
-      await commit({ farms: [state.farm, npc], news: state.news });
+      // 落盘：这位邻居 + 玩家农场（可能刚被他顺走一块地 / 帮他浇了水 / 送了礼）
+      await commit({
+        farms: [state.farm, npc],
+        news: state.news,
+        relations: state.relations,
+      });
       emit(EVENTS.FARM);
       emit(EVENTS.FRIENDS);
       emit(EVENTS.PLAYER);
@@ -388,6 +437,8 @@ export async function steal(friendId, index) {
     friend.coins += paid;
     // 文案里要写真实名字（不是硬编码「农场主」）：日志与时报会把名字就地
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
+    // 想偷还被当场逮住，关系只会更差
+    adjustRelation(PLAYER_ID, friend.id, -stealRelLoss(crop.sell));
     logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币`);
     player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
     addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, {
@@ -395,9 +446,10 @@ export async function steal(friendId, index) {
       who: [PLAYER_ID, friend.id],
     });
 
-    await commit({ farms: [state.farm, friend], news: state.news });
+    await commit({ farms: [state.farm, friend], news: state.news, relations: state.relations });
     emit(EVENTS.FRIENDS);
     emit(EVENTS.PLAYER);
+    emit(EVENTS.RELATION);
     // 全屏闪一下这只狗：玩家正盯着地块点偷，toast 很容易看漏
     emit(EVENTS.DOG_CAUGHT, { breed: friend.dog.breed, owner: friend.name, fine: paid });
 
@@ -411,15 +463,19 @@ export async function steal(friendId, index) {
   target.stolenAt = now;
 
   inventory.add(produceId(target.cropId), 1);
-  logFriend(friend, now, '🥷', `被 农场主 顺走了 ${crop.emoji}${crop.name} ×1`);
+  // 被顺走的人心里有数：好感按这份产出的售价折算
+  const lost = stealRelLoss(crop.sell);
+  adjustRelation(PLAYER_ID, friend.id, -lost);
+  logFriend(friend, now, '🥷', `被 ${state.farm.name} 顺走了 ${crop.emoji}${crop.name} ×1`);
 
-  await commit({ farms: [state.farm, friend], bag: state.bag });
+  await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.INVENTORY);
   emit(EVENTS.PLAYER);
+  emit(EVENTS.RELATION);
 
   await completeGuide('steal');
-  notify(`偷到 ${crop.emoji}${crop.name} ×1（这块地这轮只能偷一次）`, 'gold');
+  notify(`偷到 ${crop.emoji}${crop.name} ×1（好感 −${lost}）`, 'gold');
   return { ok: true, cropId: target.cropId };
 }
 
@@ -438,20 +494,22 @@ export async function waterNeighborPlot(friendId, index) {
     return false;
   }
 
-  target.waterAt = now + WATER_INTERVAL;
+  serveCare(target, 'water', now);
+  adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE);
   // 经验跟着被照料的作物走：作物几级就给几点，不随玩家等级膨胀
   const exp = CROPS[target.cropId].lv;
   player.addExpRaw(exp);
-  logFriend(friend, now, '💧', '农场主 来帮忙浇了水');
+  logFriend(friend, now, '💧', `${state.farm.name} 来帮忙浇了水`);
 
-  await commit({ farms: [state.farm, friend] });
+  await commit({ farms: [state.farm, friend], relations: state.relations });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
+  emit(EVENTS.RELATION);
 
   // 在邻居家浇水也算「第一次浇水」——引导不该分自家还是别人家
   await completeGuide('water');
   await completeGuide('care');
-  notify(`💧 帮 ${friend.name} 浇了水（经验 +${exp}）`);
+  notify(`💧 帮 ${friend.name} 浇了水（经验 +${exp}，好感 +${REL_PER_CARE}）`);
   return true;
 }
 
@@ -471,23 +529,26 @@ export async function catchPestNeighborPlot(friendId, index) {
   }
 
   target.boost = Math.min(BOOST_CAP, (target.boost || 0) + PEST_YIELD_BONUS);
-  target.pestAt = now + PEST_INTERVAL;
+  serveCare(target, 'pest', now);
+  adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE);
   const exp = CROPS[target.cropId].lv;
   player.addExpRaw(exp);
-  logFriend(friend, now, '🐛', '农场主 来帮忙捉了虫');
+  logFriend(friend, now, '🐛', `${state.farm.name} 来帮忙捉了虫`);
 
-  await commit({ farms: [state.farm, friend] });
+  await commit({ farms: [state.farm, friend], relations: state.relations });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
+  emit(EVENTS.RELATION);
 
   await completeGuide('care');
-  notify(`🐛 帮 ${friend.name} 捉了虫（经验 +${exp}）`);
+  notify(`🐛 帮 ${friend.name} 捉了虫（经验 +${exp}，好感 +${REL_PER_CARE}）`);
   return true;
 }
 
 /**
  * 一键帮邻居浇水：消耗 1 个洒水器，把他家所有缺水的地一次浇完。
- * 单块效果与手动浇水一致（waterAt 推到下一个 6 小时），经验按作物等级给。
+ * 单块效果与手动浇水一致（按次重排下一次需求），经验按作物等级给；
+ * 好感度按「打理了几块地」记 —— 一块 +1。
  * @returns {Promise<boolean>}
  */
 export async function waterAllNeighborPlots(friendId) {
@@ -508,21 +569,24 @@ export async function waterAllNeighborPlots(friendId) {
 
   let exp = 0;
   for (const plot of targets) {
-    plot.waterAt = now + WATER_INTERVAL;
+    serveCare(plot, 'water', now);
     exp += CROPS[plot.cropId].lv;
   }
+  // 打理一块 +1：一次浇满一片，交情自然涨得快
+  adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE * targets.length);
 
   player.addExpRaw(exp);
-  logFriend(friend, now, '🚿', `农场主 用洒水器帮他给 ${targets.length} 块地浇了水`);
+  logFriend(friend, now, '🚿', `${state.farm.name} 用洒水器帮他给 ${targets.length} 块地浇了水`);
 
-  await commit({ farms: [state.farm, friend], bag: state.bag });
+  await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
+  emit(EVENTS.RELATION);
 
   await completeGuide('water');
   await completeGuide('care');
-  notify(`🚿 帮 ${friend.name} 浇了 ${targets.length} 块地（经验 +${exp}）`, 'gold');
+  notify(`🚿 帮 ${friend.name} 浇了 ${targets.length} 块地（经验 +${exp}，好感 +${targets.length}）`, 'gold');
   return true;
 }
 
@@ -550,19 +614,57 @@ export async function catchPestAllNeighborPlots(friendId) {
   let exp = 0;
   for (const plot of targets) {
     plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
-    plot.pestAt = now + PEST_INTERVAL;
+    serveCare(plot, 'pest', now);
     exp += CROPS[plot.cropId].lv;
   }
+  adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE * targets.length);
 
   player.addExpRaw(exp);
-  logFriend(friend, now, '🧴', `农场主 用杀虫剂帮他给 ${targets.length} 块地除了虫`);
+  logFriend(friend, now, '🧴', `${state.farm.name} 用杀虫剂帮他给 ${targets.length} 块地除了虫`);
 
-  await commit({ farms: [state.farm, friend], bag: state.bag });
+  await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
+  emit(EVENTS.RELATION);
 
   await completeGuide('care');
-  notify(`🧴 帮 ${friend.name} 除了 ${targets.length} 块地的虫（经验 +${exp}）`, 'gold');
+  notify(`🧴 帮 ${friend.name} 除了 ${targets.length} 块地的虫（经验 +${exp}，好感 +${targets.length}）`, 'gold');
   return true;
+}
+
+/**
+ * 给邻居送一份仓库里的产出。
+ *
+ * 好感按这份产出的**等级**涨（`round(等级 / 2)`，至少 1）——
+ * 送高阶作物才显得有诚意。送出就从仓库扣掉、不可撤销，所以 UI 那边要先弹确认框。
+ *
+ * @param {string} friendId
+ * @param {string} cropId 农产品 id（作物 id）
+ * @returns {Promise<{ok: boolean, gain?: number, relation?: number, reason?: string}>}
+ */
+export async function sendGift(friendId, cropId) {
+  const friend = getFriend(friendId);
+  const crop = CROPS[cropId];
+  if (!friend || !crop) return { ok: false, reason: '没有这件东西' };
+
+  const itemId = produceId(cropId);
+  if (!inventory.has(itemId)) return { ok: false, reason: '仓库里没有这种产出' };
+  inventory.take(itemId, 1);
+
+  const gain = giftRelGain(crop.lv);
+  const now = Date.now();
+  const relation = adjustRelation(PLAYER_ID, friend.id, gain);
+
+  logFriend(friend, now, '🎁', `${state.farm.name} 送来 ${crop.emoji}${crop.name} ×1`);
+  player.addLog('🎁', `给 ${friend.name} 送了一份 ${crop.emoji}${crop.name}（好感 +${gain}）`, now, [PLAYER_ID, friend.id]);
+
+  await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
+  emit(EVENTS.FRIENDS);
+  emit(EVENTS.INVENTORY);
+  emit(EVENTS.PLAYER);
+  emit(EVENTS.RELATION);
+
+  notify(`🎁 把 ${crop.emoji}${crop.name} 送给了 ${friend.name}（好感 +${gain}，现在 ${relation}）`, 'gold');
+  return { ok: true, gain, relation };
 }

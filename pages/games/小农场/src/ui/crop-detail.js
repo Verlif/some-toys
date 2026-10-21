@@ -114,5 +114,7 @@ export function plotStatusHTML(mods) {
   if (mods.left > 1) chips.push(cropChipHTML(`还能收 ${mods.left} 茬`));
   if (mods.bonus > 0) chips.push(cropChipHTML(`产量 +${mods.bonus}%`, 'gold'));
   if (mods.pending) chips.push(cropChipHTML(`可收 ${mods.pending} 个`));
+  // 成熟时还欠着浇水 / 杀虫的账：产量已经在摇定那一刻扣掉了，这里说明原因
+  if (mods.penalty > 0) chips.push(cropChipHTML(`照料不周 · 产量 −${mods.penalty}%`));
   return chips.join('');
 }

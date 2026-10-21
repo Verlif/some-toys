@@ -18,6 +18,7 @@ import { mountModal } from './ui/modal.js';
 import { mountInlineActions } from './ui/inline-actions.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
 import { mountDogCaught } from './ui/dog-caught.js';
+import { flushOfflineGifts, mountGift } from './ui/gift.js';
 import { mountHud, renderHud } from './ui/hud.js';
 import { mountSubpage, renderCurrent, syncCoins } from './ui/subpage.js';
 import { mountSheet } from './ui/sheet.js';
@@ -57,6 +58,7 @@ async function boot() {
   mountInlineActions();
   mountSignCelebrate();
   mountDogCaught();
+  mountGift();
   mountHud();
   mountSubpage();
   mountSheet();
@@ -97,6 +99,9 @@ async function boot() {
   });
 
   await bootDone();
+
+  // 离线期间邻居送的礼：启动画面收起来之后再整屏补播
+  flushOfflineGifts();
 
   /* ⑤ 心跳与轮询 */
   // 心跳只在农场页可见时刷新地块

@@ -694,32 +694,6 @@
 }
 .npc-badge.ripe { background: #fdf0d4; color: #a07818; }
 
-.npc-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 7px;
-  margin: 12px 0;
-}
-.npc-stat {
-  background: #f7faf4;
-  border-radius: 11px;
-  padding: 8px 4px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.npc-stat span { font-size: 10px; color: var(--muted); font-weight: 600; }
-.npc-stat b {
-  font-size: 12px;
-  color: #40503c;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .npc-section-title {
   font-size: 12px;
   font-weight: 700;
@@ -1728,7 +1702,10 @@
   margin: -4px 0 11px;
 }
 
-/* ---------- 邻居信息区：2×2 网格，状态文本放得下 ---------- */
+/* ---------- 邻居信息区：两列，长文案占满一行 ----------
+   两列是手机上的妥协：四列时「🐕 柴犬 · 62% 在看家」这种文案
+   塞进 1/4 宽只会被省略号吃掉，玩家根本看不到狗在不在岗。
+   守护犬与偷菜两句再各占满一行（.wide）。 */
 .npc-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1758,6 +1735,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 占满一行：守护犬 / 偷菜这类长文案 */
+.npc-stat.wide { grid-column: 1 / -1; }
 
 /* ============================================================
    藏宝图与冒险（弹窗部分）
@@ -2291,4 +2270,98 @@
   font-size: 11px;
   line-height: 1.9;
   color: var(--muted);
+}
+
+/* ---------- 好感度 ---------- */
+/* 一对农场一个值（-200 ~ 200）。分六档配色，标签与数值一起显示：
+   光看数字没有「关系」的感觉，光看标签又不知道差多少。 */
+.rel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  /* 一道极淡的描边：少了它，「平常」这种中性档的底色和卡片底几乎一样，
+     看上去就只剩一串数字，不像个标签 */
+  border: 1px solid rgba(60, 80, 55, .12);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rel-best { background: #dff3e4; color: #2f7d4f; }
+.rel-close { background: #e6f5e8; color: #3f8a5e; }
+.rel-good { background: #edf6e2; color: #4b7d3f; }
+.rel-plain { background: #eef0e9; color: #6f7869; }
+.rel-cold { background: #fbf0dd; color: #a06a2c; }
+.rel-bad { background: #fbe7e4; color: #b3453a; }
+/* 送礼清单里那句「送他会涨 +N」 */
+.rel-gain { color: #2f7d4f; }
+
+/* ---------- 收到赠礼（整屏） ---------- */
+/* 离线攒下的礼物上线时补播：压暗整屏，中间一枚大图标 + 一句谁送的。
+   点任意处收下，排队里还有就接着播。 */
+.gift-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  /* 深底 + 一圈柔光，不用「深色渐变铺满」：铺满式的半透明渐变在
+     合成层上容易被渲染成一整片浅色，压不住底下的页面 */
+  background-color: rgba(14, 26, 12, .9);
+  background-image: radial-gradient(circle at 50% 38%, rgba(126, 186, 112, .34), rgba(14, 26, 12, 0) 62%);
+  cursor: pointer;
+  /* 刻意不做 opacity 动画/过渡：整层在 opacity 动画期间被提升为合成层，
+     半透明底色会渲染成一整片浅色（压不住底下的页面），实测很明显。
+     入场动效全部交给礼盒自己的 giftPop —— 底色一出现就是满的。 */
+}
+.gift-layer[hidden] { display: none; }
+
+.gift-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+/* 送礼的人：一枚小头像挂在礼盒上方 */
+.gift-from {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .16);
+  border: 2px solid rgba(255, 255, 255, .3);
+  display: grid;
+  place-items: center;
+  font-size: 27px;
+  margin-bottom: 2px;
+  animation: fade .3s ease both;
+}
+.gift-emoji {
+  font-size: 108px;
+  line-height: 1;
+  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, .5));
+  animation: giftPop .62s cubic-bezier(.2, 1.5, .45, 1) both;
+}
+.gift-title {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff8e6;
+  letter-spacing: .4px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+  animation: fade .32s ease .1s both;
+}
+.gift-sub {
+  font-size: 12px;
+  color: rgba(255, 248, 230, .72);
+  animation: fade .32s ease .2s both;
+}
+@keyframes giftPop {
+  0% { transform: scale(.3) rotate(-18deg); opacity: 0; }
+  62% { transform: scale(1.12) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
 }

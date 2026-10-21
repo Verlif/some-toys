@@ -28,16 +28,13 @@ import { formatCoins, randInt } from '../core/utils.js';
 import {
   ACTIONS_PER_VISIT,
   BOOST_CAP,
-  CARE_JITTER,
   DETAILED_WINDOW,
   LOG_LIMIT,
   MAX_VISITS_PER_NPC,
   PERSONALITIES,
-  PEST_INTERVAL,
   PEST_YIELD_BONUS,
   PLAYER_FARM_WEIGHT,
   STEAL_CHANCE,
-  WATER_INTERVAL,
   cropsNearLevel,
   emptyNpcPlot,
   expectedGapMs,
@@ -46,6 +43,15 @@ import {
   shuffled,
   syncNpcPlots,
 } from '../data/friends.js';
+import { carePenalty, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
+import {
+  REL_PER_CARE,
+  giftChanceFor,
+  giftRelGain,
+  helpWeightFor,
+  stealRelLoss,
+  stealWeightFor,
+} from '../data/relation.js';
 import { SOILS } from '../data/soils.js';
 import {
   DOG_FINE_MULTIPLE,
@@ -145,6 +151,8 @@ function actHarvest(npc, at) {
     // 邻居捉过虫的地也有产量加成；土地倍率与玩家同一套
     const soilMul = SOILS[plot.soil]?.yieldMul || 1;
     let boosted = Math.floor(amount * (1 + (plot.boost || 0)) * soilMul);
+    // 成熟时还挂着「该浇水 / 该杀虫」的账：和玩家一样 −15% / −40%
+    boosted = Math.floor(boosted * carePenalty(plot).mul);
     // 被顺走过几个就少收几个 —— 不做「减半」这种翻倍惩罚
     boosted = Math.max(0, boosted - (plot.stolenCount || 0));
     totalValue += boosted * crop.sell;
@@ -164,6 +172,10 @@ function actHarvest(npc, at) {
       plot.stolen = false;
       plot.stolenCount = 0;
       plot.guarded = false;
+      // 照料次数也跟着回到 0，重新按 1 小时窗口开始排
+      plot.waterTimes = 0;
+      plot.pestTimes = 0;
+      scheduleCare(plot, at);
     }
     acted = true;
   }
@@ -202,9 +214,10 @@ function actPlant(npc, at) {
     plot.stolenCount = 0;
     plot.guarded = false;
     plot.boost = 0;
-    // 邻居也会遇到缺水与生虫，这是玩家能插手的地方
-    plot.waterAt = at + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
-    plot.pestAt = at + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+    // 邻居也会缺水、生虫 —— 这是玩家能插手的地方，规则与玩家农场完全一致
+    plot.waterTimes = 0;
+    plot.pestTimes = 0;
+    scheduleCare(plot, at);
     names.push(`${crop.emoji}${crop.name}`);
   }
 
@@ -218,13 +231,13 @@ function actTend(npc, at) {
   let tended = 0;
   for (const plot of npc.plots) {
     if (!plot.cropId) continue;
-    if (at >= (plot.waterAt || 0)) {
-      plot.waterAt = at + WATER_INTERVAL;
+    if (needsWater(plot, at)) {
+      serveCare(plot, 'water', at);
       tended += 1;
     }
-    if (at >= (plot.pestAt || 0)) {
-      plot.pestAt = at + PEST_INTERVAL;
+    if (needsPest(plot, at)) {
       plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
+      serveCare(plot, 'pest', at);
       tended += 1;
     }
   }
@@ -284,18 +297,28 @@ function npcGuardChance(owner, at) {
  * 不管偷谁，被狗抓住都要按想偷的果实价值 ×DOG_FINE_MULTIPLE 罚款，
  * 罚金归被偷的农场主；小偷钱不够就倾家荡产。
  */
-function actSteal(npc, neighbours, farm, at) {
+function actSteal(npc, ctx, at) {
   const chance = STEAL_CHANCE[npc.steal] || 0;
   if (!chance || Math.random() >= chance) return null;
+  const { neighbours, farm } = ctx;
 
+  // 挑农场的权重里带上好感度：越是跟他不对付的，越容易被盯上
   const targets = [];
   for (const other of neighbours) {
     if (other === npc) continue;
     const plots = other.plots.filter((plot) => stealable(plot, at));
-    if (plots.length) targets.push({ owner: other, plots, weight: 1 });
+    if (plots.length) {
+      targets.push({ owner: other, plots, weight: stealWeightFor(ctx.rel(npc.id, other.id)) });
+    }
   }
   const mine = (farm?.plots || []).filter((plot) => stealable(plot, at));
-  if (mine.length) targets.push({ owner: farm, plots: mine, weight: PLAYER_FARM_WEIGHT });
+  if (mine.length) {
+    targets.push({
+      owner: farm,
+      plots: mine,
+      weight: PLAYER_FARM_WEIGHT * stealWeightFor(ctx.rel(npc.id, farm.id)),
+    });
+  }
   if (!targets.length) return null;
 
   const { owner, plots } = pickWeighted(targets);
@@ -334,6 +357,8 @@ function actSteal(npc, neighbours, farm, at) {
   plot.stolenAt = at;
 
   npc.coins += crop.sell;
+  // 偷一次，被偷的人心里有数：掉的好感按这份产出的售价折算（至少 1）
+  ctx.relAdjust(npc.id, owner.id, -stealRelLoss(crop.sell));
   // 经验按作物等级给，和玩家照料同一套口径
   gainExp(npc, Math.max(1, Math.round(crop.lv * 0.6)) + 4);
 
@@ -353,39 +378,110 @@ function actSteal(npc, neighbours, farm, at) {
 }
 
 /**
- * 串门帮忙。
- *
- * 性格里的「打理」权重同时代表热心程度：热心的邻居经常顺手替玩家
- * 浇一块地、捉一次虫，悠闲的邻居基本不管闲事。
- * 只在**还没成熟**的地上动手 —— 成熟了就不再需要照料。
+ * 一块地现在需要人搭把手吗（缺水 / 生虫，且还没成熟）
+ * @param {object} plot
+ * @param {number} at
  */
-function actHelpPlayer(npc, farm, at) {
-  if (!farm) return null;
+const careWanted = (plot, at) => Boolean(plot.cropId)
+  && Boolean(CROPS[plot.cropId])
+  && at < plot.readyAt
+  && (needsWater(plot, at) || needsPest(plot, at));
 
+/**
+ * 串门帮忙：给某户人家浇一块地 / 捉一次虫。
+ *
+ * 谁会去帮谁，看的是**好感度**（helpWeightFor）：交情越好越愿意跑腿，
+ * 结了怨的基本绕着走。玩家农场照样有自己的权重（地最多、最扎眼），
+ * 一次只帮一块地 —— 帮得再多也不该变成「一键托管」。
+ */
+function actCare(npc, ctx, at) {
   const weights = PERSONALITIES[npc.personality].weights;
   if (Math.random() >= Math.min(0.6, weights.tend * 0.12)) return null;
 
-  const needs = farm.plots.filter((p) => p.cropId
-    && CROPS[p.cropId]
-    && at < p.readyAt
-    && (at >= (p.waterAt || 0) || at >= (p.pestAt || 0)));
-  if (!needs.length) return null;
-
-  const plot = pick(needs);
-  const crop = CROPS[plot.cropId];
-
-  if (at >= (plot.waterAt || 0)) {
-    plot.waterAt = at + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
-    farm.cared += 1;
-    farm.log(at, '💧', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 浇了水`, [npc.id, farm.id]);
-    return { emoji: '🤝', text: `帮 ${farm.name} 给 ${crop.emoji}${crop.name} 浇了水` };
+  const targets = [];
+  for (const other of ctx.neighbours) {
+    if (other === npc) continue;
+    const needs = other.plots.filter((p) => careWanted(p, at));
+    if (needs.length) {
+      targets.push({ owner: other, plots: needs, weight: helpWeightFor(ctx.rel(npc.id, other.id)) });
+    }
   }
+  if (ctx.farm) {
+    const needs = ctx.farm.plots.filter((p) => careWanted(p, at));
+    if (needs.length) {
+      targets.push({
+        owner: ctx.farm,
+        plots: needs,
+        weight: PLAYER_FARM_WEIGHT * helpWeightFor(ctx.rel(npc.id, ctx.farm.id)),
+      });
+    }
+  }
+  if (!targets.length) return null;
 
-  plot.pestAt = at + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
-  plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
-  farm.cared += 1;
-  farm.log(at, '🐛', `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} 捉了虫`, [npc.id, farm.id]);
-  return { emoji: '🤝', text: `帮 ${farm.name} 给 ${crop.emoji}${crop.name} 捉了虫` };
+  const { owner, plots } = pickWeighted(targets);
+  const plot = pick(plots);
+  const crop = CROPS[plot.cropId];
+  const isPlayer = owner === ctx.farm;
+  const water = needsWater(plot, at);
+
+  if (water) serveCare(plot, 'water', at);
+  else {
+    plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
+    serveCare(plot, 'pest', at);
+  }
+  // 打理一次 +1 好感，不管帮的是玩家还是别的邻居
+  ctx.relAdjust(npc.id, owner.id, REL_PER_CARE);
+
+  const emoji = water ? '💧' : '🐛';
+  const verb = water ? '浇了水' : '捉了虫';
+  if (isPlayer) {
+    owner.cared += 1;
+    owner.log(at, emoji, `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} ${verb}`, [npc.id, owner.id]);
+  } else {
+    log(owner, at, emoji, `${npc.name} 路过，顺手给 ${crop.emoji}${crop.name} ${verb}`);
+  }
+  return { emoji: '🤝', text: `帮 ${owner.name} 给 ${crop.emoji}${crop.name} ${verb}` };
+}
+
+/**
+ * 送礼：只会送给**交情够好**的人（好感 60 分起，越高越常送）。
+ *
+ * 送给玩家的是真东西 —— 进背包、写日志，UI 还会弹一屏「收到赠礼」；
+ * 送给别的邻居的只是人情（NPC 没有背包），两边各记一条动态。
+ */
+function actGift(npc, ctx, at) {
+  const cands = [];
+  for (const other of ctx.neighbours) {
+    if (other === npc) continue;
+    const rel = ctx.rel(npc.id, other.id);
+    const chance = giftChanceFor(rel);
+    if (chance > 0) cands.push({ owner: other, rel, chance });
+  }
+  if (ctx.farm) {
+    const rel = ctx.rel(npc.id, ctx.farm.id);
+    const chance = giftChanceFor(rel);
+    if (chance > 0) cands.push({ owner: ctx.farm, rel, chance });
+  }
+  if (!cands.length) return null;
+
+  // 先挑交情最好的那家，再掷一次「今天送不送」
+  cands.sort((a, b) => b.rel - a.rel);
+  const target = cands[0];
+  if (Math.random() >= target.chance) return null;
+
+  const pool = cropsNearLevel(npc.level);
+  if (!pool.length) return null;
+  const cropId = pick(pool);
+  const crop = CROPS[cropId];
+  const gain = giftRelGain(crop.lv);
+  ctx.relAdjust(npc.id, target.owner.id, gain);
+
+  if (target.owner === ctx.farm) {
+    ctx.receiveGift?.(at, npc, cropId, 1);
+  } else {
+    log(target.owner, at, '🎁', `${npc.name} 送来一份 ${crop.emoji}${crop.name}`);
+  }
+  return { emoji: '🎁', text: `给 ${target.owner.name} 送去一份 ${crop.emoji}${crop.name}` };
 }
 
 /**
@@ -411,7 +507,8 @@ function actAdventure(npc, farm, at) {
 
 /**
  * 每种动作的签名统一成 (npc, at, ctx)：
- * ctx = { neighbours, farm }，动作内部自己挑需要的部分。
+ * ctx = { neighbours, farm, rel, relAdjust, receiveGift }，
+ * 动作内部自己挑需要的部分 —— 模拟层始终不认识 store，好感度也是「传进来的」。
  */
 const STEPS = {
   harvest: (npc, at) => actHarvest(npc, at),
@@ -420,8 +517,11 @@ const STEPS = {
   /** 收尾补种：有空地才种，不让邻居的农场长期荒着 */
   replant: (npc, at) => (npc.plots.some((p) => !p.cropId) ? actPlant(npc, at) : null),
   feed: (npc, at) => actFeedDog(npc, at),
-  steal: (npc, at, ctx) => actSteal(npc, ctx.neighbours, ctx.farm, at),
-  help: (npc, at, ctx) => actHelpPlayer(npc, ctx.farm, at),
+  steal: (npc, at, ctx) => actSteal(npc, ctx, at),
+  /** 帮别人照料一块地（玩家或别的邻居，看交情） */
+  care: (npc, at, ctx) => actCare(npc, ctx, at),
+  /** 给交情够好的人送一份产出 */
+  gift: (npc, at, ctx) => actGift(npc, ctx, at),
   adventure: (npc, at, ctx) => actAdventure(npc, ctx.farm, at),
 };
 
@@ -451,8 +551,8 @@ export function planVisit(npc) {
     steps.push(action);
   }
 
-  // 顺菜与串门帮忙不受性格权重的名额限制 —— 上线再忙也可能顺一手
-  return [...steps, 'replant', 'feed', 'steal', 'help', 'adventure'];
+  // 顺菜、串门帮忙、送礼不受性格权重的名额限制 —— 上线再忙也可能做一件
+  return [...steps, 'replant', 'feed', 'steal', 'care', 'gift', 'adventure'];
 }
 
 /**
@@ -495,9 +595,8 @@ export function runStep(npc, at, kind, ctx) {
  * 离线结算用：一口气跑完一整趟上线。
  * @returns {number} 这次上线之前的等级
  */
-function runVisit(npc, neighbours, at, farm) {
+function runVisit(npc, ctx, at) {
   const levelBefore = beginVisit(npc, at);
-  const ctx = { neighbours, farm };
 
   for (const kind of planVisit(npc)) runStep(npc, at, kind, ctx);
 
@@ -506,7 +605,7 @@ function runVisit(npc, neighbours, at, farm) {
 
   // 农场升级也是新闻：一次上线涨好几级的时候只报最终等级
   if (npc.level > levelBefore) {
-    farm?.news?.(at, '🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, npc.id);
+    ctx.farm?.news?.(at, '🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, npc.id);
   }
   return levelBefore;
 }
@@ -559,9 +658,11 @@ function bulkAdvance(npc, until) {
       stolen: false,
       stolenCount: 0,
       boost: 0,
-      waterAt: until + WATER_INTERVAL * (1 - CARE_JITTER + randFloat() * CARE_JITTER * 2),
-      pestAt: until + PEST_INTERVAL * (1 - CARE_JITTER + randFloat() * CARE_JITTER * 2),
+      waterTimes: 0,
+      pestTimes: 0,
     });
+    // 远期不逐次模拟，但「会不会缺水 / 生虫」照样按新规则排一次
+    scheduleCare(plot, until);
   });
   // 这段时间可能连升了好几级：把新解锁的地块补上
   syncNpcPlots(npc, until);
@@ -602,7 +703,8 @@ export function estimateWork(npcs, now) {
  * 把一位邻居推进到 now，逐条执行他这期间的每一次上线。
  *
  * @param {object} npc
- * @param {object[]} npcs 全部 NPC，用于互相顺菜
+ * @param {{neighbours: object[], farm: ?object, rel: Function, relAdjust: Function,
+ *          receiveGift?: Function}} ctx 模拟上下文（含好感度读写，由 social 注入）
  * @param {number} now
  * @param {?object} [farm] 玩家农场视图
  * @param {(visit: {at: number, entries: object[], delta: object,
@@ -612,7 +714,7 @@ export function estimateWork(npcs, now) {
  * @param {number} [deferFrom] 从这个时刻起的上线都留给调用方演出
  * @returns {number} 精细模拟的会话数
  */
-export function simulateNpcUntil(npc, npcs, now, farm = null, onVisit = null, deferFrom = Infinity) {
+export function simulateNpcUntil(npc, ctx, now, onVisit = null, deferFrom = Infinity) {
   const boundary = now - DETAILED_WINDOW;
   let detailed = 0;
   let guard = 0;
@@ -634,8 +736,9 @@ export function simulateNpcUntil(npc, npcs, now, farm = null, onVisit = null, de
 
     // 记下这次上线前的动态列表，之后用「对象引用」认出新写的那些
     const before = npc.log.slice();
+    const farm = ctx.farm;
     const beforeCounts = { stolen: farm?.stolen ?? 0, cared: farm?.cared ?? 0, caught: farm?.caught ?? 0 };
-    const levelBefore = runVisit(npc, npcs, at, farm);
+    const levelBefore = runVisit(npc, ctx, at);
 
     onVisit?.({
       at,

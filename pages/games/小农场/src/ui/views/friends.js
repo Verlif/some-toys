@@ -10,9 +10,10 @@
  */
 import { byId, delegate, escapeHtml, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
-import { state } from '../../store/state.js';
+import { PLAYER_ID, state } from '../../store/state.js';
 import * as social from '../../store/social.js';
 import { formatCoins } from '../../core/utils.js';
+import { getRelation, relationBadge } from '../../store/relation.js';
 import { recordItemsHTML } from '../records.js';
 import { openFriendModal } from '../friend-modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
@@ -53,6 +54,7 @@ function logHTML(friend, now, limit = 3) {
 function cardHTML(friend, now) {
   const ripe = social.stealableCount(friend, now);
   const care = social.careCount(friend, now);
+  const rel = relationBadge(getRelation(PLAYER_ID, friend.id));
 
   return `
     <div class="friend-card" data-action="visit" data-id="${friend.id}" role="button" tabindex="0">
@@ -66,6 +68,7 @@ function cardHTML(friend, now) {
         <div class="friend-stats">
           <span class="friend-chip job">${escapeHtml(friend.profession || '邻居')}</span>
           <span class="friend-chip">💰 ${formatCoins(friend.coins)}</span>
+          <span class="friend-chip rel-${rel.key}">${rel.label} ${rel.text}</span>
           ${ripe > 0 ? `<span class="friend-chip ripe">🟡 ${ripe} 块可偷</span>` : ''}
           ${care > 0 ? `<span class="friend-chip care">💧 ${care} 块待照料</span>` : ''}
         </div>

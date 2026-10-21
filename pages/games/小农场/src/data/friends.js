@@ -12,18 +12,27 @@
 import { CROPS } from './crops.js';
 import { SOILS } from './soils.js';
 import { unlockedPlotCount } from './progression.js';
+import { scheduleCare } from './care.js';
 import { randInt } from '../core/utils.js';
 
 /* ---------- 性格：决定上线时各行为的权重 ---------- */
+
+/**
+ * 性格有两重作用：
+ *   - `weights` 决定上线时先做什么（收获 / 播种 / 打理）；
+ *   - `friendly` 是这个人的**基础好感度**，两个人之间的好感就从这里起算
+ *     （见 data/relation.js 的 baseRelation）。
+ *     热心 / 勤勉的人天生讨喜，爱占便宜 / 生意人则要多走动才熟。
+ */
 export const PERSONALITIES = {
-  diligent: { name: '勤勉', weights: { harvest: 4, plant: 4, tend: 3 } },
-  thrifty: { name: '精打细算', weights: { harvest: 3, plant: 2, tend: 2 } },
-  merchant: { name: '生意人', weights: { harvest: 2, plant: 2, tend: 1 } },
-  scholar: { name: '爱钻研', weights: { harvest: 2, plant: 3, tend: 4 } },
-  leisurely: { name: '悠闲', weights: { harvest: 2, plant: 1, tend: 1 } },
-  greedy: { name: '爱占便宜', weights: { harvest: 2, plant: 2, tend: 1 } },
-  friendly: { name: '热心', weights: { harvest: 3, plant: 3, tend: 4 } },
-  boss: { name: '场面人', weights: { harvest: 3, plant: 3, tend: 2 } },
+  diligent: { name: '勤勉', weights: { harvest: 4, plant: 4, tend: 3 }, friendly: 45 },
+  thrifty: { name: '精打细算', weights: { harvest: 3, plant: 2, tend: 2 }, friendly: 10 },
+  merchant: { name: '生意人', weights: { harvest: 2, plant: 2, tend: 1 }, friendly: -15 },
+  scholar: { name: '爱钻研', weights: { harvest: 2, plant: 3, tend: 4 }, friendly: 35 },
+  leisurely: { name: '悠闲', weights: { harvest: 2, plant: 1, tend: 1 }, friendly: 5 },
+  greedy: { name: '爱占便宜', weights: { harvest: 2, plant: 2, tend: 1 }, friendly: -45 },
+  friendly: { name: '热心', weights: { harvest: 3, plant: 3, tend: 4 }, friendly: 75 },
+  boss: { name: '场面人', weights: { harvest: 3, plant: 3, tend: 2 }, friendly: 25 },
 };
 
 /* ---------- 偷菜倾向 ---------- */
@@ -247,16 +256,9 @@ export const LOG_LIMIT = 10;
 
 /* ---------- 照料（浇水 / 捉虫）---------- */
 
-/** 作物多久会「缺水」，需要玩家或 NPC 浇水 */
-export const WATER_INTERVAL = 6 * HOUR;
-
-/** 作物多久会「生虫」，需要玩家或 NPC 捉虫 */
-export const PEST_INTERVAL = 12 * HOUR;
-
-/** 照料触发时间的随机浮动区间：实际是 interval × (1 ± 30%) */
-export const CARE_JITTER = 0.3;
-
-/** 浇水一次，当前阶段剩余时间缩减的比例 */
+/**
+ * 浇水一次，当前阶段剩余时间缩减的比例
+ */
 export const WATER_SPEEDUP = 0.1;
 
 /** 捉虫一次，产量增加的比例 */
@@ -264,6 +266,12 @@ export const PEST_YIELD_BONUS = 0.1;
 
 /** 产量加成的上限（最多 +100%） */
 export const BOOST_CAP = 1;
+
+/**
+ * 「什么时候该浇水 / 生虫」现在由 data/care.js 按次数随机排，
+ * 不再是固定周期 —— 原来那组 WATER_INTERVAL / PEST_INTERVAL / CARE_JITTER
+ * 常量已经删掉，需要排程请调用 care.js 的 nextCareAt / scheduleCare。
+ */
 
 /* ---------- 农场生成 ---------- */
 
@@ -283,7 +291,7 @@ function randomNpcPlot(id, pool, at, soil = 'normal') {
   const crop = CROPS[cropId];
   const total = npcGrowMs(crop);
   const elapsed = Math.random() * total * 0.9;
-  return {
+  const plot = {
     id,
     // 邻居的土地：等级够得着的档位里随机——他们不买地，但也该有点家底
     soil,
@@ -296,9 +304,14 @@ function randomNpcPlot(id, pool, at, soil = 'normal') {
     stolen: false,
     stolenCount: 0,
     boost: 0,
-    waterAt: 0,
-    pestAt: 0,
+    waterNext: 0,
+    pestNext: 0,
+    waterTimes: 0,
+    pestTimes: 0,
   };
+  // 从「现在」往后排：刚生成的一座农场不该一进门就满地待照料
+  scheduleCare(plot, at);
+  return plot;
 }
 
 /**
@@ -419,6 +432,9 @@ export const emptyNpcPlot = () => ({
   /** 本轮被守护犬拦下过：整座农场都不能再偷 */
   guarded: false,
   boost: 0,
-  waterAt: 0,
-  pestAt: 0,
+  /** 下一次需要浇水 / 杀虫的时间（0 = 本轮不会再需要）与已处理次数 */
+  waterNext: 0,
+  pestNext: 0,
+  waterTimes: 0,
+  pestTimes: 0,
 });

@@ -2,9 +2,10 @@
  * 全局状态：整个游戏只有这一份内存状态。
  *
  * 对象结构与存档结构一一对应：
- *   state.farm     玩家农场（farm 表里 kind='player' 的那一行）
- *   state.friends  邻居农场（同一张表里 kind='npc' 的行）
- *   state.news     全镇时报
+ *   state.farm       玩家农场（farm 表里 kind='player' 的那一行）
+ *   state.friends    邻居农场（同一张表里 kind='npc' 的行）
+ *   state.relations  两两之间的好感度（relation 表，键是 `a|b`）
+ *   state.news       全镇时报
  *
  * 每座农场都自带 plots / log —— 它们其实来自 plot / log 两张子表，
  * 读档时按 farmId 挂回农场，写档时再拆回去（见 core/storage.js）。
@@ -42,6 +43,8 @@ import {
   rollNpcDogSatiety,
 } from '../data/dogs.js';
 import { WORKSHOP_MAX_LEVEL } from '../data/workshop.js';
+import { baseRelation, readRelations, relKey } from '../data/relation.js';
+import { scheduleCare } from '../data/care.js';
 import { dayKey, randInt, safeNum } from '../core/utils.js';
 
 /** 玩家农场的 id：farm 表的主键，也是地块 / 日志表里的 farmId */
@@ -51,13 +54,16 @@ export const PLAYER_ID = 'player';
 const HOUR = 3600_000;
 
 /** 地块上所有「时间戳」字段，读档时要逐个清洗成有限数 */
-const PLOT_TIMES = ['plantedAt', 'readyAt', 'total', 'waterAt', 'pestAt', 'stolenAt'];
+const PLOT_TIMES = ['plantedAt', 'readyAt', 'total', 'waterNext', 'pestNext', 'stolenAt'];
 
-/** @type {{farm: object, friends: object[], bag: Record<string, number>, news: object[]}} */
+/** @type {{farm: object, friends: object[], bag: Record<string, number>,
+ *          relations: Record<string, number>, news: object[]}} */
 export const state = {
   farm: null,
   friends: [],
   bag: {},
+  /** 好感度：`{ "npc01|npc02": 45 }`，一对只有一条，0 不落键 */
+  relations: {},
   news: [],
 };
 
@@ -125,9 +131,14 @@ function createPlot(id) {
     yieldBonus: 0,
     /** 捉虫带来的产量加成，每捉一次 +10% */
     boost: 0,
-    /** 下次需要浇水 / 捉虫的时间戳 */
-    waterAt: 0,
-    pestAt: 0,
+    /**
+     * 下一次需要浇水 / 杀虫的时间戳（0 = 本轮不会再需要），
+     * 以及这一轮已经处理过几次 —— 排程窗口就按次数算，见 data/care.js
+     */
+    waterNext: 0,
+    pestNext: 0,
+    waterTimes: 0,
+    pestTimes: 0,
     /** 本轮是否已被邻居顺走过，重新种下后刷新 */
     stolen: false,
     /** 本轮被顺走了几个，收获时扣掉 */
@@ -182,6 +193,20 @@ function cleanTimes(target) {
   return target;
 }
 
+/**
+ * 旧档的照料是「固定周期」的 waterAt / pestAt，次数反推不出来 ——
+ * 直接丢掉旧值，按「刚种下」的节奏重排一次（这一轮从头算，不会白扣产量）。
+ * @param {object} merged 清洗后的地块
+ * @param {object} raw 存档里的原始行
+ */
+function migrateCare(merged, raw) {
+  if (!raw || !('waterAt' in raw || 'pestAt' in raw)) return merged;
+  delete merged.waterAt;
+  delete merged.pestAt;
+  if (merged.cropId) scheduleCare(merged, Date.now());
+  return merged;
+}
+
 /** 玩家地块 */
 function normalizePlot(plot, index) {
   const merged = cleanTimes({ ...createPlot(index), ...plot });
@@ -193,7 +218,13 @@ function normalizePlot(plot, index) {
   merged.stolen = Boolean(merged.stolen);
   merged.stolenCount = safeNum(merged.stolenCount, 0);
   merged.pendingYield = safeNum(merged.pendingYield, 0);
-  return merged;
+  merged.waterTimes = safeNum(merged.waterTimes, 0);
+  merged.pestTimes = safeNum(merged.pestTimes, 0);
+  // 旧档排过 0 次、又还在长：补一次排程，否则这块地永远不会缺水
+  if (merged.cropId && !merged.waterNext && !merged.pestNext && !('waterAt' in (plot || {}))) {
+    scheduleCare(merged, Date.now());
+  }
+  return migrateCare(merged, plot);
 }
 
 /**
@@ -211,7 +242,12 @@ function normalizeNpcPlot(plot, index, level = 1) {
   merged.guarded = Boolean(merged.guarded);
   merged.stolen = Boolean(merged.stolen);
   merged.stolenCount = safeNum(merged.stolenCount, 0);
-  return merged;
+  merged.waterTimes = safeNum(merged.waterTimes, 0);
+  merged.pestTimes = safeNum(merged.pestTimes, 0);
+  if (merged.cropId && !merged.waterNext && !merged.pestNext && !('waterAt' in (plot || {}))) {
+    scheduleCare(merged, Date.now());
+  }
+  return migrateCare(merged, plot);
 }
 
 /** 玩家农场：缺什么补什么，多余的字段留着不动 */
@@ -363,13 +399,42 @@ export async function initState() {
   // 名单里已经没有的邻居：连地块与日志一起清掉，免得留下孤儿数据
   await dropFarms([...rows.keys()]);
 
+  /* 好感度：读档 + 按性格补上还没有记录的那些对 */
+  const ids = [PLAYER_ID, ...state.friends.map((friend) => friend.id)];
+  state.relations = readRelations(save.relations, new Set(ids));
+  seedRelations(ids);
+
   await commit({
     farms: [state.farm, ...state.friends],
     bag: state.bag,
     news: state.news,
+    relations: state.relations,
   });
 
   return state;
+}
+
+/**
+ * 给还没有记录的一对按性格算一个起点。
+ *
+ * 玩家没有性格档案，按 0 算 —— 所以玩家与「热心」天生 +37、
+ * 与「爱占便宜」天生 −22，第一次点开邻居就能看出谁跟谁投缘。
+ * @param {string[]} ids
+ */
+function seedRelations(ids) {
+  const friendly = new Map(
+    state.friends.map((friend) => [friend.id, PERSONALITIES[friend.personality]?.friendly || 0]),
+  );
+  const valueOf = (id) => (id === PLAYER_ID ? 0 : friendly.get(id) || 0);
+
+  for (let i = 0; i < ids.length; i += 1) {
+    for (let j = i + 1; j < ids.length; j += 1) {
+      const key = relKey(ids[i], ids[j]);
+      if (state.relations[key] !== undefined) continue;
+      const base = baseRelation(valueOf(ids[i]), valueOf(ids[j]));
+      if (base) state.relations[key] = base;
+    }
+  }
 }
 
 /** 按序号取玩家地块 */

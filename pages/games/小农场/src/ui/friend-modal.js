@@ -10,17 +10,21 @@
  * 滚动位置与日志区的视口都保持不变。
  */
 import { escapeHtml } from '../core/dom.js';
-import { getFriend } from '../store/state.js';
+import { PLAYER_ID, getFriend } from '../store/state.js';
 import * as social from '../store/social.js';
 import { completeGuide } from '../store/codex.js';
-import { CROPS } from '../data/crops.js';
+import { CROPS, CROP_IDS } from '../data/crops.js';
+import { produceId } from '../data/keys.js';
+import { clampRelation, giftRelGain } from '../data/relation.js';
+import { getRelation, relationBadge } from '../store/relation.js';
 import { PERSONALITIES, STEAL_LABELS } from '../data/friends.js';
 import { dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
 import { count } from '../store/inventory.js';
 import { stageEmoji, stageName, stageOf } from '../data/stages.js';
 import { fmtDuration, formatCoins } from '../core/utils.js';
-import { openModal } from './modal.js';
+import { notify } from '../store/notify.js';
+import { closeModal, openModal } from './modal.js';
 import { openCropModal } from './crop-detail.js';
 import { recordItemsHTML } from './records.js';
 
@@ -186,12 +190,14 @@ function logBoxHTML(friend, now) {
 function quickButtons(friend, now) {
   const water = count(SPRINKLER_ID);
   const pest = count(PESTICIDE_ID);
-  if (!water && !pest) return '';
 
   const needWater = friend.plots.filter((p) => social.needsWater(p, now)).length;
   const needPest = friend.plots.filter((p) => social.needsPest(p, now)).length;
 
+  // 送礼永远是第一颗按钮：这是唯一能主动拉近关系的操作，
+  // 而一键浇水 / 杀虫要有道具才出现
   return [
+    `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>`,
     water ? `<button class="btn small ghost" data-action="npc-water-all" data-id="${friend.id}"
       ${needWater ? '' : 'disabled'}>🚿 一键浇水 ${needWater ? `（${needWater} 块）` : '· 暂无需求'}
       <span class="tool-count">×${water}</span></button>` : '',
@@ -199,6 +205,127 @@ function quickButtons(friend, now) {
       ${needPest ? '' : 'disabled'}>🧴 一键杀虫 ${needPest ? `（${needPest} 块）` : '· 暂无需求'}
       <span class="tool-count">×${pest}</span></button>` : '',
   ].join('');
+}
+
+/**
+ * 送礼：先从仓库里挑一样农产品，再确认。
+ *
+ * 好感涨多少跟**这份产出的等级**挂钩（`round(等级 / 2)`，至少 1），
+ * 所以列表里直接把「+N 好感」写在每一行上，玩家自己掂量值不值。
+ * 送出即扣货、不可撤销，所以一定要过一道确认框。
+ *
+ * @param {string} friendId
+ * @param {Function} [onDone] 送完之后刷新外层弹窗（好感 / 记录都变了）
+ */
+function openGiftPicker(friendId, onDone) {
+  const friend = getFriend(friendId);
+  if (!friend) return;
+  const stocked = CROP_IDS.filter((id) => count(produceId(id)) > 0);
+  const rel = relationBadge(getRelation(PLAYER_ID, friend.id));
+
+  const rows = stocked.map((id) => {
+    const crop = CROPS[id];
+    const have = count(produceId(id));
+    return `
+      <div class="shop-item">
+        <div class="si-emoji">${crop.emoji}</div>
+        <div class="si-body">
+          <div class="si-name">${crop.name}<span class="si-own">· 拥有 ${have}</span></div>
+          <div class="si-meta">Lv.${crop.lv} · 送他会涨 <b class="rel-gain">+${giftRelGain(crop.lv)}</b> 好感</div>
+        </div>
+        <button class="btn small ghost" data-action="gift-ask" data-id="${id}">送这个</button>
+      </div>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🎁 送礼 · ${escapeHtml(friend.name)}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">
+      现在的关系：<b class="rel-${rel.key}">${rel.label} ${rel.text}</b>　·　
+      好感越高，他越愿意来帮你打理，也越常回礼
+    </div>
+    ${stocked.length
+      ? `<div class="list">${rows}</div>`
+      : `<div class="empty-tip">🧺<br>仓库里还没有农产品<br>先去收获一点再来</div>`}
+  `, (action, el) => {
+    // 清单只负责挑，真送出去要再过一道确认（下面是第三层）
+    if (action === 'gift-ask') confirmGift(friendId, el.dataset.id, onDone);
+  });
+}
+
+/**
+ * 送礼的确认框。
+ *
+ * 送出即扣货、**不可撤销**，所以点「送这个」之后还要再问一次。
+ * 框里把三件事摆清楚：送出去几个、仓库还剩几个、关系会从哪一档走到哪一档 ——
+ * 只写「+4 好感」玩家得自己心算，写成「亲近 +92 → 挚交 +96」才有感觉。
+ *
+ * @param {string} friendId
+ * @param {string} cropId
+ * @param {Function} [onDone] 送完之后刷新邻居弹窗（好感 / 记录都变了）
+ */
+function confirmGift(friendId, cropId, onDone) {
+  const friend = getFriend(friendId);
+  const crop = CROPS[cropId];
+  if (!friend || !crop) return;
+
+  const have = count(produceId(cropId));
+  if (have <= 0) {
+    notify('仓库里已经没这种产出了');
+    return;
+  }
+  const gain = giftRelGain(crop.lv);
+  const cur = getRelation(PLAYER_ID, friendId);
+  const before = relationBadge(cur);
+  const after = relationBadge(clampRelation(cur + gain));
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🎁 送出前确认</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+
+    <div class="sd-hero">
+      <div class="sd-emoji">${crop.emoji}</div>
+      <div class="sd-id">
+        <div class="sd-name">${escapeHtml(crop.name)}</div>
+        <div class="sd-tags"><span class="sd-lv">Lv.${crop.lv}</span></div>
+      </div>
+    </div>
+
+    <div class="sd-grid">
+      <div class="sd-cell"><span>送给</span><b>${escapeHtml(friend.name)}</b></div>
+      <div class="sd-cell"><span>送出</span><b>1 份</b></div>
+      <div class="sd-cell"><span>仓库现有</span><b>${have} 份</b></div>
+      <div class="sd-cell"><span>送出后剩余</span><b>${have - 1} 份</b></div>
+      <div class="sd-cell"><span>好感变化</span><b class="rel-gain">+${gain}</b></div>
+      <div class="sd-cell"><span>关系</span><b>
+        <span class="rel-tag rel-${before.key}">${before.label} ${before.text}</span>
+        →
+        <span class="rel-tag rel-${after.key}">${after.label} ${after.text}</span>
+      </b></div>
+    </div>
+
+    <div class="sd-gain">这份${escapeHtml(crop.name)}送出去就拿不回来了</div>
+
+    <div class="rm-actions">
+      <button class="btn ghost" data-close>再想想</button>
+      <button class="btn" data-action="gift-send" data-id="${cropId}">确认送出</button>
+    </div>
+  `, async (action) => {
+    if (action !== 'gift-send') return;
+    const result = await social.sendGift(friendId, cropId);
+    if (!result.ok) {
+      notify(result.reason || '送不出去');
+      return;
+    }
+    // 关掉确认框与这份清单，两级一起收，回到邻居农场
+    closeModal();
+    closeModal();
+    onDone?.();
+  });
 }
 
 /**
@@ -215,21 +342,39 @@ export function openFriendModal(friendId) {
   completeGuide('visit');
   const now = Date.now();
   const stealable = social.stealableCount(friend, now);
-  const dogSatiety = Math.round(dogSatietyAt(friend.dog, now));
-  const dogBreedInfo = dogBreed(friend.dog.breed);
 
-  const stats = [
-    { k: '等级', v: `Lv.${friend.level}` },
-    { k: '身家', v: `${formatCoins(friend.coins)} 💰` },
-    { k: '地块', v: `${friend.plots.length} 块` },
-    {
-      k: '守护犬',
-      v: dogBreedInfo
-        ? `${dogBreedInfo.emoji} ${dogBreedInfo.name} · ${dogSatiety > 0 ? `${dogSatiety}% 在看家` : '饿着，不设防'}`
-        : '🐶 没有狗',
-    },
-    { k: '偷菜', v: STEAL_LABELS[friend.steal] || '偶尔顺菜' },
-  ];
+  /**
+   * 顶部信息格。
+   *
+   * 从「4 列 × 2 行」改成「守护犬与偷菜各占两格」：守护犬那句
+   * 「🐕 柴犬 · 62% 在看家」在手机上根本塞不进 1/4 宽，会被省略号吃掉
+   * —— 这正是玩家反馈的那个溢出。
+   */
+  function statsHTML(current) {
+    const satiety = Math.round(dogSatietyAt(current.dog, now));
+    const breedInfo = dogBreed(current.dog.breed);
+    const rel = relationBadge(getRelation(PLAYER_ID, current.id));
+    return [
+      { k: '等级', v: `Lv.${current.level}` },
+      { k: '身家', v: `${formatCoins(current.coins)} 💰` },
+      { k: '地块', v: `${current.plots.length} 块` },
+      {
+        k: '好感',
+        v: `<span class="rel-tag rel-${rel.key}">${rel.label} ${rel.text}</span>`,
+      },
+      {
+        k: '守护犬',
+        wide: true,
+        v: breedInfo
+          ? `${breedInfo.emoji} ${breedInfo.name} · ${satiety > 0 ? `${satiety}% 在看家` : '饿着，不设防'}`
+          : '🐶 没有狗',
+      },
+      { k: '偷菜', wide: true, v: STEAL_LABELS[current.steal] || '偶尔顺菜' },
+    ].map((s) => `<div class="npc-stat${s.wide ? ' wide' : ''}"><span>${s.k}</span><b>${s.v}</b></div>`)
+      .join('');
+  }
+
+  const stats = statsHTML(friend);
 
   /** 刷新跟着操作的角标 / 提示 / 日志 / 一键条 */
   function refreshChrome(current, at) {
@@ -254,6 +399,10 @@ export function openFriendModal(friendId) {
       const next = document.querySelector('#modal [data-role="log"]');
       if (next) next.scrollTop = keep;
     }
+
+    // 好感度会跟着偷菜 / 打理 / 送礼变，信息格一起刷
+    const statsBox = document.querySelector('#modal [data-role="stats"]');
+    if (statsBox) statsBox.innerHTML = statsHTML(current);
   }
 
   /** 只刷新受影响的这一格 */
@@ -295,9 +444,7 @@ export function openFriendModal(friendId) {
       </div>
     </div>
 
-    <div class="npc-stats">
-      ${stats.map((s) => `<div class="npc-stat"><span>${s.k}</span><b>${s.v}</b></div>`).join('')}
-    </div>
+    <div class="npc-stats" data-role="stats">${stats}</div>
 
     <div class="npc-section-title">🟫 农场（${friend.plots.length} 块）</div>
     <div class="npc-plots">
@@ -311,6 +458,10 @@ export function openFriendModal(friendId) {
     <p class="npc-tip" data-role="tip">${tipText(friend, now)}</p>
   `, async (action, el) => {
     const index = Number(el.dataset.plot);
+    if (action === 'gift-open') {
+      openGiftPicker(friendId, () => refreshChrome(getFriend(friendId), Date.now()));
+      return;
+    }
     if (action === 'crop-info') {
       openFriendCrop(getFriend(el.dataset.id), index);
       return;

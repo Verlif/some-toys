@@ -22,6 +22,7 @@ import { stackClass, yieldClass } from '../meta-tags.js';
 import { closeModal, openModal } from '../modal.js';
 import { activeBreed, dogSatiety, guardChanceNow } from '../../store/dogs.js';
 import { openCropModal, plotStatusHTML } from '../crop-detail.js';
+import { carePenalty } from '../../data/care.js';
 
 /** plotId → { el, key, bar, time } */
 const nodes = new Map();
@@ -132,6 +133,11 @@ function ripeHTML(plot) {
         stolen > 0 ? ` / 本应 <b class="yield-was">${total}</b>` : ''
       }</div>`
     : '';
+  // 成熟那一刻还挂着「该浇水 / 该杀虫」的账：产量已经扣过了，得让玩家看见
+  const care = carePenalty(plot);
+  const careLine = care.pct
+    ? `<div class="plot-sub warn-text">照料不周 · −${care.pct}%</div>`
+    : '';
   return `
     ${boostHTML(plot)}
     <div class="plot-main">
@@ -139,6 +145,7 @@ function ripeHTML(plot) {
         title="查看作物详情">${crop.emoji}</div>
       <div class="plot-name">${crop.name} · 成熟</div>
       ${yieldLine}
+      ${careLine}
       <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
     </div>
     <div class="plot-side">
@@ -170,6 +177,8 @@ function plotKey(plot, status) {
     // 被偷数变化时要重画「可收 X / 本应 Y」
     plot.stolenCount || 0,
     plot.pendingYield || 0,
+    // 减产档位（0 / 15 / 40）
+    carePenalty(plot).pct,
   ].join('|');
 }
 
@@ -568,6 +577,7 @@ function openPlotCrop(plotId) {
       left: leftRounds,
       bonus,
       pending: ripe ? plot.pendingYield || 0 : 0,
+      penalty: ripe ? carePenalty(plot).pct : 0,
     }),
     foot: ripe
       ? '已经成熟了，点右侧「收获」拿收成'

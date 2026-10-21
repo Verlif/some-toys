@@ -51,6 +51,8 @@ npm run check          # 静态校验（9 项，零依赖）
 │   │   ├── soils.js         8 档土地（生成产物，勿手改）
 │   │   ├── progression.js   经验曲线 / 40 块地解锁 / 称号（生成产物，勿手改）
 │   │   ├── stages.js        生长阶段定义与阶段推进算法
+│   │   ├── care.js          照料排程（按次数随机）与减产规则，玩家/邻居共用
+│   │   ├── relation.js      好感度的规则：起点、增减、分档、对行为的权重
 │   │   ├── friends.js       32 位邻居（性格 / 职业 / 上线节奏 / 偷菜倾向 / 等级分布）
 │   │   ├── adventure.js     藏宝图档位、岔路模板、奖励池（含守护犬）
 │   │   ├── dogs.js          10 个守护犬品种、狗粮槽常量、拦截概率
@@ -68,6 +70,7 @@ npm run check          # 静态校验（9 项，零依赖）
 │   │   ├── shop.js          买卖与交易
 │   │   ├── social.js        世界推进（离线结算 / 在线轮询）/ 偷菜 / 帮忙照料
 │   │   ├── dogs.js          守护犬：狗窝 / 上岗 / 共享狗粮槽 / 添粮
+│   │   ├── relation.js      好感度的读写（state.relations + relation 表）
 │   │   ├── adventure.js     藏宝图使用 / 逐张选路 / 奖励发放
 │   │   ├── signin.js        签到与连续签到
 │   │   ├── codex.js         图鉴统计 + 标本制作 + 新手引导
@@ -85,6 +88,7 @@ npm run check          # 静态校验（9 项，零依赖）
 │       ├── inline-tags.js    记录里的人名与作物名标签（都可点）
 │       ├── inline-actions.js 行内标签的点击路由
 │       ├── sign-celebrate.js 签到庆祝浮层
+│       ├── gift.js           收到赠礼（在线 toast / 离线整屏补播）
 │       ├── views/           农场 / 邻居 / 时报 / 商店 四个主页面
 │       └── subpages/        仓库 / 包裹 / 图鉴 / 称号 / 签到 / 引导 / 狗窝 / 种子制造间 / 占位页
 ├── tools/

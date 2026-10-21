@@ -27,6 +27,10 @@ export const EVENTS = {
   PETS: 'state:pets',
   /** 时报有新的大新闻 */
   NEWS: 'state:news',
+  /** 好感度变化（偷菜掉、打理涨、送礼涨） */
+  RELATION: 'state:relation',
+  /** 收到邻居的赠礼，payload 为 { at, from, avatar, cropId, name, emoji, n, offline } */
+  GIFT: 'ui:gift',
   /** 领域层请求弹一条提示，由 UI 层的 toast 组件消费 */
   NOTIFY: 'ui:notify',
   /** 请求播放「被守护犬抓住」的全屏提示，payload 为 { breed, owner, fine } */

@@ -14,14 +14,8 @@ import { ITEMS, PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
 import { SOILS } from '../data/soils.js';
 import { unlockedPlotCount as countUnlocked } from '../data/progression.js';
 import { seedId, produceId } from '../data/keys.js';
-import {
-  BOOST_CAP,
-  CARE_JITTER,
-  PEST_INTERVAL,
-  PEST_YIELD_BONUS,
-  WATER_INTERVAL,
-  WATER_SPEEDUP,
-} from '../data/friends.js';
+import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
+import { carePenalty, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { randInt } from '../core/utils.js';
 import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
@@ -57,16 +51,10 @@ export const hasIssue = (plot, now = Date.now()) =>
   needsWater(plot, now) || needsPest(plot, now);
 
 /**
- * 是否需要浇水（作物缺水了）
- *
- * 已经成熟的作物不再需要照料 —— 成熟后就不该再冒出浇水按钮。
+ * 是否需要浇水 / 捉虫：判定逻辑在 data/care.js（按次排程、成熟前 15 分钟封口），
+ * 这里只做转出 —— 玩家农场、邻居农场、UI 用的是同一套口径。
  */
-export const needsWater = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.waterAt || 0);
-
-/** 是否需要捉虫（作物生虫了），同样只在成熟前 */
-export const needsPest = (plot, now = Date.now()) =>
-  Boolean(plot.cropId) && now < plot.readyAt && now >= (plot.pestAt || 0);
+export { needsWater, needsPest };
 
 /** 可升级为指定土地的空闲普通地块 */
 export function upgradeablePlots(soilId) {
@@ -94,6 +82,8 @@ function rollYield(plot) {
   amount = Math.floor(amount * (1 + (plot.boost || 0)));
   // 增产剂：本轮产量加成
   amount = Math.floor(amount * (1 + (plot.yieldBonus || 0)));
+  // 成熟时还挂着「该浇水 / 该杀虫」的账：一次 −15%，两个都欠 −40%
+  amount = Math.floor(amount * carePenalty(plot).mul);
   return Math.max(1, amount);
 }
 
@@ -113,15 +103,6 @@ export function rollRipeYields(now = Date.now()) {
     rolled += 1;
   }
   return rolled;
-}
-
-/**
- * 照料计时：给一块地安排「下次需要浇水 / 捉虫」的时间。
- * 加 ±30% 的随机浮动，让各个地不会整齐划一地同时出问题。
- */
-function scheduleCare(plot, now) {
-  plot.waterAt = now + WATER_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
-  plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
 }
 
 async function persist() {
@@ -152,6 +133,9 @@ function applyPlant(plot, cropId) {
   plot.stolenCount = 0;
   plot.stolenAt = 0;
   plot.pendingYield = 0;
+  // 新的一轮：照料次数清零，重新按「1 小时窗口」开始排
+  plot.waterTimes = 0;
+  plot.pestTimes = 0;
   scheduleCare(plot, now);
   return { crop, soil };
 }
@@ -180,6 +164,8 @@ function beginRegrow(plot, crop, soil) {
   plot.stolenCount = 0;
   plot.stolenAt = 0;
   plot.pendingYield = 0;
+  plot.waterTimes = 0;
+  plot.pestTimes = 0;
   scheduleCare(plot, now);
   return true;
 }
@@ -195,8 +181,10 @@ function clearPlot(plot) {
     fert: false,
     yieldBonus: 0,
     boost: 0,
-    waterAt: 0,
-    pestAt: 0,
+    waterNext: 0,
+    pestNext: 0,
+    waterTimes: 0,
+    pestTimes: 0,
     stolen: false,
     stolenCount: 0,
     stolenAt: 0,
@@ -249,7 +237,7 @@ export async function water(plotId) {
   const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
 
   plot.readyAt = Math.max(now, plot.readyAt - saved);
-  scheduleCare(plot, now);
+  serveCare(plot, 'water', now);
   player.addExpRaw(crop.lv);
   player.addLog('💧', `给 ${crop.name} 浇水，当前阶段 -${Math.round(WATER_SPEEDUP * 100)}%`);
 
@@ -278,7 +266,7 @@ export async function catchPest(plotId) {
   const crop = CROPS[plot.cropId];
   const before = plot.boost || 0;
   plot.boost = Math.min(BOOST_CAP, before + PEST_YIELD_BONUS);
-  plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+  serveCare(plot, 'pest', now);
   player.addExpRaw(crop.lv);
   player.addLog('🐛', `给 ${crop.name} 捉虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%`);
 
@@ -316,7 +304,7 @@ export async function waterAll() {
     const bounds = stageBounds(plot, crop, now);
     const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
     plot.readyAt = Math.max(now, plot.readyAt - saved);
-    scheduleCare(plot, now);
+    serveCare(plot, 'water', now);
     exp += crop.lv;
   }
 
@@ -352,7 +340,7 @@ export async function catchPestAll() {
   let exp = 0;
   for (const plot of targets) {
     plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
-    plot.pestAt = now + PEST_INTERVAL * (1 - CARE_JITTER + Math.random() * CARE_JITTER * 2);
+    serveCare(plot, 'pest', now);
     exp += CROPS[plot.cropId].lv;
   }
 
@@ -460,6 +448,12 @@ export async function harvest(plotId) {
   // 玩家在地块上看到的「可收 X」就是本次到手的数（极端缺存档时现场补摇）。
   let amount = plot.pendingYield || rollYield(plot);
 
+  // 成熟时还挂着照料需求的账：摘之前先把这件事说清楚，否则玩家只看到「收得少」
+  const care = carePenalty(plot);
+  const careNote = care.pct
+    ? `（成熟时${care.dry ? '缺水' : ''}${care.dry && care.buggy ? '又' : ''}${care.buggy ? '生虫' : ''}，产量 −${care.pct}%）`
+    : '';
+
   // 被邻居顺走的要真的扣掉：偷一个就少一个，不做翻倍惩罚
   const stolen = plot.stolenCount || 0;
   if (stolen) amount = Math.max(0, amount - stolen);
@@ -480,7 +474,7 @@ export async function harvest(plotId) {
     ? `收获 ${crop.emoji}${crop.name} ×${amount}`
     : `${crop.emoji}${crop.name} 被顺光了，颗粒无收`;
   const stolenNote = stolen ? `（被顺走 ${stolen} 个）` : '';
-  player.addLog('🌾', `${desc}，经验 +${exp}${stolenNote}`);
+  player.addLog('🌾', `${desc}，经验 +${exp}${stolenNote}${careNote}`);
 
   await persist();
   await completeGuide('harvest');
@@ -488,7 +482,8 @@ export async function harvest(plotId) {
     `${desc}　经验 +${exp}`
     + (remaining ? `　还剩 ${crop.harvests - plot.harvested} 次` : '')
     + (boost ? `（含捉虫加成 +${Math.round(boost * 100)}%）` : '')
-    + stolenNote,
+    + stolenNote
+    + careNote,
     'gold',
   );
   return true;

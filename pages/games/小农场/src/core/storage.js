@@ -8,6 +8,7 @@
  *   plot      按 [farmId, 地块序号] 存，一座农场的地块永远只属于它
  *   log       按 [farmId, 序号] 存，0 是最新一条
  *   news      全镇一张表，farmId 只标明来源
+ *   relation  两点之间的好感度，[a, b] 复合主键（a < b，一对只有一条）
  *   inventory 玩家农场的背包，一件一行
  *
  * 写库以「农场」为单位：一次提交把这座农场的行、全部地块、整段日志
@@ -38,11 +39,12 @@ const bySeq = (rows) => rows.sort((a, b) => a.seq - b.seq);
  *                    bag: Record<string, number>}>}
  */
 export async function loadSave() {
-  const [farmRows, plotRows, logRows, newsRows, invRows] = await Promise.all([
+  const [farmRows, plotRows, logRows, newsRows, relRows, invRows] = await Promise.all([
     getAll('farm'),
     getAll('plot'),
     getAll('log'),
     getAll('news'),
+    getAll('relation'),
     getAll('inventory'),
   ]);
 
@@ -67,6 +69,7 @@ export async function loadSave() {
     ])),
     // 旧档时报只有 farmId（单个来源农场），读档时并入 who 数组；
     // crop / cat 是新字段，旧条目没有就留空（分类会按图标兜底）
+    relations: relRows.map(({ a, b, v }) => ({ a, b, v })),
     news: bySeq(newsRows).map(({ at, emoji, text, farmId, who, crop, cat }) => ({
       at,
       emoji,
@@ -86,6 +89,7 @@ export async function loadSave() {
  * @param {object[]} [changes.farms] 要写回的农场（行 + 全部地块 + 整段日志）
  * @param {Record<string, number>} [changes.bag] 背包（全量覆盖）
  * @param {object[]} [changes.news] 时报（全量覆盖）
+ * @param {Record<string, number>} [changes.relations] 好感度（全量覆盖，键是 `a|b`）
  */
 export function commit(changes = {}) {
   const farms = changes.farms || [];
@@ -93,12 +97,14 @@ export function commit(changes = {}) {
   if (farms.length) stores.push('farm', 'plot', 'log');
   if (changes.bag) stores.push('inventory');
   if (changes.news) stores.push('news');
+  if (changes.relations) stores.push('relation');
   if (!stores.length) return Promise.resolve();
 
   return write(stores, (tx) => {
     for (const farm of farms) writeFarm(tx, farm);
     if (changes.bag) writeBag(tx, changes.bag);
     if (changes.news) writeNews(tx, changes.news);
+    if (changes.relations) writeRelations(tx, changes.relations);
   });
 }
 
@@ -155,6 +161,23 @@ function writeNews(tx, news) {
 }
 
 /**
+ * 好感度全量覆盖：只写非 0 的，几百行的表清空重写最不容易出错。
+ * 键是 `a|b`（见 data/relation.js 的 relKey），这里拆回两段存成复合主键。
+ * @param {IDBTransaction} tx
+ * @param {Record<string, number>} relations
+ */
+function writeRelations(tx, relations) {
+  const store = tx.objectStore('relation');
+  store.clear();
+  for (const [key, value] of Object.entries(relations)) {
+    if (!value) continue;
+    const [a, b] = key.split('|');
+    if (!a || !b) continue;
+    store.put({ a, b, v: value });
+  }
+}
+
+/**
  * 删掉几座农场（连同它的地块与日志）。
  * 邻居名单缩水时由 initState 调用，避免留下没人认领的孤儿数据。
  * @param {string[]} ids
@@ -172,7 +195,7 @@ export function dropFarms(ids) {
 
 /** 清空全部存档（「重新开始」用） */
 export function wipeSave() {
-  const stores = ['farm', 'plot', 'log', 'news', 'inventory'];
+  const stores = ['farm', 'plot', 'log', 'news', 'relation', 'inventory'];
   return write(stores, (tx) => {
     for (const store of stores) tx.objectStore(store).clear();
   });

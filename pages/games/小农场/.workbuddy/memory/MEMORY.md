@@ -8,12 +8,14 @@
 - 分层 `ui → store → core`，`data` 谁都能读。store 唯一改状态、**禁 DOM 符号**，提示走 `notify()` → 总线 → toast。
 - **不做测试**，只跑 `npm run check`，验证脚本用完即删。中文注释 + JSDoc，主动清死代码。
 - 作物/土地/经验/称号由 `tools/gen-data.mjs` 产出，**不手改** `data/{crops,soils,progression}.js`。
-- 多表写入同一事务 `commit({ farms, bag, news })`；无后台定时器，到点恢复用时间戳判定。
+- 多表写入同一事务 `commit({ farms, bag, news, relations })`（后两个可选，**动了才带**）；
+  无后台定时器，到点恢复用时间戳判定。
 
 ## 存档
 
-`state = { farm, friends[32], bag{itemId:count}, news[] }`，玩家与邻居同形状。
-五表：`farm`(id) / `plot`([farmId,id]) / `log`([farmId,seq]) / `news`(seq) / `inventory`(itemId)。
+`state = { farm, friends[32], bag{itemId:count}, relations{'a|b':v}, news[] }`，玩家与邻居同形状。
+六表：`farm`(id) / `plot`([farmId,id]) / `log`([farmId,seq]) / `news`(seq) /
+`relation`([a,b]，a<b，一对一条) / `inventory`(itemId)。
 `plots`、`log` 只在内存挂农场上，写档拆回子表。⚠️ 复合主键每段必须有值。
 新字段在 `normalizePlot`/`normalizeNpc`/`normalizePlayerFarm` 里给旧档补。
 
@@ -27,6 +29,13 @@
   `kinds` 记每种造几次（UI 标「已造过」）但**只数 key 个数**；旧档 `uses` 丢弃、等级保留。
   份数 `max(5, ceil(seed×0.2÷sell))` + **工本费=一颗种子价** → 低级亏、Lv6 起转正、满级 +64%。
   限定作物不能造；金币与份数**都在扣之前查**；制造要二次确认。
+- **照料**（`data/care.js`，玩家/邻居共用）：不是固定周期。每次处理完重排
+  `下次 = now + [1min, (已处理次数×2+1)h]` 随机到分钟，**不排进成熟前 15 分钟**（→0=本轮不再需要）。
+  `waterNext/pestNext` + `waterTimes/pestTimes`。成熟时欠一条 **−15%**、欠两条 **−40%**（不是 30%）。
+- **好感度**（`data/relation.js` 规则 + `store/relation.js` 读写）：−200~200，六档，
+  起点 `round((性格A+性格B)/2)`（玩家 0 → 热心 +38、贪心 −22）；打理 +1、偷 `max(1,售价/10)`、
+  送 `max(1,等级/2)`；`stealWeightFor` 1.2−rel/200、`helpWeightFor` 1+rel/200、
+  `giftChanceFor` <60 为 0 最高 0.3。**权重只决定挑谁，不决定做不做**。
 
 ## UI 硬约束
 
@@ -54,6 +63,11 @@
   想加新入口只写这四块，不要另拼卡片。`status` 是一串 `.sd-chip`。
 - **邻居农场弹窗只有一个** `ui/friend-modal.js`（邻居卡片 / 记录人名 / 时报人名共用）。
   弹窗内操作只替换受影响那一格。列表拼接必须 `join('')`。
+  信息格**两列**，守护犬/偷菜各 `.npc-stat.wide` 占满一行（四列时狗的那句被省略号吃掉）。
+  好感度一律「标签+数值」（`.rel-tag` 六档，`plain` 要淡描边）。
+- **送礼三层**：邻居弹窗 → 清单（`gift-ask`）→ 确认框（`gift-send`）。成功后 `closeModal()` **两次**。
+- **赠礼层** `ui/gift.js`：在线 toast、离线攒着上线整屏补播；**不做 opacity 动画**（合成层会把
+  半透明底渲染成一片浅色），`flushOfflineGifts()` 必须在 `bootDone()` 之后。
   种子详情只一份 `ui/seed-detail.js`（`{buy:true}` 下单 / `false` 只读）。
 
 ## 守护犬
@@ -66,7 +80,10 @@
 ## 邻居与世界
 
 - 邻居同用 `unlockedPlotCount(level)`；地块按 `rollNpcSoil(level)` 随机，收成吃 `yieldMul`。
-- 偷菜每块每轮一次，`stealable()` 要带 `!plot.guarded`；成熟的地 `needsWater/needsPest` 必须带 `now<readyAt`。
+- 偷菜每块每轮一次，`stealable()` 要带 `!plot.guarded`；`needsWater/needsPest` 统一从 `data/care.js` 转出，
+  必须带 `now < readyAt`（成熟后不再冒按钮）。
+- 邻居动作表含 `care`（帮谁看 `helpWeightFor`，玩家/邻居一视同仁）与 `gift`（真东西进玩家背包）；
+  `simCtx()` 注入 `rel / relAdjust / receiveGift`，`npc-sim.js` 仍不 import 任何 store。
 - NPC 模拟纯计算，落盘 `persistFriends()` 一次提交；远期聚合、近期 7 天逐条；在线时拆动作串演出，
   游标先推进、一步一落盘。`PLAYER_FARM_WEIGHT = 2`。
 

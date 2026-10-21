@@ -16,7 +16,7 @@
 export const DB_NAME = 'sun_farm_v2';
 
 /** 结构版本：字段不兼容时 +1，并在 upgrade 中补迁移逻辑 */
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 /**
  * 表结构声明：store 名 → 配置。
@@ -25,12 +25,14 @@ export const DB_VERSION = 1;
  *   farm      1 ── N plot（[farmId, 地块序号]）
  *   farm      1 ── N log （[farmId, 序号]，0 = 最新一条）
  *   news           全镇时报，farmId 只标明来源
+ *   relation       两点之间的好感度（[a, b]，a < b），与农场数量无关的一对一关系
  */
 export const SCHEMA = {
   farm: { keyPath: 'id' },
   plot: { keyPath: ['farmId', 'id'] },
   log: { keyPath: ['farmId', 'seq'] },
   news: { keyPath: 'seq' },
+  relation: { keyPath: ['a', 'b'] },
   inventory: { keyPath: 'itemId' },
 };
 
