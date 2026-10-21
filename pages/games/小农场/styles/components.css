@@ -116,16 +116,17 @@
 .plot.warn { border-color: #e8a0a0; box-shadow: 0 0 0 2px rgba(224, 90, 78, .15); }
 
 .plot-emoji {
-  font-size: 36px;
+  /* 作物是地块上唯一的主角，放大到一眼能认出来是什么 */
+  font-size: 47px;
   line-height: 1;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .07));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .12));
 }
-.plot-emoji.empty { opacity: .42; font-size: 28px; }
+.plot-emoji.empty { opacity: .45; font-size: 38px; }
 .plot.ripe .plot-emoji { animation: pulse 1.4s ease-in-out infinite; }
 
 .plot-name { font-size: 12px; font-weight: 600; color: #40503c; }
 .plot-sub { font-size: 11px; color: var(--muted); }
-.plot-lock { font-size: 24px; opacity: .48; }
+.plot-lock { font-size: 28px; opacity: .48; }
 
 /* 产量加成角标：钉在左上角，不参与正文排版，
    这样地块上的操作按钮不会被多出来的一行文字挤下去 */
@@ -148,13 +149,13 @@
 
 /* 紧凑模式（.grid.dense 下生效，手机竖屏也走这套）：地块缩小以容纳 40 块。
    最坏情况（生长中 + 缺水生虫）内容约 118px，留一点余量不贴边框。 */
-.grid.dense .plot { min-height: 122px; padding: 9px 6px; gap: 4px; }
-.grid.dense .plot-main { gap: 3px; }
-.grid.dense .plot-emoji { font-size: 27px; }
-.grid.dense .plot-emoji.empty { font-size: 21px; }
+.grid.dense .plot { min-height: 126px; padding: 8px 6px; gap: 4px; }
+.grid.dense .plot-main { gap: 2px; }
+.grid.dense .plot-emoji { font-size: 38px; }
+.grid.dense .plot-emoji.empty { font-size: 32px; }
 .grid.dense .plot-name { font-size: 11px; }
 .grid.dense .plot-sub { font-size: 10px; }
-.grid.dense .plot-lock { font-size: 19px; }
+.grid.dense .plot-lock { font-size: 22px; }
 .grid.dense .plot-side { width: 30px; gap: 3px; }
 .grid.dense .plot-side .icon-btn { width: 26px; height: 26px; font-size: 13px; }
 .grid.dense .plot-side .btn.small { padding: 5px 1px; font-size: 10px; }
@@ -738,16 +739,35 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  height: 132px;
+  height: 138px;
   padding: 10px 6px;
-  background: #fafcf7;
-  border: 1px solid #e8efe2;
+  /* 底色与玩家地块同一套暖土色 —— 邻居的地也是地，
+     之前这里偏冷白，点进邻居页像是四十张白卡片 */
+  background: linear-gradient(180deg, #fffefa, #f8f2e6);
+  border: 1px solid #ece2cf;
   border-radius: 13px;
+  box-shadow: 0 2px 6px rgba(70, 90, 60, .06);
   text-align: center;
 }
-.npc-plot.ripe { border-color: #f0c060; background: #fffdf2; }
+/* 底部那条暖色压边，和 .plot::after 同款 */
+.npc-plot::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 22px;
+  background: linear-gradient(180deg, transparent, rgba(200, 175, 135, .13));
+  border-radius: 0 0 13px 13px;
+  pointer-events: none;
+}
+.npc-plot.ripe {
+  border-color: #f0c060;
+  background: linear-gradient(180deg, #fffdf2, #fdf4dd);
+  box-shadow: 0 0 0 2px rgba(240, 192, 96, .3), 0 6px 16px rgba(240, 170, 60, .18);
+}
 .npc-plot.stolen, .npc-plot.empty { background: #f6f7f4; border-style: dashed; border-color: #dfe4da; }
-.npc-plot .np-emoji { font-size: 25px; line-height: 1; }
+.npc-plot.stolen::after, .npc-plot.empty::after { display: none; }
+/* 和玩家地块同一个逻辑：作物图标是主角，放大到一眼认得出来 */
+.npc-plot .np-emoji { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .12)); }
 .npc-plot .np-name { font-size: 12px; font-weight: 600; margin-top: 3px; }
 .npc-plot .np-meta { font-size: 10px; color: var(--muted); line-height: 1.4; }
 .npc-plot.ripe .np-meta { color: #a07818; font-weight: 700; }
@@ -764,7 +784,10 @@
 }
 .np-acts .btn { flex: 1 1 auto; min-width: 0; padding-left: 6px; padding-right: 6px; }
 .np-acts .icon-btn { flex: 0 0 auto; width: 27px; height: 27px; font-size: 13px; }
-.npc-plot.care { border-color: #f2b8b2; background: #fffaf9; }
+/* 缺水 / 生虫只换边框与光晕，**不换底色** —— 和玩家那边 .plot.warn 一个做法。
+   这里以前把 background 改成 #fffaf9，结果整窗邻居的地都变回白粉色，
+   土地档位的底纹（左土地色 → 右普通色）也就跟着看不见了。 */
+.npc-plot.care { border-color: #e8a0a0; box-shadow: 0 0 0 2px rgba(224, 90, 78, .15); }
 .npc-plot .np-meta.ripe-meta { color: #a07818; font-weight: 700; }
 
 /* 角落标记：左上角产量加成，右上角「这一轮不能再偷」的原因 */
@@ -1159,8 +1182,10 @@
   max-width: 46%;
   padding: 2px 9px 2px 2px;
   border-radius: 99px;
-  background: #eef7e9;
-  border: 1px solid #e2efd8;
+  /* 底色要比页面背景（#f4f8f1）再深一档，否则「一个背景包住头像和名字」
+     看起来只是两个元素挨在一起 */
+  background: #e5f2da;
+  border: 1px solid #d3e6c2;
 }
 .who-chip .ava {
   width: 22px;
@@ -1168,7 +1193,7 @@
   flex-shrink: 0;
   border-radius: 50%;
   background: #fff;
-  border: 1px solid #e4efdb;
+  border: 1px solid #dcead0;
   display: grid;
   place-items: center;
   font-size: 12px;
@@ -1781,6 +1806,79 @@
 .title-badge.skin-9  { background: linear-gradient(160deg, #e8a877, #c9752f); }
 .title-badge.skin-10 { background: linear-gradient(160deg, #f0c96a, #d99b25); }
 
+/* ---------- 称号页的 tab ----------
+   38 个称号一次全摊开会让人找不到「现在能领什么」，按来源分三组。
+   tab 条吸顶：等级称号有 26 个，往下翻几屏之后还得能换组。 */
+.title-tabs {
+  position: sticky;
+  top: 0;
+  /* 极轻的一道下缘阴影：滚动时卡片从底下过，能看出它不是内容的一部分 */
+  box-shadow: 0 7px 10px -9px rgba(70, 90, 60, .35);
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  /* 上边留 12px 是给 .subpage-body 的顶部渐隐让位，否则 tab 顶边会被削淡 */
+  padding: 12px 13px 9px;
+  background: var(--bg);
+}
+.title-tab {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  color: #6b7a68;
+  cursor: pointer;
+  transition: .16s;
+}
+.title-tab:hover { border-color: #c4e0b8; }
+.title-tab .tt-icon { font-size: 15px; line-height: 1.1; }
+.title-tab .tt-label { font-size: 12px; font-weight: 700; }
+.title-tab .tt-meta {
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.title-tab.active {
+  background: linear-gradient(135deg, #59b356, #3d8b40);
+  border-color: transparent;
+  color: #fff;
+}
+.title-tab.active .tt-meta { color: rgba(255, 255, 255, .8); }
+/* 这个 tab 里有能领的：右上角一枚小红点，数量写在里面 */
+.title-tab .tt-dot {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #d1483f;
+  border: 1.5px solid #fff;
+  color: #fff;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 13px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* 图鉴 tab 的光标进度，放在网格前面一行 */
+.title-caption {
+  padding: 0 15px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* 顶部大卡：当前佩戴的称号 */
 .title-hero {
   display: flex;
@@ -1902,22 +2000,22 @@
   background: linear-gradient(90deg, var(--soil-tint, transparent) 0%, transparent 46%);
 }
 .soilbg-red {
-  --soil-tint: rgba(196, 82, 58, .20);
+  --soil-tint: rgba(196, 82, 58, .28);
 }
 .soilbg-black {
-  --soil-tint: rgba(64, 58, 48, .17);
+  --soil-tint: rgba(64, 58, 48, .24);
 }
 .soilbg-silver {
-  --soil-tint: rgba(138, 160, 174, .22);
+  --soil-tint: rgba(138, 160, 174, .30);
 }
 .soilbg-gold {
-  --soil-tint: rgba(206, 156, 36, .24);
+  --soil-tint: rgba(206, 156, 36, .32);
 }
 .soilbg-crystal {
-  --soil-tint: rgba(88, 172, 210, .24);
+  --soil-tint: rgba(88, 172, 210, .32);
 }
 .soilbg-myth {
-  --soil-tint: rgba(228, 118, 56, .26);
+  --soil-tint: rgba(228, 118, 56, .34);
 }
 /* 彩虹地单独一条：左侧本身就是多色，一段单色渐变表达不了 */
 .plot.soilbg-rainbow::before,

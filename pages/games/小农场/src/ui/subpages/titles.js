@@ -1,10 +1,13 @@
 /**
  * 称号页：展示全部称号，达成条件后手动领取，领取后可以佩戴一个。
  *
- * 三类称号分开展示：
- *   图鉴称号  条件是点亮的图鉴数量（7 档）
- *   等级称号  条件是农场等级（26 档）
- *   金币称号  条件是当前持有的金币（5 档）
+ * 三类称号用 tab 分开（等级 26 / 图鉴 7 / 金币 5）：
+ *   等级称号  条件是农场等级
+ *   图鉴称号  条件是点亮的图鉴数量
+ *   金币称号  条件是当前持有的金币
+ *
+ * 一次只渲染一个 tab —— 38 个卡片一屏放不下，混在一起排会让
+ * 「我现在能领什么」变得很难扫。tab 上带「已领 / 总数」和可领角标。
  *
  * 徽章的配色由 skin 决定（CSS 里定义了 10 套底色），
  * 越往后越「亮」，一眼能看出哪个更稀有。
@@ -16,6 +19,27 @@ import { claimTitle, equippedTitle, equipTitle, titleStates } from '../../store/
 import { codexSummary } from '../../store/codex.js';
 import { itemLabel } from '../../data/keys.js';
 import { formatCoins } from '../../core/utils.js';
+
+/**
+ * 三类称号的 tab 定义，顺序跟着「达成节奏」走：等级 → 图鉴 → 金币。
+ * @type {Array<{key: string, icon: string, label: string}>}
+ */
+const TABS = [
+  { key: 'level', icon: '🏅', label: '等级' },
+  { key: 'codex', icon: '📖', label: '图鉴' },
+  { key: 'coins', icon: '🪙', label: '金币' },
+];
+
+/**
+ * 当前 tab。
+ *
+ * 子页面的每个动作结束后都会整页重绘（见 `ui/subpage.js`），
+ * 所以「现在在哪个 tab」只能挂在这个模块上，不能靠 DOM 状态。
+ */
+let activeTab = 'level';
+
+/** 下一次渲染后是否要把列表滚回顶部（切 tab 时用） */
+let resetScroll = false;
 
 /** 条件的中文说法 */
 function needText(title) {
@@ -58,12 +82,24 @@ function cardHTML(title) {
     </div>`;
 }
 
-/** 一组称号 */
-function sectionHTML(title, list) {
-  if (!list.length) return '';
-  return `
-    <div class="section-title">${title}</div>
-    <div class="title-grid">${list.map(cardHTML).join('')}</div>`;
+/**
+ * 一排 tab。
+ * @param {Record<string, object[]>} groups 三类各自的称号列表
+ */
+function tabsHTML(groups) {
+  return `<div class="title-tabs">${TABS.map((tab) => {
+    const list = groups[tab.key] || [];
+    const got = list.filter((t) => t.claimed).length;
+    const ready = list.filter((t) => t.unlocked && !t.claimed).length;
+    return `
+      <button class="title-tab${tab.key === activeTab ? ' active' : ''}"
+        data-action="title-tab" data-tab="${tab.key}">
+        <span class="tt-icon">${tab.icon}</span>
+        <span class="tt-label">${tab.label}</span>
+        <span class="tt-meta">${got} / ${list.length}</span>
+        ${ready ? `<i class="tt-dot">${ready}</i>` : ''}
+      </button>`;
+  }).join('')}</div>`;
 }
 
 export const titlesPage = {
@@ -72,10 +108,16 @@ export const titlesPage = {
     const equipped = equippedTitle();
     const summary = codexSummary();
 
-    const codexTitles = all.filter((t) => t.need.type === 'codex');
-    const levelTitles = all.filter((t) => t.need.type === 'level');
-    const coinTitles = all.filter((t) => t.need.type === 'coins');
+    const groups = {
+      level: all.filter((t) => t.need.type === 'level'),
+      codex: all.filter((t) => t.need.type === 'codex'),
+      coins: all.filter((t) => t.need.type === 'coins'),
+    };
     const ready = all.filter((t) => t.unlocked && !t.claimed);
+    const list = groups[activeTab] || [];
+
+    // 图鉴 tab 顺带报一下点亮进度，这是这一组的「当前值」
+    const caption = activeTab === 'codex' ? `📖 图鉴已点亮 ${summary.lit} / ${summary.total} 种` : '';
 
     body.innerHTML = `
       <div class="title-hero ${equipped ? `skin-${equipped.skin}` : ''}">
@@ -94,13 +136,25 @@ export const titlesPage = {
           <button class="btn small" data-action="title-claim-all">全部领取</button>
         </div>` : ''}
 
-      ${sectionHTML(`📖 图鉴称号（已点亮 ${summary.lit} / ${summary.total}）`, codexTitles)}
-      ${sectionHTML('🏅 等级称号', levelTitles)}
-      ${sectionHTML('🪙 金币称号', coinTitles)}
+      ${tabsHTML(groups)}
+      ${caption ? `<div class="title-caption">${caption}</div>` : ''}
+      <div class="title-grid">${list.map(cardHTML).join('')}</div>
     `;
+
+    // 切 tab 之后内容长度差很多，停在原来的滚动位置容易直接落到空白处
+    if (resetScroll) {
+      resetScroll = false;
+      body.scrollTop = 0;
+    }
   },
 
   actions: {
+    'title-tab'(el) {
+      const key = el.dataset.tab;
+      if (key === activeTab) return;
+      activeTab = key;
+      resetScroll = true;
+    },
     async 'title-claim'(el) {
       await claimTitle(el.dataset.id);
     },

@@ -1,7 +1,7 @@
 # 项目长期约定 · 文字版阳光牧场
 
-纯前端（原生 ESM、零构建、`node server.mjs`），存档在 IndexedDB（库名 `sun_farm_v2`），无后端。
-220 种作物（165 商店 + 55 限定）/ 40 块地 / 8 档土地 / 32 位邻居。
+纯前端（原生 ESM、零构建、`node server.mjs`），存档 IndexedDB（`sun_farm_v2`），无后端。
+220 作物（165 商店 + 55 限定）/ 40 块地 / 8 档土地 / 32 位邻居。
 
 ## 工程约定
 
@@ -9,82 +9,74 @@
   提示走 `notify()` → 事件总线 → toast。ui 只渲染、只转交点击。
 - **不做测试**：改动后只跑 `npm run check`，一次性验证脚本用完即删。
 - 作物/土地/经验/称号由 `tools/gen-data.mjs` 产出，**不手改** `data/{crops,soils,progression}.js`。
-- 一次业务操作的多表写入必须同一个事务：`commit({ farms, bag, news })`。
-- 不用后台定时器推进世界，到点恢复一律用时间戳判定。中文注释 + JSDoc，主动清死代码。
+- 多表写入必须同一事务：`commit({ farms, bag, news })`。无后台定时器，到点恢复用时间戳判定。
+- 中文注释 + JSDoc，主动清死代码。
 
 ## 存档
 
 `state = { farm, friends[32], bag{itemId:count}, news[] }`，玩家与邻居同形状。
 五张表：`farm`(id) / `plot`([farmId,id]) / `log`([farmId,seq]) / `news`(seq) / `inventory`(itemId)。
 `plots`、`log` 只在内存挂在农场上，写档拆回子表。⚠️ 复合主键每段必须有值。
-新字段必须在 `normalizePlot`/`normalizeNpc`/`normalizePlayerFarm` 里给旧档补
-（`farm.workshop`、`plot.soil` 都是这么加的）。
+新字段在 `normalizePlot`/`normalizeNpc`/`normalizePlayerFarm` 里给旧档补。
 
 ## 数值
 
-- 经验累加、与作物解耦：`expForLevel(n) = 100n(n+1)`；`expForLevel(200) = Infinity`，折算走 `expForProgress()`。
-  经验只看产出：每份 `作物等级 + 2` × 土地 `expMul`。
-- 售价不自由：`整轮收益 = (种子价×1.2 + 等级×10) × (1 + 0.05×整轮小时)`，单价 = 收益 ÷ 总产量。
-  唯一该比的是「每小时金币」。时长倍率刻意不封顶。
+- 经验：`expForLevel(n) = 100n(n+1)`（200 级 = `Infinity`，折算走 `expForProgress()`）；
+  只看产出：每份 `(作物等级 + 2) × 土地 expMul`。
+- 售价不自由：`整轮收益 = (种子价×1.2 + 等级×10) × (1 + 0.05×整轮小时)`；只该比「每小时金币」。
 - 藏宝图：限定种子上限 = 需求等级+10，商店种子 = 需求等级×2。
-- **限定作物**（`special`）不进商店、不进 `cropsNearLevel`，只能挖；茬数 2~5 且都带 `multi`；
-  整轮收益 = 同级商店种子 × 2.0~3.0，每小时只高 1.1~1.8 倍。
-- **种子制造间**（`farm.workshop = { level, uses }`，level 0 = 未开张）：Lv.5 + 2000 解锁，
-  1~10 级，升级只看累计制造次数 + 金币（满级 350 次 / 63.9 万），期望 1.22 → 2.00 个种子。
-  消耗份数**按市价折算** `max(5, ceil(seed × 0.6 ÷ sell))` —— 固定 5 份在 Lv200 是 12 倍利润；
-  限定作物不能造；先扣产出再摇数量，同一个 `commit({ farms, bag })` 落盘。
+- **限定作物**（`special`）不进商店与 `cropsNearLevel`，只能挖；茬数 2~5 都带 `multi`；
+  整轮收益 = 同级商店种子 × 2.0~3.0。
+- **种子制造间**（`farm.workshop = { level, uses }`，0 = 未开张）：Lv.5 + 2000 解锁，1~10 级，
+  升级看累计次数 + 金币（满级 350 次 / 63.9 万），期望 1.22 → 2.00。
+  份数**按市价折算** `max(5, ceil(seed × 0.6 ÷ sell))`（固定 5 份在 Lv200 是 12 倍利润）；
+  限定作物不能造；先扣产出再摇数量，同一事务落盘。
 
 ## UI 硬约束
 
-- 浮层（浮窗/子页面/模态）统一：上滑进场、下拉关闭（`ui/drag-close.js`，>8px 接管、>72px 关闭）、
-  最大宽 640px、顶部 `.sheet-handle`。
-- **拖拽三条铁律**：① `move()` 先查 `tracking` ② 鼠标 move/up 只在按下期间挂载
-  ③ 用 Touch + preventDefault（`touch-action: pan-y` 下 Pointer 会收 pointercancel）。
-- **弹窗**：`openModal()` 把 `.modal-head` 提到 `.modal-body` 前面（滚动区外），标题才拖得动；
-  关闭图标统一由它补（没有 `[data-close]` 就插，连 head 都没有补 `.modal-head.bare`）；
-  `canStart(target)` 从 `.modal-head`/`.sheet-handle` 起手时忽略「内容已滚动」。
-- 地块 = `.plot-main`(flex:1) + `.plot-side`(固定 34px 纵排)；列数 手机2 / ≥720px 3 / ≥960px 4；
-  高度 152 / 紧凑 122。成熟那刻摇定产量存 `plot.pendingYield`，显示「可收 X / 本应 Y」。
-- **土地底纹**：升级过的地挂 `soilbg-<id>`，用 `::before` 叠横向渐变（左土地色 → 右普通色），
-  **不能改 `background`**（`.ripe/.warn/.growing` 有各自状态背景）；颜色只声明 `--soil-tint`；
-  顶栏 `.hud-cell.wide` 显示土地构成；邻居地也吃 `SOILS[].yieldMul`。
-- 商店：滚动落在 `.shop-panel` 自己；筛选条在 `.shop-panels` **之外**；重绘先恢复 `scrollLeft`
-  再 `syncTabFromScroll`；scroll 同步 tab 防抖 140ms。
-- `.filter-bar` 邻居页与时报页共用。时报按条目 emoji 分类，不另存字段。
-- 日志/时报 `who` 是农场 id **数组** → `ui/who-chip.js` 的 `.who-chip`（头像 + 名字共用一个浅绿胶囊，
-  多人叠头像、名字「、」连接）；`stripWhoName()` 削掉正文里重复的名字和紧跟的「的」。
-  时报把图标固定在最左、胶囊 + 时间放 `.news-head`（胶囊宽度不定，放进轨道会歪）。
-  邻居搜索框必须是 index.html 静态结构。
+- 浮层统一：上滑进场、下拉关闭（`ui/drag-close.js`，>8px 接管、>72px 关闭）、最大宽 640px。
+- **拖拽三条铁律**：① `move()` 先查 `tracking` ② 鼠标 move/up 只在按下期间挂 ③ Touch + preventDefault。
+- **弹窗**：`openModal()` 把 `.modal-head` 提到 `.modal-body` 前（滚动区外）标题才拖得动；
+  关闭图标由它统一补；`canStart(target)` 从标题/把手起手时忽略「内容已滚动」。
+- 地块 = `.plot-main`(flex:1) + `.plot-side`(34px)；列数 手机2 / ≥720 3 / ≥960 4；
+  高度 152 / 紧凑 126（图标 47 / 38px，gap 收到 2px 才不撑破）。成熟摇定 `plot.pendingYield`。
+- **土地底纹**：`soilbg-<id>` 用 `::before` 叠横向渐变（左土地色 → 右普通色），**不能改 `background`**
+  （`.ripe/.warn/.growing` 各有状态背景）；颜色只声明 `--soil-tint`。顶栏 `.hud-cell.wide` 显示构成。
+- **`.npc-plot` 底色/边框/底纹与 `.plot` 完全一致**；状态类**只改边框不改 `background`**
+  —— `.npc-plot.care` 曾写死 `#fffaf9`，缺水地一多整窗变白粉。
+- 商店滚动落在 `.shop-panel` 自己；筛选条在 `.shop-panels` 之外；重绘先恢复 `scrollLeft` 再同步 tab。
+  `.filter-bar` 邻居页与时报页共用（时报按 emoji 分类，不另存字段）。
+- 日志/时报 `who` 是农场 id 数组 → `ui/who-chip.js` 的 `.who-chip`（头像 + 名字共用一个胶囊，底色
+  `#e5f2da` 要比页面底深一档）；`stripWhoName()` 削掉正文里重复的名字与紧跟的「的」。
+  时报图标固定最左、胶囊 + 时间放 `.news-head`。邻居搜索框必须是 index.html 静态结构。
 - 弹窗内操作只替换受影响那一格，绝不整窗重开。
 
 ## 守护犬
 
-品种 10 档（`DOG_BREEDS`，**比熊 20%** → 龙犬 80%，田园犬第 7 档 58%），只有一只能上岗（空串 = 不设防）。
-品种改名用 `LEGACY_BREED_MAP = { tuyuan:'bixiong', huli:'tuyuan' }` **只迁一次**
-（迁完写 `dog.migrated='r18'`），否则每次读档都会把正经收集的田园犬降成比熊。点已上岗的 = **休息**。
-狗粮槽**全窝共享**，只在上岗时按 `6.25`/小时消耗；`catchChance(rate, sat) = rate × (0.5 + 0.5×sat/100)`。
-被抓住（**偷谁都算**）按 `crop.sell × 5` 罚款给被偷农场主，钱不够倾家荡产、不记负债。
+10 档（**比熊 20%** → 龙犬 80%，田园犬第 7 档 58%），只有一只能上岗（空串 = 不设防）。
+改名用 `LEGACY_BREED_MAP` **只迁一次**（写 `dog.migrated='r18'`），否则正经收集的田园犬会被降成比熊。
+狗粮槽全窝共享，只在上岗时按 `6.25`/小时消耗；`catchChance(rate, sat) = rate × (0.5 + 0.5×sat/100)`。
+被抓住（偷谁都算）按 `crop.sell × 5` 罚给被偷者，钱不够倾家荡产、不记负债。
 
 ## 邻居与世界
 
-- 邻居同用 `unlockedPlotCount(level)`，`syncNpcPlots()` 补齐即种；地块土地按 `rollNpcSoil(level)` 随机。
-- 偷菜只减 1 个（`stolenCount`），每块每轮一次，`stealable()` 要带 `!plot.guarded`。
+- 邻居同用 `unlockedPlotCount(level)`；地块土地按 `rollNpcSoil(level)` 随机，收成吃 `yieldMul`。
+- 偷菜只减 1 个，每块每轮一次，`stealable()` 要带 `!plot.guarded`。
 - 成熟的地不再需要照料：`needsWater`/`needsPest` 必须带 `now < readyAt`。
-- NPC 模拟是**纯计算**，落盘由 `persistFriends()` 一次提交。远期聚合、近期 7 天逐条；
-  在线时上线拆成动作串演出，游标先推进、一步一落盘。玩家农场权重 `PLAYER_FARM_WEIGHT = 2`。
+- NPC 模拟是纯计算，落盘由 `persistFriends()` 一次提交；远期聚合、近期 7 天逐条；
+  在线时上线拆成动作串演出，游标先推进、一步一落盘。`PLAYER_FARM_WEIGHT = 2`。
 
 ## 其它
 
-- 时报 7 天 / 80 条、日志 7 天 / 60 条，按 `at` 倒序。施肥额度唯一（`plot.fert`），增产与捉虫**相乘**。
+- 时报 7 天 / 80 条、日志 7 天 / 60 条，按 `at` 倒序。施肥额度唯一（`plot.fert`），增产与捉虫相乘。
 - 图鉴靠标本点亮（一份 50 个产出）；已解锁卡片可点开详情——动作属性必须写在 `class` 之外。
 - 称号 38 个（26 等级 + 7 图鉴 + 5 金币），手动领、只戴一个、奖励只有道具。
-- 引导 17 项，达成即自动发奖；**每个 key 都要有真实调用点**。背包展示名走 `itemLabel(id)`。
-- 签到不发经验；历史存 `progress.signDays`（90 天）。「其他」菜单已删加工坊/交易行，改放种子制造间。
+  **按三类分 tab**（`.title-tabs` 吸顶）：tab 状态挂模块变量 + 切 tab 后 `scrollTop = 0`。
+- 引导 17 项，达成即自动发奖；每个 key 都要有真实调用点。背包展示名走 `itemLabel(id)`。
+- 签到不发经验；历史存 `progress.signDays`（90 天）。「其他」已删加工坊/交易行，改放种子制造间。
 
 ## 护栏与踩坑
 
 `npm run check` 盲区：抓不到私有函数丢失 → **删/搬函数后必须 `grep -rn` 搜全调用点**。
-
-e2e（真实 Chrome，脚本不入库）：切页等 `body[data-page]`；有 650ms 结算浮层与 0.3s 动画；
-商店切 tab 是 smooth 滚动；**全屏 `.sign-celebrate` 会吞掉点击**；多页面 DOM 并存要限定活动页；
-返回是 `#subBack`、关闭模态是 `[data-close]`。
+e2e（真实 Chrome，脚本不入库）：等 `body[data-page]`；**全屏 `.sign-celebrate` 会吞点击**；
+多页面 DOM 并存要限定活动页；返回 `#subBack`、关模态 `[data-close]`。
