@@ -846,7 +846,10 @@ export function openFriendModal(friendId) {
       openFriendCrop(getFriend(el.dataset.id), index);
       return;
     }
-    if (action === 'steal') {
+    // 动作名统一带 npc- 前缀（和上面的 npc-water / npc-pest 一样）：
+    // 早先这里写的是 'steal'，改成 act('steal') 生成 npc-steal 之后就再也进不来，
+    // 表现就是「点了偷 1 个没反应」
+    if (action === 'npc-steal') {
       const result = await social.steal(el.dataset.id, index);
       // 被守护犬抓住会封锁整座农场，只刷一格不够
       if (result?.caught) refreshAll();
