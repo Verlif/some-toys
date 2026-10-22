@@ -7,7 +7,7 @@
  *   farm      每座农场一行（玩家也是一行，kind 区分）
  *   plot      按 [farmId, 地块序号] 存，一座农场的地块永远只属于它
  *   log       按 [farmId, 序号] 存，0 是最新一条
- *   news      全镇一张表，farmId 只标明来源
+ *   news      全镇一张表，文案里自带人名（渲染时扫描匹配头像）
  *   relation  两点之间的好感度，[a, b] 复合主键（a < b，一对只有一条）
  *   inventory 玩家农场的背包，一件一行
  *
@@ -16,7 +16,6 @@
  * 整体重写比分条增量更容易保证一致，也不会漏字段。
  */
 import { getAll, write } from './db.js';
-import { idList } from './utils.js';
 
 /** 复合主键里的序号上界：地块序号与日志序号都是小整数，不可能到十亿 */
 const SEQ_MAX = 1e9;
@@ -65,16 +64,16 @@ export async function loadSave() {
     plots,
     logs: Object.fromEntries(Object.entries(logs).map(([id, rows]) => [
       id,
-      bySeq(rows).map(({ at, emoji, text, who }) => ({ at, emoji, text, who: idList(who) })),
+      // by 是「这件事是谁干的」：邻居对玩家农场的操作才带（邻居农场 id），
+      // 旧档没有这个字段，一律按玩家自己的操作算（见 ui/log-sheet.js 的两个 tab）
+      bySeq(rows).map(({ at, emoji, text, by }) => ({ at, emoji, text, by: by || '' })),
     ])),
-    // 旧档时报只有 farmId（单个来源农场），读档时并入 who 数组；
-    // crop / cat 是新字段，旧条目没有就留空（分类会按图标兜底）
+    // 旧档时报可能没有 crop / cat：分类字段留空（读时按图标兜底）
     relations: relRows.map(({ a, b, v }) => ({ a, b, v })),
-    news: bySeq(newsRows).map(({ at, emoji, text, farmId, who, crop, cat }) => ({
+    news: bySeq(newsRows).map(({ at, emoji, text, crop, cat }) => ({
       at,
       emoji,
       text,
-      who: idList(who || farmId),
       crop: crop || '',
       cat: cat || '',
     })),
@@ -129,8 +128,8 @@ function writeFarm(tx, farm) {
     at: entry.at,
     emoji: entry.emoji,
     text: entry.text,
-    // 涉及的人（带头像用）：玩家自己的操作不写，渲染时默认农场主
-    who: idList(entry.who),
+    // 邻居对玩家农场的操作带着邻居的 id，玩家自己的操作留空
+    by: entry.by || '',
   }));
 }
 
@@ -152,8 +151,6 @@ function writeNews(tx, news) {
     at: entry.at,
     emoji: entry.emoji,
     text: entry.text,
-    // 这条新闻涉及的人（可能多个：小偷 + 被偷的农场主）
-    who: idList(entry.who),
     // 相关的作物（有值时时报里那枚图标就是它，可点开详情）与筛选分类
     crop: entry.crop || '',
     cat: entry.cat || '',

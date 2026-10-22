@@ -21,7 +21,7 @@ import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
 import { BOOST_CAP, LIVE_STEP_MS, LOG_LIMIT, PEST_YIELD_BONUS } from '../data/friends.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
-import { REL_PER_CARE, giftRelGain, stealRelLoss } from '../data/relation.js';
+import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
 import { catchChance, DOG_FINE_MULTIPLE, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
@@ -96,9 +96,10 @@ function farmView() {
     stolen: 0,
     cared: 0,
     caught: 0,
-    // who 是「涉及的人」：邻居模拟层传进来，玩家自己的动作不传（默认农场主）
-    log: (at, emoji, text, who) => player.addLog(emoji, text, at, who),
-    news: (at, emoji, text, who) => addNews(emoji, text, { at, who }),
+    // by 是「这件事是谁干的」：邻居对玩家农场的操作会传自己的 id，
+    // 农场日志浮窗据此分出「我的操作」与「邻居动向」两个 tab（见 ui/log-sheet.js）
+    log: (at, emoji, text, by = '') => player.addLog(emoji, text, at, by),
+    news: (at, emoji, text) => addNews(emoji, text, { at }),
     dogGuardChanceAt: (at) => guardChance(at),
     /** 守护犬拦下小偷时玩家入账的罚款（内存操作，随当次结算一起落盘） */
     addCoins: (amount) => player.addCoins(amount),
@@ -121,6 +122,7 @@ function receiveGift(at, npc, cropId, n = 1) {
   if (!crop) return null;
 
   inventory.add(produceId(cropId), n);
+  // by = npc.id：邻居主动送礼，归进农场日志的「邻居动向」tab
   player.addLog('🎁', `${npc.name} 送来 ${crop.emoji}${crop.name} ×${n}`, at, npc.id);
   logFriend(npc, at, '🎁', `给 ${state.farm.name} 送去一份 ${crop.emoji}${crop.name}`);
   emit(EVENTS.GIFT, {
@@ -345,7 +347,7 @@ async function runLiveStep() {
   if (visit.index >= visit.steps.length) {
     liveQueue.shift();
     if (npc.level > visit.levelBefore) {
-      addNews('🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, { at: visit.at, who: npc.id });
+      addNews('🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, { at: visit.at });
       await commit({ farms: [npc], news: state.news }).catch(() => {});
       emit(EVENTS.NEWS);
     }
@@ -437,14 +439,11 @@ export async function steal(friendId, index) {
     friend.coins += paid;
     // 文案里要写真实名字（不是硬编码「农场主」）：日志与时报会把名字就地
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
-    // 想偷还被当场逮住，关系只会更差
-    adjustRelation(PLAYER_ID, friend.id, -stealRelLoss(crop.lv));
+    // 想偷还被当场逮住，关系只会更差：按这个果实的售价折算（至少 1）
+    adjustRelation(PLAYER_ID, friend.id, -dogCaughtRelLoss(crop.sell));
     logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币`);
-    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
-    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, {
-      at: now,
-      who: [PLAYER_ID, friend.id],
-    });
+    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now);
+    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, { at: now });
 
     await commit({ farms: [state.farm, friend], news: state.news, relations: state.relations });
     emit(EVENTS.FRIENDS);
@@ -463,9 +462,7 @@ export async function steal(friendId, index) {
   target.stolenAt = now;
 
   inventory.add(produceId(target.cropId), 1);
-  // 被顺走的人心里有数：好感按这份产出的售价折算
-  const lost = stealRelLoss(crop.lv);
-  adjustRelation(PLAYER_ID, friend.id, -lost);
+  // 顺走不进好感账：被偷的心里有数，但不至于撕破脸（被守护犬抓住才算）
   logFriend(friend, now, '🥷', `被 ${state.farm.name} 顺走了 ${crop.emoji}${crop.name} ×1`);
 
   await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
@@ -475,7 +472,7 @@ export async function steal(friendId, index) {
   emit(EVENTS.RELATION);
 
   await completeGuide('steal');
-  notify(`偷到 ${crop.emoji}${crop.name} ×1（好感 −${lost}）`, 'gold');
+  notify(`偷到 ${crop.emoji}${crop.name} ×1`, 'gold');
   return { ok: true, cropId: target.cropId };
 }
 
@@ -665,12 +662,7 @@ export async function sendGift(friendId, cropId, n = 1) {
   const times = qty > 1 ? ` ×${qty}` : '';
 
   logFriend(friend, now, '🎁', `${state.farm.name} 送来 ${crop.emoji}${crop.name}${times}`);
-  player.addLog(
-    '🎁',
-    `给 ${friend.name} 送了 ${crop.emoji}${crop.name}${times}（好感 +${gain}）`,
-    now,
-    [PLAYER_ID, friend.id],
-  );
+  player.addLog('🎁', `给 ${friend.name} 送了 ${crop.emoji}${crop.name}${times}（好感 +${gain}）`, now);
 
   await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
   emit(EVENTS.FRIENDS);

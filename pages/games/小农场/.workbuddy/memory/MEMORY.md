@@ -17,6 +17,9 @@
 六表：`farm`(id) / `plot`([farmId,id]) / `log`([farmId,seq]) / `news`(seq) /
 `relation`([a,b]，a<b，一对一条) / `inventory`(itemId)。
 `plots`、`log` 只在内存挂农场上，写档拆回子表。⚠️ 复合主键每段必须有值。
+日志条目 `{at, emoji, text, by}`：**`by` = 干这件事的邻居农场 id**（邻居对玩家农场的
+操作才传），农场日志浮窗靠它分「我的操作 / 邻居动向」两个 tab；`storage.js` 读写两处都要带，
+旧档没有这个字段 → 一律算玩家自己的操作。
 新字段在 `normalizePlot`/`normalizeNpc`/`normalizePlayerFarm` 里给旧档补。
 
 ## 数值
@@ -44,9 +47,19 @@
   **不排进成熟前 15 分钟**；下限顶到线上 → 返回 0 = 本轮不再需要、也不扣产量。
   `waterNext/pestNext` + `waterTimes/pestTimes`。成熟时欠一条 **−15%**、欠两条 **−40%**（不是 30%）。
 - **好感度**（`data/relation.js` 规则 + `store/relation.js` 读写）：−200~200，六档，
-  起点 `round((性格A+性格B)/2)`（玩家 0 → 热心 +38、贪心 −22）；打理 +1、偷 `max(1,等级/3)`、
+  起点 `round((性格A+性格B)/2)`（玩家 0 → 热心 +38、贪心 −22）；打理 +1、
+  **偷菜成功 0（不掉好感）**、**被守护犬抓住 `dogCaughtRelLoss(售价)=max(1,round(售价/10))`**、
   送 `max(1,等级/2)`；`stealWeightFor` 1.2−rel/200、`helpWeightFor` 1+rel/200、
   `giftChanceFor` <60 为 0 最高 0.3。**权重只决定挑谁，不决定做不做**。
+  `stealRelLoss`（按等级）已删除，别复活。
+- **土地逐级晋升**（用户明确要求）：生成器给每档加 `prev`（普通地空串，红→normal、黑→red…），
+  产物导出 `SOIL_ORDER` 与 `nextSoilId(soilId)`。`farm.upgradeablePlots(soilId)` = 空闲且
+  **下一档正好是 soilId** 的地；`upgradeSoil` 拦跳级（toast「先把它升成X」）。顶档是神话。
+  效果三处确认生效：`yieldMul`→`rollYield`、`timeMul`→播种/再生、`expMul`→收获经验。
+- **仓库卖出**（`subpages/bag.js`）：确认框每种作物一行 + `.qty` 步进器，**默认全量**、
+  可减到 0（合计为 0 时确认禁用）、「全卖」回填，合计实时重算。
+  `sellProduce(cropId, n?)` 缺省全卖、数量夹在持有量内；`sellAllProduce` 已删（无调用方）。
+  列表名称后挂图鉴标记 `.codex-mark`（点亮=彩色，未点亮=`.off` 置灰）。
 
 ## UI 硬约束
 
@@ -57,12 +70,22 @@
 - 地块 = `.plot-main`(flex:1)+`.plot-side`(34px)；列数 手机2/≥720 3/≥960 4；高 152/紧凑 126（图标 47/38px）；
   成熟摇定 `plot.pendingYield`。**`.plot-side` ≤4 按钮**（水/虫/肥/铲）：`4×29+3×3=125≤128`，
   加第 5 个前先重算，`overflow:hidden` 会静默裁掉；铲除用 `.icon-btn.danger`。
+  **锁定地块不显示图标**（`lockedHTML` 去掉 🔒），`.plot-lock` 是与 `.plot-emoji` 同尺寸的
+  空占位盒（47/38px），只留「Lv.X 解锁」—— 占位是为了网格和已播种地块等高（152px）。
 - **土地底纹** `soilbg-<id>` 用 `::before` 叠渐变，**不能改 `background`**（状态类各有背景），颜色只声明
-  `--soil-tint`。`.npc-plot` 底色/边框/底纹与 `.plot` 一致，状态类只改边框。
+  `--soil-tint`：**135deg 对角**（左上=土地色 → 右下=普通色，76% 处淡完），档位越高越浓
+  （第 29 轮再提一档：.52/.48/.56/.60/.60/.66，彩虹多色 .54/.50/.48/.48）。
+  `.npc-plot` 底色/边框/底纹与 `.plot` 一致，状态类只改边框；`.npc-plots` 列数与 `.grid`
+  同一套断点（2/3/4），圆角 `var(--radius)`、压边 24px 全部对齐；NPC 空地块位名。
+- **商店种子排序**（`views/shop.js` 的 `SEED_SORTS`：等级/价格/首次成熟 `grow`/整轮时间
+  `totalCycleSeconds`）：芯片排在筛选芯片后、`.filter-sep` 分隔，三态循环 降序→升序→取消。
+  ⚠️ `delegate` 传给 action 的是 `dataset.id` **字符串**，不是元素（当成 el 用会炸）。
 - 商店横滚在 `.shop-panel` 自己；筛选条在 `.shop-panels` 之外；重绘先恢复 `scrollLeft` 再同步 tab。
 - **图鉴**（`subpages/codex.js`）卡片**只有图标 + 名称**，数据全在点开的作物弹窗里；
   三档筛选 全部 / 可点亮 / 已收集（`entry.canMake = !specimen && owned>=50`）；
   未解锁 ❔+??? 不可点，已解锁未收集 ❔+未收集 可点。
+  **点得开的条件 = `unlocked || collected`**（送礼/偷菜不看等级，低级玩家可能有高级产出，
+  这种灰卡必须能点开做标本 —— 曾按 `unlocked` 一门，灰卡点了没反应）。
   **收集 ≠ 点亮**：收集 = 产出进过仓库（`progress.collected`，`inventory.add` →
   `store/collected.js` 记账，只增不减，偷的/送的都算）；
   点亮 = 做过标本（`progress.specimens`），出现在详情弹窗与图鉴称号。
@@ -82,11 +105,18 @@
 - **记录只有一种长相** `ui/records.js` 的 `recordItemsHTML`：农场日志 / 邻居弹窗 / 邻居卡片 /
   **时报**同一套 `.log-item`，差异只剩 `withDay / limit / compact / relative`。别再为「展示记录」写第二套标记。
   容器层面的差异（时报是白底面板）归外层。
+- **农场日志双 tab**（`ui/log-sheet.js`，芯片静态写在 index.html 的 `.log-tabs`，复用 `.filter-chip`）：
+  「我的操作」= `!entry.by`，「邻居动向」= `entry.by` 有值（NPC 主动对玩家农场的操作：
+  顺菜 / 被守护犬逮住 / 顺手浇水捉虫 / 送礼）。tab 状态挂模块变量 `logTab`，空列表两个 tab
+  各有各的 empty-tip。⚠️ NPC→玩家日志的统一漏斗是 `social.js` 的 `farmView().log(at, emoji, text, by)`
+  与 `receiveGift`；新加一种 NPC 动作也要记得传 `npc.id`。
 - **行内标签** `ui/inline-tags.js` 的 `inlineTagsHTML`：一次正则同时处理人名（`.who-tag`，人绿）
   与作物名（`.crop-tag`，物黄）。全文匹配、长名优先、同长度人优先、吃掉两侧空格；
   **作物标签连前面的 emoji 一起吃**；文案必须用真实 `${farm.name}`。
-  两者都是入口（`data-action="open-farm"` / `"crop-detail"`），由 `ui/inline-actions.js`
-  **在 document 上统一委托** —— 新地方渲染出标签就自动可点，视图不用绑事件。
+  **头像在名称左侧、与名称共用同一个胶囊背景**（`.ava` 圆形白底，玩家 `.me` 更深一档）。
+  日志/时报条目**不存 `who` 字段**（第 28 轮整条删除）——「是谁」全靠文案里的人名扫描匹配，
+  存了也没人读。两者都是入口（`data-action="open-farm"` / `"crop-detail"`），
+  由 `ui/inline-actions.js` **在 document 上统一委托** —— 新地方渲染出标签就自动可点，视图不用绑事件。
   **基线：`vertical-align: baseline` + `line-height: normal` + `margin: 0 4px`**（写死 1.15 会高 1px）。
 - **作物详情只有一个弹窗** `ui/crop-detail.js` 的 `openCropModal(cropId, {title,status,extra,foot,actions,onAction})`：
   六处入口（自家地块、邻居地块、制造间产出、仓库农产品、图鉴卡片、记录里的作物标签/时报图标）。
@@ -104,7 +134,8 @@
 
 10 档（**比熊 20%** → 龙犬 80%，田园犬第 7 档 58%），只有一只能上岗（空串=不设防）。改名用
 `LEGACY_BREED_MAP` **只迁一次**（`dog.migrated='r18'`）。狗粮槽全窝共享，只在上岗时按 `6.25`/小时消耗；
-`catchChance(rate,sat)=rate×(0.5+0.5×sat/100)`。被抓住按 `crop.sell×5` 罚给被偷者（钱不够倾家荡产）。
+`catchChance(rate,sat)=rate×(0.5+0.5×sat/100)`。被抓住按 `crop.sell×5` 罚给被偷者（钱不够倾家荡产），
+**另外掉好感 `max(1,round(售价/10))`**（第 29 轮起：偷菜成功不掉，只有被逮才掉）。
 偷邻居被逮住 `emit(EVENTS.DOG_CAUGHT,…)` → `ui/dog-caught.js` 全屏闪狗（**不复用 #modal**）。
 
 ## 邻居与世界
@@ -116,11 +147,16 @@
   `simCtx()` 注入 `rel / relAdjust / receiveGift`，`npc-sim.js` 仍不 import 任何 store。
 - NPC 模拟纯计算，落盘 `persistFriends()` 一次提交；远期聚合、近期 7 天逐条；在线时拆动作串演出，
   游标先推进、一步一落盘。`PLAYER_FARM_WEIGHT = 2`。
+- **NPC 喂狗概率**（`actFeedDog`）：`min(0.85, tend×0.28)`（第 29 轮从 0.55/0.13 提上来，
+  用户明确要「更大概率投喂」）；`bulkAdvance` 的远期饱腹度基线同步提到 `25+tend×16`。
+  ⚠️ NPC→玩家农场的动作**逻辑一直都有**，用户「看不到」是因为混在同一个 60 条日志里被
+  玩家自己的操作刷掉（现已分 tab），外加送礼要好感 ≥60、照料要有缺水/生虫的未成熟地、
+  偷菜要 `STEAL_CHANCE` 掷中 —— 这些是门槛不是 bug。
 
 ## 其它
 
 - 时报 7 天/80 条、日志 7 天/60 条，按 `at` 倒序。施肥额度唯一（`plot.fert`），增产与捉虫相乘。
-- **时报条目** `{at, emoji, text, who[], crop, cat}`：`crop` 有值时图标换成该作物且可点；
+- **时报条目** `{at, emoji, text, crop, cat}`：`crop` 有值时图标换成该作物且可点；
   `cat`（level/steal/dog/adventure）是筛选依据，不传按图标兜底 —— **图标被换掉时必须显式传**。
   冒险挖到限定种子单独上一条（`store/adventure.js` 的 `announceReward`）。
   旧档无 crop/cat 走兜底；`storage.js` 读写两处都要带上这两个字段。
@@ -135,4 +171,7 @@
 
 `npm run check` 盲区：抓不到私有函数丢失 → **删/搬函数后必须 `grep -rn` 搜全调用点**。
 e2e（真实 Chrome，脚本不入库）：等 `body[data-page]`；**全屏 `.sign-celebrate` 会吞点击**；
-跨页选择器要限定活动页；返回 `#subBack`、关模态 `[data-close]`、toast 容器是 `#toasts`。
+跨页选择器要限定活动页；返回 `#subBack`、关模态 `[data-close]`、toast 容器是 `#toasts`；
+子页面内容在 `#subpageBody`（不是 `#page-xxx`），经「☰ 其他」浮窗的 `.sheet-item[data-sub]` 打开。
+**造测试数据**：`page.evaluate` 里 `await import('/src/store/xxx.js')` 与页面共用同一模块实例，
+可直接改 `state` 再 `commit` + `emit`；产物的背包 key 前缀是 `crop_`（`produceId`）。

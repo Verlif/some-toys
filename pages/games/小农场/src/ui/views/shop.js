@@ -4,6 +4,8 @@
  * 交互要点：
  *  - tab 与筛选条放在 sticky 容器里，始终吸附在顶栏下方，不跟列表滚走；
  *  - 四个面板横向排列，支持原生左右滑动，点击 tab 则平滑滚动到对应面板；
+ *  - 种子区的筛选条后面还跟着一排排序芯片（等级 / 价格 / 首次成熟 / 整轮时间），
+ *    三态循环：降序 → 升序 → 取消，和邻居页同一套手势；
  *  - 重绘（买东西之后）会同时保留横向位置与当前面板的纵向滚动位置。
  */
 import { byId, delegate, setHTML } from '../../core/dom.js';
@@ -12,7 +14,7 @@ import { state } from '../../store/state.js';
 import * as farm from '../../store/farm.js';
 import * as shop from '../../store/shop.js';
 import { count } from '../../store/inventory.js';
-import { CROPS, CROP_IDS } from '../../data/crops.js';
+import { CROPS, CROP_IDS, totalCycleSeconds } from '../../data/crops.js';
 import { ITEMS, ITEM_IDS } from '../../data/items.js';
 import { SOILS, UPGRADEABLE_SOIL_IDS } from '../../data/soils.js';
 import { MAP_TIERS } from '../../data/adventure.js';
@@ -27,7 +29,10 @@ import { openSeedModal } from '../seed-detail.js';
 let activeTab = 'seed';
 /** 种子区的筛选档位 */
 let seedFilter = 'plantable';
-/** 下一次重绘是否保留当前面板的滚动位置（改筛选时要回到顶部） */
+/** 种子区的排序：key 为空 = 数据原序；dir = −1 降序 / 1 升序 */
+let seedSort = '';
+let seedSortDir = -1;
+/** 下一次重绘是否保留当前面板的滚动位置（改筛选 / 排序时要回到顶部） */
 let keepPanelScroll = true;
 
 /** tab 定义，放在 data 层更合适，但只有商店用得到，先留在视图里 */
@@ -40,6 +45,19 @@ const TABS = [
 
 /** 商店只卖常规种子；限定种子（special）只能从藏宝图里挖到 */
 const SHOP_SEED_IDS = CROP_IDS.filter((id) => !CROPS[id].special);
+
+/**
+ * 种子区的排序档位（和邻居页一套手势：点一下降序、再点升序、再点取消）。
+ *
+ * 「首次成熟」与「整轮时间」是两回事：前者 = grow（第一次能收的时间），
+ * 后者 = 全部茬数收完的总时长，多茬作物两者差得很远。
+ */
+const SEED_SORTS = [
+  { key: 'lv', label: '等级', value: (crop) => crop.lv },
+  { key: 'seed', label: '价格', value: (crop) => crop.seed },
+  { key: 'grow', label: '首次成熟', value: (crop) => crop.grow },
+  { key: 'cycle', label: '整轮时间', value: (crop) => totalCycleSeconds(crop) },
+];
 
 /** 右侧数量角标 */
 function owned(id) {
@@ -56,23 +74,39 @@ function matchFilter(id) {
 /* ---------- 三个面板 ---------- */
 
 function filterHTML() {
+  const sorts = SEED_SORTS.map((s) => {
+    const active = s.key === seedSort;
+    const arrow = active ? (seedSortDir === -1 ? ' ↓' : ' ↑') : '';
+    return `
+      <button class="filter-chip sort ${active ? 'active' : ''}"
+              data-action="sort-seeds" data-id="${s.key}">${s.label}${arrow}</button>`;
+  }).join('');
+
   // 三个面板共用一个筛选条容器，非种子 tab 时用 hidden 收起。
   // 始终存在是为了避免「切换 tab → 补渲染 → 再次切 tab」的递归。
+  // 排序芯片排在筛选芯片之后，中间一道分隔线 —— 和邻居页同一套长相。
   return `<div class="shop-filter" ${activeTab === 'seed' ? '' : 'hidden'}>
     ${SEED_FILTERS.map((f) => `
       <button class="filter-chip ${f.key === seedFilter ? 'active' : ''}"
               data-action="filter-seeds" data-id="${f.key}">${f.label}</button>`).join('')}
+    <span class="filter-sep"></span>
+    ${sorts}
     <span class="shop-filter-count">${SHOP_SEED_IDS.filter(matchFilter).length} / ${SHOP_SEED_IDS.length}</span>
   </div>`;
 }
 
 function seedPanel() {
   const shown = SHOP_SEED_IDS.filter(matchFilter);
-  if (!shown.length) {
+  const sorter = SEED_SORTS.find((s) => s.key === seedSort);
+  // 没选排序时保持数据原序（等级从低到高）；选了才按字段排
+  const ordered = sorter
+    ? [...shown].sort((a, b) => (sorter.value(CROPS[a]) - sorter.value(CROPS[b])) * seedSortDir)
+    : shown;
+  if (!ordered.length) {
     return '<div class="empty-tip">💸<br>暂时没有符合条件的种子<br>把地里的菜卖掉再来吧</div>';
   }
 
-  const rows = shown.map((id) => {
+  const rows = ordered.map((id) => {
     const crop = CROPS[id];
     const locked = state.farm.level < crop.lv;
     return `
@@ -125,12 +159,20 @@ function soilPanel() {
   const rows = UPGRADEABLE_SOIL_IDS.map((id) => {
     const soil = SOILS[id];
     const locked = state.farm.level < soil.unlock;
+    // 逐级晋升：这一档的前置档位写在 meta 里，面板上就能看见要先升什么
+    const prevSoil = SOILS[soil.prev];
+    const meta = [
+      `产量 ×${soil.yieldMul}`,
+      `时间 ×${soil.timeMul}`,
+      soil.expMul !== 1 ? `经验 ×${soil.expMul}` : '',
+      prevSoil ? `前置：${prevSoil.name}` : '',
+    ].filter(Boolean).join(' · ');
     return `
       <div class="shop-item ${locked ? 'locked' : ''}">
         <div class="si-emoji">${soil.emoji}</div>
         <div class="si-body">
           <div class="si-name">${soil.name}</div>
-          <div class="si-meta">产量 ×${soil.yieldMul} · 时间 ×${soil.timeMul}${soil.expMul !== 1 ? ` · 经验 ×${soil.expMul}` : ''}</div>
+          <div class="si-meta">${meta}</div>
         </div>
         <button class="btn small ${locked ? '' : 'ghost'}" ${locked ? 'disabled' : ''}
                 data-action="upgrade-soil" data-id="${id}">
@@ -138,7 +180,8 @@ function soilPanel() {
         </button>
       </div>`;
   }).join('');
-  return `<div class="list">${rows}</div>`;
+  return `<div class="list">${rows}</div>
+    <p class="map-tip">土地要一级一级升：先把普通地升成红土地，才能再升黑土地。每块地只升一次，选一块<b>空闲</b>的地进行操作。</p>`;
 }
 
 /**
@@ -309,14 +352,8 @@ function openSoilModal(soilId) {
     return;
   }
 
-  const plots = farm.upgradeablePlots(soilId);
-  const buttons = plots.length
-    ? plots.map((p) => `
-        <button class="btn small ghost" data-action="apply-upgrade"
-                data-soil="${soilId}" data-plot="${p.id}" style="width:100%">
-          地块 ${p.id + 1}
-        </button>`).join('')
-    : '<p style="font-size:12px;color:var(--muted)">没有可升级的普通土地</p>';
+  // 逐级晋升：候选地块 = 空闲的、且当前档位的下一档正好是 soilId 的地
+  const prevSoil = SOILS[soil.prev];
 
   openModal(`
     <div class="modal-head">
@@ -324,15 +361,34 @@ function openSoilModal(soilId) {
       <button class="close" data-close>✕</button>
     </div>
     <p style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:14px">
-      将一块<b>普通土地</b>升级为 ${soil.name}，消耗 💰${soil.cost}。<br>
+      将一块空闲的<b>${prevSoil.name}</b>升级为 ${soil.name}，消耗 💰${soil.cost}。<br>
       升级后该地块产量 ×${soil.yieldMul}，成熟时间 ×${soil.timeMul}。
     </p>
-    <div class="seed-grid">${buttons}</div>
+    <div class="seed-grid" data-role="soil-plots"></div>
   `, async (action, el) => {
-    if (action === 'apply-upgrade') {
-      await farm.upgradeSoil(Number(el.dataset.plot), el.dataset.soil);
-    }
+    if (action !== 'apply-upgrade') return;
+    // 升成功就地刷新候选列表：这块地已经升上去了，不该再出现在按钮里
+    if (await farm.upgradeSoil(Number(el.dataset.plot), el.dataset.soil)) refreshPlots();
   });
+
+  const card = document.querySelector('#modal .modal-card');
+
+  /** 只换地块按钮那一块（弹窗其余部分不动）， delegation 挂在卡片上，换了照样能点 */
+  function refreshPlots() {
+    const grid = card?.querySelector('[data-role="soil-plots"]');
+    if (!grid) return;
+    const plots = farm.upgradeablePlots(soilId);
+    grid.innerHTML = plots.length
+      ? plots.map((p) => `
+        <button class="btn small ghost" data-action="apply-upgrade"
+                data-soil="${soilId}" data-plot="${p.id}" style="width:100%">
+          地块 ${p.id + 1}
+        </button>`).join('')
+      : `<p style="font-size:12px;color:var(--muted)">没有空闲的${prevSoil.name}<br>
+         先收获或铲除一块${prevSoil.name}，才能把它升成${soil.name}</p>`;
+  }
+
+  refreshPlots();
 }
 
 /* ---------- 挂载 ---------- */
@@ -346,6 +402,20 @@ const SHOP_ACTIONS = {
   'filter-seeds': (id) => {
     seedFilter = id;
     // 换了筛选就该从列表顶部看起，不要沿用上一个筛选的滚动位置
+    keepPanelScroll = false;
+    renderShop();
+  },
+  'sort-seeds': (id) => {
+    // 三态循环：降序 → 升序 → 取消（回到数据原序），和邻居页一致
+    if (seedSort !== id) {
+      seedSort = id;
+      seedSortDir = -1;
+    } else if (seedSortDir === -1) {
+      seedSortDir = 1;
+    } else {
+      seedSort = '';
+      seedSortDir = -1;
+    }
     keepPanelScroll = false;
     renderShop();
   },

@@ -14,6 +14,7 @@ import { PLAYER_ID, getFriend } from '../store/state.js';
 import * as social from '../store/social.js';
 import { completeGuide } from '../store/codex.js';
 import { CROPS, CROP_IDS } from '../data/crops.js';
+import { SOILS } from '../data/soils.js';
 import { produceId } from '../data/keys.js';
 import { clampRelation, giftRelGain } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
@@ -42,7 +43,7 @@ import { recordItemsHTML } from './records.js';
 function plotCardHTML(friend, index, now) {
   const plot = friend.plots[index];
   // data-slot 让操作之后能只替换这一格，而不是整窗重开（滚动位置也就不会丢）
-  // 土地档位的底纹：邻居的地也会升级，左侧换成那块地的颜色
+  // 土地档位的底纹：邻居的地也会升级，左上角覆一块那块地的颜色（对角渐变）
   const soil = plot.soil && plot.soil !== 'normal' ? ` soilbg-${plot.soil}` : '';
   // 作物图标整格可点：和自家农场一样，点一下看这株作物的详情
   const emoji = (ch) => (plot.cropId
@@ -53,7 +54,12 @@ function plotCardHTML(friend, index, now) {
     boostBadge(plot)}${flagBadge(plot)}${extra.body}</div>`;
 
   if (!plot.cropId) {
-    return base({ cls: 'empty', body: `<div class="np-emoji">🟫</div><div class="np-name">空地</div><div class="np-meta">闲置中</div>` });
+    // 空地把土地档位写出来：升级过的地闲置着也认得出来是哪一档
+    const info = SOILS[plot.soil] || SOILS.normal;
+    return base({
+      cls: 'empty',
+      body: `<div class="np-emoji">${info.emoji}</div><div class="np-name">空地</div><div class="np-meta">${info.name} · 闲置中</div>`,
+    });
   }
 
   const crop = CROPS[plot.cropId];

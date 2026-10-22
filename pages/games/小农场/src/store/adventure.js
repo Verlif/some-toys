@@ -92,7 +92,6 @@ function announceReward(reward, card) {
   const crop = CROPS[reward.id];
   if (!crop) return;
   addNews(crop.emoji, `${state.farm.name} 在「${card.title}」挖到限定种子 ${crop.name}`, {
-    who: state.farm.id,
     crop: reward.id,
     cat: 'adventure',
   });
@@ -147,9 +146,7 @@ export async function finishRun() {
   // 大赚要上电视：跑一趟拿回的价值超过图价两倍才算「大奖」
   const map = MAP_TIERS.find((m) => m.tier === run.tier);
   if (map && value > map.price * 2) {
-    addNews('💰', `${state.farm.name} 在${map.name}里挖到大奖，带回约 ${formatCoins(value)} 的奖励`, {
-      who: state.farm.id,
-    });
+    addNews('💰', `${state.farm.name} 在${map.name}里挖到大奖，带回约 ${formatCoins(value)} 的奖励`);
   }
 
   run = null;

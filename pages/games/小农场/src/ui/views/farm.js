@@ -40,9 +40,12 @@ let grid = null;
  */
 
 function lockedHTML(plot) {
+  // 锁定中的地不摆图标，只留一行「Lv.X 解锁」；但占位盒要和作物图标
+  // 一样大，下面的文字才能落在和已播种地块相同的高度上 ——
+  // 同一片网格里忽高忽低，看着像少了几块地
   return `
     <div class="plot-main">
-      <div class="plot-lock">🔒</div>
+      <div class="plot-lock" aria-hidden="true"></div>
       <div class="plot-sub">Lv.${PLOT_UNLOCK_LV[plot.id]} 解锁</div>
     </div>`;
 }

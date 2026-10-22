@@ -15,7 +15,6 @@ import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
 import { expForLevel, MAX_LEVEL, unlockedPlotCount } from '../data/progression.js';
-import { idList } from '../core/utils.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
 
@@ -72,7 +71,7 @@ export function addExpRaw(amount) {
 
   if (result.leveledUp) {
     notify(`🎉 升级！现在是 Lv.${farm.level}`, 'gold');
-    addNews('🎉', `${farm.name} 的农场升到了 Lv.${farm.level}`, { who: farm.id });
+    addNews('🎉', `${farm.name} 的农场升到了 Lv.${farm.level}`);
     if (result.unlockedPlots > 0) {
       setTimeout(() => notify('🔓 新地块已解锁！'), 700);
     }
@@ -91,20 +90,24 @@ const LOG_CAP = 60;
 /**
  * 记一条农场日志（内存操作，随下一次 commit 一起落盘）。
  *
- * 玩家自己的操作、商店买卖、邻居来偷菜 / 帮忙照料都走这里。
+ * 玩家自己的操作、商店买卖都走这里；邻居来偷菜 / 帮忙照料 / 送礼走同一个入口，
+ * 但要传 `by`（干这件事的邻居农场 id）—— 农场日志浮窗靠它分出
+ * 「我的操作」与「邻居动向」两个 tab（见 ui/log-sheet.js）。
+ *
  * 日志按写入顺序保存，展示时按时间倒序 —— 邻居结算会补写过去的时间点，
  * 所以不能假设数组本身就是有序的。
+ *
+ * 文案里的人名由 `ui/inline-tags.js` 在渲染时扫描匹配，
+ * 命中就自动在名字旁边长出那颗人的头像，不需要在这里记「是谁」。
  *
  * @param {string} emoji
  * @param {string} text
  * @param {number} [at] 事件发生时间，补算历史时用
- * @param {string|string[]} [who] 涉及的人（农场 id）。
- *   玩家自己的操作不传 —— 渲染时默认带头像的是农场主；
- *   邻居相关的事件传上，日志行里就能看出「是谁」。
+ * @param {string} [by] 邻居的农场 id：邻居对玩家农场的操作才传，玩家自己的操作留空
  */
-export function addLog(emoji, text, at = Date.now(), who = '') {
+export function addLog(emoji, text, at = Date.now(), by = '') {
   const log = state.farm.log ?? (state.farm.log = []);
-  log.unshift({ at, emoji, text, who: idList(who) });
+  log.unshift({ at, emoji, text, by: by || '' });
 
   const cutoff = Date.now() - LOG_KEEP_DAYS * 86_400_000;
   const kept = log.filter((entry) => entry.at >= cutoff).slice(0, LOG_CAP);

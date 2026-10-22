@@ -12,7 +12,7 @@ import * as inventory from './inventory.js';
 import { CROPS, expOf } from '../data/crops.js';
 import { ITEMS } from '../data/items.js';
 import { hasTool, useTool } from './tools.js';
-import { SOILS } from '../data/soils.js';
+import { SOILS, nextSoilId } from '../data/soils.js';
 import { unlockedPlotCount as countUnlocked } from '../data/progression.js';
 import { seedId, produceId } from '../data/keys.js';
 import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
@@ -57,10 +57,16 @@ export const hasIssue = (plot, now = Date.now()) =>
  */
 export { needsWater, needsPest };
 
-/** 可升级为指定土地的空闲普通地块 */
+/**
+ * 可以升成指定土地档位的地块。
+ *
+ * 土地必须一级一级升（普通 → 红 → 黑 → …），所以候选地块的**下一档**
+ * 正好等于 soilId 时才列出来 —— 想升黑土地得先有红土地。
+ * @param {string} soilId 目标档位
+ */
 export function upgradeablePlots(soilId) {
   return state.farm.plots.filter(
-    (p) => isUnlocked(p) && p.soil === 'normal' && !p.cropId,
+    (p) => isUnlocked(p) && !p.cropId && nextSoilId(p.soil) === soilId,
   );
 }
 
@@ -595,15 +601,31 @@ export async function removeCrop(plotId) {
 }
 
 /**
- * 把一块空闲普通土地升级为指定类型
+ * 把一块空闲地块升到下一档土地。
+ *
+ * 逐级晋升：普通 → 红 → 黑 → 白银 → …，不能跳级（想直接上神话得一块块升上来）。
+ * 已经是顶档（神话）的地块没有再上一级。
+ * @param {number} plotId
+ * @param {string} soilId 目标档位，必须正好是这块地当前档位的下一档
+ * @returns {Promise<boolean>}
  */
 export async function upgradeSoil(plotId, soilId) {
   const plot = getPlot(plotId);
   const soil = SOILS[soilId];
   if (!plot || !soil || soilId === 'normal') return false;
 
-  if (!isUnlocked(plot) || plot.soil !== 'normal' || plot.cropId) {
+  if (!isUnlocked(plot) || plot.cropId) {
     notify('这块地当前无法升级');
+    return false;
+  }
+  // 跳级拦截：目标档位不是当前档位的下一档就不给升
+  if (nextSoilId(plot.soil) !== soilId) {
+    const need = SOILS[nextSoilId(plot.soil)];
+    notify(
+      nextSoilId(plot.soil)
+        ? `土地要一级一级升：先把它升成${need.name}`
+        : '这块地已经是最高档土地了',
+    );
     return false;
   }
   if (state.farm.level < soil.unlock) {

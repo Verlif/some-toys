@@ -9,7 +9,8 @@
  *
  * 几条规则（全部是纯函数，谁都能读）：
  *   - **起点由性格决定**：`round((A 的性格值 + B 的性格值) / 2)`，玩家没有性格，按 0 算；
- *   - **偷菜掉好感**：`max(1, round(作物等级 / 3))`；
+ *   - **偷菜不掉好感**：顺走一把菜只是「被偷的人心里有数」，不撕破脸；
+ *   - **被守护犬抓住才掉好感**：按想偷的那个果实售价折算，`max(1, round(售价 / 10))`；
  *   - **打理加好感**：每照料一块地 +1；
  *   - **送礼加好感**：按送出的那份产出的等级，`round(等级 / 2)`，至少 1；
  *   - 好感低的人更爱来偷、好感高的人更愿意来帮忙与送礼（见下面的权重函数）。
@@ -26,13 +27,14 @@ export const REL_MAX = 200;
 export const REL_PER_CARE = 1;
 
 /**
- * 偷菜掉的好感 = 作物等级 / 这个数（至少 1）。
+ * 偷菜被守护犬抓住，掉的好感 = 想偷的那个果实售价 / 这个数（至少 1）。
  *
- * 早先按**售价**折算（售价 / 10），高阶作物一份就上千，偷一次掉几十上百，
- * 一晚上就能把交情偷成结怨 —— 惩罚跟「偷一把菜」完全不匹配。
- * 改成按等级以后，Lv10 掉 3、Lv60 掉 20，量级终于和「一件事」对得上。
+ * 只有**被抓住**才掉：顺利顺走不掉（见 stealWeightFor 的说明），
+ * 但当场被狗逮住是另一回事 —— 钱也罚了、脸也丢了，关系自然破了个角。
+ * 按售价折算是用户明确要的口径：高阶作物一份就上千，被抓一次掉上百，
+ * 量级正好和「人赃并获」对得上。
  */
-const STEAL_LV_DIVISOR = 3;
+const CAUGHT_SELL_DIVISOR = 10;
 
 /** 送礼加的好感 = 产出等级 × 这个系数（至少 1） */
 const GIFT_REL_RATIO = 0.5;
@@ -52,8 +54,8 @@ export const clampRelation = (v) => clamp(Math.round(Number(v) || 0), REL_MIN, R
 export const baseRelation = (friendlyA = 0, friendlyB = 0) =>
   clampRelation((friendlyA + friendlyB) / 2);
 
-/** 偷走一份等级 lv 的产出，掉多少好感（最少 1） */
-export const stealRelLoss = (lv) => Math.max(1, Math.round(lv / STEAL_LV_DIVISOR));
+/** 偷菜被守护犬抓住，掉多少好感（按想偷的果实售价折算，最少 1） */
+export const dogCaughtRelLoss = (sell) => Math.max(1, Math.round(sell / CAUGHT_SELL_DIVISOR));
 
 /** 送出一份等级 lv 的产出，加多少好感 */
 export const giftRelGain = (lv) => Math.max(1, Math.round(lv * GIFT_REL_RATIO));

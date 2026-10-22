@@ -446,33 +446,3 @@ export function getPlot(plotId) {
 export function getFriend(friendId) {
   return state.friends.find((friend) => friend.id === friendId);
 }
-
-/**
- * 某座农场的头像（日志 / 时报里标识「是谁」用）。
- *
- * 留空、或是对手农场已经不在名单里时，退回农场主头像 ——
- * 日志行总要有个头像，空白反而像没渲染完。
- * @param {string} [farmId]
- * @returns {string} 头像 emoji
- */
-export function avatarOf(farmId) {
-  if (farmId && farmId !== PLAYER_ID) {
-    const friend = state.friends.find((f) => f.id === farmId);
-    if (friend?.avatar) return friend.avatar;
-  }
-  return state.farm?.avatar || '🧑‍🌾';
-}
-
-/**
- * 某座农场的名字 —— 和头像配对使用，口径与 avatarOf 完全一致：
- * 认不出来（留空 / 名单里已经没这个人）就退回农场主。
- * @param {string} [farmId]
- * @returns {string}
- */
-export function nameOf(farmId) {
-  if (farmId && farmId !== PLAYER_ID) {
-    const friend = state.friends.find((f) => f.id === farmId);
-    if (friend?.name) return friend.name;
-  }
-  return state.farm?.name || '农场主';
-}

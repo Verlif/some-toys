@@ -138,7 +138,9 @@
 
 .plot-name { font-size: 12px; font-weight: 600; color: #40503c; }
 .plot-sub { font-size: 11px; color: var(--muted); }
-.plot-lock { font-size: 28px; opacity: .48; }
+/* 锁定地块的占位：不显示图标，但尺寸与 .plot-emoji 一致（紧凑模式同步缩小），
+   保证「Lv.X 解锁」落在与已播种地块相同的高度，网格不会忽高忽低 */
+.plot-lock { width: 47px; height: 47px; }
 
 /* 产量加成角标：钉在左上角，不参与正文排版，
    这样地块上的操作按钮不会被多出来的一行文字挤下去 */
@@ -167,7 +169,7 @@
 .grid.dense .plot-emoji.empty { font-size: 32px; }
 .grid.dense .plot-name { font-size: 11px; }
 .grid.dense .plot-sub { font-size: 10px; }
-.grid.dense .plot-lock { font-size: 22px; }
+.grid.dense .plot-lock { width: 38px; height: 38px; }
 .grid.dense .plot-side { width: 30px; gap: 2px; }
 .grid.dense .plot-side .icon-btn { width: 25px; height: 25px; font-size: 12.5px; }
 .grid.dense .plot-side .btn.small { padding: 5px 1px; font-size: 10px; }
@@ -701,12 +703,21 @@
   letter-spacing: .4px;
   margin: 4px 0 9px;
 }
+/* 列数跟玩家农场同一套断点（手机 2 列 / ≥720 三列 / ≥960 四列）——
+   以前是 auto-fill minmax(116px)，宽屏下一路排到六七列，
+   邻居的地看起来比玩家的窄一大截，像是两个游戏 */
 .npc-plots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 11px;
   /* 同一行的卡片高度由 grid 自动拉伸对齐 */
   align-items: stretch;
+}
+@media (min-width: 720px) {
+  .npc-plots { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 960px) {
+  .npc-plots { grid-template-columns: repeat(4, 1fr); }
 }
 /* 所有地块卡片共用同一套骨架，用 flex + margin-top:auto 把按钮顶到底部，
    这样「偷完之后少了按钮」也不会让同一行看起来参差不齐 */
@@ -724,7 +735,8 @@
      之前这里偏冷白，点进邻居页像是四十张白卡片 */
   background: linear-gradient(180deg, #fffefa, #f8f2e6);
   border: 1px solid #ece2cf;
-  border-radius: 13px;
+  /* 圆角、阴影、底部压边全部跟 .plot 对齐（原来各写死了 13px / 22px） */
+  border-radius: var(--radius);
   box-shadow: 0 2px 6px rgba(70, 90, 60, .06);
   text-align: center;
 }
@@ -733,9 +745,9 @@
   content: '';
   position: absolute;
   inset: auto 0 0 0;
-  height: 22px;
+  height: 24px;
   background: linear-gradient(180deg, transparent, rgba(200, 175, 135, .13));
-  border-radius: 0 0 13px 13px;
+  border-radius: 0 0 var(--radius) var(--radius);
   pointer-events: none;
 }
 .npc-plot.ripe {
@@ -1145,6 +1157,15 @@
 .log-title { font-size: 14px; font-weight: 700; color: #40503c; }
 .log-sub { font-size: 10.5px; font-weight: 600; color: var(--muted); }
 
+/* 日志双 tab：我的操作 / 邻居动向（NPC 主动对玩家农场的操作）。
+   芯片直接复用 .filter-chip，不另起一套长相 */
+.log-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 10px;
+  flex-shrink: 0;
+}
+
 .log-body {
   flex: 1;
   min-height: 0;
@@ -1241,11 +1262,22 @@
      加了边框和底色之后也不会上下漂 */
   vertical-align: baseline;
 }
+/* 名字左边的头像：垫一个浅色圆底，让 emoji 从胶囊底色里「浮」出来，
+   远远看去就是一颗带头像的小名牌。圆形是为了和方胶囊区分层次 */
 .who-tag .ava {
-  font-size: .92em;
+  font-size: 1em;
   font-style: normal;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .72);
 }
+/* 自己的那颗用farm主色调，和邻居的白色圆底区分开 */
+.who-tag.me .ava { background: rgba(255, 255, 255, .9); }
 /* 邻居的人名标签可以点开他的农场；自己的点不开，也就不给可点的暗示 */
 .who-tag[data-action] { cursor: pointer; }
 .who-tag[data-action]:hover { background: #dbedd0; border-color: #c6dfb2; }
@@ -1652,6 +1684,49 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+/* ---------- 卖出确认：每种作物一行，右侧调数量 ---------- */
+.sell-qty-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.sell-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #f2f6ee;
+  border-radius: 12px;
+}
+.sell-qty-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sell-qty-have {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 2px;
+}
+/* ---------- 图鉴标记（仓库列表 / 制造间产出后面那颗小书 ---------- */
+.codex-mark {
+  font-size: 11.5px;
+  font-style: normal;
+  margin-left: 5px;
+  vertical-align: 1px;
+  filter: drop-shadow(0 1px 1px rgba(40, 80, 40, .18));
+}
+.codex-mark.off {
+  filter: grayscale(1);
+  opacity: .38;
+}
 .sd-buy {
   flex: 1;
   padding: 11px 12px;
@@ -2052,8 +2127,9 @@
 /* ============================================================
    土地档位的底纹
    ------------------------------------------------------------
-   升级过的地块，左侧带一点这块地的土地色，向右渐变回普通地色 ——
-   一进农场就能看出「哪几块是花钱改过的」，但又不至于花得看不清作物。
+   升级过的地块，从**左上角**斜向右下角渐变色带：左上角是这块地的
+   土地色，右下角渐回普通地色 —— 一进农场就能看出「哪几块是花钱改过的」，
+   斜向渐变比原来那条竖边更抓眼，档位越高色带越浓。
 
    用伪元素叠一层，而不是改 background：成熟 / 缺水 / 已偷
    各有一套状态背景，直接覆盖会把状态提示吃掉。
@@ -2065,35 +2141,36 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(90deg, var(--soil-tint, transparent) 0%, transparent 46%);
+  background: linear-gradient(135deg, var(--soil-tint, transparent) 0%, transparent 76%);
 }
+/* 档位越高色带越浓：扫一眼就能分出红地与神话地 */
 .soilbg-red {
-  --soil-tint: rgba(196, 82, 58, .28);
+  --soil-tint: rgba(196, 82, 58, .52);
 }
 .soilbg-black {
-  --soil-tint: rgba(64, 58, 48, .24);
+  --soil-tint: rgba(64, 58, 48, .48);
 }
 .soilbg-silver {
-  --soil-tint: rgba(138, 160, 174, .30);
+  --soil-tint: rgba(138, 160, 174, .56);
 }
 .soilbg-gold {
-  --soil-tint: rgba(206, 156, 36, .32);
+  --soil-tint: rgba(206, 156, 36, .60);
 }
 .soilbg-crystal {
-  --soil-tint: rgba(88, 172, 210, .32);
+  --soil-tint: rgba(88, 172, 210, .60);
 }
 .soilbg-myth {
-  --soil-tint: rgba(228, 118, 56, .34);
+  --soil-tint: rgba(228, 118, 56, .66);
 }
 /* 彩虹地单独一条：左侧本身就是多色，一段单色渐变表达不了 */
 .plot.soilbg-rainbow::before,
 .npc-plot.soilbg-rainbow::before {
-  background: linear-gradient(90deg,
-    rgba(255, 148, 158, .26) 0%,
-    rgba(255, 212, 132, .24) 16%,
-    rgba(146, 218, 158, .23) 32%,
-    rgba(126, 196, 236, .23) 48%,
-    transparent 72%);
+  background: linear-gradient(135deg,
+    rgba(255, 148, 158, .54) 0%,
+    rgba(255, 212, 132, .50) 16%,
+    rgba(146, 218, 158, .48) 32%,
+    rgba(126, 196, 236, .48) 48%,
+    transparent 76%);
 }
 
 /* ============================================================

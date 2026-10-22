@@ -3,11 +3,11 @@
  *
  * 需求是「在这段话里就能看出谁是谁、是什么」：
  *   ```
- *   偷 石头 家被守护犬抓住，罚了 500 金币
+ *   偷 [🧒石头] 家被守护犬抓住，罚了 500 金币
  *     ↓
- *   偷 [石头🧒] 家被守护犬抓住，罚了 500 金币
+ *   偷 [🧒石头] 家被守护犬抓住，罚了 500 金币
  *
- *   [石头🧒] 来你的农场，顺走了 [🥕胡萝卜] ×1
+ *   [🧒石头] 来你的农场，顺走了 [🥕胡萝卜] ×1
  *   ```
  *
  * 两类标签都同时是**入口**：点人名打开那座邻居农场的拜访弹窗，
@@ -16,10 +16,10 @@
  * 所以日志、时报、邻居卡片……任何一处渲染出来的标签都自动可点，
  * 不需要每个视图各自再绑一次。
  *
- * 为什么按「全文匹配名字」而不是只认 `who` 字段：
- * 文案里的主语常常是玩家（`state.farm.name`），而 `who` 只记了涉及者的 id；
- * 直接扫名字能让「农场主偷石头家」「石头来你的农场」这类句子自然成立，
- * 也不用要求每个 store 调用点都记得传 who。
+ * 为什么按「全文匹配名字」而不是只在条目上挂一个头像堆：
+ * 文案里的主语常常是玩家（`state.farm.name`），而一句话里可能同时
+ * 出现小偷与被偷的农场主。直接扫名字，每个人名旁边自然长出他的头像，
+ * 「是谁」贴在名字上，比行首一堆小头像更好认。
  */
 import { escapeHtml } from '../core/dom.js';
 import { CROPS } from '../data/crops.js';
@@ -107,11 +107,13 @@ export function inlineTagsHTML(text) {
 
     if (hit.type === 'person') {
       const { person } = hit;
-      const ava = `<i class="ava">${person.avatar}</i>`;
+      // 头像放在名字左边，和名字共用同一个胶囊背景 —— 「🧒石头」读起来
+      // 就是一张带头像的名片，比名字后面缀个小图标更直观
+      const ava = `<i class="ava">${escapeHtml(person.avatar)}</i>`;
       // 自己那座农场点不开 —— 不加动作属性，样式上也就没有可点的暗示
       return person.self
-        ? `<span class="who-tag me">${token}${ava}</span>`
-        : `<span class="who-tag" data-action="open-farm" data-id="${escapeHtml(person.id)}">${token}${ava}</span>`;
+        ? `<span class="who-tag me">${ava}${token}</span>`
+        : `<span class="who-tag" data-action="open-farm" data-id="${escapeHtml(person.id)}">${ava}${token}</span>`;
     }
     return `<span class="crop-tag" data-action="crop-detail" data-crop="${escapeHtml(hit.cropId)}">${hit.label}</span>`;
   });

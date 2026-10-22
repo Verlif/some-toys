@@ -9,13 +9,16 @@
  *   lit         已点亮   做过标本 → 彩色图标 + 名字
  *   collected   已收集   拿到过产出、还没做标本 → **灰图标**（去色但不打码）+ 名字
  *   unlocked    未收集   等级够、还没拿到过产出 → 剪影 ❔ + 「未收集」，**可以点开看数据**
- *   locked      未解锁   等级不够 → 剪影 ❔ + 「???」，不给点（看了也用不上）
+ *   locked      未解锁   等级不够且没见过 → 剪影 ❔ + 「???」，不给点（看了也用不上）
  *
  * 灰与 ❔ 的区别就是「见过没」：灰图标认得出来是哪种作物，只是还没点亮；
  * ❔ 是连见都没见过。一眼扫过去，彩色 = 点亮，灰 = 收集，问号 = 空。
  *
  * 「收集」与「点亮」分开：收集 = 见过（偷来的、邻居送的都算），
  * 点亮 = 做了一份标本（花掉 50 个产出），后者才是成就，见详情弹窗与称号。
+ *
+ * ⚠️ 点得开的条件是「等级够 **或** 见过」—— 邻居送礼、偷菜都不看等级，
+ * 低级玩家手里完全可能躺着高级作物的产出，这种灰卡必须能点开做标本。
  */
 import { CROPS } from '../../data/crops.js';
 import { MAP_TIERS } from '../../data/adventure.js';
@@ -55,11 +58,13 @@ function cardHTML(entry) {
   const locked = !entry.unlocked;
 
   // 动作属性必须写在 class 之外，塞进 class 里会把 HTML 解析坏
-  const attrs = entry.unlocked
+  // 收集过的灰卡也点得开：等级不够照样可能收到邻居送的产出
+  const clickable = entry.unlocked || entry.collected;
+  const attrs = clickable
     ? ` data-action="codex-detail" data-id="${entry.id}" role="button" tabindex="0"`
     : '';
   const label = shadow ? (locked ? '???' : '未收集') : entry.name;
-  const cls = ['codex-card', shadow && 'shadow', dull && 'dull', locked && 'locked', entry.unlocked && 'clickable']
+  const cls = ['codex-card', shadow && 'shadow', dull && 'dull', locked && 'locked', clickable && 'clickable']
     .filter(Boolean).join(' ');
 
   return `

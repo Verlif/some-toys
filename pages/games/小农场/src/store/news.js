@@ -6,10 +6,8 @@
  *
  * 每条的形状：
  * ```
- * { at, emoji, text, who: string[], crop: string, cat: string }
+ * { at, emoji, text, crop: string, cat: string }
  * ```
- *   - `who`  涉及的人的农场 id 数组：一条「X 从 Y 家顺走了菜」里，
- *            小偷与被偷的农场主都算；
  *   - `crop` 这条新闻挂在哪种作物上。有值时时报里那枚图标就是该作物本身，
  *            点一下打开作物信息弹窗（「挖到某某种子」这类条目就是这样）；
  *   - `cat`  顶部筛选用的分类；不传时按图标推断，老存档也能归类。
@@ -19,7 +17,6 @@
  *   - 邻居模拟里的故事，通过传给 simulateNpc 的 farm.news 回调写进来。
  */
 import { emit, EVENTS } from '../core/bus.js';
-import { idList } from '../core/utils.js';
 import { state } from './state.js';
 
 /** 超过这么多天就不再展示 */
@@ -46,16 +43,14 @@ const CAT_BY_EMOJI = {
  * @param {string} text 完整句子，调用方负责带上人名
  * @param {object} [options]
  * @param {number} [options.at] 事件发生时间：邻居离线结算补写的是过去的时间点
- * @param {string|string[]} [options.who] 涉及的人（农场 id）
  * @param {string} [options.crop] 相关作物 id（图标换成它，并变成可点）
  * @param {string} [options.cat] 分类档位（寻宝类的非金币图标要显式传）
  */
-export function addNews(emoji, text, { at = Date.now(), who = '', crop = '', cat = '' } = {}) {
+export function addNews(emoji, text, { at = Date.now(), crop = '', cat = '' } = {}) {
   state.news.push({
     at,
     emoji,
     text,
-    who: idList(who),
     crop,
     cat: cat || CAT_BY_EMOJI[emoji] || '',
   });

@@ -7,6 +7,7 @@
 import { CROPS, CROP_IDS } from '../../data/crops.js';
 import { produceId } from '../../data/keys.js';
 import { count } from '../../store/inventory.js';
+import { hasSpecimen } from '../../store/codex.js';
 import { sellProduce } from '../../store/shop.js';
 import { closeModal, openModal } from '../modal.js';
 import { openCropModal } from '../crop-detail.js';
@@ -26,37 +27,108 @@ function selectedValue() {
   return sum;
 }
 
-/** 卖出确认框 */
+/**
+ * 卖出确认框。
+ *
+ * 每种待卖作物占一行，右侧带数量步进器 —— 默认填满（仓库里有多少卖多少），
+ * 想少卖就往下调，一行都不想卖就调到 0。「全卖」一键填回上限。
+ */
 function confirmSell(ids) {
-  const names = ids.map((id) => `${CROPS[id].emoji}${CROPS[id].name}`).join('、');
-  const total = ids.reduce((sum, id) => sum + count(produceId(id)) * CROPS[id].sell, 0);
-  const amount = ids.reduce((sum, id) => sum + count(produceId(id)), 0);
+  // 行数据快照：弹窗开着的时候仓库不会再变，放心按 id 取
+  const rows = ids.map((id) => ({
+    id,
+    name: `${CROPS[id].emoji}${CROPS[id].name}`,
+    sell: CROPS[id].sell,
+    have: count(produceId(id)),
+  }));
+  /** 每行要卖的数量，初始 = 全部 */
+  const qtys = rows.map((row) => row.have);
+
+  const totalAmount = () => qtys.reduce((sum, n) => sum + n, 0);
+  const totalCoins = () => rows.reduce((sum, row, i) => sum + row.sell * qtys[i], 0);
+
+  const SELL_ACTIONS = {
+    'sell-qty-minus': (i) => step(i, -1),
+    'sell-qty-plus': (i) => step(i, 1),
+    'sell-qty-max': (i) => {
+      qtys[i] = rows[i].have;
+      refresh();
+    },
+    'confirm-sell': async () => {
+      for (const [i, row] of rows.entries()) {
+        if (qtys[i] > 0) await sellProduce(row.id, qtys[i]);
+        selected.delete(row.id);
+      }
+      // 卖完就收起确认框：否则列表在背后已经空了，弹窗还停在原地
+      closeModal();
+    },
+  };
 
   openModal(`
     <div class="modal-head">
       <h3>确认卖出</h3>
       <button class="close" data-close>✕</button>
     </div>
-    <p style="font-size:13px;line-height:1.8;margin-bottom:6px">
-      即将卖出 <b>${names}</b>
+
+    <div class="sell-qty-list">
+      ${rows.map((row, i) => `
+        <div class="sell-qty-row">
+          <div class="sell-qty-name">
+            ${row.name}
+            <span class="sell-qty-have">×${row.have}</span>
+          </div>
+          <div class="qty">
+            <button class="qty-btn" data-action="sell-qty-minus" data-i="${i}"
+                    aria-label="减少${row.name}数量">−</button>
+            <span class="qty-num" data-role="qty">${qtys[i]}</span>
+            <button class="qty-btn" data-action="sell-qty-plus" data-i="${i}"
+                    aria-label="增加${row.name}数量">+</button>
+          </div>
+          ${row.have > 1
+            ? `<button class="gift-max" data-action="sell-qty-max" data-i="${i}">全卖</button>`
+            : ''}
+        </div>`).join('')}
+    </div>
+
+    <p style="font-size:13px;line-height:1.8;margin:14px 0 16px">
+      共 <b data-role="amount">${totalAmount()}</b> 个，
+      合计 <b style="color:var(--gold)" data-role="coins">${totalCoins()} 💰</b><br>
+      <span style="font-size:12px;color:var(--muted)">卖出后不可撤销。</span>
     </p>
-    <p style="font-size:12.5px;color:var(--muted);line-height:1.8;margin-bottom:16px">
-      共 ${amount} 个，合计 <b style="color:var(--gold)">${total} 💰</b><br>
-      卖出后不可撤销。
-    </p>
-    <div style="display:flex;gap:8px">
+    <div class="rm-actions">
       <button class="btn ghost" data-close style="flex:1">再想想</button>
       <button class="btn" data-action="confirm-sell" style="flex:1">确认卖出</button>
     </div>
-  `, async (action) => {
-    if (action !== 'confirm-sell') return;
-    for (const id of ids) {
-      await sellProduce(id);
-      selected.delete(id);
-    }
-    // 卖完就收起确认框：否则列表在背后已经空了，弹窗还停在原地
-    closeModal();
-  });
+  `, (action, el) => SELL_ACTIONS[action]?.(Number(el.dataset.i)));
+
+  const card = document.querySelector('#modal .modal-card');
+
+  /** 数量变化后只改数字与按钮状态，不重建弹窗 */
+  function refresh() {
+    const nums = card.querySelectorAll('[data-role="qty"]');
+    qtys.forEach((n, i) => {
+      if (nums[i]) nums[i].textContent = String(n);
+      const minus = card.querySelector(`[data-action="sell-qty-minus"][data-i="${i}"]`);
+      const plus = card.querySelector(`[data-action="sell-qty-plus"][data-i="${i}"]`);
+      if (minus) minus.disabled = n <= 0;
+      if (plus) plus.disabled = n >= rows[i].have;
+    });
+
+    const amount = card.querySelector('[data-role="amount"]');
+    if (amount) amount.textContent = String(totalAmount());
+    const coins = card.querySelector('[data-role="coins"]');
+    if (coins) coins.textContent = `${totalCoins()} 💰`;
+    card.querySelector('[data-action="confirm-sell"]').disabled = totalAmount() <= 0;
+  }
+
+  function step(i, delta) {
+    const next = Math.max(0, Math.min(rows[i].have, qtys[i] + delta));
+    if (next === qtys[i]) return;
+    qtys[i] = next;
+    refresh();
+  }
+
+  refresh();
 }
 
 export const bagPage = {
@@ -78,6 +150,11 @@ export const bagPage = {
       const crop = CROPS[id];
       const n = count(produceId(id));
       const on = selected.has(id);
+      /* 图鉴标记：点亮（做过标本）的用彩色，没点亮的置灰 ——
+         仓库里躺着 50 个同样的产出时，一眼能看出哪份该拿去做标本 */
+      const mark = hasSpecimen(id)
+        ? '<span class="codex-mark" title="图鉴已点亮">📖</span>'
+        : '<span class="codex-mark off" title="图鉴未点亮">📖</span>';
       return `
         <div class="shop-item pickable ${on ? 'on' : ''}">
           <button class="pick-box" data-action="pick" data-id="${id}"
@@ -85,7 +162,7 @@ export const bagPage = {
           <div class="si-emoji tappable" data-action="crop-info" data-id="${id}"
                title="查看作物详情">${crop.emoji}</div>
           <div class="si-body" data-action="crop-info" data-id="${id}" role="button" tabindex="0">
-            <div class="si-name">${crop.name}</div>
+            <div class="si-name">${crop.name}${mark}</div>
             <div class="si-meta">单价 ${crop.sell} · 共值 ${n * crop.sell} 金币</div>
           </div>
           <span class="si-count">×${n}</span>

@@ -109,43 +109,27 @@ export async function buyMap(tier) {
 }
 
 /**
- * 卖掉全部某一种农产品
+ * 卖出农产品
+ *
+ * @param {string} cropId
+ * @param {number} [n] 要卖的数量，缺省 = 全部；超出持有量的部分被夹掉
  * @returns {Promise<number>} 实际获得的金币
  */
-export async function sellProduce(cropId) {
+export async function sellProduce(cropId, n) {
   const crop = CROPS[cropId];
   const id = produceId(cropId);
-  const n = inventory.count(id);
-  if (!crop || n <= 0) return 0;
+  const have = inventory.count(id);
+  if (!crop || have <= 0) return 0;
 
-  const income = n * crop.sell;
-  inventory.take(id, n);
+  const qty = n === undefined ? have : Math.max(0, Math.min(have, Math.floor(n)));
+  if (qty <= 0) return 0;
+
+  const income = qty * crop.sell;
+  inventory.take(id, qty);
   player.addCoins(income);
-  player.addLog('💰', `卖出 ${crop.emoji}${crop.name} ×${n}，+${income} 💰`);
+  player.addLog('💰', `卖出 ${crop.emoji}${crop.name} ×${qty}，+${income} 💰`);
   await persist();
   await completeGuide('sell');
-  notify(`卖出 ${crop.emoji}${crop.name} ×${n}，+${income} 💰`);
-  return income;
-}
-
-/**
- * 一键卖掉背包里所有农产品
- * @returns {Promise<number>} 实际获得的金币
- */
-export async function sellAllProduce() {
-  let income = 0;
-  for (const cropId of Object.keys(CROPS)) {
-    const n = inventory.count(produceId(cropId));
-    if (n > 0) {
-      inventory.take(produceId(cropId), n);
-      income += n * CROPS[cropId].sell;
-    }
-  }
-  if (income <= 0) return 0;
-
-  player.addCoins(income);
-  player.addLog('💰', `卖出全部农产品，+${income} 💰`);
-  await persist();
-  notify(`全部卖出，+${income} 💰`, 'gold');
+  notify(`卖出 ${crop.emoji}${crop.name} ×${qty}，+${income} 💰`);
   return income;
 }
