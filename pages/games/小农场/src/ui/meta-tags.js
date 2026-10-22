@@ -6,6 +6,7 @@
  * （灰 → 青 → 绿 → 蓝 → 紫；产量另用 灰 → 绿 → 橙 → 金）。
  * 商店列表与播种弹窗共用这里的分档，避免两处各写一套。
  */
+import { CROP_ARCHS } from '../data/crops.js';
 
 /**
  * 茬数的配色档位
@@ -27,4 +28,21 @@ export function yieldClass(max) {
   if (max > 20) return 'y3';
   if (max > 14) return 'y2';
   return 'y1';
+}
+
+/**
+ * 作物原型的标签（速生 / 丰产 / 精品 / 慢生 / 多茬）。
+ *
+ * 常规作物不给标签 —— 它是基准，标出来只会让每行都多一颗胶囊。
+ * 商店种子行、作物详情共用这一个出口。
+ *
+ * @param {object} crop data/crops.js 里的作物
+ * @returns {string} 一段 `.meta-tag` 的 HTML；常规作物返回空串
+ */
+export function archTagHTML(crop) {
+  const arch = crop?.arch;
+  if (!arch || arch === 'normal') return '';
+  const label = CROP_ARCHS[arch]?.label;
+  if (!label) return '';
+  return `<span class="meta-tag arch arch-${arch}">${label}</span>`;
 }

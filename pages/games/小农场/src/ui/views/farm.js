@@ -11,7 +11,7 @@ import { state } from '../../store/state.js';
 import * as farm from '../../store/farm.js';
 import * as player from '../../store/player.js';
 import { count } from '../../store/inventory.js';
-import { CROPS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
+import { CROPS, CROP_ARCHS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
 import { FERTILIZER_IDS, ITEMS } from '../../data/items.js';
 import { toolCountText, toolUses } from '../../store/tools.js';
 import { SOILS } from '../../data/soils.js';
@@ -397,9 +397,9 @@ function seedCardHTML(cropId) {
         <div class="seed-row-top">
           <span class="seed-row-name">${crop.name}</span>
           <span class="seed-row-kind kind-${crop.kind}">${KIND_LABELS[crop.kind]?.label || ''}</span>
-          ${crop.multi ? '<span class="seed-row-kind kind-multi">多茬</span>' : ''}
+          ${crop.arch && crop.arch !== 'normal'
+            ? `<span class="seed-row-kind kind-${crop.arch}">${CROP_ARCHS[crop.arch].label}</span>` : ''}
           ${crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : ''}
-          ${crop.slow ? '<span class="seed-row-kind kind-slow">厚积薄发</span>' : ''}
         </div>
         <div class="seed-row-meta">
           <span class="meta-tag">🌱 存货 ${owned}</span>

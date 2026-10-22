@@ -18,7 +18,7 @@
  * 视觉上刻意沿用种子详情（`.sd-*`）那一套：同样的 hero、数据格、
  * 收入条，玩家一眼就知道「哦，还是那张卡片」。
  */
-import { CROPS, KIND_LABELS, cycleIncome, totalCycleExp, totalCycleSeconds } from '../data/crops.js';
+import { CROPS, CROP_ARCHS, KIND_LABELS, cycleIncome, totalCycleExp, totalCycleSeconds } from '../data/crops.js';
 import { fmtDuration } from '../core/utils.js';
 import { openModal } from './modal.js';
 
@@ -73,8 +73,9 @@ export function openCropModal(cropId, {
         <div class="sd-name">${crop.name}</div>
         <div class="sd-tags">
           <span class="seed-row-kind kind-${crop.kind}">${KIND_LABELS[crop.kind]?.label || ''}</span>
+          ${crop.arch && crop.arch !== 'normal'
+            ? `<span class="seed-row-kind kind-${crop.arch}">${CROP_ARCHS[crop.arch].label}</span>` : ''}
           ${crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : ''}
-          ${crop.slow ? '<span class="seed-row-kind kind-slow">厚积薄发</span>' : ''}
           <span class="sd-lv">Lv.${crop.lv}</span>
         </div>
       </div>

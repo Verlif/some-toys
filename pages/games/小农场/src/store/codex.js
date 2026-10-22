@@ -1,13 +1,16 @@
 /**
- * 图鉴领域：记录每种作物的种植与收获次数，以及做好的标本。
+ * 图鉴领域：记录每种作物的种植与收获次数、是否收集过、以及做好的标本。
  *
  * 统计存在 player.cropStats 上，结构是 { 作物id: { planted, harvested } }。
- * **点亮**的判定是「有标本」—— 制作一份标本要花掉仓库里 50 个同样的产出，
- * 所以收集本身就是目标；收获数只是展示用的参考资料。
+ *
+ * **收集**的判定是「产出进过一次仓库」（`store/collected.js` 在 `inventory.add()`
+ * 处记账，只增不减）—— 收的、偷的、邻居送的都算。图鉴墙据此显示真图标。
+ * **点亮**的判定更严：做一份标本要花掉仓库里 50 个同样的产出，所以它是成就。
  *
  * 标本存在 player.specimens 上，结构是 { 作物id: true }。
  *
- * 老存档没有 cropStats，统计从接入那一刻开始累积，不追溯历史。
+ * 老存档没有 cropStats / collected，收集状态会按「收获过或仓库里还有」兜底补算，
+ * 之后从入包那一刻开始精确累积。
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
@@ -17,6 +20,7 @@ import { MAX_LEVEL } from '../data/progression.js';
 import { GUIDES, guideRewardText } from '../data/guide.js';
 import { produceId } from '../data/keys.js';
 import { add, count, take } from './inventory.js';
+import { isCollected } from './collected.js';
 import { addCoins, addExpRaw } from './player.js';
 import { notify } from './notify.js';
 
@@ -27,6 +31,7 @@ export const SPECIMEN_COST = 50;
 export function ensureStats() {
   if (!state.farm.progress.cropStats) state.farm.progress.cropStats = {};
   if (!state.farm.progress.specimens) state.farm.progress.specimens = {};
+  if (!state.farm.progress.collected) state.farm.progress.collected = {};
   if (!state.farm.progress.guide) state.farm.progress.guide = {};
 }
 
@@ -145,7 +150,7 @@ export async function makeSpecimen(cropId) {
 /**
  * 图鉴条目列表。全部作物都返回，由调用方决定怎么展示未解锁的。
  * @returns {Array<{id, name, emoji, lv, stages, sell, yield, grow, harvests,
- *                 planted, harvested, lit, unlocked, unlockedPlots,
+ *                 planted, harvested, collected, lit, unlocked, unlockedPlots,
  *                 specimen, canMake, owned}>}
  */
 export function codexEntries() {
@@ -157,6 +162,9 @@ export function codexEntries() {
     const stat = statOf(id);
     const specimen = hasSpecimen(id);
     const owned = count(produceId(id));
+    /* 老存档没有 collected 记录：收获过、仓库里还有货、已经做过标本，都算收集过
+       （标本是收集的子集，这里兜一下，避免出现「点亮了却显示没见过」） */
+    const collected = specimen || isCollected(id) || stat.harvested > 0 || owned > 0;
     return {
       id,
       name: crop.name,
@@ -172,6 +180,8 @@ export function codexEntries() {
       special: Boolean(crop.special),
       planted: stat.planted,
       harvested: stat.harvested,
+      /** 收集：产出进过一次仓库（只增不减） */
+      collected,
       /** 点亮：做好了一份标本 */
       lit: specimen,
       /** 已经做好标本 */
@@ -190,13 +200,17 @@ export function codexEntries() {
 export function codexSummary() {
   const entries = codexEntries();
   const unlocked = entries.filter((e) => e.unlocked).length;
+  const collected = entries.filter((e) => e.collected).length;
   const lit = entries.filter((e) => e.lit).length;
   return {
     total: entries.length,
     unlocked,
+    /** 收集到的作物数：产出进过仓库就算 */
+    collected,
+    /** 点亮数：做过标本才算 */
     lit,
     /** 0~100 的收集进度 */
-    percent: entries.length ? Math.round((lit / entries.length) * 100) : 0,
+    percent: entries.length ? Math.round((collected / entries.length) * 100) : 0,
     /** 距离满级还有多少作物没解锁 */
     remainingToMaxLevel: entries.filter((e) => !e.unlocked && e.lv === MAX_LEVEL).length,
   };

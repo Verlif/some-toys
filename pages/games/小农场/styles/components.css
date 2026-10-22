@@ -1088,7 +1088,8 @@
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 11px 7px 10px;
+  /* 只有图标 + 名字，卡片做成小方块：一屏能扫过更多，也更像「图鉴墙」 */
+  padding: 13px 7px 11px;
   text-align: center;
   transition: .16s;
 }
@@ -1106,57 +1107,32 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.codex-lv {
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 2px;
-  font-variant-numeric: tabular-nums;
-}
-.codex-detail {
-  font-size: 9.5px;
-  color: #a3b0a0;
-  line-height: 1.5;
-  margin-top: 6px;
-  min-height: 28px;
-  display: flex;
-  flex-direction: column;
-}
-.codex-stats {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--green-d);
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px dashed #e8eee2;
-  font-variant-numeric: tabular-nums;
-}
-/* 未点亮的作物以剪影呈现，保留等级作为「下一个目标」的提示 */
+/* 没收集过的作物以剪影呈现：虚框 + 问号，一眼看出这格还空着 */
 .codex-card.shadow {
   background: #f7f8f5;
   border-style: dashed;
   border-color: #dfe4da;
 }
+.codex-card.shadow .codex-emoji { opacity: .35; filter: grayscale(1); }
+.codex-card.shadow .codex-name { color: #b3bdb0; }
 
-/* 制作标本：只有仓库里够 50 个时才出现 */
-.specimen-btn {
-  margin-top: 7px;
-  font-size: 10.5px;
-  padding: 5px 8px;
-  background: #fff8e2;
-  border: 1px solid #ecdca4;
-  color: #8a7433;
+/* 已收集、还没点亮：图标去色（不打码）—— 跟点亮过的彩色格子分开，
+   但名字与图标都还认得出，扫一眼就知道「这个见过、还没做标本」 */
+.codex-card.dull { background: #fbfbf9; }
+.codex-card.dull .codex-emoji { filter: grayscale(1); opacity: .6; }
+.codex-card.dull .codex-name { color: #8d998a; }
+
+.codex-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
 }
-.specimen-btn:active { transform: scale(.95); }
 .codex-tip {
   font-size: 10.5px;
   color: var(--muted);
   margin-top: 8px;
 }
-.codex-card.shadow .codex-emoji { opacity: .35; filter: grayscale(1); }
-.codex-card.shadow .codex-name { color: #b3bdb0; }
 
 /* ---------- 农场日志浮窗 ---------- */
 .log-head {
@@ -1817,16 +1793,6 @@
 .adv-result-n { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
 
 /* 图鉴里的「限定」小标 */
-.codex-tag {
-  display: inline-block;
-  padding: 0 6px;
-  border-radius: 99px;
-  background: #fdf0d4;
-  color: #a07818;
-  font-size: 9.5px;
-  font-weight: 700;
-  line-height: 1.6;
-}
 
 /* ============================================================
    守护犬：饱腹度
@@ -2365,3 +2331,115 @@
   62% { transform: scale(1.12) rotate(6deg); opacity: 1; }
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
+
+/* ---------- 作物原型标签 ---------- */
+/* 速生 / 丰产 / 精品 / 慢生 / 多茬 —— 商店种子行与作物详情共用。
+   颜色按「节奏」分：青色偏快、橙色偏多、紫色偏贵、绿色偏多茬。 */
+.meta-tag.arch { background: #eef3ea; color: #5d7158; }
+.meta-tag.arch.arch-sprout { background: #e3f5f1; color: #2f7f6f; }
+.meta-tag.arch.arch-bounty { background: #fde8cd; color: #a45a12; }
+.meta-tag.arch.arch-premium { background: #f0e9fb; color: #6b45b0; font-weight: 700; }
+.meta-tag.arch.arch-slow { background: #ede9f7; color: #5b4a96; }
+.meta-tag.arch.arch-multi { background: #eef7e9; color: #3f7a35; }
+.seed-row-kind.kind-sprout { background: #e3f5f1; color: #2f7f6f; }
+.seed-row-kind.kind-bounty { background: #fde8cd; color: #a45a12; }
+.seed-row-kind.kind-premium { background: #f0e9fb; color: #6b45b0; }
+
+/* ---------- 邻居弹窗：农场标题右侧的一键按钮 ---------- */
+.npc-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.npc-sec-tools { display: flex; gap: 5px; }
+.npc-sec-tools:empty { display: none; }
+/* 图标按钮：标题行只有 34px 高，塞不下文字按钮，所以只留 emoji + 角标 */
+.npc-tool {
+  position: relative;
+  width: 30px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  border: 1px solid #d8e6cf;
+  border-radius: 9px;
+  background: #fff;
+  color: #40503c;
+  cursor: pointer;
+  padding: 0;
+}
+.npc-tool:active { transform: scale(.94); }
+.npc-tool:disabled { opacity: .45; cursor: default; border-color: #e6ebe1; }
+/* 待处理块数的角标：有需求才出现，没有就只剩一个灰掉的图标 */
+.npc-tool i {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 99px;
+  background: #e8804f;
+  color: #fff;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* ---------- 记录区：日期标题吸顶 ---------- */
+/* 关键在 padding：`.npc-log` 上下各有 9px padding 时，sticky 的日期标题
+   只能贴到 padding 内缘，上面留一条缝，滚动时条目从缝里露出来 ——
+   玩家反馈的「标题没有置顶」就是这个。改成横向 padding + 条目自己撑。 */
+.npc-log {
+  padding: 0 11px;
+  max-height: 220px;
+}
+.npc-log .log-item { padding: 6px 0; }
+.npc-log .log-day {
+  top: 0;
+  padding: 8px 0 4px;
+  background: #f8faf6;
+  /* 标题底下压一道同色实线与一点阴影，滚过去的条目不会在字缝里透出来 */
+  box-shadow: 0 6px 8px -6px rgba(80, 100, 75, .28);
+}
+
+/* ---------- 筛选条：筛选与排序之间的一道分隔 ---------- */
+.filter-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 18px;
+  background: #dde5d8;
+  margin: 0 2px;
+  align-self: center;
+}
+
+/* ---------- 送礼确认：数量在左下角 ---------- */
+.gift-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.gift-max {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green-d);
+  padding: 4px 2px;
+  cursor: pointer;
+}
+.gift-confirm-btns {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.gift-confirm-btns .btn { min-width: 84px; }
+/* 关系那一格跨两列：两个胶囊加一支箭头，一列放不下 */
+.sd-cell.wide { grid-column: 1 / -1; }

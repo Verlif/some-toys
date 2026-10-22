@@ -22,18 +22,33 @@ import { showToast } from '../toast.js';
 let settling = false;
 
 /**
- * 排序 / 筛选档位。
- * 「可偷摘」「可帮忙」是**筛选**而不是排序 —— 玩家点这两个，想要的是
- * 「只看现在有事可做的」，而不是把它们排到前面。再点一次回到等级正序。
+ * 筛选与排序是**两件事**，所以分两份状态：
+ *
+ *   筛选：全部 / 可偷摘 / 可帮忙 —— 决定「看哪几位」，单选
+ *   排序：等级 / 财富 / 好感 —— 决定「按什么排」，再点一次换方向，
+ *         第三次取消（回到名单原序）
+ *
+ * 早先它们挤在一个 `sortMode` 里，于是「可偷摘」被当成一种排序，
+ * 点了之后既不能反向也不能取消 —— 玩家想「只看看能偷的、按财富排」
+ * 这种组合是做不到的。
  */
-const SORTS = [
-  { key: 'lv-asc', label: '等级 ↑' },
-  { key: 'lv-desc', label: '等级 ↓' },
+const FILTERS = [
+  { key: 'all', label: '全部' },
   { key: 'steal', label: '可偷摘' },
   { key: 'care', label: '可帮忙' },
 ];
 
-let sortMode = 'lv-asc';
+/** 可排序的字段：`value` 取出来直接相减，好感要临时读关系表 */
+const SORTS = [
+  { key: 'lv', label: '等级', value: (f) => f.level },
+  { key: 'coins', label: '财富', value: (f) => f.coins },
+  { key: 'rel', label: '好感', value: (f) => getRelation(PLAYER_ID, f.id) },
+];
+
+let filterKey = 'all';
+/** 排序：key 为空 = 名单原序；dir = −1 降序 / 1 升序 */
+let sortKey = '';
+let sortDir = -1;
 
 /** 搜索关键词（按邻居名字过滤，与排序叠加生效） */
 let searchQuery = '';
@@ -85,47 +100,54 @@ function cardHTML(friend, now) {
  */
 function friendsShown(now) {
   const q = searchQuery.trim();
-  const list = q
+  let list = q
     ? state.friends.filter((f) => f.name.includes(q))
     : [...state.friends];
-  if (sortMode === 'steal') {
-    return list
-      .filter((f) => social.stealableCount(f, now) > 0)
-      .sort((a, b) => b.level - a.level);
-  }
-  if (sortMode === 'care') {
-    return list
-      .filter((f) => social.needsHelp(f, now))
-      .sort((a, b) => b.level - a.level);
-  }
-  return sortMode === 'lv-desc'
-    ? list.sort((a, b) => b.level - a.level)
-    : list.sort((a, b) => a.level - b.level);
+
+  if (filterKey === 'steal') list = list.filter((f) => social.stealableCount(f, now) > 0);
+  if (filterKey === 'care') list = list.filter((f) => social.needsHelp(f, now));
+
+  const sorter = SORTS.find((s) => s.key === sortKey);
+  // 没选排序时保持名单原序 —— 「取消排序」要有可见的效果
+  if (sorter) list.sort((a, b) => (sorter.value(a) - sorter.value(b)) * sortDir);
+  return list;
 }
 
 /**
- * 排序芯片（带数量角标）。
- * 「可偷摘 / 可帮忙」上的数字是**邻居人数** —— 与筛选语义一致：
- * 点它筛出来的就是这些邻居。数量按全部邻居统计，不受搜索影响。
+ * 一条件：筛选芯片 + 一条分隔线 + 排序芯片。
+ *
+ * 「可偷摘 / 可帮忙」上的数字是**邻居人数**（按全部邻居统计，不受搜索影响）。
+ * 排序芯片选中时带箭头：↓ 降序 / ↑ 升序，取消时不带箭头。
  */
 function sortChips(now) {
   const counts = {
     steal: state.friends.filter((f) => social.stealableCount(f, now) > 0).length,
     care: state.friends.filter((f) => social.needsHelp(f, now)).length,
   };
-  return SORTS.map((s) => `
-    <button class="filter-chip ${s.key === sortMode ? 'active' : ''}"
-            data-action="sort-friends" data-id="${s.key}">${s.label}${
-      counts[s.key] === undefined ? '' : `<i class="chip-num">${counts[s.key]}</i>`
+
+  const filters = FILTERS.map((f) => `
+    <button class="filter-chip ${f.key === filterKey ? 'active' : ''}"
+            data-action="filter-friends" data-id="${f.key}">${f.label}${
+      counts[f.key] === undefined ? '' : `<i class="chip-num">${counts[f.key]}</i>`
     }</button>`).join('');
+
+  const sorts = SORTS.map((s) => {
+    const active = s.key === sortKey;
+    const arrow = active ? (sortDir === -1 ? ' ↓' : ' ↑') : '';
+    return `
+      <button class="filter-chip sort ${active ? 'active' : ''}"
+              data-action="sort-friends" data-id="${s.key}">${s.label}${arrow}</button>`;
+  }).join('');
+
+  return `${filters}<span class="filter-sep"></span>${sorts}`;
 }
 
 /** 列表为空时的提示：区分「筛选没结果」和「搜索没结果」 */
 function emptyFriendsHTML() {
   const q = searchQuery.trim();
   if (q) return `<div class="empty-tip">🔍<br>没有名字带「${escapeHtml(q)}」的邻居<br>换个关键词试试</div>`;
-  if (sortMode === 'steal') return '<div class="empty-tip">🥷<br>现在没有能顺的作物<br>等谁家的菜熟了再来</div>';
-  if (sortMode === 'care') return '<div class="empty-tip">💧<br>大家的地都打理得很好<br>没有需要帮忙的</div>';
+  if (filterKey === 'steal') return '<div class="empty-tip">🥷<br>现在没有能顺的作物<br>等谁家的菜熟了再来</div>';
+  if (filterKey === 'care') return '<div class="empty-tip">💧<br>大家的地都打理得很好<br>没有需要帮忙的</div>';
   return '<div class="empty-tip">🌾<br>这个档位下暂时没有邻居<br>换个筛选看看</div>';
 }
 
@@ -135,10 +157,12 @@ function emptyFriendsHTML() {
  * @param {number} delta +1 下一个，-1 上一个
  */
 function shiftSort(delta) {
-  const index = SORTS.findIndex((s) => s.key === sortMode);
+  const index = SORTS.findIndex((s) => s.key === sortKey);
   const next = SORTS[(index + delta + SORTS.length) % SORTS.length];
-  if (!next || next.key === sortMode) return;
-  sortMode = next.key;
+  if (!next || next.key === sortKey) return;
+  // 滑到一个新维度时从降序开始（和点一下芯片的行为一致）
+  sortKey = next.key;
+  sortDir = -1;
   renderFriends();
   byId('friends')?.querySelector('.filter-chip.active')
     ?.scrollIntoView({ block: 'nearest', inline: 'center' });
@@ -243,11 +267,22 @@ export async function checkOnlineVisits() {
 /** 列表项动作。整行可点，所以用委托而不是给每张卡塞按钮 */
 const FRIEND_ACTIONS = {
   visit: (el) => openFriendModal(el.dataset.id),
+  'filter-friends': (el) => {
+    filterKey = el.dataset.id;
+    renderFriends();
+  },
   'sort-friends': (el) => {
-    // 再点一次已选中的筛选档就回到等级正序，避免「筛完出不来」
-    sortMode = sortMode === el.dataset.id && (sortMode === 'steal' || sortMode === 'care')
-      ? 'lv-asc'
-      : el.dataset.id;
+    // 三态循环：降序 → 升序 → 取消（回到名单原序）
+    const key = el.dataset.id;
+    if (sortKey !== key) {
+      sortKey = key;
+      sortDir = -1;
+    } else if (sortDir === -1) {
+      sortDir = 1;
+    } else {
+      sortKey = '';
+      sortDir = -1;
+    }
     renderFriends();
   },
   'clear-search': () => {

@@ -95,7 +95,7 @@ export function renderHud() {
   els.dSoil.title = soilTitle(soil);
   els.dStreak.textContent = `${currentStreak()} 天`;
   const codex = codexSummary();
-  els.dCodex.textContent = `${codex.lit} / ${codex.total}（${codex.percent}%）`;
+  els.dCodex.textContent = `${codex.collected} / ${codex.total}（${codex.percent}%）`;
 }
 
 /**

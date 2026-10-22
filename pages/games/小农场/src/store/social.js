@@ -635,30 +635,42 @@ export async function catchPestAllNeighborPlots(friendId) {
 }
 
 /**
- * 给邻居送一份仓库里的产出。
+ * 给邻居送几份仓库里的产出（默认 1 份）。
  *
- * 好感按这份产出的**等级**涨（`round(等级 / 2)`，至少 1）——
- * 送高阶作物才显得有诚意。送出就从仓库扣掉、不可撤销，所以 UI 那边要先弹确认框。
+ * 好感按这份产出的**等级**涨（`round(等级 / 2)`，至少 1），再乘份数 ——
+ * 送高阶作物才显得有诚意，送得多则成倍。送出就从仓库扣掉、不可撤销，所以 UI 那边要先弹确认框。
  *
  * @param {string} friendId
  * @param {string} cropId 农产品 id（作物 id）
- * @returns {Promise<{ok: boolean, gain?: number, relation?: number, reason?: string}>}
+ * @param {number} [n] 送几份，默认 1
+ * @returns {Promise<{ok: boolean, qty?: number, gain?: number, relation?: number, reason?: string}>}
  */
-export async function sendGift(friendId, cropId) {
+export async function sendGift(friendId, cropId, n = 1) {
   const friend = getFriend(friendId);
   const crop = CROPS[cropId];
   if (!friend || !crop) return { ok: false, reason: '没有这件东西' };
 
   const itemId = produceId(cropId);
   if (!inventory.has(itemId)) return { ok: false, reason: '仓库里没有这种产出' };
-  inventory.take(itemId, 1);
 
-  const gain = giftRelGain(crop.lv);
+  // 送几份就扣几份，好感**线性**叠加 —— 送五份就是五倍心意，
+  // 不做递减，否则「全送」这个操作反而变得不划算，玩家会一直点 1
+  const qty = Math.max(1, Math.min(Math.floor(n) || 1, inventory.count(itemId)));
+  if (!inventory.take(itemId, qty)) return { ok: false, reason: '仓库里的数量不够了' };
+
+  const unit = giftRelGain(crop.lv);
+  const gain = unit * qty;
   const now = Date.now();
   const relation = adjustRelation(PLAYER_ID, friend.id, gain);
+  const times = qty > 1 ? ` ×${qty}` : '';
 
-  logFriend(friend, now, '🎁', `${state.farm.name} 送来 ${crop.emoji}${crop.name} ×1`);
-  player.addLog('🎁', `给 ${friend.name} 送了一份 ${crop.emoji}${crop.name}（好感 +${gain}）`, now, [PLAYER_ID, friend.id]);
+  logFriend(friend, now, '🎁', `${state.farm.name} 送来 ${crop.emoji}${crop.name}${times}`);
+  player.addLog(
+    '🎁',
+    `给 ${friend.name} 送了 ${crop.emoji}${crop.name}${times}（好感 +${gain}）`,
+    now,
+    [PLAYER_ID, friend.id],
+  );
 
   await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
   emit(EVENTS.FRIENDS);
@@ -666,6 +678,9 @@ export async function sendGift(friendId, cropId) {
   emit(EVENTS.PLAYER);
   emit(EVENTS.RELATION);
 
-  notify(`🎁 把 ${crop.emoji}${crop.name} 送给了 ${friend.name}（好感 +${gain}，现在 ${relation}）`, 'gold');
-  return { ok: true, gain, relation };
+  notify(
+    `🎁 把 ${crop.emoji}${crop.name}${times} 送给了 ${friend.name}（好感 +${gain}，现在 ${relation}）`,
+    'gold',
+  );
+  return { ok: true, qty, gain, relation };
 }

@@ -12,6 +12,7 @@
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
+import { noteProduce } from './collected.js';
 
 /** 某物品的数量（不存在返回 0） */
 export function count(itemId) {
@@ -21,10 +22,16 @@ export function count(itemId) {
 /** 是否持有至少 n 个 */
 export const has = (itemId, n = 1) => count(itemId) >= n;
 
-/** 增加数量 */
+/**
+ * 增加数量。
+ *
+ * 农产品入包时顺手记一笔「图鉴已收集」（`store/collected.js`）——
+ * 所有产出入包都走这里，是唯一的埋点处。
+ */
 export function add(itemId, n) {
   if (n <= 0) return;
   state.bag[itemId] = count(itemId) + n;
+  noteProduce(itemId);
 }
 
 /** 减少数量，数量不足返回 false 且不改动 */

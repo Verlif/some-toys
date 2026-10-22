@@ -19,7 +19,7 @@ import { MAP_TIERS } from '../../data/adventure.js';
 import { SEED_FILTERS } from '../../data/navigation.js';
 import { mapId, seedId } from '../../data/keys.js';
 import { fmtDuration, formatCoins } from '../../core/utils.js';
-import { stackClass, yieldClass } from '../meta-tags.js';
+import { archTagHTML, stackClass, yieldClass } from '../meta-tags.js';
 import { openModal } from '../modal.js';
 import { openSeedModal } from '../seed-detail.js';
 
@@ -86,7 +86,7 @@ function seedPanel() {
             <span class="meta-tag time">⏱ ${fmtDuration(crop.grow * 1000)}</span>
             <span class="meta-tag stack ${stackClass(crop.harvests)}">🧺 ${crop.harvests} 茬</span>
             <span class="meta-tag yield ${yieldClass(crop.yield[1])}">🌾 ${crop.yield[0]}-${crop.yield[1]}</span>
-            ${crop.multi ? '<span class="meta-tag multi">🌿 多茬</span>' : ''}
+            ${archTagHTML(crop)}
           </div>
         </div>
         <span class="si-price">${locked ? `Lv.${crop.lv}` : `💰 ${crop.seed}`}</span>

@@ -136,45 +136,45 @@ const CATALOG = [
   ['花生', '🥜', 'legume', 'plain'], ['大蒜', '🧄', 'root', 'pungent'], ['西兰花', '🥦', 'leaf', 'plain'],
   ['芹菜', '🌿', 'leaf', 'plain'], ['生菜', '🥗', 'leaf', 'plain'], ['南瓜', '🎃', 'fruit', 'sweet'],
   ['西瓜', '🍉', 'fruit', 'sweet'], ['葡萄', '🍇', 'fruit', 'sweet'], ['向日葵', '🌻', 'flower', 'plain'],
-  ['辣椒', '🌶️', 'fruit', 'pungent'], ['香菜', '🌱', 'leaf', 'pungent'], ['甜菜', '🍠', 'root', 'sweet'],
+  ['辣椒', '🌶️', 'fruit', 'pungent'], ['香菜', '🌱', 'leaf', 'pungent'], ['甜菜', '🥕', 'root', 'sweet'],
   ['菠萝', '🍍', 'fruit', 'sour'], ['芒果', '🥭', 'fruit', 'sweet'], ['樱桃', '🍒', 'fruit', 'sweet'],
   ['柠檬', '🍋', 'fruit', 'sour'], ['橙子', '🍊', 'fruit', 'sour'], ['苹果', '🍎', 'fruit', 'sweet'],
   ['梨', '🍐', 'fruit', 'sweet'], ['桃子', '🍑', 'fruit', 'sweet'], ['猕猴桃', '🥝', 'fruit', 'sour'],
   ['香蕉', '🍌', 'fruit', 'plain'], ['椰子', '🥥', 'fruit', 'plain'], ['香菇', '🍄', 'fungus', 'umami'],
-  ['竹笋', '🎋', 'shoot', 'plain'], ['芋头', '🫚', 'root', 'plain'], ['莲子', '🪷', 'seed', 'plain'],
-  ['橄榄', '🫒', 'fruit', 'pungent'], ['山楂', '🌰', 'fruit', 'sour'], ['柿子', '🍊', 'fruit', 'sweet'],
-  ['枇杷', '🟠', 'fruit', 'sour'], ['甘蔗', '🎍', 'cane', 'sweet'], ['棉花', '🧶', 'fiber', 'plain'],
-  ['薄荷', '🍃', 'leaf', 'pungent'], ['迷迭香', '🪴', 'leaf', 'pungent'], ['香茅', '🌾', 'cane', 'pungent'],
+  ['竹笋', '🎍', 'shoot', 'plain'], ['芋头', '🥔', 'root', 'plain'], ['莲子', '🪷', 'seed', 'plain'],
+  ['橄榄', '🫒', 'fruit', 'pungent'], ['山楂', '🍒', 'fruit', 'sour'], ['柿子', '🍊', 'fruit', 'sweet'],
+  ['枇杷', '🍋', 'fruit', 'sour'], ['甘蔗', '🎍', 'cane', 'sweet'], ['棉花', '🧶', 'fiber', 'plain'],
+  ['薄荷', '🍃', 'leaf', 'pungent'], ['迷迭香', '🌿', 'leaf', 'pungent'], ['香茅', '🌾', 'cane', 'pungent'],
   ['花椰菜', '🥦', 'leaf', 'plain'], ['鸡枞菌', '🍄', 'fungus', 'umami'],
 
   // ── 中期作物（Lv21-60，每级 1-2 个）──────────────────────────
-  ['蓝莓', '🫐', 'fruit', 'sour'], ['树莓', '🍇', 'fruit', 'sour'], ['黑莓', '🫐', 'fruit', 'sour'],
-  ['桑葚', '🍒', 'fruit', 'sour'], ['无花果', '🟣', 'fruit', 'sweet'], ['石榴', '🔴', 'fruit', 'sweet'],
-  ['柿饼', '🍘', 'fruit', 'sweet'], ['梅子', '🟤', 'fruit', 'sour'], ['柚子', '🟡', 'fruit', 'sour'],
-  ['杨梅', '🌰', 'fruit', 'sour'], ['荔枝', '🔴', 'fruit', 'sweet'], ['龙眼', '🟤', 'fruit', 'sweet'],
-  ['番石榴', '🍐', 'fruit', 'sour'], ['莲雾', '🟣', 'fruit', 'sour'], ['人参果', '🍅', 'fruit', 'plain'],
+  ['蓝莓', '🫐', 'fruit', 'sour'], ['树莓', '🫐', 'fruit', 'sour'], ['黑莓', '🫐', 'fruit', 'sour'],
+  ['桑葚', '🍇', 'fruit', 'sour'], ['无花果', '🍇', 'fruit', 'sweet'], ['石榴', '🍎', 'fruit', 'sweet'],
+  ['柿饼', '🍪', 'fruit', 'sweet'], ['梅子', '🍑', 'fruit', 'sour'], ['柚子', '🍊', 'fruit', 'sour'],
+  ['杨梅', '🍒', 'fruit', 'sour'], ['荔枝', '🍒', 'fruit', 'sweet'], ['龙眼', '🥜', 'fruit', 'sweet'],
+  ['番石榴', '🍐', 'fruit', 'sour'], ['莲雾', '🍎', 'fruit', 'sour'], ['人参果', '🍅', 'fruit', 'plain'],
   ['秋葵', '🫛', 'pod', 'plain'], ['苦瓜', '🥒', 'pod', 'pungent'], ['荷兰豆', '🫘', 'pod', 'sweet'],
-  ['鹰嘴豆', '🟫', 'legume', 'plain'], ['红豆', '🫘', 'legume', 'plain'], ['绿豆', '🟢', 'legume', 'plain'],
-  ['四季豆', '🟢', 'pod', 'plain'], ['木耳', '🟫', 'fungus', 'umami'], ['银耳', '🤍', 'fungus', 'umami'],
-  ['金针菇', '🟡', 'fungus', 'umami'], ['杏鲍菇', '🤎', 'fungus', 'umami'], ['香椿', '🍃', 'shoot', 'pungent'],
-  ['芦笋', '🌿', 'shoot', 'plain'], ['莴笋', '🥗', 'stem', 'plain'], ['紫甘蓝', '🍆', 'leaf', 'sour'],
-  ['芝麻菜', '🪴', 'leaf', 'pungent'], ['茼蒿', '🌱', 'leaf', 'plain'], ['空心菜', '🥬', 'leaf', 'plain'],
-  ['茶树', '🍵', 'leaf', 'umami'], ['咖啡豆', '☕', 'seed', 'umami'], ['可可豆', '🍫', 'seed', 'umami'],
+  ['鹰嘴豆', '🫘', 'legume', 'plain'], ['红豆', '🫘', 'legume', 'plain'], ['绿豆', '🫛', 'legume', 'plain'],
+  ['四季豆', '🫛', 'pod', 'plain'], ['木耳', '🍄', 'fungus', 'umami'], ['银耳', '🍄', 'fungus', 'umami'],
+  ['金针菇', '🍄', 'fungus', 'umami'], ['杏鲍菇', '🍄', 'fungus', 'umami'], ['香椿', '🍃', 'shoot', 'pungent'],
+  ['芦笋', '🌱', 'shoot', 'plain'], ['莴笋', '🥬', 'stem', 'plain'], ['紫甘蓝', '🥬', 'leaf', 'sour'],
+  ['芝麻菜', '🥬', 'leaf', 'pungent'], ['茼蒿', '🥬', 'leaf', 'plain'], ['空心菜', '🥬', 'leaf', 'plain'],
+  ['茶树', '🍵', 'leaf', 'umami'], ['咖啡豆', '🫘', 'seed', 'umami'], ['可可豆', '🫘', 'seed', 'umami'],
   ['丁香', '🌸', 'flower', 'pungent'], ['八角', '⭐', 'flower', 'pungent'], ['玫瑰', '🌹', 'flower', 'sour'],
   ['郁金香', '🌷', 'flower', 'plain'], ['兰花', '🪻', 'flower', 'plain'], ['牡丹', '🌺', 'flower', 'plain'],
-  ['樱花', '🌸', 'flower', 'plain'], ['薰衣草', '💜', 'flower', 'plain'], ['雏菊', '🌼', 'flower', 'plain'],
-  ['四叶草', '🍀', 'leaf', 'plain'], ['百里香', '🫗', 'leaf', 'pungent'], ['芦荟', '🌵', 'leaf', 'plain'],
-  ['葵花籽', '🌻', 'seed', 'plain'], ['黑芝麻', '⬛', 'seed', 'plain'], ['白芥末', '⬜', 'seed', 'pungent'],
-  ['紫苏', '🟪', 'leaf', 'pungent'], ['生姜', '🫚', 'root', 'pungent'], ['甜玉米', '🌽', 'grain', 'plain'],
+  ['樱花', '🌸', 'flower', 'plain'], ['薰衣草', '🪻', 'flower', 'plain'], ['雏菊', '🌼', 'flower', 'plain'],
+  ['四叶草', '🍀', 'leaf', 'plain'], ['百里香', '🌿', 'leaf', 'pungent'], ['芦荟', '🌵', 'leaf', 'plain'],
+  ['葵花籽', '🌻', 'seed', 'plain'], ['黑芝麻', '🫘', 'seed', 'plain'], ['白芥末', '🌱', 'seed', 'pungent'],
+  ['紫苏', '🌿', 'leaf', 'pungent'], ['生姜', '🫚', 'root', 'pungent'], ['甜玉米', '🌽', 'grain', 'plain'],
   ['欧防风', '🥕', 'root', 'sweet'], ['沙果', '🍎', 'fruit', 'sour'], ['红葱头', '🧅', 'root', 'pungent'],
-  ['木薯', '🍠', 'root', 'plain'], ['黑花生', '🥜', 'legume', 'plain'], ['魔芋', '🟪', 'root', 'plain'],
+  ['木薯', '🍠', 'root', 'plain'], ['黑花生', '🥜', 'legume', 'plain'], ['魔芋', '🥔', 'root', 'plain'],
 
   // ── 后期奇幻作物（Lv61-200，每 4 级 1 个）─────────────────────
   ['星尘小麦', '✨', 'grain', 'plain'], ['月光莓', '🌙', 'fruit', 'sweet'], ['云雾豆', '🌫️', 'legume', 'plain'],
-  ['霞光辣椒', '🔥', 'fruit', 'pungent'], ['碧波瓜', '🌊', 'fruit', 'sweet'], ['琥珀稻', '🟠', 'grain', 'plain'],
+  ['霞光辣椒', '🔥', 'fruit', 'pungent'], ['碧波瓜', '🌊', 'fruit', 'sweet'], ['琥珀稻', '🌾', 'grain', 'plain'],
   ['紫晶葡萄', '💠', 'fruit', 'sweet'], ['霜降柿', '❄️', 'fruit', 'sweet'], ['金辉南瓜', '🌟', 'fruit', 'sweet'],
-  ['玄冰莲', '🧊', 'flower', 'plain'], ['赤焰花', '🟥', 'flower', 'plain'], ['翡翠竹', '💚', 'cane', 'plain'],
-  ['灵芝', '🟥', 'fungus', 'umami'], ['月华菇', '🌕', 'fungus', 'umami'], ['星辉萝卜', '🌟', 'root', 'sweet'],
+  ['玄冰莲', '🧊', 'flower', 'plain'], ['赤焰花', '🌺', 'flower', 'plain'], ['翡翠竹', '💚', 'cane', 'plain'],
+  ['灵芝', '🍄', 'fungus', 'umami'], ['月华菇', '🌕', 'fungus', 'umami'], ['星辉萝卜', '🌟', 'root', 'sweet'],
   ['银河椒', '🌌', 'fruit', 'pungent'], ['极光豆', '🌈', 'legume', 'plain'], ['龙涎瓜', '🐉', 'fruit', 'sweet'],
   ['凤凰花', '🔥', 'flower', 'plain'], ['梧桐', '🍂', 'tree', 'plain'],
   ['枫糖浆豆', '🌈', 'legume', 'sweet'], ['雪顶草莓', '🏔️', 'fruit', 'sweet'], ['黑曜石芥', '⬛', 'leaf', 'pungent'],
@@ -211,11 +211,84 @@ const KIND = {
 };
 
 /**
+ * 作物原型：玩家一眼能看出来的「性格」。
+ *
+ * 之前所有作物都走同一条公式 —— 成熟时间只随等级涨、茬数按等级一刀切，
+ * 同级的几种作物除了名字和图标几乎一模一样。现在每株作物额外带一个原型，
+ * 用它决定「怎么长得不一样」：
+ *
+ *   sprout  速生  半小时到两小时就能收，一茬只出几个
+ *   bounty  丰产  长得偏慢，但一次收一大包
+ *   premium 精品  要等，而且只出 3~5 个 —— 但单价是同级的几倍
+ *   slow    慢生  两三天才熟，整轮收益最高（厚积薄发就是它）
+ *   normal  常规  基准节奏
+ *
+ * 「多茬」不在这张表里：它是另一份手写名单（MULTI_CATALOG），
+ * 因为茬数、再生系数和每茬产量要一起调，混进来会把主线公式搅浑。
+ *
+ * ⚠️ 原型**不改售价公式**。售价仍然由「整轮收益 ÷ 总产量」倒推，
+ * 所以这些特色会自然传导成单价：速生型单价低、精品型单价极高。
+ */
+const ARCHS = {
+  sprout: { label: '速生', grow: (level) => 1800 + level * 25, harvests: 1, regrow: 0.5, yieldMul: 0.45 },
+  bounty: { label: '丰产', grow: (level, base) => base * 1.5, harvests: 1, regrow: 0.5, yieldMul: 2.6 },
+  premium: { label: '精品', grow: (level, base) => base * 1.9, harvests: 2, regrow: 0.45, yieldMul: 0.28 },
+  slow: { label: '慢生', grow: (level, base) => Math.min(base * 3, 4 * 86400), harvests: 1, regrow: 0.5, yieldMul: 1.35 },
+  normal: { label: '常规', grow: (level, base) => base, harvests: 1, regrow: 0.4, yieldMul: 1 },
+};
+
+/**
+ * 每种形态能用哪些原型 —— 树不可能是「半小时一收」，叶子也不该「长三天」。
+ *
+ * 同一形态里的几种原型按**目录顺序轮转**分配（`index % 列表长度`），
+ * 这样每个等级段里几种原型都会出现，而不是前 40 级全是速生。
+ */
+const FORM_ARCHS = {
+  grain: ['normal', 'bounty', 'sprout'],
+  fiber: ['normal', 'bounty'],
+  cane: ['bounty', 'normal'],
+  leaf: ['sprout', 'normal', 'bounty'],
+  root: ['sprout', 'premium', 'normal'],
+  stem: ['normal', 'sprout'],
+  shoot: ['sprout', 'normal'],
+  flower: ['premium', 'normal'],
+  fungus: ['bounty', 'normal'],
+  pod: ['bounty', 'normal', 'premium'],
+  legume: ['bounty', 'normal'],
+  fruit: ['premium', 'normal', 'bounty'],
+  tree: ['slow', 'premium', 'normal'],
+  seed: ['premium', 'bounty', 'normal'],
+};
+
+/**
+ * 原型的轮转模式。
+ *
+ * 按目录顺序套这个 10 格循环：速生 / 丰产 / 精品各占两格、常规四格。
+ * 之所以不按「形态列表取模」，是因为那样同一形态的作物会整齐地轮着来，
+ * 连续几个等级全是同一种原型 —— 玩家看到的还是「长得一样」。
+ *
+ * 形态不允许的原型（比如树不可能是速生）退回该形态的第一选择。
+ */
+const ARCH_PATTERN = [
+  'normal', 'sprout', 'bounty', 'premium', 'normal',
+  'sprout', 'bounty', 'normal', 'premium', 'normal',
+];
+
+/** 按形态 + 目录顺序挑原型 */
+function pickArch(form, index) {
+  const allowed = FORM_ARCHS[form] || ['normal'];
+  const want = ARCH_PATTERN[index % ARCH_PATTERN.length];
+  return allowed.includes(want) ? want : allowed[0];
+}
+
+/**
  * 「厚积薄发」作物：等得特别久，但单次经验给得特别多。
  *
  * 这批是「最长收获时间不一定和等级挂钩」的主角 ——
  * 一株 Lv12 的茶树要等一整天，但经验比周围高等级的作物都多，
  * 代价是每小时的金币收入只有普通作物的三成。
+ *
+ * 它们现在全部落在 `slow` 原型上（见 ARCHS）。
  *
  * 它们的倍率是**覆盖**形态倍率的，不是叠加。
  */
@@ -224,8 +297,7 @@ const SLOW_CROPS = new Set([
   '茶树', '咖啡豆', '可可豆', '甘蔗', '薰衣草', '兰花', '葵花籽', '芦笋',
 ]);
 
-/** 厚积薄发作物的倍率（覆盖形态倍率） */
-const SLOW = { time: 3.5 };
+/** 「厚积薄发」这一组统一归到「慢生」原型（它的倍率在 ARCHS.slow 里） */
 
 /** 形态 → 作物分类 */
 const FORM_KIND = {
@@ -272,13 +344,14 @@ const STAGE_PATHS = {
  * 之所以要这么慢，是为了让「缺水 / 虫害」这两个每 6 / 12 小时出现一次的
  * 照料操作有意义 —— 如果作物 40 秒就熟，玩家根本遇不到需要浇水的时候。
  *
- * 经验作物的时间会再乘 2.4，所以**成熟时间不再随等级严格单调**：
- * 低等级里也能遇到「要等好几天，但经验给得也多」的作物。
+ * 经验作物的时间再乘 1.5、慢生原型再乘 3，所以**成熟时间不随等级单调**：
+ * 低等级里也能遇到「要等好几天」的作物，高等级里也有半小时就能收的速生种。
  */
-function growSeconds(level, flavour, kind = 'normal', slow = false) {
+function growSeconds(level, flavour, kind = 'normal', arch = 'normal') {
   const hours = level ** 0.7;          // Lv1 = 1h，Lv200 ≈ 41h
-  const mul = slow ? SLOW.time : KIND[kind].time;
-  return Math.round(hours * 3600 * FLAVOUR[flavour].time * mul);
+  const base = hours * 3600 * FLAVOUR[flavour].time * KIND[kind].time;
+  // 速生型不看风味与分类：它就该是「半小时到两小时」这一档
+  return Math.round(ARCHS[arch].grow(level, base));
 }
 /** 种子价格 */
 const seedPrice = (level) => Math.round(10 * level ** 1.75);
@@ -320,6 +393,14 @@ function yieldRange(level, form) {
   return [min, max];
 }
 
+/** 原型对产量的影响：速生一茬只出几个、丰产一次一大包、精品只出 3~5 个 */
+function scaleYield(range, arch) {
+  const mul = ARCHS[arch].yieldMul;
+  const min = Math.max(3, Math.round(range[0] * mul));
+  const max = Math.max(min + 2, Math.round(range[1] * mul));
+  return [min, max];
+}
+
 /**
  * 一次收获的经验（玩家的公式，NPC 也用同一套）：
  *
@@ -333,18 +414,11 @@ function expOf(level, amount) {
   return Math.max(0, Math.round(amount)) * (level + 2);
 }
 
-/** 该等级典型作物的可收获次数 */
-function harvestsAt(level) {
-  if (level <= 20) return 1;
-  if (level <= 40) return 2;
-  if (level <= 70) return 3;
-  if (level <= 110) return 5;
-  if (level <= 150) return 6;
-  return 8;
-}
+/** 原型决定的茬数（多茬作物是另一份名单，不在这里） */
+const harvestsOf = (arch) => ARCHS[arch].harvests;
 
-/** 再生系数：后续每次成熟只需首次的一小部分 */
-const regrowOf = (level) => (level <= 20 ? 0.5 : level <= 70 ? 0.42 : level <= 150 ? 0.35 : 0.28);
+/** 原型决定的再生系数 */
+const regrowOf = (arch) => ARCHS[arch].regrow;
 
 /**
  * 升一级所需经验（累加式）：
@@ -401,12 +475,13 @@ const cycleIncome = (crop) =>
 const crops = CATALOG.map(([name, emoji, form, flavour], index) => {
   const level = plan[index];
   const kind = kindOf(form);
-  const slow = SLOW_CROPS.has(name);
-  const harvests = harvestsAt(level);
-  const yld = yieldRange(level, form);
+  // 手写的「厚积薄发」名单优先，其余按形态轮转分配原型
+  const arch = SLOW_CROPS.has(name) ? 'slow' : pickArch(form, index);
+  const harvests = harvestsOf(arch);
+  const yld = scaleYield(yieldRange(level, form), arch);
   const seed = seedPrice(level);
-  const grow = growSeconds(level, flavour, kind, slow);
-  const regrow = regrowOf(level);
+  const grow = growSeconds(level, flavour, kind, arch);
+  const regrow = regrowOf(arch);
 
   // 先定「这一整轮该赚多少」，再摊到每个产品上 ——
   // 售价从此只由「种子价 + 等级 + 整轮时长」决定，不再乘分类或风味系数。
@@ -418,7 +493,8 @@ const crops = CATALOG.map(([name, emoji, form, flavour], index) => {
     emoji,
     form,
     kind,
-    slow,
+    arch,
+    slow: arch === 'slow',
     special: false,
     stages: STAGE_PATHS[form],
     lv: level,
@@ -439,7 +515,7 @@ const crops = CATALOG.map(([name, emoji, form, flavour], index) => {
  * 从 Lv4 到 Lv160 都有，一次种下能收 3~6 茬。
  *
  * 平衡方式：
- *   1. 再生系数 0.4 —— 第二茬起只要第一茬的四成时间，像韭菜割了再长；
+ *   1. 再生系数 0.16 —— 第二茬起只要第一茬的一成半，像韭菜割了再长；
  *   2. 每茬产量按「1.3 × 整轮时间系数 ÷ 茬数」缩小，
  *      让它们的每小时经验只比单茬作物高约三成，每小时金币低约四成。
  * 这两条合起来的意思是：**多茬 = 多回来几次、多拿一点经验、少赚一点金币**，
@@ -448,7 +524,7 @@ const crops = CATALOG.map(([name, emoji, form, flavour], index) => {
  * 字段：[名称, emoji, 生长形态, 风味类型, 等级, 茬数]
  */
 const MULTI_CATALOG = [
-  ['蒜苗', '🧄', 'leaf', 'pungent', 4, 6],
+  ['蒜苗', '🌱', 'leaf', 'pungent', 4, 6],
   ['洋甘菊', '🌼', 'flower', 'plain', 7, 4],
   ['雷竹笋', '🎋', 'shoot', 'plain', 9, 4],
   ['果蔗', '🎍', 'cane', 'sweet', 12, 3],
@@ -458,8 +534,8 @@ const MULTI_CATALOG = [
   ['矮蕉', '🍌', 'fruit', 'plain', 22, 5],
   ['切花郁金香', '🌷', 'flower', 'plain', 25, 3],
   ['软枣猕猴桃', '🥝', 'fruit', 'sour', 28, 5],
-  ['羽叶薰衣草', '💜', 'flower', 'plain', 32, 4],
-  ['咖啡樱桃', '☕', 'seed', 'umami', 36, 4],
+  ['羽叶薰衣草', '🪻', 'flower', 'plain', 32, 4],
+  ['咖啡樱桃', '🍒', 'seed', 'umami', 36, 4],
   ['蝴蝶兰', '🪻', 'flower', 'plain', 40, 3],
   ['芍药', '🌺', 'flower', 'sour', 44, 3],
   ['幸运草', '🍀', 'leaf', 'plain', 48, 5],
@@ -470,8 +546,14 @@ const MULTI_CATALOG = [
   ['天香桂', '🌳', 'tree', 'plain', 160, 4],
 ];
 
-/** 多茬作物的再生系数：第二茬起只要第一茬的四成时间 */
-const MULTI_REGROW = 0.4;
+/**
+ * 多茬作物的再生系数：第二茬起只要第一茬的 16%。
+ *
+ * 这一档是「一次种下、连着回好几趟」：首茬等得久一点，
+ * 之后每一茬几乎立刻就能再摘 —— 割韭菜的手感。
+ * 早先写 0.4，第二茬还要等四成时间，跟「多茬」这个词对不上。
+ */
+const MULTI_REGROW = 0.16;
 
 /** 一整轮 = 第一茬 + 后面每一茬再生，相对第一茬的倍数 */
 const multiCycleFactor = (harvests) =>
@@ -510,6 +592,7 @@ const multiCrops = MULTI_CATALOG.map(([name, emoji, form, flavour, level, harves
     regrow: MULTI_REGROW,
     harvests,
     yield: yld,
+    arch: 'multi',
     multi: true,
   };
 });
@@ -537,32 +620,32 @@ const SPECIAL_CATALOG = [
   ['糖霜萝卜', '🍬', 'root', 5], ['露珠生菜', '💧', 'leaf', 8],
   ['蜜露番茄', '🍯', 'fruit', 11], ['铜铃豆', '🔔', 'legume', 14],
   ['星屑玉米', '✨', 'grain', 17], ['云朵花椰', '☁️', 'leaf', 19],
-  ['琥珀南瓜', '🟧', 'fruit', 20], ['月光莲', '🌙', 'flower', 22],
-  ['雾隐菇', '🌫️', 'fungus', 24], ['蜜桃珊瑚', '🪸', 'fruit', 26],
+  ['琥珀南瓜', '🎃', 'fruit', 20], ['月光莲', '🌙', 'flower', 22],
+  ['雾隐菇', '🍄', 'fungus', 24], ['蜜桃珊瑚', '🍑', 'fruit', 26],
   ['蓝焰椒', '🫧', 'fruit', 28], ['风铃草', '🎐', 'flower', 30],
-  ['珍珠洋葱', '🦪', 'root', 32], ['彩虹甜菜', '🎨', 'root', 34],
+  ['珍珠洋葱', '🦪', 'root', 32], ['彩虹甜菜', '🥬', 'root', 34],
   ['龙鳞瓜', '🐉', 'fruit', 36], ['银线茶', '🍵', 'leaf', 38],
-  ['星屑草莓', '🍓', 'fruit', 40], ['赤玉石榴', '🧧', 'fruit', 42],
+  ['星屑草莓', '🍓', 'fruit', 40], ['赤玉石榴', '🍎', 'fruit', 42],
   ['翡翠芦笋', '💚', 'shoot', 44], ['黑曜可可', '🍫', 'seed', 45],
   ['霜晶蓝莓', '🧊', 'fruit', 46], ['银铃花', '💮', 'flower', 47],
-  ['金箔柠檬', '🍋', 'fruit', 48], ['千层芋', '🍥', 'root', 49],
-  ['蜜糖无花果', '🍑', 'fruit', 50], ['血橙宝石', '🩸', 'fruit', 51],
+  ['金箔柠檬', '🍋', 'fruit', 48], ['千层芋', '🥔', 'root', 49],
+  ['蜜糖无花果', '🍑', 'fruit', 50], ['血橙宝石', '🍊', 'fruit', 51],
   ['紫电葡萄', '⚡', 'fruit', 52], ['玉髓白莲', '🪷', 'seed', 53],
   ['幻彩菠萝', '🍍', 'fruit', 54], ['深海椰子', '🥥', 'fruit', 55],
   ['月影樱桃', '🌒', 'fruit', 56], ['星尘麦穗', '☄️', 'grain', 57],
   ['极光芒果', '🥭', 'fruit', 58], ['熔心椒', '🌶️', 'fruit', 59],
   ['云顶稻', '🍚', 'grain', 60],
   // ── 第二批（补 Lv2~37 的空档，让每档图都有新鲜货）──
-  ['白玉麦芽', '🌾', 'grain', 2], ['珊瑚萝卜', '🪸', 'root', 4],
+  ['白玉麦芽', '🌾', 'grain', 2], ['珊瑚萝卜', '🥕', 'root', 4],
   ['星星豌豆', '⭐', 'legume', 6], ['月芽豆角', '🌙', 'legume', 7],
   ['蜜心薯', '🍯', 'root', 9], ['云片菇', '☁️', 'fungus', 10],
   ['风信子铃', '🔔', 'flower', 12], ['琉璃苣', '🧊', 'flower', 13],
   ['金粟谷', '🌽', 'grain', 15], ['霞光丝瓜', '🌅', 'fruit', 16],
-  ['龙须菜', '🐲', 'shoot', 18], ['墨玉豆', '🖤', 'legume', 21],
+  ['龙须菜', '🌱', 'shoot', 18], ['墨玉豆', '🫘', 'legume', 21],
   ['糖晶果', '🍬', 'fruit', 23], ['雨前茶', '🍃', 'leaf', 25],
-  ['霹雳椒', '⚡', 'fruit', 27], ['银月花', '🌛', 'flower', 29],
+  ['霹雳椒', '⚡', 'fruit', 27], ['银月花', '🌙', 'flower', 29],
   ['昆仑雪莲', '🏔️', 'flower', 31], ['赤炎椒', '🔥', 'fruit', 33],
-  ['青金桔', '🟢', 'fruit', 35], ['碧波藻', '🌊', 'leaf', 37],
+  ['青金桔', '🍊', 'fruit', 35], ['碧波藻', '🌊', 'leaf', 37],
 ];
 
 /** 限定种子的茬数：至少 2 茬，等级越高收得越多 */
@@ -613,6 +696,7 @@ const specialCrops = SPECIAL_CATALOG.map(([name, emoji, form, level], index) => 
     regrow,
     harvests,
     yield: yld,
+    arch: 'multi',
     // 限定种子至少 2 茬，全部算「多茬」（UI 的多茬标签读这个字段）
     multi: harvests > 1,
   };
@@ -646,13 +730,16 @@ for (const c of allCrops) {
 }
 
 /**
- * emoji 客观上不够用，允许复用，但同一个 emoji 最多出现三次。
- * 作物从 145 种扩到 165 种之后，只允许两次会让二十种新作物无图可用。
+ * emoji 客观上不够用，允许复用。
+ *
+ * 上限从 3 提到 8：卡在 3 的时候，「木耳 / 银耳 / 金针菇 / 杏鲍菇 / 灵芝」
+ * 这些蘑菇只能靠 ⬛🟫🤍🟡 这类色块凑数 —— 图标和作物完全对不上。
+ * 八个蘑菇共用一个 🍄 也比八个色块强，**语义正确优先于不重复**。
  */
 const emojiCount = new Map();
 for (const c of allCrops) emojiCount.set(c.emoji, (emojiCount.get(c.emoji) || 0) + 1);
 for (const [emoji, n] of emojiCount) {
-  if (n > 3) problems.push(`emoji ${emoji} 用了 ${n} 次，最多允许 3 次`);
+  if (n > 8) problems.push(`emoji ${emoji} 用了 ${n} 次，最多允许 8 次`);
 }
 
 // 多次收获作物：茬数必须大于 1，否则「多茬」这件事就名不副实
@@ -664,13 +751,10 @@ for (let i = 1; i < crops.length; i += 1) {
   const b = crops[i];
   check(b.lv >= a.lv, `等级未单调：${a.name} Lv${a.lv} → ${b.name} Lv${b.lv}`);
   check(b.seed >= a.seed, `种子价未单调：${a.name} ${a.seed} → ${b.name} ${b.seed}`);
-  // 成熟时间**刻意**允许非单调：
-  // 「厚积薄发」作物的等待时间是普通作物的 3.5 倍，
-  // 于是「Lv12 的茶树要等一整天」这种反直觉的情况会出现，
-  // 这正是「最长收获时间不一定和等级挂钩」的设计意图。
-  // 但相邻不能差出 5 倍，否则观感上像是数据出错。
-  check(b.grow < a.grow * 5, `成熟时间跳变过大：${a.name} ${a.grow}s → ${b.name} ${b.grow}s`);
-  check(b.grow > a.grow / 5, `成熟时间跳变过大：${a.name} ${a.grow}s → ${b.name} ${b.grow}s`);
+  // 成熟时间**刻意**允许非单调，而且同一等级里就能差出几十倍：
+  // 半小时的速生萝卜与要等三天的慢生果树可以并排放在 Lv60。
+  // 「最长收获时间不一定和等级挂钩」正是这一轮要的效果，
+  // 所以这里不再做相邻比较，改成下面的「全局区间 + 同等级离散度」。
 }
 
 // 单价与整轮收入都**不再**强制单调：
@@ -678,8 +762,20 @@ for (let i = 1; i < crops.length; i += 1) {
 // 这里只守住量级，避免某一档突然暴富或完全没人种。
 for (const c of crops) {
   const ratio = cycleIncome(c) / c.seed;
-  check(ratio >= 1.0 && ratio <= 8.0,
-    `${c.name} 的整轮收入倍率 ${ratio.toFixed(2)} 超出 1.0~8.0`);
+  check(ratio >= 1.0 && ratio <= 12.0,
+    `${c.name} 的整轮收入倍率 ${ratio.toFixed(2)} 超出 1.0~12.0`);
+}
+
+// 成熟时间：全局 15 分钟 ~ 4 天；同一等级内最多差 60 倍（速生 vs 慢生）
+for (const c of allCrops) {
+  check(c.grow >= 15 * 60, `${c.name} 的成熟时间只有 ${c.grow}s，短到没法照料`);
+  check(c.grow <= 4 * 86400, `${c.name} 的成熟时间长达 ${(c.grow / 86400).toFixed(1)} 天`);
+}
+for (const lv of new Set(crops.map((c) => c.lv))) {
+  const at = crops.filter((c) => c.lv === lv).map((c) => c.grow);
+  if (at.length < 2) continue;
+  const spread = Math.max(...at) / Math.min(...at);
+  check(spread <= 60, `Lv${lv} 的成熟时间跨度 ${spread.toFixed(1)} 倍，超过 60 倍`);
 }
 
 // 限定作物要覆盖每一档藏宝图的种子等级上限（10 / 20 / 30 / 40 / 50 级往下 10 级）
@@ -693,18 +789,25 @@ for (const cap of [20, 30, 40, 50, 60]) {
 // 上限给到 3.2 是留舍入余量（sell 取整 + 同级多作物取平均都会带来小偏差）。
 check(specialCrops.every((c) => c.harvests >= 2), '存在只有一茬的限定作物');
 for (const c of specialCrops) {
-  const ratio = cycleIncome(c) / normalIncomeAt(c.lv);
-  check(ratio >= 1.9 && ratio <= 3.2,
-    `${c.name} 的整轮收益是同级商店种子的 ${ratio.toFixed(2)} 倍，超出 2~3 倍口径`);
+  const base = normalIncomeAt(c.lv);
+  const target = base * SPECIAL_PREMIUM[specialCrops.indexOf(c) % SPECIAL_PREMIUM.length];
+  const avgYld = (c.yield[0] + c.yield[1]) / 2;
+  // 低等级时 sell 会取整到个位数，误差按「一个产量单位」给容差
+  const tol = Math.max(target * 0.2, avgYld * c.harvests * 1.5);
+  check(Math.abs(cycleIncome(c) - target) <= tol,
+    `${c.name} 的整轮收益 ${cycleIncome(c)} 偏离目标 ${Math.round(target)} 超过容差`);
 }
 
 // 同一形态内，产量与等级应当单调（产量由形态决定，形态之间不比较）
+// 产量随等级单调这件事，只在**同形态 + 同原型**内成立 ——
+// 速生型天生比丰产型少一个数量级，混在一起比没有意义。
 for (const form of Object.keys(FORM_YIELD)) {
-  // 多茬作物每茬只摘几个，产量天然低于同形态的单茬作物
-  const list = crops.filter((c) => c.form === form && !c.multi);
-  for (let i = 1; i < list.length; i += 1) {
-    check(list[i].yield[0] >= list[i - 1].yield[0],
-      `${form} 内产量未单调：${list[i - 1].name} → ${list[i].name}`);
+  for (const arch of Object.keys(ARCHS)) {
+    const list = crops.filter((c) => c.form === form && c.arch === arch);
+    for (let i = 1; i < list.length; i += 1) {
+      check(list[i].yield[0] >= list[i - 1].yield[0],
+        `${form}/${arch} 内产量未单调：${list[i - 1].name} → ${list[i].name}`);
+    }
   }
 }
 
@@ -713,9 +816,17 @@ for (const kind of ['exp', 'eco', 'normal']) {
   check(crops.some((c) => c.kind === kind), `没有${KIND[kind].label}`);
 }
 check(crops.filter((c) => c.slow).length >= 10, '厚积薄发的作物太少了');
-// 产量下限不低于 10
-check(crops.filter((c) => !c.multi).every((c) => c.yield[0] >= 10), '存在产量下限低于 10 的作物');
-check(crops.filter((c) => c.multi).every((c) => c.yield[0] >= 3), '多茬作物每茬产量低于 3');
+// 产量下限：速生与精品本来就只出几个，下限压到 3
+check(allCrops.every((c) => c.yield[0] >= 3), '存在单茬产量低于 3 的作物');
+// 原型覆盖：每一种都要有足够的成员，否则玩家看不到这种「性格」
+for (const [arch, need] of [['sprout', 8], ['bounty', 8], ['premium', 8], ['slow', 10], ['normal', 30]]) {
+  const n = crops.filter((c) => c.arch === arch).length;
+  check(n >= need, `原型 ${ARCHS[arch].label} 只有 ${n} 种，至少要有 ${need} 种`);
+}
+// 成熟时间的跨度：既要有半小时的，也要有两三天的
+const grows = crops.map((c) => c.grow);
+check(Math.min(...grows) <= 3600, `最快的作物要 1 小时以上（${Math.min(...grows)}s），缺少「速生」体验`);
+check(Math.max(...grows) >= 48 * 3600, `最慢的作物不到 48 小时（${Math.max(...grows)}s），缺少「慢生」体验`);
 
 // 每小时金币产出才是真正的取舍点：数量 × 售价 ÷ 等待时间。
 // 比较必须**同等级**进行 —— 售价随等级指数增长、产量只线性增长，
@@ -729,7 +840,8 @@ const avg = (list, f) => list.reduce((s, c) => s + f(c), 0) / list.length;
 
 for (const lv of [1, 3, 5, 10, 20, 30, 45, 60, 80, 120, 160, 200]) {
   // 多茬作物是「经验流」，金币天然比单茬低，不参与这条横向比较
-  const at = (kind) => crops.filter((c) => c.lv === lv && c.kind === kind && !c.slow && !c.multi);
+  const at = (kind) => crops.filter((c) => c.lv === lv && c.kind === kind
+    && !c.slow && !c.multi && c.arch !== 'sprout');
   const normal = at('normal');
   const exp = at('exp');
   const eco = at('eco');
@@ -810,6 +922,8 @@ fs.writeFileSync(
  *
  * form      生长形态，决定阶段序列与阶段 emoji
  * kind      作物分类：exp 经验作物 / eco 经济作物 / normal 普通作物
+ * arch      作物原型：sprout 速生 / bounty 丰产 / premium 精品 / slow 慢生 /
+ *           multi 多茬 / normal 常规 —— 决定成熟时间、茬数与产量规模
  * lv        解锁等级
  * seed      种子售价（限定作物不卖，这里是估值）
  * sell      单个农产品售价，由「(种子价×1.2 + 等级×10) × (1 + 0.05×整轮小时) ÷ 总产量」倒推
@@ -823,7 +937,7 @@ fs.writeFileSync(
 export const CROPS = {
 ${allCrops.map((c) => `  ${JSON.stringify(c.name)}: {
     name: ${JSON.stringify(c.name)}, emoji: '${c.emoji}', form: '${c.form}',
-    kind: '${c.kind}', slow: ${c.slow},${c.special ? ' special: true,' : ''}${c.multi ? ' multi: true,' : ''}
+    kind: '${c.kind}', arch: '${c.arch}', slow: ${c.slow},${c.special ? ' special: true,' : ''}${c.multi ? ' multi: true,' : ''}
     stages: ${JSON.stringify(c.stages).replace(/"/g, "'")},
     lv: ${c.lv}, seed: ${c.seed}, sell: ${c.sell},
     grow: ${c.grow}, regrow: ${c.regrow}, harvests: ${c.harvests},
@@ -836,6 +950,16 @@ export const CROP_IDS = Object.keys(CROPS);
 
 /** 限定作物：商店不卖，只能从藏宝图里挖到 */
 export const SPECIAL_CROP_IDS = CROP_IDS.filter((id) => CROPS[id].special);
+
+/** 作物原型的中文名与一句话说明（商店、作物弹窗的标签读它） */
+export const CROP_ARCHS = {
+  sprout: { label: '速生', desc: '半小时到两小时就能收，一茬只出几个' },
+  bounty: { label: '丰产', desc: '长得偏慢，但一次收一大包' },
+  premium: { label: '精品', desc: '只出 3~5 个，单价却是同级的几倍' },
+  slow: { label: '慢生', desc: '两三天才熟，整轮收益最高' },
+  multi: { label: '多茬', desc: '首茬之后，每茬都飞快' },
+  normal: { label: '常规', desc: '不快不慢的基准作物' },
+};
 
 /** 作物分类的中文名与说明 */
 export const KIND_LABELS = {

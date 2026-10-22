@@ -9,7 +9,7 @@
  * 之所以抽出来，是因为包裹里点种子也该能看详情 —— 玩家常常想知道
  * 「手上这颗种子值不值得种」，而仓库里只有名字和数量。
  */
-import { CROPS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../data/crops.js';
+import { CROPS, CROP_ARCHS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../data/crops.js';
 import { seedId } from '../data/keys.js';
 import { state } from '../store/state.js';
 import * as shop from '../store/shop.js';
@@ -97,8 +97,9 @@ export function openSeedModal(cropId, { buy = false } = {}) {
         <div class="sd-name">${crop.name}</div>
         <div class="sd-tags">
           <span class="seed-row-kind kind-${crop.kind}">${KIND_LABELS[crop.kind]?.label || ''}</span>
+          ${crop.arch && crop.arch !== 'normal'
+            ? `<span class="seed-row-kind kind-${crop.arch}">${CROP_ARCHS[crop.arch].label}</span>` : ''}
           ${crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : ''}
-          ${crop.slow ? '<span class="seed-row-kind kind-slow">厚积薄发</span>' : ''}
           <span class="sd-lv">Lv.${crop.lv}</span>
         </div>
       </div>

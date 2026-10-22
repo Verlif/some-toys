@@ -16,8 +16,9 @@
  * 08:15  [🥷]  王大爷偷[石头🧒]家被守护犬抓住，罚了 500 金币
  * ```
  *
- * 差异只留四个可选开关：`withDay`（插日期分组标题）、`limit`（只取最近 N 条）、
- * `compact`（卡片里的预览，字号更小）、`relative`（时间写「3 分钟前」）。
+ * 差异只留五个可选开关：`withDay`（插日期分组标题）、`limit`（只取最近 N 条）、
+ * `since`（只看某个时刻之后的）、`compact`（卡片里的预览，字号更小）、
+ * `relative`（时间写「3 分钟前」）。
  *
  * `entry.crop` 存在时，左侧那枚图标就是这个作物本身，点一下打开作物信息
  * （时报里「挖到某某种子」这类条目就是这样）；
@@ -101,6 +102,7 @@ function recordItemHTML(entry, { now = Date.now(), compact = false, relative = f
  * @param {object} [options]
  * @param {number} [options.now]
  * @param {number} [options.limit] 只取最近 N 条；0 = 全部
+ * @param {number} [options.since] 只要这个时刻之后的记录；0 = 不限
  * @param {boolean} [options.withDay] 是否插日期分组标题
  * @param {boolean} [options.compact] 卡片里的预览（字号小一号）
  * @param {boolean} [options.relative] 时间写相对时间而不是时分
@@ -109,6 +111,7 @@ function recordItemHTML(entry, { now = Date.now(), compact = false, relative = f
 export function recordItemsHTML(entries, {
   now = Date.now(),
   limit = 0,
+  since = 0,
   withDay = false,
   compact = false,
   relative = false,
@@ -116,7 +119,9 @@ export function recordItemsHTML(entries, {
   const list = [...(entries || [])]
     // 邻居结算是补写过去的，数组本身不保证有序，展示前统一排一次
     .sort((a, b) => b.at - a.at);
-  const rows = limit > 0 ? list.slice(0, limit) : list;
+  // 先按时间窗过滤，再截条数 —— 顺序反了会「先截 10 条再筛掉 6 条」
+  const inRange = since > 0 ? list.filter((entry) => entry.at >= since) : list;
+  const rows = limit > 0 ? inRange.slice(0, limit) : inRange;
   if (!rows.length) return '';
 
   let currentDay = '';

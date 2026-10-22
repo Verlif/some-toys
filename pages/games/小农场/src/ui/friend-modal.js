@@ -173,40 +173,60 @@ function tipText(friend, now) {
     : '偷菜会让邻居不高兴，但也是一种社交方式。';
 }
 
-/** 弹窗里的操作记录：最多 10 条，放在固定高度的滚动区里 */
+/**
+ * 「两天前 0 点」的时间戳。
+ *
+ * 记录只给「今天 + 昨天」：再多就成了流水账，
+ * 而这个范围刚好能排出今天 / 昨天两个日期标题。
+ */
+function twoDaysFrom(now) {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime() - 24 * 3600_000;
+}
+
+/** 弹窗里的操作记录：今天 + 昨天全部，放在固定高度的滚动区里 */
 function logBoxHTML(friend, now) {
-  const items = recordItemsHTML(friend.log, { now, limit: 10, withDay: true });
+  const items = recordItemsHTML(friend.log, {
+    now,
+    withDay: true,
+    since: twoDaysFrom(now),
+  });
   return items
     ? `<div class="friend-log npc-log" data-role="log">${items}</div>`
-    : '<div class="npc-log empty" data-role="log">还没有值得记下的事</div>';
+    : '<div class="npc-log empty" data-role="log">最近两天没有发生什么事</div>';
 }
 
 /**
- * 底部的一键照料条。
+ * 农场标题右侧的一键照料按钮（🚿 / 🧴）。
  *
- * 只有背包里真有洒水器 / 杀虫剂时才出现；数量为 0 的那一项不显示。
- * 一次消耗 1 个，把他家所有需要照料的地一起处理掉。
+ * 从底部挪到「🟫 农场（N 块）」这一行：一进来看见农场就能直接点，
+ * 不用先滚过一整片地块。两颗都是图标按钮，括号用角标显示待处理块数。
+ *
+ * 有几件工具就出几颗；一件都没有时这一格是空的（标题照常显示）。
  */
-function quickButtons(friend, now) {
+function secToolsHTML(friend, now) {
   // Infinity = 买过永久版；0 = 没有这件工具，按钮不出现
   const water = toolUses('water');
   const pest = toolUses('pest');
-
   const needWater = friend.plots.filter((p) => social.needsWater(p, now)).length;
   const needPest = friend.plots.filter((p) => social.needsPest(p, now)).length;
 
-  // 送礼永远是第一颗按钮：这是唯一能主动拉近关系的操作，
-  // 而一键浇水 / 杀虫要有道具才出现
+  const btn = (action, emoji, need, kind, label) => `
+    <button class="npc-tool" data-action="${action}" data-id="${friend.id}"
+      ${need ? '' : 'disabled'} title="${label}（${need} 块待处理）${toolCountText(kind)}">
+      ${emoji}${need ? `<i>${need}</i>` : ''}
+    </button>`;
+
   return [
-    `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>`,
-    water ? `<button class="btn small ghost" data-action="npc-water-all" data-id="${friend.id}"
-      ${needWater ? '' : 'disabled'}>🚿 一键浇水 ${needWater ? `（${needWater} 块）` : '· 暂无需求'}
-      <span class="tool-count">${toolCountText('water')}</span></button>` : '',
-    pest ? `<button class="btn small ghost" data-action="npc-pest-all" data-id="${friend.id}"
-      ${needPest ? '' : 'disabled'}>🧴 一键杀虫 ${needPest ? `（${needPest} 块）` : '· 暂无需求'}
-      <span class="tool-count">${toolCountText('pest')}</span></button>` : '',
+    water ? btn('npc-water-all', '🚿', needWater, 'water', '一键浇水') : '',
+    pest ? btn('npc-pest-all', '🧴', needPest, 'pest', '一键杀虫') : '',
   ].join('');
 }
+
+/** 底部只剩送礼：这是唯一能主动拉近关系的操作 */
+const quickButtons = (friend) =>
+  `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>`;
 
 /**
  * 送礼：先从仓库里挑一样农产品，再确认。
@@ -277,10 +297,18 @@ function confirmGift(friendId, cropId, onDone) {
     notify('仓库里已经没这种产出了');
     return;
   }
-  const gain = giftRelGain(crop.lv);
+
+  const unit = giftRelGain(crop.lv);   // 一份涨多少
   const cur = getRelation(PLAYER_ID, friendId);
-  const before = relationBadge(cur);
-  const after = relationBadge(clampRelation(cur + gain));
+  let qty = 1;
+
+  /** 关系胶囊：`平常 -7 → 平常 -3` */
+  const relHTML = (gain) => {
+    const before = relationBadge(cur);
+    const after = relationBadge(clampRelation(cur + gain));
+    return `<span class="rel-tag rel-${before.key}">${before.label} ${before.text}</span>
+      → <span class="rel-tag rel-${after.key}">${after.label} ${after.text}</span>`;
+  };
 
   openModal(`
     <div class="modal-head">
@@ -298,26 +326,37 @@ function confirmGift(friendId, cropId, onDone) {
 
     <div class="sd-grid">
       <div class="sd-cell"><span>送给</span><b>${escapeHtml(friend.name)}</b></div>
-      <div class="sd-cell"><span>送出</span><b>1 份</b></div>
       <div class="sd-cell"><span>仓库现有</span><b>${have} 份</b></div>
-      <div class="sd-cell"><span>送出后剩余</span><b>${have - 1} 份</b></div>
-      <div class="sd-cell"><span>好感变化</span><b class="rel-gain">+${gain}</b></div>
-      <div class="sd-cell"><span>关系</span><b>
-        <span class="rel-tag rel-${before.key}">${before.label} ${before.text}</span>
-        →
-        <span class="rel-tag rel-${after.key}">${after.label} ${after.text}</span>
-      </b></div>
+      <div class="sd-cell"><span>送出后剩余</span><b data-role="left">${have - 1} 份</b></div>
+      <div class="sd-cell"><span>好感变化</span><b class="rel-gain" data-role="gain">+${unit}</b></div>
+      <div class="sd-cell wide"><span>关系</span><b data-role="rel">${relHTML(unit)}</b></div>
     </div>
 
     <div class="sd-gain">这份${escapeHtml(crop.name)}送出去就拿不回来了</div>
 
-    <div class="rm-actions">
-      <button class="btn ghost" data-close>再想想</button>
-      <button class="btn" data-action="gift-send" data-id="${cropId}">确认送出</button>
+    <div class="gift-confirm">
+      <div class="qty">
+        <button class="qty-btn" data-action="gift-qty-minus" aria-label="减少数量">−</button>
+        <span class="qty-num" data-role="qty">1</span>
+        <button class="qty-btn" data-action="gift-qty-plus" aria-label="增加数量">+</button>
+      </div>
+      ${have > 1 ? '<button class="gift-max" data-action="gift-qty-max">全送</button>' : ''}
+      <div class="gift-confirm-btns">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn" data-action="gift-send" data-id="${cropId}" data-role="send">确认送出</button>
+      </div>
     </div>
   `, async (action) => {
+    // 数量：左下角的步进器，两侧同时更新「剩余 / 好感 / 关系」，
+    // 让玩家在按确认之前就看清楚这笔交易值不值
+    if (action === 'gift-qty-plus' || action === 'gift-qty-minus' || action === 'gift-qty-max') {
+      if (action === 'gift-qty-max') qty = have;
+      else qty = Math.min(have, Math.max(1, qty + (action === 'gift-qty-plus' ? 1 : -1)));
+      paint();
+      return;
+    }
     if (action !== 'gift-send') return;
-    const result = await social.sendGift(friendId, cropId);
+    const result = await social.sendGift(friendId, cropId, qty);
     if (!result.ok) {
       notify(result.reason || '送不出去');
       return;
@@ -327,6 +366,24 @@ function confirmGift(friendId, cropId, onDone) {
     closeModal();
     onDone?.();
   });
+
+  /** 把当前份数刷到界面上（不改任何状态） */
+  function paint() {
+    // 叠层只留一张 `.modal-card`（下层是 HTML 快照），所以这一张就是栈顶
+    const card = document.querySelector('#modal .modal-card');
+    if (!card) return;
+    const gain = unit * qty;
+    card.querySelector('[data-role="qty"]').textContent = qty;
+    card.querySelector('[data-role="left"]').textContent = `${have - qty} 份`;
+    card.querySelector('[data-role="gain"]').textContent = `+${gain}`;
+    card.querySelector('[data-role="rel"]').innerHTML = relHTML(gain);
+    card.querySelector('[data-role="send"]').textContent = `确认送出 ${qty} 份`;
+    // 到头了就把对应那颗按钮灰掉，别让玩家反复点一个没反应的按钮
+    card.querySelector('[data-action="gift-qty-minus"]').disabled = qty <= 1;
+    card.querySelector('[data-action="gift-qty-plus"]').disabled = qty >= have;
+  }
+
+  paint();
 }
 
 /**
@@ -390,7 +447,11 @@ export function openFriendModal(friendId) {
     if (tip) tip.textContent = tipText(current, at);
 
     const quick = document.querySelector('#modal [data-role="quick"]');
-    if (quick) quick.innerHTML = quickButtons(current, at);
+    if (quick) quick.innerHTML = quickButtons(current);
+
+    // 标题右侧的一键按钮同样要跟着地块状态变（几块缺水 / 道具存量）
+    const tools = document.querySelector('#modal [data-role="tools"]');
+    if (tools) tools.innerHTML = secToolsHTML(current, at);
 
     const logBox = document.querySelector('#modal [data-role="log"]');
     if (logBox) {
@@ -447,11 +508,14 @@ export function openFriendModal(friendId) {
 
     <div class="npc-stats" data-role="stats">${stats}</div>
 
-    <div class="npc-section-title">🟫 农场（${friend.plots.length} 块）</div>
+    <div class="npc-section-title">
+      <span>🟫 农场（${friend.plots.length} 块）</span>
+      <span class="npc-sec-tools" data-role="tools">${secToolsHTML(friend, now)}</span>
+    </div>
     <div class="npc-plots">
       ${friend.plots.map((_, i) => plotCardHTML(friend, i, now)).join('')}
     </div>
-    <div class="npc-quick" data-role="quick">${quickButtons(friend, now)}</div>
+    <div class="npc-quick" data-role="quick">${quickButtons(friend)}</div>
 
     <div class="npc-section-title">📜 最近操作</div>
     ${logBoxHTML(friend, now)}
