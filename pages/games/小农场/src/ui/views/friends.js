@@ -152,33 +152,22 @@ function emptyFriendsHTML() {
 }
 
 /**
- * 排序条左右滑动：切到上一个 / 下一个排序档。
- * 滑完之后把激活的芯片滚进可见区域。
- * @param {number} delta +1 下一个，-1 上一个
- */
-function shiftSort(delta) {
-  const index = SORTS.findIndex((s) => s.key === sortKey);
-  const next = SORTS[(index + delta + SORTS.length) % SORTS.length];
-  if (!next || next.key === sortKey) return;
-  // 滑到一个新维度时从降序开始（和点一下芯片的行为一致）
-  sortKey = next.key;
-  sortDir = -1;
-  renderFriends();
-  byId('friends')?.querySelector('.filter-chip.active')
-    ?.scrollIntoView({ block: 'nearest', inline: 'center' });
-}
-
-/**
  * 重绘邻居列表。
  *
  * 只重绘 #friendsBody（排序条 + 列表）—— 顶部的标题与搜索框是静态结构，
  * 不参与重绘：中文输入法拼拼音时重建输入框元素会打断候选过程。
+ *
+ * 排序条本身会被整块换掉，新元素的 scrollLeft 归零 —— 手机上点了右边那颗
+ * 「好感」之后一刷新，标签条会自己滚回最前面。所以重绘前后手动接力一次横向位置
+ * （和商店页恢复面板位置同一个套路）。同步赋值，不会闪一下再跳回来。
  */
 export function renderFriends() {
   const now = Date.now();
   const list = friendsShown(now);
+  const body = byId('friendsBody');
+  const keepLeft = body?.querySelector('.filter-bar')?.scrollLeft || 0;
 
-  setHTML(byId('friendsBody'), `
+  setHTML(body, `
     <div class="filter-bar">
       ${sortChips(now)}
       <span class="shop-filter-count">${list.length} / ${state.friends.length}</span>
@@ -186,6 +175,11 @@ export function renderFriends() {
     <div class="friend-list">${list.length
       ? list.map((friend) => cardHTML(friend, now)).join('')
       : emptyFriendsHTML()}</div>`);
+
+  if (keepLeft) {
+    const bar = body?.querySelector('.filter-bar');
+    if (bar) bar.scrollLeft = keepLeft;
+  }
 
   // 清空按钮只在有关键词时出现
   const clear = byId('friends')?.querySelector('.friend-search-clear');
@@ -312,51 +306,6 @@ export function mountFriends() {
   search?.addEventListener('input', () => {
     searchQuery = search.value;
     renderFriends();
-  });
-
-  // 排序条支持左右滑动切换档位（触屏 + 鼠标双通道）。
-  // 与 drag-close 同一套纪律：move 里先确认 tracking、横向位移占优才接管、
-  // 松手立刻移除 document 上的监听；触屏用 Touch + preventDefault。
-  let drag = null;
-  const onSortBar = (event) => (
-    event.target instanceof Element ? event.target.closest('.filter-bar') : null
-  );
-  root.addEventListener('touchstart', (event) => {
-    if (!onSortBar(event)) return;
-    const t = event.touches[0];
-    drag = { x: t.clientX, y: t.clientY, used: false };
-  }, { passive: true });
-  root.addEventListener('touchmove', (event) => {
-    if (!drag || drag.used) return;
-    const t = event.touches[0];
-    const dx = t.clientX - drag.x;
-    const dy = t.clientY - drag.y;
-    // 横向位移占优且超过阈值才算「滑动切换」，否则让给纵向滚动
-    if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return;
-    drag.used = true;
-    shiftSort(dx < 0 ? 1 : -1);
-    if (event.cancelable) event.preventDefault();
-  }, { passive: false });
-  root.addEventListener('touchend', () => { drag = null; }, { passive: true });
-
-  root.addEventListener('mousedown', (event) => {
-    if (!onSortBar(event)) return;
-    drag = { x: event.clientX, y: event.clientY, used: false };
-    const onMove = (e) => {
-      if (!drag || drag.used) return;
-      const dx = e.clientX - drag.x;
-      const dy = e.clientY - drag.y;
-      if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return;
-      drag.used = true;
-      shiftSort(dx < 0 ? 1 : -1);
-    };
-    const onUp = () => {
-      drag = null;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
   });
 
   on(EVENTS.FRIENDS, renderFriends);
