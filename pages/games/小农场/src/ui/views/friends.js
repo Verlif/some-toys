@@ -18,6 +18,7 @@ import { recordItemsHTML } from '../records.js';
 import { openFriendModal } from '../friend-modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
 import { showToast } from '../toast.js';
+import { keepBarScroll } from '../scroll-keep.js';
 
 let settling = false;
 
@@ -159,27 +160,24 @@ function emptyFriendsHTML() {
  *
  * 排序条本身会被整块换掉，新元素的 scrollLeft 归零 —— 手机上点了右边那颗
  * 「好感」之后一刷新，标签条会自己滚回最前面。所以重绘前后手动接力一次横向位置
- * （和商店页恢复面板位置同一个套路）。同步赋值，不会闪一下再跳回来。
+ * （走 ui/scroll-keep.js 的 keepBarScroll，和商店页恢复面板位置同一个套路）。
+ * 同步赋值，不会闪一下再跳回来。
  */
 export function renderFriends() {
   const now = Date.now();
   const list = friendsShown(now);
   const body = byId('friendsBody');
-  const keepLeft = body?.querySelector('.filter-bar')?.scrollLeft || 0;
 
-  setHTML(body, `
-    <div class="filter-bar">
-      ${sortChips(now)}
-      <span class="shop-filter-count">${list.length} / ${state.friends.length}</span>
-    </div>
-    <div class="friend-list">${list.length
-      ? list.map((friend) => cardHTML(friend, now)).join('')
-      : emptyFriendsHTML()}</div>`);
-
-  if (keepLeft) {
-    const bar = body?.querySelector('.filter-bar');
-    if (bar) bar.scrollLeft = keepLeft;
-  }
+  keepBarScroll(body, '.filter-bar', () => {
+    setHTML(body, `
+      <div class="filter-bar">
+        ${sortChips(now)}
+        <span class="shop-filter-count">${list.length} / ${state.friends.length}</span>
+      </div>
+      <div class="friend-list">${list.length
+        ? list.map((friend) => cardHTML(friend, now)).join('')
+        : emptyFriendsHTML()}</div>`);
+  });
 
   // 清空按钮只在有关键词时出现
   const clear = byId('friends')?.querySelector('.friend-search-clear');

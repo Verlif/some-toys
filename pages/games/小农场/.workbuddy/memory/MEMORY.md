@@ -59,7 +59,8 @@
 - **仓库卖出**（`subpages/bag.js`）：确认框每种作物一行 + `.qty` 步进器，**默认全量**、
   可减到 0（合计为 0 时确认禁用）、「全卖」回填，合计实时重算。
   `sellProduce(cropId, n?)` 缺省全卖、数量夹在持有量内；`sellAllProduce` 已删（无调用方）。
-  列表名称后挂图鉴标记 `.codex-mark`（点亮=彩色，未点亮=`.off` 置灰）。
+  列表名称后挂图鉴标记 `.codex-mark`：**只有点亮（有标本）才渲染**（第 32 轮改）——
+  图标本身是白色，置灰和全彩几乎分不出来，未点亮索性不放；`.codex-mark.off` 规则已删。
 
 ## UI 硬约束
 
@@ -81,6 +82,12 @@
   `totalCycleSeconds`）：芯片排在筛选芯片后、`.filter-sep` 分隔，三态循环 降序→升序→取消。
   ⚠️ `delegate` 传给 action 的是 `dataset.id` **字符串**，不是元素（当成 el 用会炸）。
 - 商店横滚在 `.shop-panel` 自己；筛选条在 `.shop-panels` 之外；重绘先恢复 `scrollLeft` 再同步 tab。
+- **横滚芯片条接力** `ui/scroll-keep.js` 的 `keepBarScroll(root, sel, render)`（第 32 轮新增）：
+  排序/筛选芯片条整块重绘后 `scrollLeft` 归零，手机上点右边的芯片会让标签条滚回最前面。
+  用法 = 把重绘体包进回调；helper 重绘前读、重绘后同步赋值（不闪）。`display:none` 的条
+  （商店非种子 tab 下收起的 `.shop-filter`）`scrollLeft` 恒为 0 读不到，helper 内部用
+  WeakMap 记上一次可见时的值兜底。三处调用：`renderFriends` / `renderNews` / `renderShop`。
+  `.codex-filters`（wrap）、`.title-tabs`/`.shop-tab`（flex:1 均分）不横滚，不用管。
 - **图鉴**（`subpages/codex.js`）卡片**只有图标 + 名称**，数据全在点开的作物弹窗里；
   三档筛选 全部 / 可点亮 / 已收集（`entry.canMake = !specimen && owned>=50`）；
   未解锁 ❔+??? 不可点，已解锁未收集 ❔+未收集 可点。
@@ -96,8 +103,8 @@
   排序芯片三态循环 降序→升序→取消（`sortKey`/`sortDir`，取消=名单原序）。
   **筛选条只认点击**：早先「左右滑动切档」的 touch/mouse 手势已整段删除，
   移动端会误切、还跟芯片行横向滚动抢手势（别再加回来）。
-  `renderFriends()` 整块换 `#friendsBody`，⚠️ 必须重绘前记 `.filter-bar.scrollLeft`、
-  之后赋值回去，否则点右边的「好感」会让标签条滚回最前面。
+  `renderFriends()` 整块换 `#friendsBody`，芯片条横滚位置走 `ui/scroll-keep.js` 的
+  `keepBarScroll(root, sel, render)` 接力（见下「横滚芯片条」）。
 - **邻居弹窗**：一键浇水/杀虫在「🟫 农场（N 块）」标题行右侧（`.npc-tool` 图标 + 角标），
   底部只剩送礼；记录给**今天+昨天**（`recordItemsHTML` 的 `since`），
   ⚠️ `.npc-log` 上下 padding 必须为 0，否则 sticky 日期标题上方留缝、条目从缝里露出。
@@ -110,6 +117,9 @@
   顺菜 / 被守护犬逮住 / 顺手浇水捉虫 / 送礼）。tab 状态挂模块变量 `logTab`，空列表两个 tab
   各有各的 empty-tip。⚠️ NPC→玩家日志的统一漏斗是 `social.js` 的 `farmView().log(at, emoji, text, by)`
   与 `receiveGift`；新加一种 NPC 动作也要记得传 `npc.id`。
+  **tab 在面板底部**（第 32 轮从头部移下来）：DOM 顺序 `#logBody` 在前、`.log-tabs` 在后，
+  CSS `padding: 10px 16px 0`（上 10px 拉开、下 0 靠 `.log-panel` 自带 12px 底 padding）。
+  ⚠️ news.js/shop.js 的模板字面量里有 `` `}` `` 闭合序列，Edit 匹配老失败 —— 字节级确认后再改。
 - **行内标签** `ui/inline-tags.js` 的 `inlineTagsHTML`：一次正则同时处理人名（`.who-tag`，人绿）
   与作物名（`.crop-tag`，物黄）。全文匹配、长名优先、同长度人优先、吃掉两侧空格；
   **作物标签连前面的 emoji 一起吃**；文案必须用真实 `${farm.name}`。

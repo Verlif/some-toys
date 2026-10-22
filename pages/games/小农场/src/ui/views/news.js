@@ -16,6 +16,7 @@ import { on, EVENTS } from '../../core/bus.js';
 import { completeGuide } from '../../store/codex.js';
 import { filterNews, NEWS_FILTERS, newsList } from '../../store/news.js';
 import { recordItemsHTML } from '../records.js';
+import { keepBarScroll } from '../scroll-keep.js';
 
 /** 当前选中的类型筛选 */
 let filter = 'all';
@@ -33,23 +34,26 @@ export function renderNews() {
   const root = byId('news');
   if (!root) return;
 
-  const now = Date.now();
-  const all = newsList();
-  const list = filterNews(all, filter);
+  // 类型筛选条是横滚的，重绘后接力 scrollLeft，别让它滚回开头
+  keepBarScroll(root, '.filter-bar', () => {
+    const now = Date.now();
+    const all = newsList();
+    const list = filterNews(all, filter);
 
-  const empty = filter === 'all'
-    ? '📰<br>镇上还风平浪静<br>去闯点事出来吧'
-    : '🔍<br>这个类型下暂时没有新闻<br>换个筛选看看';
+    const empty = filter === 'all'
+      ? '📰<br>镇上还风平浪静<br>去闯点事出来吧'
+      : '🔍<br>这个类型下暂时没有新闻<br>换个筛选看看';
 
-  setHTML(root, `
-    <div class="section-title">📰 时报</div>
-    <div class="filter-bar">
-      ${filterChips(all)}
-    </div>
-    ${list.length
-      ? `<div class="news-list">${recordItemsHTML(list, { now, withDay: true })}</div>
-         <div class="news-foot">只保留最近 7 天的大新闻</div>`
-      : `<div class="empty-tip">${empty}</div>`}`);
+    setHTML(root, `
+      <div class="section-title">📰 时报</div>
+      <div class="filter-bar">
+        ${filterChips(all)}
+      </div>
+      ${list.length
+        ? `<div class="news-list">${recordItemsHTML(list, { now, withDay: true })}</div>
+           <div class="news-foot">只保留最近 7 天的大新闻</div>`
+        : `<div class="empty-tip">${empty}</div>`}`);
+  });
 }
 
 /** 筛选芯片动作 */

@@ -1158,11 +1158,13 @@
 .log-sub { font-size: 10.5px; font-weight: 600; color: var(--muted); }
 
 /* 日志双 tab：我的操作 / 邻居动向（NPC 主动对玩家农场的操作）。
-   芯片直接复用 .filter-chip，不另起一套长相 */
+   芯片直接复用 .filter-chip，不另起一套长相。
+   放在面板底部（日志列表之后）：上面 10px 与列表拉开，下面 0 靠
+   .log-panel 自带的 12px 底padding，不重复留白 */
 .log-tabs {
   display: flex;
   gap: 8px;
-  padding: 0 16px 10px;
+  padding: 10px 16px 0;
   flex-shrink: 0;
 }
 
@@ -1715,17 +1717,13 @@
   color: var(--muted);
   margin-left: 2px;
 }
-/* ---------- 图鉴标记（仓库列表 / 制造间产出后面那颗小书 ---------- */
+/* ---------- 图鉴标记（仓库列表名称后面那颗小书，只标点亮 ---------- */
 .codex-mark {
   font-size: 11.5px;
   font-style: normal;
   margin-left: 5px;
   vertical-align: 1px;
   filter: drop-shadow(0 1px 1px rgba(40, 80, 40, .18));
-}
-.codex-mark.off {
-  filter: grayscale(1);
-  opacity: .38;
 }
 .sd-buy {
   flex: 1;

@@ -150,11 +150,11 @@ export const bagPage = {
       const crop = CROPS[id];
       const n = count(produceId(id));
       const on = selected.has(id);
-      /* 图鉴标记：点亮（做过标本）的用彩色，没点亮的置灰 ——
-         仓库里躺着 50 个同样的产出时，一眼能看出哪份该拿去做标本 */
+      /* 图鉴标记：只有点亮（做过标本）的才显示 —— 图标本身是白色，
+         置灰和全彩几乎分不出来，没点亮的索性不放 */
       const mark = hasSpecimen(id)
         ? '<span class="codex-mark" title="图鉴已点亮">📖</span>'
-        : '<span class="codex-mark off" title="图鉴未点亮">📖</span>';
+        : '';
       return `
         <div class="shop-item pickable ${on ? 'on' : ''}">
           <button class="pick-box" data-action="pick" data-id="${id}"

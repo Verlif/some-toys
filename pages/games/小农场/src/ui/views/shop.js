@@ -24,6 +24,7 @@ import { fmtDuration, formatCoins } from '../../core/utils.js';
 import { archTagHTML, stackClass, yieldClass } from '../meta-tags.js';
 import { openModal } from '../modal.js';
 import { openSeedModal } from '../seed-detail.js';
+import { keepBarScroll } from '../scroll-keep.js';
 
 /** 当前选中的 tab */
 let activeTab = 'seed';
@@ -227,7 +228,9 @@ function mapPanel() {
  * 每个 tab 面板是**各自独立**的滚动容器（CSS 里 .shop-panel 自己 overflow-y），
  * 所以「种子滚到底 → 切到道具」时道具面板仍然是它自己的顶部，
  * 不会因为共用一个滚动条而看起来一片空白。
- * 重绘（买东西）会保留当前面板的滚动位置，不会跳回顶部。
+ * 重绘（买东西）会保留当前面板的滚动位置，不会跳回顶部；
+ * 筛选 / 排序芯片条是横滚的，也一并接力 scrollLeft（非种子 tab 下它被收起，
+ * 读不到位置，用上一次记下的兜底）。
  */
 export function renderShop() {
   const root = byId('shop');
@@ -239,35 +242,38 @@ export function renderShop() {
   const keepTop = keepPanelScroll && activePanel ? activePanel.scrollTop : 0;
   keepPanelScroll = true;
 
-  setHTML(root, `
-    <div class="shop-top">
-      <div class="shop-tabs">
-        ${TABS.map((t) => `
-          <button class="shop-tab ${t.key === activeTab ? 'active' : ''}" data-action="shop-tab" data-id="${t.key}">
-            <span>${t.icon}</span>${t.label}
-          </button>`).join('')}
+  // 筛选 / 排序芯片条也是横滚的，重绘后接力 scrollLeft，别让它滚回开头
+  keepBarScroll(root, '.shop-filter', () => {
+    setHTML(root, `
+      <div class="shop-top">
+        <div class="shop-tabs">
+          ${TABS.map((t) => `
+            <button class="shop-tab ${t.key === activeTab ? 'active' : ''}" data-action="shop-tab" data-id="${t.key}">
+              <span>${t.icon}</span>${t.label}
+            </button>`).join('')}
+        </div>
+        ${filterHTML()}
       </div>
-      ${filterHTML()}
-    </div>
-    <div class="shop-panels">
-      <div class="shop-panel" data-panel="seed">${seedPanel()}</div>
-      <div class="shop-panel" data-panel="item">${itemPanel()}</div>
-      <div class="shop-panel" data-panel="soil">${soilPanel()}</div>
-      <div class="shop-panel" data-panel="map">${mapPanel()}</div>
-    </div>`);
+      <div class="shop-panels">
+        <div class="shop-panel" data-panel="seed">${seedPanel()}</div>
+        <div class="shop-panel" data-panel="item">${itemPanel()}</div>
+        <div class="shop-panel" data-panel="soil">${soilPanel()}</div>
+        <div class="shop-panel" data-panel="map">${mapPanel()}</div>
+      </div>`);
 
-  const nextPanels = root.querySelector('.shop-panels');
-  // scroll 事件不冒泡，只能直接挂在每次重绘后新建的容器上
-  nextPanels.addEventListener('scroll', onPanelScroll, { passive: true });
-  // 顺序很要紧：先恢复横向位置，再同步 tab。
-  // 反过来的话 syncTabFromScroll 读到的是 scrollLeft = 0，
-  // 会把 activeTab 误判成第一个 tab，纵向滚动就恢复到了错误的面板上。
-  if (keepLeft) nextPanels.scrollLeft = keepLeft;
-  syncTabFromScroll(nextPanels);
-  if (keepTop) {
-    const panel = nextPanels.querySelector(`.shop-panel[data-panel="${tabAtRender}"]`);
-    if (panel) panel.scrollTop = keepTop;
-  }
+    const nextPanels = root.querySelector('.shop-panels');
+    // scroll 事件不冒泡，只能直接挂在每次重绘后新建的容器上
+    nextPanels.addEventListener('scroll', onPanelScroll, { passive: true });
+    // 顺序很要紧：先恢复横向位置，再同步 tab。
+    // 反过来的话 syncTabFromScroll 读到的是 scrollLeft = 0，
+    // 会把 activeTab 误判成第一个 tab，纵向滚动就恢复到了错误的面板上。
+    if (keepLeft) nextPanels.scrollLeft = keepLeft;
+    syncTabFromScroll(nextPanels);
+    if (keepTop) {
+      const panel = nextPanels.querySelector(`.shop-panel[data-panel="${tabAtRender}"]`);
+      if (panel) panel.scrollTop = keepTop;
+    }
+  });
 }
 
 /**
