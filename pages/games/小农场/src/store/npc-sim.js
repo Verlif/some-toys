@@ -358,7 +358,7 @@ function actSteal(npc, ctx, at) {
 
   npc.coins += crop.sell;
   // 偷一次，被偷的人心里有数：掉的好感按这份产出的售价折算（至少 1）
-  ctx.relAdjust(npc.id, owner.id, -stealRelLoss(crop.sell));
+  ctx.relAdjust(npc.id, owner.id, -stealRelLoss(crop.lv));
   // 经验按作物等级给，和玩家照料同一套口径
   gainExp(npc, Math.max(1, Math.round(crop.lv * 0.6)) + 4);
 

@@ -10,7 +10,8 @@ import { state, getPlot } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { CROPS, expOf } from '../data/crops.js';
-import { ITEMS, PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
+import { ITEMS } from '../data/items.js';
+import { hasTool, useTool } from './tools.js';
 import { SOILS } from '../data/soils.js';
 import { unlockedPlotCount as countUnlocked } from '../data/progression.js';
 import { seedId, produceId } from '../data/keys.js';
@@ -278,7 +279,7 @@ export async function catchPest(plotId) {
 }
 
 /**
- * 一键浇灌：消耗 1 个洒水器，把所有缺水的地一次浇完。
+ * 一键浇灌：消耗 1 个洒水器（有永久版则不消耗），把所有缺水的地一次浇完。
  *
  * 单块效果与手动浇水完全一致（当前生长阶段 -10%，每块按作物等级给经验），
  * 道具只负责省掉「一块一块点」这件事。
@@ -292,11 +293,12 @@ export async function waterAll() {
     notify('现在没有需要浇水的地');
     return false;
   }
-  if (!inventory.has(SPRINKLER_ID)) {
+  if (!hasTool('water')) {
     notify('没有洒水器了，去商店买一个吧');
     return false;
   }
-  inventory.take(SPRINKLER_ID, 1);
+  // 买过永久版就什么都不扣
+  useTool('water');
 
   let exp = 0;
   for (const plot of targets) {
@@ -320,7 +322,7 @@ export async function waterAll() {
 }
 
 /**
- * 一键杀虫：消耗 1 个杀虫剂，把所有生虫的地一次捉完。
+ * 一键杀虫：消耗 1 个杀虫剂（有永久版则不消耗），把所有生虫的地一次捉完。
  * 每块地产量 +10%，经验按作物等级给。
  * @returns {Promise<boolean>}
  */
@@ -331,11 +333,11 @@ export async function catchPestAll() {
     notify('现在没有需要捉虫的地');
     return false;
   }
-  if (!inventory.has(PESTICIDE_ID)) {
+  if (!hasTool('pest')) {
     notify('没有杀虫剂了，去商店买一个吧');
     return false;
   }
-  inventory.take(PESTICIDE_ID, 1);
+  useTool('pest');
 
   let exp = 0;
   for (const plot of targets) {
@@ -432,15 +434,26 @@ function fmtSaved(ms) {
 }
 
 /**
- * 收获：按土地倍率和捉虫加成算产量，转成农产品入包并发经验。
+ * 减产原因说成人话。
  *
- * harvests > 1 的作物收获后不会消失，而是进入再生轮次；
- * 再生轮的时间更短，经验公式里的时间项自然更小。
+ * 只报「收得少」玩家会以为出 bug，所以要把「成熟时还欠着浇水 / 杀虫」讲明白。
+ * @param {{pct: number, dry: boolean, buggy: boolean}} care
  */
-export async function harvest(plotId) {
-  const plot = getPlot(plotId);
-  if (!plot || !plot.cropId || Date.now() < plot.readyAt) return false;
+const careNoteOf = (care) => (care.pct
+  ? `（成熟时${care.dry ? '缺水' : ''}${care.dry && care.buggy ? '又' : ''}${care.buggy ? '生虫' : ''}，产量 −${care.pct}%）`
+  : '');
 
+/**
+ * 收掉一块成熟的地：算产量 → 入包 → 发经验 → 进入再生轮或清空。
+ *
+ * **只改内存**，不落盘、不弹提示。单块收获（`harvest`）与一键收获（`harvestAll`）
+ * 都调它，区别只在外面怎么汇报 —— 再写一份「批量版」迟早会跟单块版算得不一样。
+ *
+ * @param {object} plot
+ * @returns {{crop: object, amount: number, exp: number, remaining: boolean,
+ *            stolen: number, boost: number, care: {pct: number, dry: boolean, buggy: boolean}}}
+ */
+function collectPlot(plot) {
   const crop = CROPS[plot.cropId];
   const soil = SOILS[plot.soil];
 
@@ -448,11 +461,8 @@ export async function harvest(plotId) {
   // 玩家在地块上看到的「可收 X」就是本次到手的数（极端缺存档时现场补摇）。
   let amount = plot.pendingYield || rollYield(plot);
 
-  // 成熟时还挂着照料需求的账：摘之前先把这件事说清楚，否则玩家只看到「收得少」
+  // 成熟时还挂着照料需求的账：产量在摇定那一刻已经扣过了，这里只负责说明
   const care = carePenalty(plot);
-  const careNote = care.pct
-    ? `（成熟时${care.dry ? '缺水' : ''}${care.dry && care.buggy ? '又' : ''}${care.buggy ? '生虫' : ''}，产量 −${care.pct}%）`
-    : '';
 
   // 被邻居顺走的要真的扣掉：偷一个就少一个，不做翻倍惩罚
   const stolen = plot.stolenCount || 0;
@@ -470,6 +480,22 @@ export async function harvest(plotId) {
   const remaining = beginRegrow(plot, crop, soil);
   if (!remaining) clearPlot(plot);
 
+  return { crop, amount, exp, remaining, stolen, boost, care };
+}
+
+/**
+ * 收获一块地：按土地倍率和捉虫加成算产量，转成农产品入包并发经验。
+ *
+ * harvests > 1 的作物收获后不会消失，而是进入再生轮次；
+ * 再生轮的时间更短，经验公式里的时间项自然更小。
+ */
+export async function harvest(plotId) {
+  const plot = getPlot(plotId);
+  if (!plot || !plot.cropId || Date.now() < plot.readyAt) return false;
+
+  const result = collectPlot(plot);
+  const { crop, amount, exp, remaining, stolen, boost, care } = result;
+  const careNote = careNoteOf(care);
   const desc = amount > 0
     ? `收获 ${crop.emoji}${crop.name} ×${amount}`
     : `${crop.emoji}${crop.name} 被顺光了，颗粒无收`;
@@ -484,6 +510,61 @@ export async function harvest(plotId) {
     + (boost ? `（含捉虫加成 +${Math.round(boost * 100)}%）` : '')
     + stolenNote
     + careNote,
+    'gold',
+  );
+  return true;
+}
+
+/**
+ * 一键收获：消耗 1 台采收机（有永久版则不消耗），把自家所有成熟的地一次收完。
+ *
+ * 每块地都走同一条 `collectPlot`，所以产量、照料减产、被顺走、再生轮次
+ * 和单块收获完全一致；区别只有汇报方式 —— 一次落盘、一条日志、一条提示。
+ *
+ * @returns {Promise<boolean>}
+ */
+export async function harvestAll() {
+  const now = Date.now();
+  const targets = state.farm.plots.filter(
+    (p) => isUnlocked(p) && p.cropId && now >= p.readyAt,
+  );
+  if (!targets.length) {
+    notify('现在没有可以收的地');
+    return false;
+  }
+  if (!hasTool('harvest')) {
+    notify('没有采收机了，去商店买一台吧');
+    return false;
+  }
+  useTool('harvest');
+
+  let exp = 0;
+  let total = 0;
+  let stolenAll = 0;
+  let dryPlots = 0;
+  for (const plot of targets) {
+    const r = collectPlot(plot);
+    exp += r.exp;
+    total += r.amount;
+    stolenAll += r.stolen;
+    if (r.care.pct) dryPlots += 1;
+  }
+
+  const stolenNote = stolenAll ? `（其中被顺走 ${stolenAll} 个）` : '';
+  // 减产不必一块块列，点出「几块照料不周」就够玩家自己回想
+  const careNote = dryPlots ? `，${dryPlots} 块照料不周` : '';
+  player.addLog(
+    '🚜',
+    `用采收机收了 ${targets.length} 块地，共 ${total} 份，经验 +${exp}${careNote}${stolenNote}`,
+  );
+
+  await commit({ farms: [state.farm], bag: state.bag });
+  emit(EVENTS.PLAYER);
+  emit(EVENTS.FARM);
+  emit(EVENTS.INVENTORY);
+  await completeGuide('harvest');
+  notify(
+    `🚜 一键收获：${targets.length} 块地，共 ${total} 份，经验 +${exp}${careNote}${stolenNote}`,
     'gold',
   );
   return true;

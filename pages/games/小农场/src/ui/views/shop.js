@@ -18,7 +18,7 @@ import { SOILS, UPGRADEABLE_SOIL_IDS } from '../../data/soils.js';
 import { MAP_TIERS } from '../../data/adventure.js';
 import { SEED_FILTERS } from '../../data/navigation.js';
 import { mapId, seedId } from '../../data/keys.js';
-import { fmtDuration } from '../../core/utils.js';
+import { fmtDuration, formatCoins } from '../../core/utils.js';
 import { stackClass, yieldClass } from '../meta-tags.js';
 import { openModal } from '../modal.js';
 import { openSeedModal } from '../seed-detail.js';
@@ -100,14 +100,22 @@ function seedPanel() {
 function itemPanel() {
   const rows = ITEM_IDS.map((id) => {
     const item = ITEMS[id];
+    // 永久版买断一次就够：已经有了就把按钮钉成「已拥有」，
+    // 免得玩家再点一次（store 那边也拦，但界面不该给出这个暗示）
+    const bought = Boolean(item.permanent) && count(id) > 0;
+    const tail = bought
+      ? '<span class="si-own">· 已拥有</span>'
+      : owned(id);
     return `
-      <div class="shop-item">
+      <div class="shop-item${bought ? ' locked' : ''}">
         <div class="si-emoji">${item.emoji}</div>
         <div class="si-body">
-          <div class="si-name">${item.name} ${owned(id)}</div>
+          <div class="si-name">${item.name} ${tail}</div>
           <div class="si-meta">${item.desc}</div>
         </div>
-        <button class="btn small ghost" data-action="buy-item" data-id="${id}">💰 ${item.price}</button>
+        <button class="btn small ghost" data-action="buy-item" data-id="${id}" ${bought ? 'disabled' : ''}>
+          ${bought ? '已拥有' : `💰 ${formatCoins(item.price)}`}
+        </button>
       </div>`;
   }).join('');
   return `<div class="list">${rows}</div>`;

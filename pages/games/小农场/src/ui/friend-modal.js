@@ -19,7 +19,7 @@ import { clampRelation, giftRelGain } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
 import { PERSONALITIES, STEAL_LABELS } from '../data/friends.js';
 import { dogBreed, dogSatietyAt } from '../data/dogs.js';
-import { PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
+import { toolCountText, toolUses } from '../store/tools.js';
 import { count } from '../store/inventory.js';
 import { stageEmoji, stageName, stageOf } from '../data/stages.js';
 import { fmtDuration, formatCoins } from '../core/utils.js';
@@ -188,8 +188,9 @@ function logBoxHTML(friend, now) {
  * 一次消耗 1 个，把他家所有需要照料的地一起处理掉。
  */
 function quickButtons(friend, now) {
-  const water = count(SPRINKLER_ID);
-  const pest = count(PESTICIDE_ID);
+  // Infinity = 买过永久版；0 = 没有这件工具，按钮不出现
+  const water = toolUses('water');
+  const pest = toolUses('pest');
 
   const needWater = friend.plots.filter((p) => social.needsWater(p, now)).length;
   const needPest = friend.plots.filter((p) => social.needsPest(p, now)).length;
@@ -200,10 +201,10 @@ function quickButtons(friend, now) {
     `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>`,
     water ? `<button class="btn small ghost" data-action="npc-water-all" data-id="${friend.id}"
       ${needWater ? '' : 'disabled'}>🚿 一键浇水 ${needWater ? `（${needWater} 块）` : '· 暂无需求'}
-      <span class="tool-count">×${water}</span></button>` : '',
+      <span class="tool-count">${toolCountText('water')}</span></button>` : '',
     pest ? `<button class="btn small ghost" data-action="npc-pest-all" data-id="${friend.id}"
       ${needPest ? '' : 'disabled'}>🧴 一键杀虫 ${needPest ? `（${needPest} 块）` : '· 暂无需求'}
-      <span class="tool-count">×${pest}</span></button>` : '',
+      <span class="tool-count">${toolCountText('pest')}</span></button>` : '',
   ].join('');
 }
 

@@ -8,10 +8,15 @@
  * 现在按「这一轮已经处理过几次」排：
  *
  * ```
- * 下次 = 现在 + [1 分钟, (已处理次数 × 2 + 1) 小时] 内随机（精确到分钟）
+ * 下限 = 已处理次数 × 1 小时
+ * 上限 = 已处理次数 × 2 + 1 小时
+ * 下次 = 现在 + [下限, 上限] 内随机（精确到分钟）
  * ```
  *
- * 所以刚种下时窗口只有 1 小时，越往后越久（1h → 3h → 5h → 7h…），
+ * 下限跟着次数走是这一版的重点：**处理得越多，下一次来得越晚**
+ * （0 次 → 1h、1 次 → 3h、2 次 → 5h…），否则会出现「刚浇完一分钟又缺水」
+ * 这种纯粹折腾人的循环。刚种下时下限是 0，可以立刻遇到第一次需求。
+ *
  * 一旦下一次会落在成熟之后，这一轮就自然结束了 —— 不需要另设次数上限。
  *
  * 另外**不会排进成熟前 15 分钟**：那段时间玩家来不及操作，
@@ -36,6 +41,10 @@ export const CARE_PENALTY_BOTH = 0.4;
 /**
  * 排下一次照料时间。
  *
+ * 窗口是 `[次数 × 1h, (次数 × 2 + 1)h]`，再夹到「成熟前 15 分钟」这道线以内。
+ * 下限顶到线上（剩下的时间不够再排一次）时返回 0：这一轮不再需要照料，
+ * 也就不该因为「排不下」而扣玩家的产量。
+ *
  * @param {number} now 起算时刻
  * @param {number} times 这一轮已经处理过几次（浇水次数 / 杀虫次数各自独立）
  * @param {number} readyAt 本轮成熟时间
@@ -45,11 +54,12 @@ export function nextCareAt(now, times, readyAt) {
   const latest = readyAt - CARE_MARGIN;
   if (now >= latest) return 0;
 
-  // 窗口随次数线性变长，但不会超过「成熟前 15 分钟」这道线
-  const window = (Math.max(0, times) * 2 + 1) * HOUR;
-  const span = Math.min(window, latest - now);
-  const minutes = Math.max(1, Math.floor(span / MINUTE));
-  return now + randInt(1, minutes) * MINUTE;
+  const done = Math.max(0, times);
+  const loMinutes = done * 60;
+  const hiMinutes = Math.min((done * 2 + 1) * 60, Math.floor((latest - now) / MINUTE));
+  // 连下限都放不下：剩下的时间不够玩家反应，直接结束这一轮
+  if (loMinutes > hiMinutes) return 0;
+  return now + randInt(loMinutes, hiMinutes) * MINUTE;
 }
 
 /**

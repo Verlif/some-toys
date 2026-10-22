@@ -15,8 +15,12 @@
  * **一株作物一轮只能用一次肥** —— 普通化肥、增产剂、有机化肥共用同一个额度，
  * 所以三档增产剂之间也互相排斥。
  *
- * 洒水器 / 杀虫剂是「省手」道具：整座农场一次处理完，只消耗 1 个。
+ * 洒水器 / 杀虫剂 / 采收机是「省手」道具：整座农场一次处理完，只消耗 1 个。
  * 它们不改变单块地的效果，只是把点十几下变成点一下。
+ *
+ * 三件工具都有**永久版**：价格高得多，但买断之后永远不消耗
+ * （`permanent: true`）。判定统一走 store/tools.js —— 手上有永久版时
+ * 消耗版一个都不扣，否则玩家背包里的东西会莫名其妙变少。
  */
 
 /** 一键浇水道具的 id */
@@ -24,6 +28,26 @@ export const SPRINKLER_ID = 'sprinkler';
 
 /** 一键杀虫道具的 id */
 export const PESTICIDE_ID = 'pesticide';
+
+/** 一键收获道具的 id */
+export const HARVESTER_ID = 'harvester';
+
+/** 三件工具的永久版：买断一次，之后永不吃道具 */
+export const SPRINKLER_PRO_ID = 'sprinklerPro';
+export const PESTICIDE_PRO_ID = 'pesticidePro';
+export const HARVESTER_PRO_ID = 'harvesterPro';
+
+/**
+ * 动作种类 → 消耗版 / 永久版。
+ *
+ * 自家农场与邻居农场共用这套映射（见 store/tools.js），
+ * 所以「买过永久洒水器，帮邻居一键浇水也不扣道具」是自动成立的。
+ */
+export const TOOL_KINDS = {
+  water: { consumable: SPRINKLER_ID, permanent: SPRINKLER_PRO_ID },
+  pest: { consumable: PESTICIDE_ID, permanent: PESTICIDE_PRO_ID },
+  harvest: { consumable: HARVESTER_ID, permanent: HARVESTER_PRO_ID },
+};
 
 export const ITEMS = {
   fertilizer: { name: '普通化肥 30分', emoji: '🧪', price: 60,   desc: '成熟时间 −30 分钟', fert: true, minutes: 30 },
@@ -38,6 +62,20 @@ export const ITEMS = {
   dogFood:    { name: '狗粮',          emoji: '🦴', price: 50,   desc: '往共享狗粮槽里添一份，存量 +45%', fert: false },
   [SPRINKLER_ID]: { name: '洒水器', emoji: '🚿', price: 200, desc: '一次性：给整座农场所有缺水的地浇水', fert: false, all: 'water' },
   [PESTICIDE_ID]: { name: '杀虫剂', emoji: '🧴', price: 200, desc: '一次性：给整座农场所有生虫的地捉虫', fert: false, all: 'pest' },
+  [HARVESTER_ID]: { name: '采收机', emoji: '🚜', price: 200, desc: '一次性：把整座农场成熟的地一次收完', fert: false, all: 'harvest' },
+  // 永久版排在最后：前三个是「随手买一个应个急」，后面是「终于不用再买了」
+  [SPRINKLER_PRO_ID]: {
+    name: '洒水器 · 永久', emoji: '🚿', price: 50_000, permanent: true, all: 'water',
+    desc: '买断：一键浇水不再消耗道具（自家 / 邻居家通用）',
+  },
+  [PESTICIDE_PRO_ID]: {
+    name: '杀虫剂 · 永久', emoji: '🧴', price: 50_000, permanent: true, all: 'pest',
+    desc: '买断：一键杀虫不再消耗道具（自家 / 邻居家通用）',
+  },
+  [HARVESTER_PRO_ID]: {
+    name: '采收机 · 永久', emoji: '🚜', price: 100_000, permanent: true, all: 'harvest',
+    desc: '买断：一键收获不再消耗道具',
+  },
 };
 
 /** 商店道具渲染顺序 */

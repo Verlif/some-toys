@@ -12,7 +12,8 @@ import * as farm from '../../store/farm.js';
 import * as player from '../../store/player.js';
 import { count } from '../../store/inventory.js';
 import { CROPS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
-import { FERTILIZER_IDS, ITEMS, PESTICIDE_ID, SPRINKLER_ID } from '../../data/items.js';
+import { FERTILIZER_IDS, ITEMS } from '../../data/items.js';
+import { toolCountText, toolUses } from '../../store/tools.js';
 import { SOILS } from '../../data/soils.js';
 import { PLOT_UNLOCK_LV } from '../../data/progression.js';
 import { seedId } from '../../data/keys.js';
@@ -258,8 +259,8 @@ export function renderFarm() {
  * 两块内容：
  *   - **上岗的守护犬**：常驻信息，有没有狗、什么品种、拦得住几成。
  *     它和背包里的道具无关，只要农场上有狗就显示；
- *   - **一键照料按钮**：只有背包里真有洒水器 / 杀虫剂时才出现，
- *     按钮上的数字是「待处理块数」，后面的 ×N 是道具存量。
+ *   - **一键按钮**：只有真拿得出工具时才出现（有永久版或消耗版），
+ *     括号里是「待处理块数」，后面的 ×N 是道具存量 —— 永久版显示 ∞。
  *
  * 数量或需求数没变就不重建 DOM，否则 500ms 一次的心跳会把正在按的按钮换掉。
  */
@@ -269,8 +270,10 @@ function renderFarmTools() {
   const el = byId('farmTools');
   if (!el) return;
 
-  const water = count(SPRINKLER_ID);
-  const pest = count(PESTICIDE_ID);
+  // Infinity = 买过永久版；0 = 没有这件工具（按钮直接不出现）
+  const water = toolUses('water');
+  const pest = toolUses('pest');
+  const harvester = toolUses('harvest');
 
   // 上岗的守护犬是农场的常驻信息：有没有狗、什么品种、拦得住几成
   const breed = activeBreed();
@@ -284,19 +287,32 @@ function renderFarmTools() {
   const now = Date.now();
   const needWater = state.farm.plots.filter((p) => farm.needsWater(p, now)).length;
   const needPest = state.farm.plots.filter((p) => farm.needsPest(p, now)).length;
-  const key = `${water}|${pest}|${needWater}|${needPest}|${breed?.id || ''}|${Math.round(dogSatiety())}`;
+  const needRipe = state.farm.plots.filter((p) => farm.plotStatus(p) === 'ripe').length;
+  const key = [
+    water, pest, harvester, needWater, needPest, needRipe,
+    breed?.id || '', Math.round(dogSatiety()),
+  ].join('|');
 
   if (key !== toolsKey) {
     toolsKey = key;
 
     // 没有道具就只剩守护犬那一行：不能因此把整条藏掉，
-    // 否则新玩家（还没买过洒水器）永远看不到自己养了条狗
-    const toolRow = (water || pest)
+    // 否则新玩家（还没买过洒水器）永远看不到自己养了条狗。
+    //
+    // 三个按钮要挤在一行里，文案必须短：手机上 430px 只放得下
+    // 「🚿 浇水（6）· 🧴 杀虫（2）· 🚜 收获（12）」这种长度。
+    // 没需求时连括号都不给，按钮灰掉即可 —— 完整文案留给 title。
+    const toolRow = (water || pest || harvester)
       ? `<div class="farm-tool-row">${[
-        water ? `<button class="tool-btn" data-action="water-all" ${needWater ? '' : 'disabled'}>
-          🚿 一键浇水${needWater ? `（${needWater} 块）` : '· 暂无需求'} <span class="tool-count">×${water}</span></button>` : '',
-        pest ? `<button class="tool-btn" data-action="pest-all" ${needPest ? '' : 'disabled'}>
-          🧴 一键杀虫${needPest ? `（${needPest} 块）` : '· 暂无需求'} <span class="tool-count">×${pest}</span></button>` : '',
+        water ? `<button class="tool-btn" data-action="water-all" ${needWater ? '' : 'disabled'}
+          title="一键浇水：把整座农场缺水的地一次浇完">
+          🚿 浇水${needWater ? `（${needWater}）` : ''} <span class="tool-count">${toolCountText('water')}</span></button>` : '',
+        pest ? `<button class="tool-btn" data-action="pest-all" ${needPest ? '' : 'disabled'}
+          title="一键杀虫：把整座农场生虫的地一次杀完">
+          🧴 杀虫${needPest ? `（${needPest}）` : ''} <span class="tool-count">${toolCountText('pest')}</span></button>` : '',
+        harvester ? `<button class="tool-btn" data-action="harvest-all" ${needRipe ? '' : 'disabled'}
+          title="一键收获：把整座农场成熟的地一次收完">
+          🚜 收获${needRipe ? `（${needRipe}）` : ''} <span class="tool-count">${toolCountText('harvest')}</span></button>` : '',
       ].join('')}</div>`
       : '';
 
@@ -599,6 +615,7 @@ const PLOT_ACTIONS = {
 const FARM_TOOL_ACTIONS = {
   'water-all': () => farm.waterAll(),
   'pest-all': () => farm.catchPestAll(),
+  'harvest-all': () => farm.harvestAll(),
 };
 
 export function mountFarm() {

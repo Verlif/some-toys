@@ -61,6 +61,12 @@ export async function buySeed(cropId, n = 1) {
 export async function buyItem(itemId) {
   const item = ITEMS[itemId];
   if (!item) return false;
+  // 永久版买断一次就够了 —— 不拦的话玩家可能一激动点两下，
+  // 多花一份钱却只多出个永远用不到的计数
+  if (item.permanent && inventory.has(itemId)) {
+    notify(`已经有一台${item.name}了`);
+    return false;
+  }
   if (!player.spendCoins(item.price)) {
     notify('金币不足 😥');
     return false;

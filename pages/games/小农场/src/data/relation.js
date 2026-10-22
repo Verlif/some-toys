@@ -9,7 +9,7 @@
  *
  * 几条规则（全部是纯函数，谁都能读）：
  *   - **起点由性格决定**：`round((A 的性格值 + B 的性格值) / 2)`，玩家没有性格，按 0 算；
- *   - **偷菜掉好感**：`max(1, round(那份产出的售价 / 10))`；
+ *   - **偷菜掉好感**：`max(1, round(作物等级 / 3))`；
  *   - **打理加好感**：每照料一块地 +1；
  *   - **送礼加好感**：按送出的那份产出的等级，`round(等级 / 2)`，至少 1；
  *   - 好感低的人更爱来偷、好感高的人更愿意来帮忙与送礼（见下面的权重函数）。
@@ -25,8 +25,14 @@ export const REL_MAX = 200;
 /** 打理一次（浇水 / 杀虫）加多少好感 */
 export const REL_PER_CARE = 1;
 
-/** 偷菜掉的好感 = 售价 / 这个数（至少 1） */
-const STEAL_REL_DIVISOR = 10;
+/**
+ * 偷菜掉的好感 = 作物等级 / 这个数（至少 1）。
+ *
+ * 早先按**售价**折算（售价 / 10），高阶作物一份就上千，偷一次掉几十上百，
+ * 一晚上就能把交情偷成结怨 —— 惩罚跟「偷一把菜」完全不匹配。
+ * 改成按等级以后，Lv10 掉 3、Lv60 掉 20，量级终于和「一件事」对得上。
+ */
+const STEAL_LV_DIVISOR = 3;
 
 /** 送礼加的好感 = 产出等级 × 这个系数（至少 1） */
 const GIFT_REL_RATIO = 0.5;
@@ -46,8 +52,8 @@ export const clampRelation = (v) => clamp(Math.round(Number(v) || 0), REL_MIN, R
 export const baseRelation = (friendlyA = 0, friendlyB = 0) =>
   clampRelation((friendlyA + friendlyB) / 2);
 
-/** 偷走一份售价 sell 的东西，掉多少好感 */
-export const stealRelLoss = (sell) => Math.max(1, Math.round(sell / STEAL_REL_DIVISOR));
+/** 偷走一份等级 lv 的产出，掉多少好感（最少 1） */
+export const stealRelLoss = (lv) => Math.max(1, Math.round(lv / STEAL_LV_DIVISOR));
 
 /** 送出一份等级 lv 的产出，加多少好感 */
 export const giftRelGain = (lv) => Math.max(1, Math.round(lv * GIFT_REL_RATIO));

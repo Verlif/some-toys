@@ -25,7 +25,7 @@ import { REL_PER_CARE, giftRelGain, stealRelLoss } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
 import { catchChance, DOG_FINE_MULTIPLE, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
-import { PESTICIDE_ID, SPRINKLER_ID } from '../data/items.js';
+import { hasTool, useTool } from './tools.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
 import { formatCoins, randInt } from '../core/utils.js';
@@ -438,7 +438,7 @@ export async function steal(friendId, index) {
     // 文案里要写真实名字（不是硬编码「农场主」）：日志与时报会把名字就地
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
     // 想偷还被当场逮住，关系只会更差
-    adjustRelation(PLAYER_ID, friend.id, -stealRelLoss(crop.sell));
+    adjustRelation(PLAYER_ID, friend.id, -stealRelLoss(crop.lv));
     logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币`);
     player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now, [PLAYER_ID, friend.id]);
     addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, {
@@ -464,7 +464,7 @@ export async function steal(friendId, index) {
 
   inventory.add(produceId(target.cropId), 1);
   // 被顺走的人心里有数：好感按这份产出的售价折算
-  const lost = stealRelLoss(crop.sell);
+  const lost = stealRelLoss(crop.lv);
   adjustRelation(PLAYER_ID, friend.id, -lost);
   logFriend(friend, now, '🥷', `被 ${state.farm.name} 顺走了 ${crop.emoji}${crop.name} ×1`);
 
@@ -561,11 +561,12 @@ export async function waterAllNeighborPlots(friendId) {
     notify('他家的地现在都不缺水');
     return false;
   }
-  if (!inventory.has(SPRINKLER_ID)) {
+  if (!hasTool('water')) {
     notify('没有洒水器了，去商店买一个吧');
     return false;
   }
-  inventory.take(SPRINKLER_ID, 1);
+  // 永久版和消耗版同一个入口：买过永久洒水器，帮邻居浇水也不扣
+  useTool('water');
 
   let exp = 0;
   for (const plot of targets) {
@@ -605,11 +606,11 @@ export async function catchPestAllNeighborPlots(friendId) {
     notify('他家的地现在都没有虫子');
     return false;
   }
-  if (!inventory.has(PESTICIDE_ID)) {
+  if (!hasTool('pest')) {
     notify('没有杀虫剂了，去商店买一个吧');
     return false;
   }
-  inventory.take(PESTICIDE_ID, 1);
+  useTool('pest');
 
   let exp = 0;
   for (const plot of targets) {

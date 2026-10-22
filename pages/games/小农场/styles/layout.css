@@ -362,7 +362,9 @@ body[data-page="farm"] .app {
 }
 
 /* 一键工具按钮排成一行 */
-.farm-tool-row { display: flex; justify-content: center; gap: 8px; }
+/* 三件工具（浇水 / 杀虫 / 收获）要挤在一行里：430px 刚好放得下，
+   360px 的小屏会换行 —— 宁可换行，也不要横向溢出把按钮切掉 */
+.farm-tool-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 
 .tool-btn {
   display: inline-flex;
@@ -370,7 +372,7 @@ body[data-page="farm"] .app {
   gap: 5px;
   border: 1px solid #d8e6cf;
   border-radius: 99px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;

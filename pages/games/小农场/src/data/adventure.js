@@ -125,6 +125,14 @@ const TOTAL_MIX_WEIGHT = REWARD_MIX.reduce((sum, r) => sum + r.weight, 0);
 /** 从数组里随机取一个 */
 const pick = (list) => list[randInt(0, list.length - 1)];
 
+/**
+ * 能进藏宝图奖励池的道具。
+ *
+ * 永久版（几万一台）必须排除：奖励是按「价值比例」分预算的，
+ * 一台 10 万的采收机会让这一份奖励的份数算法直接失真。
+ */
+const REWARD_ITEM_IDS = ITEM_IDS.filter((id) => !ITEMS[id].permanent);
+
 /** Fisher–Yates 洗牌（返回新数组） */
 function shuffled(list) {
   const out = list.slice();
@@ -243,7 +251,8 @@ export function buildRewardPool(tier, opts = {}) {
       continue;
     }
 
-    const itemId = pick(ITEM_IDS);
+    // 永久版不进奖励池：一件 10 万的道具，会把这批奖励的预算彻底打乱
+    const itemId = pick(REWARD_ITEM_IDS);
     const item = ITEMS[itemId];
     // 道具单价低，一份奖励可能要几十个才能顶得上这一档的价值，上限放宽到 60；
     // 再高就变成「一次挖回 99 袋化肥」，仓库都要放不下了

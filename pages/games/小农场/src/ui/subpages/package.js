@@ -56,6 +56,14 @@ function itemRow(id, meta) {
   const clickable = meta.cropId
     ? ` data-action="seed-info" data-crop="${meta.cropId}" role="button" tabindex="0"`
     : '';
+  // 永久道具：数量写 ∞，并且**不给丢弃入口** —— 点错一次就是十万金币没了，
+  // 这种买断装备不该出现在「丢弃」这种不可恢复的操作里
+  const amount = meta.permanent
+    ? '<span class="si-count">∞</span>'
+    : `<span class="si-count">×${count(id)}</span>`;
+  const discard = meta.permanent
+    ? ''
+    : `<button class="btn small ghost danger" data-action="discard" data-id="${id}">丢弃</button>`;
   return `
     <div class="shop-item${meta.cropId ? ' pickable' : ''}"${clickable}>
       <div class="si-emoji">${meta.emoji}</div>
@@ -63,8 +71,8 @@ function itemRow(id, meta) {
         <div class="si-name">${meta.name}</div>
         <div class="si-meta">${meta.desc || ''}</div>
       </div>
-      <span class="si-count">×${count(id)}</span>
-      <button class="btn small ghost danger" data-action="discard" data-id="${id}">丢弃</button>
+      ${amount}
+      ${discard}
     </div>`;
 }
 
@@ -162,7 +170,12 @@ export const packagePage = {
 
     const items = ITEM_IDS
       .filter((id) => count(id) > 0)
-      .map((id) => itemRow(id, { emoji: ITEMS[id].emoji, name: ITEMS[id].name, desc: ITEMS[id].desc }));
+      .map((id) => itemRow(id, {
+        emoji: ITEMS[id].emoji,
+        name: ITEMS[id].name,
+        desc: ITEMS[id].desc,
+        permanent: Boolean(ITEMS[id].permanent),
+      }));
 
     const html = section('🌱 种子', seeds)
       + section('🧭 藏宝图', maps)
