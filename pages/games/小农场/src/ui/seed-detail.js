@@ -122,15 +122,17 @@ export function openSeedModal(cropId, { buy = false } = {}) {
       : ''}
 
     ${buy ? `
-      <div class="sd-buybar">
-        <div class="qty">
-          <button class="qty-btn" data-action="qty-minus" aria-label="减少数量" ${locked ? 'disabled' : ''}>−</button>
-          <span class="qty-num" data-role="qty">${qty}</span>
-          <button class="qty-btn" data-action="qty-plus" aria-label="增加数量" ${locked ? 'disabled' : ''}>+</button>
+      <div class="modal-foot">
+        <div class="sd-buybar">
+          <div class="qty">
+            <button class="qty-btn" data-action="qty-minus" aria-label="减少数量" ${locked ? 'disabled' : ''}>−</button>
+            <span class="qty-num" data-role="qty">${qty}</span>
+            <button class="qty-btn" data-action="qty-plus" aria-label="增加数量" ${locked ? 'disabled' : ''}>+</button>
+          </div>
+          <button class="btn sd-buy" data-action="seed-buy" ${locked ? 'disabled' : ''}>
+            <span data-role="total">购买 · 💰 ${crop.seed}</span>
+          </button>
         </div>
-        <button class="btn sd-buy" data-action="seed-buy" ${locked ? 'disabled' : ''}>
-          <span data-role="total">购买 · 💰 ${crop.seed}</span>
-        </button>
       </div>
       <div class="sd-tip">按住 − / + 可连续调整</div>` : `
       <div class="sd-buybar">

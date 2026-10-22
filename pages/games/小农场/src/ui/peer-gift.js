@@ -27,9 +27,11 @@ function askHTML(offer) {
       想送你 <b>${itemLabel(offer.itemId)} ×${offer.n}</b>，收下吗？
     </div>
     <div class="sd-gain">收下之后会在村镇里播一条提示，大家都知道你收了礼。</div>
-    <div class="gift-confirm-btns" style="justify-content:flex-end; gap:8px; display:flex;">
-      <button class="btn ghost" data-action="peer-gift-decline">不要</button>
-      <button class="btn" data-action="peer-gift-accept">收下</button>
+    <div class="modal-foot">
+      <div class="gift-confirm-btns" style="justify-content:flex-end; gap:8px; display:flex;">
+        <button class="btn ghost" data-action="peer-gift-decline">不要</button>
+        <button class="btn" data-action="peer-gift-accept">收下</button>
+      </div>
     </div>`;
 }
 

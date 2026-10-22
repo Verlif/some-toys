@@ -357,16 +357,18 @@ function confirmGift(friendId, cropId, onDone) {
 
     <div class="sd-gain">这份${escapeHtml(crop.name)}送出去就拿不回来了</div>
 
-    <div class="gift-confirm">
-      <div class="qty">
-        <button class="qty-btn" data-action="gift-qty-minus" aria-label="减少数量">−</button>
-        <span class="qty-num" data-role="qty">1</span>
-        <button class="qty-btn" data-action="gift-qty-plus" aria-label="增加数量">+</button>
-      </div>
-      ${have > 1 ? '<button class="gift-max" data-action="gift-qty-max">全送</button>' : ''}
-      <div class="gift-confirm-btns">
-        <button class="btn ghost" data-close>再想想</button>
-        <button class="btn" data-action="gift-send" data-id="${cropId}" data-role="send">确认送出</button>
+    <div class="modal-foot">
+      <div class="gift-confirm">
+        <div class="qty">
+          <button class="qty-btn" data-action="gift-qty-minus" aria-label="减少数量">−</button>
+          <span class="qty-num" data-role="qty">1</span>
+          <button class="qty-btn" data-action="gift-qty-plus" aria-label="增加数量">+</button>
+        </div>
+        ${have > 1 ? '<button class="gift-max" data-action="gift-qty-max">全送</button>' : ''}
+        <div class="gift-confirm-btns">
+          <button class="btn ghost" data-close>再想想</button>
+          <button class="btn" data-action="gift-send" data-id="${cropId}" data-role="send">确认送出</button>
+        </div>
       </div>
     </div>
   `, async (action) => {
@@ -493,12 +495,15 @@ function openPeerGiftPicker(friend, initialTab = 'bag') {
       : '🎒<br>包裹里空空的<br>买点种子或道具再来'}</div>`;
   };
 
+  // 切换条放底栏：清单可能几百行，跟着内容滚走的话想换 tab 得一路划到底
   const tabsHTML = () => `
-    <div class="gift-tabs">
-      <button class="filter-chip ${tab === 'bag' ? 'active' : ''}"
-              data-action="peer-gift-tab" data-id="bag">🧺 仓库</button>
-      <button class="filter-chip ${tab === 'package' ? 'active' : ''}"
-              data-action="peer-gift-tab" data-id="package">🎒 包裹</button>
+    <div class="modal-foot">
+      <div class="gift-tabs">
+        <button class="filter-chip ${tab === 'bag' ? 'active' : ''}"
+                data-action="peer-gift-tab" data-id="bag">🧺 仓库</button>
+        <button class="filter-chip ${tab === 'package' ? 'active' : ''}"
+                data-action="peer-gift-tab" data-id="package">🎒 包裹</button>
+      </div>
     </div>`;
 
   openModal(`
@@ -576,16 +581,18 @@ function openPeerGiftConfirm(friend, itemId) {
       <div class="sd-cell"><span>到账方式</span><b>对方点收下</b></div>
     </div>
     <div class="sd-gain">对方拒收或 90 秒不回应，东西会退回来，不会凭空消失</div>
-    <div class="gift-confirm">
-      <div class="qty">
-        <button class="qty-btn" data-action="peer-gift-minus" aria-label="减少数量">−</button>
-        <span class="qty-num" data-role="qty">1</span>
-        <button class="qty-btn" data-action="peer-gift-plus" aria-label="增加数量">+</button>
-      </div>
-      ${have > 1 ? '<button class="gift-max" data-action="peer-gift-max">全送</button>' : ''}
-      <div class="gift-confirm-btns">
-        <button class="btn ghost" data-close>再想想</button>
-        <button class="btn" data-action="peer-gift-send" data-role="send">确认送出</button>
+    <div class="modal-foot">
+      <div class="gift-confirm">
+        <div class="qty">
+          <button class="qty-btn" data-action="peer-gift-minus" aria-label="减少数量">−</button>
+          <span class="qty-num" data-role="qty">1</span>
+          <button class="qty-btn" data-action="peer-gift-plus" aria-label="增加数量">+</button>
+        </div>
+        ${have > 1 ? '<button class="gift-max" data-action="peer-gift-max">全送</button>' : ''}
+        <div class="gift-confirm-btns">
+          <button class="btn ghost" data-close>再想想</button>
+          <button class="btn" data-action="peer-gift-send" data-role="send">确认送出</button>
+        </div>
       </div>
     </div>
   `, (action) => {

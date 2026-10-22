@@ -253,9 +253,11 @@ function askExit() {
       还剩 <b>${left}</b> 步没走。已经挖到的 <b>${earned}</b> 份奖励会直接留下，
       剩下没走的路就作废了。
     </p>
-    <div class="adv-confirm-acts">
-      <button class="btn ghost" data-close>继续冒险</button>
-      <button class="btn" data-action="adv-exit-confirm">结束冒险</button>
+    <div class="modal-foot">
+      <div class="adv-confirm-acts">
+        <button class="btn ghost" data-close>继续冒险</button>
+        <button class="btn" data-action="adv-exit-confirm">结束冒险</button>
+      </div>
     </div>
   `, (action) => ADVENTURE_ACTIONS[action]?.());
 }

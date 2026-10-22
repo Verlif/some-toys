@@ -104,15 +104,17 @@ function openDiscardModal(id) {
       </div>
     </div>
     <div class="sd-gain">丢弃后不可恢复，确定要扔掉吗？</div>
-    <div class="sd-buybar">
-      <div class="qty">
-        <button class="qty-btn" data-action="d-qty-minus" aria-label="减少数量">−</button>
-        <span class="qty-num" data-role="qty">${qty}</span>
-        <button class="qty-btn" data-action="d-qty-plus" aria-label="增加数量">+</button>
+    <div class="modal-foot">
+      <div class="sd-buybar">
+        <div class="qty">
+          <button class="qty-btn" data-action="d-qty-minus" aria-label="减少数量">−</button>
+          <span class="qty-num" data-role="qty">${qty}</span>
+          <button class="qty-btn" data-action="d-qty-plus" aria-label="增加数量">+</button>
+        </div>
+        <button class="btn danger sd-buy" data-action="discard-ok">
+          <span data-role="total">确认丢弃 ×${qty}</span>
+        </button>
       </div>
-      <button class="btn danger sd-buy" data-action="discard-ok">
-        <span data-role="total">确认丢弃 ×${qty}</span>
-      </button>
     </div>
   `, async (action) => {
     if (action === 'd-qty-minus') {

@@ -46,6 +46,18 @@ export function openModal(html, onAction) {
   card.innerHTML = `<div class="sheet-handle"></div><div class="modal-body">${html}</div>`;
 
   const body = card.querySelector('.modal-body');
+
+  // 底栏：切换条 / 主操作按钮这类「不该跟着滚走」的东西。
+  // 和标题同样的处理 —— 从 body 里提出来挂到卡片上，只有 body 滚动。
+  // ⚠️ 不要用 position: sticky 凑：body 底部有 18px 渐隐遮罩，
+  // sticky 的底条会被削掉最后 18px（见 docs/09-UI规范.md 的「弹窗三段式」）。
+  const foot = body.querySelector(':scope > .modal-foot');
+  if (foot) {
+    card.appendChild(foot);
+    // 有底栏时关掉渐隐，否则滚到底的最后一行会被永久淡掉
+    body.classList.add('has-foot');
+  }
+
   const head = body.querySelector(':scope > .modal-head');
   if (head) {
     // 标题栏挪出滚动区：内容滚得再远，标题和关闭按钮都停在上方 ——
@@ -79,7 +91,11 @@ export function closeModal() {
     card.innerHTML = prev.html;
     actionHandler = prev.handler;
     const body = card.querySelector('.modal-body');
-    if (body) body.scrollTop = prev.scrollTop;
+    if (body) {
+      body.scrollTop = prev.scrollTop;
+      // 快照里的底栏本来就在 body 外面，但 has-foot 是运行时加的类，得补回来
+      if (card.querySelector(':scope > .modal-foot')) body.classList.add('has-foot');
+    }
     bindAction();
     return;
   }

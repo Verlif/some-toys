@@ -661,6 +661,24 @@ body[data-page="farm"] .app {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent 100%);
 }
+/* 有底栏时关掉渐隐：body 的底边已经不贴着卡片了，
+   渐隐只会把「已经滚到底」的最后一行永久淡掉。 */
+.modal-body.has-foot {
+  padding-bottom: 10px;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* 弹窗底栏：切换条、主操作按钮这类东西的固定位置。
+   由 ui/modal.js 提到滚动区外面（和标题一样），所以永远不跟着内容滚走。
+   ⚠️ 不要改用 position: sticky —— body 的 18px 渐隐会把 sticky 底条削掉一截。 */
+.modal-foot {
+  flex: 0 0 auto;
+  padding: 9px 17px 11px;
+  background: #fff;
+  border-top: 1px solid #eef1e9;
+}
+.modal-foot > * { margin-top: 0; }
 
 /* 弹窗标题栏：同样的垂直居中处理 */
 .modal-head {

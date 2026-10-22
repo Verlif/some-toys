@@ -90,14 +90,16 @@ function confirmSell(ids) {
         </div>`).join('')}
     </div>
 
-    <p style="font-size:13px;line-height:1.8;margin:14px 0 16px">
-      共 <b data-role="amount">${totalAmount()}</b> 个，
-      合计 <b style="color:var(--gold)" data-role="coins">${totalCoins()} 💰</b><br>
-      <span style="font-size:12px;color:var(--muted)">卖出后不可撤销。</span>
-    </p>
-    <div class="rm-actions">
-      <button class="btn ghost" data-close style="flex:1">再想想</button>
-      <button class="btn" data-action="confirm-sell" style="flex:1">确认卖出</button>
+    <div class="modal-foot">
+      <p class="sell-total">
+        共 <b data-role="amount">${totalAmount()}</b> 个，
+        合计 <b class="sell-total-coins" data-role="coins">${totalCoins()} 💰</b>
+        <span class="sell-total-note">卖出后不可撤销</span>
+      </p>
+      <div class="rm-actions">
+        <button class="btn ghost" data-close style="flex:1">再想想</button>
+        <button class="btn" data-action="confirm-sell" style="flex:1">确认卖出</button>
+      </div>
     </div>
   `, (action, el) => SELL_ACTIONS[action]?.(Number(el.dataset.i)));
 

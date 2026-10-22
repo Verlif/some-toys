@@ -97,10 +97,12 @@ function openDetailModal(cropId) {
     : `🛒 商店购买 · 种子 💰 ${crop.seed}`;
 
   const actions = stat.owned >= SPECIMEN_COST
-    ? `<div class="sd-buybar">
-        <button class="btn sd-buy" data-action="specimen-make" data-id="${cropId}">
-          🧪 制作标本（花掉 ${SPECIMEN_COST} 个${crop.name}）
-        </button>
+    ? `<div class="modal-foot">
+        <div class="sd-buybar">
+          <button class="btn sd-buy" data-action="specimen-make" data-id="${cropId}">
+            🧪 制作标本（花掉 ${SPECIMEN_COST} 个${crop.name}）
+          </button>
+        </div>
       </div>`
     : '';
 

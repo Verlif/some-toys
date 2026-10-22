@@ -560,9 +560,11 @@ function confirmRemove(plotId) {
       铲除后这块地会变回空地，<b>种子、化肥和产量加成都不会返还</b>。
     </div>
     ${ripe ? '<div class="sd-lock">这块已经成熟了，先「收获」再铲更划算</div>' : ''}
-    <div class="rm-actions">
-      <button class="btn ghost" data-close>再想想</button>
-      <button class="btn danger" data-action="remove-ok">确认铲除</button>
+    <div class="modal-foot">
+      <div class="rm-actions">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn danger" data-action="remove-ok">确认铲除</button>
+      </div>
     </div>
   `, async (action) => {
     if (action !== 'remove-ok') return;

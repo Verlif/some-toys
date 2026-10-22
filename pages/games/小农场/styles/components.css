@@ -1702,6 +1702,14 @@
   max-height: 46vh;
   overflow-y: auto;
 }
+/* 卖出确认的合计行：和按钮一起待在底栏里，滚列表时也看得见总数 */
+.sell-total {
+  margin: 0 0 9px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.sell-total-coins { color: var(--gold); }
+.sell-total-note { margin-left: 6px; font-size: 11px; color: var(--muted); }
 .sell-qty-row {
   display: flex;
   align-items: center;
@@ -2600,14 +2608,11 @@
 .village-hint { font-size: 10.5px; line-height: 1.65; color: var(--muted); padding: 2px 0 6px; }
 .village-hint code { font-size: 10px; padding: 1px 5px; background: #f1f4ee; border-radius: 5px; }
 
-/* 送礼清单底部的仓库 / 包裹切换 */
+/* 送礼清单底部的仓库 / 包裹切换：挂在 .modal-foot 里，只负责排布 */
 .gift-tabs {
   display: flex;
   gap: 8px;
   justify-content: center;
-  padding: 10px 0 2px;
-  margin-top: 4px;
-  border-top: 1px dashed var(--line);
 }
 
 /* 在线名单：也是一行一条，没有卡片 */

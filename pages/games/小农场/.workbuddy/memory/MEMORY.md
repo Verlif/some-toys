@@ -73,6 +73,10 @@
 - **拖拽三条铁律**：① `move()` 先查 `tracking` ② 鼠标 move/up 只在按下期间挂 ③ Touch + preventDefault。
 - **弹窗**：`openModal()` 把 `.modal-head` 提到 `.modal-body` 前标题才拖得动；关闭图标统一补；从标题/
   把手起手忽略「内容已滚动」。**支持叠层**（整卡快照压栈，close 还原 scrollTop）。
+  **四段式**：handle / head / body / **foot** —— 模板里的 `.modal-foot` 也会被提出滚动区，
+  切换条与主操作按钮一律放这里面。⚠️ **别用 `position: sticky` 代替**：
+  `.modal-body` 底部 18px 渐隐会把 sticky 底条削掉一截；有底栏时 `body.has-foot`
+  要关掉 mask，否则滚到底的最后一行被永久淡掉。还原叠层时 `has-foot` 要补回来。
 - 地块 = `.plot-main`(flex:1)+`.plot-side`(34px)；列数 手机2/≥720 3/≥960 4；高 152/紧凑 126（图标 47/38px）；
   成熟摇定 `plot.pendingYield`。**`.plot-side` ≤4 按钮**（水/虫/肥/铲）：`4×29+3×3=125≤128`，
   加第 5 个前先重算，`overflow:hidden` 会静默裁掉；铲除用 `.icon-btn.danger`。

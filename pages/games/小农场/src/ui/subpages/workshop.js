@@ -220,9 +220,11 @@ function confirmCraft(cropId, ctx) {
       确认后扣掉 <b>${need} 份${crop.name}</b> 与 <b>💰 ${fee}</b>
     </div>
 
-    <div class="rm-actions">
-      <button class="btn ghost" data-close>再想想</button>
-      <button class="btn" data-action="craft-ok">确认制造</button>
+    <div class="modal-foot">
+      <div class="rm-actions">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn" data-action="craft-ok">确认制造</button>
+      </div>
     </div>
   `, async (action) => {
     if (action !== 'craft-ok') return;
