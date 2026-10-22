@@ -14,9 +14,10 @@
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
-import { expForLevel, MAX_LEVEL, unlockedPlotCount } from '../data/progression.js';
+import { expForLevel, MAX_LEVEL } from '../data/progression.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
+import { broadcastToast } from './peers.js';
 
 /** 没加到经验时的返回值（等级保持不变） */
 function noGain() {
@@ -44,6 +45,10 @@ export function spendCoins(amount) {
 
 /**
  * 加经验并处理连续升级。
+ *
+ * 升级**不再送地** —— 地从第 7 块起都要花金币买（`store/farm.js` 的 `unlockPlot`），
+ * 升级只给等级与称号。`unlockedPlots` 留着是为了不破坏调用方的解构，恒为 0。
+ *
  * @param {number} amount
  * @returns {{levelBefore: number, levelAfter: number, leveledUp: boolean, unlockedPlots: number}}
  */
@@ -52,7 +57,6 @@ export function addExpRaw(amount) {
 
   const farm = state.farm;
   const levelBefore = farm.level;
-  const plotsBefore = unlockedPlotCount(levelBefore);
 
   farm.exp += amount;
   while (farm.level < MAX_LEVEL && farm.exp >= expForLevel(farm.level)) {
@@ -66,17 +70,36 @@ export function addExpRaw(amount) {
     levelBefore,
     levelAfter: farm.level,
     leveledUp: farm.level > levelBefore,
-    unlockedPlots: unlockedPlotCount(farm.level) - plotsBefore,
+    unlockedPlots: 0,
   };
 
   if (result.leveledUp) {
     notify(`🎉 升级！现在是 Lv.${farm.level}`, 'gold');
     addNews('🎉', `${farm.name} 的农场升到了 Lv.${farm.level}`);
-    if (result.unlockedPlots > 0) {
-      setTimeout(() => notify('🔓 新地块已解锁！'), 700);
-    }
+    broadcastToast(`🎉 升到了 Lv.${farm.level}`);
   }
   return result;
+}
+
+/**
+ * 改昵称。名字只影响**以后**的文案：日志里存的是写入时的整句话，
+ * 旧记录里的旧名字不会跟着变（人名标签靠文本扫描匹配，见 ui/inline-tags.js）。
+ *
+ * @param {string} raw
+ * @returns {Promise<boolean>} 是否真的改了
+ */
+export async function renamePlayer(raw) {
+  const name = String(raw || '')
+    .replace(/[<>&"'`\\]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 10);
+  if (!name || name === state.farm.name) return false;
+
+  state.farm.name = name;
+  await flushPlayer();
+  notify(`📛 以后大家就叫你「${name}」了`);
+  return true;
 }
 
 /* ---------- 农场日志 ---------- */

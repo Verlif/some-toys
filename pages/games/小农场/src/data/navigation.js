@@ -13,6 +13,7 @@ export const MORE_MENU_ITEMS = [
   { key: 'dog',         icon: '🐕', label: '狗窝',   ready: true },
   { key: 'adventure',   icon: '🧭', label: '冒险',   ready: true, action: 'adventure' },
   { key: 'seedshop',    icon: '🌱', label: '种子制造间', ready: true },
+  { key: 'village',     icon: '🏘', label: '村镇',   ready: true, action: 'village' },
   { key: 'ranch',       icon: '🐄', label: '牧场',   ready: false },
   { key: 'settings',    icon: '⚙️', label: '设置',   ready: false },
 ];

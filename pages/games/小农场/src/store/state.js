@@ -18,7 +18,8 @@
  * - 这里不包含任何 DOM 操作。
  */
 import { commit, dropFarms, loadSave } from '../core/storage.js';
-import { INITIAL_COINS, MAX_LEVEL, TOTAL_PLOTS } from '../data/progression.js';
+import { INITIAL_COINS, MAX_LEVEL, TOTAL_PLOTS, unlockedPlotCount } from '../data/progression.js';
+import { FREE_PLOTS } from '../data/plots.js';
 import { SIGN_KEEP_DAYS } from '../data/signin.js';
 import {
   NPCS,
@@ -56,11 +57,17 @@ const HOUR = 3600_000;
 /** 地块上所有「时间戳」字段，读档时要逐个清洗成有限数 */
 const PLOT_TIMES = ['plantedAt', 'readyAt', 'total', 'waterNext', 'pestNext', 'stolenAt'];
 
-/** @type {{farm: object, friends: object[], bag: Record<string, number>,
+/** @type {{farm: object, friends: object[], peers: object[], bag: Record<string, number>,
  *          relations: Record<string, number>, news: object[]}} */
 export const state = {
   farm: null,
+  /** 32 位 NPC：会落库、会被模拟推进 */
   friends: [],
+  /**
+   * 联机来的真人玩家：**只活在内存**，不落库、不参与邻居模拟。
+   * 数据以对方浏览器为准，这里只放只读快照（见 store/peers.js）。
+   */
+  peers: [],
   bag: {},
   /** 好感度：`{ "npc01|npc02": 45 }`，一对只有一条，0 不落键 */
   relations: {},
@@ -114,10 +121,12 @@ function createPlayerFarm() {
   };
 }
 
-/** 新地块 */
+/** 新地块：开局前 6 块可用，其余等玩家花金币买（见 data/plots.js） */
 function createPlot(id) {
   return {
     id,
+    /** 这块地能不能种 —— 落库存档，等级不再决定它 */
+    usable: id < FREE_PLOTS,
     cropId: null,
     /** 本轮已经收获过几次，用于多茬作物的再生判定 */
     harvested: 0,
@@ -208,9 +217,11 @@ function migrateCare(merged, raw) {
 }
 
 /** 玩家地块 */
-function normalizePlot(plot, index) {
+function normalizePlot(plot, index, fallbackUsable = false) {
   const merged = cleanTimes({ ...createPlot(index), ...plot });
   merged.id = safeNum(merged.id, index);
+  /* 老存档没有 usable：按以前「等级解锁」的结果折算，玩家不会因为改版掉地 */
+  merged.usable = typeof plot?.usable === 'boolean' ? plot.usable : Boolean(fallbackUsable || merged.usable);
   merged.fert = Boolean(merged.fert);
   merged.yieldBonus = safeNum(merged.yieldBonus, 0);
   merged.boost = safeNum(merged.boost, 0);
@@ -315,7 +326,11 @@ function normalizePlayerFarm(row, save) {
   };
 
   // 地块：不足 TOTAL_PLOTS 就补齐，多的不删
-  const saved = (save.plots[PLAYER_ID] || []).map(normalizePlot);
+  // 老档的可用地块数 = 以前按等级算出来的数量；新档每块地自带 usable
+  const legacyUsable = unlockedPlotCount(farm.level);
+  const saved = (save.plots[PLAYER_ID] || []).map(
+    (plot, i) => normalizePlot(plot, i, (plot?.id ?? i) < legacyUsable),
+  );
   for (let id = 0; id < TOTAL_PLOTS; id += 1) {
     if (!saved.some((p) => p.id === id)) farm.plots.push(createPlot(id));
   }
@@ -442,7 +457,13 @@ export function getPlot(plotId) {
   return state.farm.plots.find((plot) => plot.id === plotId);
 }
 
-/** 按 id 取邻居农场 */
+/**
+ * 按 id 取邻居农场。
+ *
+ * 先查 NPC，再查联机名册 —— 弹窗、记录里的人名标签、时报都只认这一处，
+ * 所以「点开真人农场」与「点开 NPC 农场」走的是同一套 UI。
+ */
 export function getFriend(friendId) {
-  return state.friends.find((friend) => friend.id === friendId);
+  return state.friends.find((friend) => friend.id === friendId)
+    || state.peers.find((peer) => peer.id === friendId);
 }

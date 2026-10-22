@@ -8,13 +8,8 @@
 import { byId, escapeHtml } from '../core/dom.js';
 import { on, EVENTS } from '../core/bus.js';
 import { state } from '../store/state.js';
-import {
-  expForLevel,
-  MAX_LEVEL,
-  PLOT_UNLOCK_LV,
-  TOTAL_PLOTS,
-  unlockedPlotCount,
-} from '../data/progression.js';
+import { expForLevel, MAX_LEVEL, TOTAL_PLOTS } from '../data/progression.js';
+import { unlockedPlotCount } from '../store/farm.js';
 import { SOILS } from '../data/soils.js';
 import { codexSummary } from '../store/codex.js';
 import { currentStreak } from '../store/signin.js';
@@ -89,7 +84,7 @@ export function renderHud() {
   els.dExpBar.style.width = `${percent}%`;
 
   els.dNextTitle.textContent = nextTitle();
-  els.dPlots.textContent = `${unlockedPlotCount(level)} / ${TOTAL_PLOTS}`;
+  els.dPlots.textContent = `${unlockedPlotCount()} / ${TOTAL_PLOTS}`;
   const soil = soilStats();
   els.dSoil.textContent = soilText(soil);
   els.dSoil.title = soilTitle(soil);
@@ -103,11 +98,11 @@ export function renderHud() {
  * @returns {{counts: Record<string, number>, unlocked: number, avgMul: number}}
  */
 function soilStats() {
-  const unlocked = unlockedPlotCount(state.farm.level);
+  const unlocked = unlockedPlotCount();
   const counts = {};
   let mulSum = 0;
   for (const plot of state.farm.plots) {
-    if (plot.id >= unlocked) continue;
+    if (!plot.usable) continue;
     const soil = SOILS[plot.soil] || SOILS.normal;
     counts[plot.soil || 'normal'] = (counts[plot.soil || 'normal'] || 0) + 1;
     mulSum += soil.yieldMul;
@@ -136,11 +131,6 @@ function soilTitle({ counts, avgMul }) {
     .map((id) => `${SOILS[id].name} ×${counts[id]}（产量 ×${SOILS[id].yieldMul.toFixed(2)}）`);
   const bonus = Math.round((avgMul - 1) * 100);
   return `${rows.join('\n')}\n平均产量 ${bonus >= 0 ? '+' : ''}${bonus}%`;
-}
-
-/** 下一块待解锁土地要多少级，用于「下一块地」提示 */
-export function nextPlotLevel(level) {
-  return PLOT_UNLOCK_LV.find((need) => need > level);
 }
 
 /** 展开 / 收起详情面板 */

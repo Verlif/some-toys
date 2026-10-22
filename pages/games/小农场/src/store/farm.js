@@ -13,7 +13,7 @@ import { CROPS, expOf } from '../data/crops.js';
 import { ITEMS } from '../data/items.js';
 import { hasTool, useTool } from './tools.js';
 import { SOILS, nextSoilId } from '../data/soils.js';
-import { unlockedPlotCount as countUnlocked } from '../data/progression.js';
+import { plotPrice } from '../data/plots.js';
 import { seedId, produceId } from '../data/keys.js';
 import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
 import { carePenalty, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
@@ -21,17 +21,57 @@ import { stageBounds } from '../data/stages.js';
 import { randInt } from '../core/utils.js';
 import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
 import { notify } from './notify.js';
+import { broadcastToast } from './peers.js';
 
 /** 一次再生轮次的最短时长，防止高等级作物的 regrow 系数把时间压没 */
 const MIN_REGROW_MS = 30_000;
 
 /* ---------- 查询 ---------- */
 
-/** 地块是否已解锁 */
-const isUnlocked = (plot) => plot.id < countUnlocked(state.farm.level);
+/**
+ * 地块是否可用。
+ *
+ * 字段落在地块自己身上（`plot.usable`），等级不再决定它 ——
+ * 这样联机同步时只发「对方用得上的地」，买地也才有意义。
+ */
+const isUnlocked = (plot) => plot.usable === true;
 
-/** 当前已解锁的地块总数 */
-export const unlockedPlotCount = () => countUnlocked(state.farm.level);
+/** 当前可用的地块总数 */
+export const unlockedPlotCount = () => state.farm.plots.filter((plot) => plot.usable).length;
+
+/** 下一块还没买的地（按 id 顺序，只能从头买起） */
+export const nextLockedPlot = () => state.farm.plots.find((plot) => !plot.usable) || null;
+
+/** 下一块地的价格；全部买完返回 0 */
+export const nextPlotPrice = () => (nextLockedPlot() ? plotPrice(unlockedPlotCount()) : 0);
+
+/**
+ * 买下下一块地。价格随已拥有数量上涨（见 data/plots.js）。
+ * @returns {Promise<boolean>} 是否买成
+ */
+export async function unlockPlot() {
+  const plot = nextLockedPlot();
+  if (!plot) {
+    notify('所有地块都已经买下了');
+    return false;
+  }
+  const price = plotPrice(unlockedPlotCount());
+  if (!player.spendCoins(price)) {
+    notify(`💰 金币不够，这块地要 ${price} 金币`);
+    return false;
+  }
+
+  plot.usable = true;
+  const owned = unlockedPlotCount();
+  player.addLog('🔓', `花 ${price} 金币买下第 ${owned} 块地`);
+
+  await commit({ farms: [state.farm] });
+  emit(EVENTS.FARM);
+  emit(EVENTS.PLAYER);
+
+  notify(`🔓 买下第 ${owned} 块地（-${price} 金币）`, 'gold');
+  return true;
+}
 
 /** 地块状态：'locked' | 'empty' | 'growing' | 'ripe' */
 export function plotStatus(plot) {
@@ -220,6 +260,8 @@ export async function plant(plotId, cropId) {
   await persist();
   await completeGuide('plant');
   notify(`${crop.emoji} 种下了 ${crop.name}（${soil.name}）`);
+  // 村镇里的重要动态：播种是每天都会发生的事，但也是别人最想知道的
+  broadcastToast(`🌱 种下了 ${crop.name}`);
   return true;
 }
 

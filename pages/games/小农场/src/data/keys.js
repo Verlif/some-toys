@@ -41,3 +41,23 @@ export function itemLabel(id) {
   const item = ITEMS[id];
   return item ? `${item.emoji}${item.name}` : id;
 }
+/**
+ * 这个背包 key 是不是游戏里真实存在的东西。
+ *
+ * 联机收礼要用：对方可以随便发字符串过来，认不出来的 key 直接丢掉，
+ * 不能让「crop_不存在」这种脏数据进背包。
+ * @param {string} id
+ * @returns {boolean}
+ */
+export function isItemKey(id) {
+  if (typeof id !== 'string' || !id) return false;
+  // 用 hasOwn 而不是直接下标：`ITEMS['__proto__']` 会拿到原型对象，是个真值
+  const own = (table, key) => Object.prototype.hasOwnProperty.call(table, key);
+  if (id.startsWith(SEED_PREFIX)) return own(CROPS, id.slice(SEED_PREFIX.length));
+  if (id.startsWith(PRODUCE_PREFIX)) return own(CROPS, id.slice(PRODUCE_PREFIX.length));
+  if (id.startsWith(MAP_PREFIX)) {
+    const tier = Number(id.slice(MAP_PREFIX.length));
+    return MAP_TIERS.some((m) => m.tier === tier);
+  }
+  return own(ITEMS, id);
+}

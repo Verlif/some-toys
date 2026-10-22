@@ -10,12 +10,13 @@
  * 滚动位置与日志区的视口都保持不变。
  */
 import { escapeHtml } from '../core/dom.js';
-import { PLAYER_ID, getFriend } from '../store/state.js';
+import { PLAYER_ID, getFriend, state } from '../store/state.js';
 import * as social from '../store/social.js';
 import { completeGuide } from '../store/codex.js';
 import { CROPS, CROP_IDS } from '../data/crops.js';
+import { ITEMS } from '../data/items.js';
 import { SOILS } from '../data/soils.js';
-import { produceId } from '../data/keys.js';
+import { isItemKey, itemLabel, produceId } from '../data/keys.js';
 import { clampRelation, giftRelGain } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
 import { PERSONALITIES, STEAL_LABELS } from '../data/friends.js';
@@ -27,7 +28,11 @@ import { fmtDuration, formatCoins } from '../core/utils.js';
 import { notify } from '../store/notify.js';
 import { closeModal, openModal } from './modal.js';
 import { openCropModal } from './crop-detail.js';
+import { openSeedModal } from './seed-detail.js';
 import { recordItemsHTML } from './records.js';
+import { sendGiftToPeer } from '../store/peer-gift.js';
+import { fertPeer, pestPeer, stealPeer, waterPeer } from '../store/peer-actions.js';
+import { on, EVENTS } from '../core/bus.js';
 
 /**
  * 弹窗里一块地的卡片。
@@ -65,17 +70,26 @@ function plotCardHTML(friend, index, now) {
   const crop = CROPS[plot.cropId];
   const wantWater = social.needsWater(plot, now);
   const wantPest = social.needsPest(plot, now);
+  // 联机好友的地由对方执行操作，动作名带 peer- 前缀
+  const remote = friend.net === true;
+  const act = (name) => (remote ? `peer-${name}` : `npc-${name}`);
 
   // 照料按钮：只有真的缺水 / 生虫时才出现
   // 做成小图标按钮，这样一格里能同时放下「偷」和两个照料按钮，格子高度才统一
   const care = [
-    wantWater ? `<button class="icon-btn warn" data-action="npc-water" data-id="${friend.id}"
+    wantWater ? `<button class="icon-btn warn" data-action="${act('water')}" data-id="${friend.id}"
       data-plot="${index}" title="帮忙浇水（+经验）">💧</button>` : '',
-    wantPest ? `<button class="icon-btn warn" data-action="npc-pest" data-id="${friend.id}"
+    wantPest ? `<button class="icon-btn warn" data-action="${act('pest')}" data-id="${friend.id}"
       data-plot="${index}" title="帮忙捉虫（+经验）">🐛</button>` : '',
   ].join('');
 
-  if (social.isStealable(plot, now)) {
+  // 施肥：只对真人的地开放（用访客自己的化肥，对方确认后才扣）
+  const fertBtn = remote && now < plot.readyAt && !plot.fert
+    ? `<button class="icon-btn" data-action="peer-fert" data-id="${friend.id}" data-plot="${index}"
+        title="帮忙施肥（用你自己的化肥）">🧪</button>`
+    : '';
+
+  if (social.isStealable(plot, now) && !plot.guarded) {
     const left = crop.harvests - (plot.harvested || 0);
     return base({
       cls: 'ripe',
@@ -84,7 +98,7 @@ function plotCardHTML(friend, index, now) {
         <div class="np-name">${crop.name}</div>
         <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>
         <div class="np-acts">
-          <button class="btn small harvest" data-action="steal" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>
+          <button class="btn small harvest" data-action="${act('steal')}" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>
           ${care}
         </div>`,
     });
@@ -113,7 +127,7 @@ function plotCardHTML(friend, index, now) {
       <div class="np-name">${crop.name}</div>
       <div class="np-meta">${stageName(stage)}</div>
       <div class="np-time">${fmtDuration(plot.readyAt - now)}</div>
-      ${care ? `<div class="np-acts">${care}</div>` : ''}`,
+      ${care || fertBtn ? `<div class="np-acts">${care}${fertBtn}</div>` : ''}`,
   });
 }
 
@@ -174,6 +188,7 @@ function flagBadge(plot) {
 
 /** 弹窗底部那句提示，状态变了要跟着换 */
 function tipText(friend, now) {
+  if (friend.net) return '🛰 联机好友的农场：可以帮忙浇水 / 杀虫 / 施肥，也能偷菜（每块地每轮 1 个，被狗抓住要赔钱）。';
   return social.needsHelp(friend, now)
     ? '有地缺水或生虫了 —— 在对应的地块上点 💧 或 🐛 帮忙，能拿到经验。'
     : '偷菜会让邻居不高兴，但也是一种社交方式。';
@@ -212,6 +227,7 @@ function logBoxHTML(friend, now) {
  * 有几件工具就出几颗；一件都没有时这一格是空的（标题照常显示）。
  */
 function secToolsHTML(friend, now) {
+  if (friend.net) return '';   // 联机好友：只读
   // Infinity = 买过永久版；0 = 没有这件工具，按钮不出现
   const water = toolUses('water');
   const pest = toolUses('pest');
@@ -231,8 +247,9 @@ function secToolsHTML(friend, now) {
 }
 
 /** 底部只剩送礼：这是唯一能主动拉近关系的操作 */
-const quickButtons = (friend) =>
-  `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>`;
+const quickButtons = (friend) => (friend.net
+  ? `<button class="btn small" data-action="peer-gift-open" data-id="${friend.id}">🎁 送份礼</button>`
+  : `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>`);
 
 /**
  * 送礼：先从仓库里挑一样农产品，再确认。
@@ -392,6 +409,261 @@ function confirmGift(friendId, cropId, onDone) {
   paint();
 }
 
+/* ---------- 联机好友送礼 ---------- */
+
+/** 背包里送得出去的东西：先农产品（等级高的在前），再道具 / 种子 / 藏宝图 */
+function giftKeys() {
+  const keys = CROP_IDS
+    .filter((id) => count(produceId(id)) > 0)
+    .sort((a, b) => CROPS[b].lv - CROPS[a].lv)
+    .map((id) => produceId(id));
+  for (const itemId of Object.keys(state.bag)) {
+    if (itemId.startsWith('crop_')) continue;
+    if (count(itemId) > 0 && isItemKey(itemId)) keys.push(itemId);
+  }
+  return keys;
+}
+
+/** 把「🌾小麦」拆成图标 + 名字 */
+function splitLabel(itemId) {
+  const label = itemLabel(itemId);
+  const emoji = Array.from(label)[0] || '🎁';
+  return { emoji, name: label.slice(emoji.length) };
+}
+
+/**
+ * 选东西送礼。两块内容分 tab：
+ *   - 仓库：农产品（按等级从高到低）
+ *   - 包裹：种子 / 道具 / 藏宝图
+ *
+ * 行样式照抄仓库与包裹页（`.shop-item` + `si-*`），点行本身看详情 ——
+ * 和在自己仓库里挑东西的体验一致，不用为「送礼」再学一套。
+ *
+ * @param {object} friend 联机好友
+ * @param {'bag'|'package'} [initialTab]
+ */
+function openPeerGiftPicker(friend, initialTab = 'bag') {
+  let tab = initialTab;
+
+  /** 仓库 tab：产出行 */
+  const bagRows = () => CROP_IDS
+    .filter((id) => count(produceId(id)) > 0)
+    .sort((a, b) => CROPS[b].lv - CROPS[a].lv)
+    .map((cropId) => {
+      const itemId = produceId(cropId);
+      const crop = CROPS[cropId];
+      return `
+        <div class="shop-item pickable" data-action="peer-gift-info" data-kind="produce" data-crop="${cropId}">
+          <div class="si-emoji">${crop.emoji}</div>
+          <div class="si-body">
+            <div class="si-name">${escapeHtml(crop.name)}</div>
+            <div class="si-meta">Lv.${crop.lv} · 单价 ${crop.sell} · 拥有 ${count(itemId)}</div>
+          </div>
+          <button class="btn small ghost" data-action="peer-gift-ask" data-id="${itemId}">选这个</button>
+        </div>`;
+    }).join('');
+
+  /** 包裹 tab：种子 / 道具 / 藏宝图 */
+  const packageRows = () => Object.keys(state.bag)
+    .filter((itemId) => !itemId.startsWith('crop_') && count(itemId) > 0 && isItemKey(itemId))
+    .map((itemId) => {
+      const { emoji, name } = splitLabel(itemId);
+      const cropId = itemId.startsWith('seed_') ? itemId.slice(5) : '';
+      const item = ITEMS[itemId];
+      const desc = cropId && CROPS[cropId]
+        ? `Lv.${CROPS[cropId].lv} · 成熟需 ${fmtDuration(CROPS[cropId].grow * 1000)}`
+        : (item?.desc || '');
+      const clickable = cropId ? ` data-action="peer-gift-info" data-kind="seed" data-crop="${cropId}"` : '';
+      return `
+        <div class="shop-item${cropId ? ' pickable' : ''}"${clickable}>
+          <div class="si-emoji">${emoji}</div>
+          <div class="si-body">
+            <div class="si-name">${escapeHtml(name)}</div>
+            <div class="si-meta">${escapeHtml(desc)}</div>
+          </div>
+          <span class="si-count">×${count(itemId)}</span>
+          <button class="btn small ghost" data-action="peer-gift-ask" data-id="${itemId}">选这个</button>
+        </div>`;
+    }).join('');
+
+  const rowsHTML = () => {
+    const rows = tab === 'bag' ? bagRows() : packageRows();
+    return rows || `<div class="empty-tip">${tab === 'bag'
+      ? '🧺<br>仓库里还没有农产品<br>先去收获一轮'
+      : '🎒<br>包裹里空空的<br>买点种子或道具再来'}</div>`;
+  };
+
+  const tabsHTML = () => `
+    <div class="gift-tabs">
+      <button class="filter-chip ${tab === 'bag' ? 'active' : ''}"
+              data-action="peer-gift-tab" data-id="bag">🧺 仓库</button>
+      <button class="filter-chip ${tab === 'package' ? 'active' : ''}"
+              data-action="peer-gift-tab" data-id="package">🎒 包裹</button>
+    </div>`;
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🎁 送份礼 · ${escapeHtml(friend.name)}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">送出去的东西对方点「收下」才到账；拒收或 90 秒不回应会自动退回</div>
+    <div class="list" data-role="gift-body">${rowsHTML()}</div>
+    ${tabsHTML()}
+  `, (action, el) => {
+    if (action === 'peer-gift-tab') {
+      if (el.dataset.id === tab) return;
+      tab = el.dataset.id;
+      const card = document.querySelector('#modal .modal-card');
+      if (!card) return;
+      card.querySelector('[data-role="gift-body"]').innerHTML = rowsHTML();
+      card.querySelectorAll('[data-action="peer-gift-tab"]').forEach((chip) => {
+        chip.classList.toggle('active', chip.dataset.id === tab);
+      });
+      return;
+    }
+    if (action === 'peer-gift-info') {
+      const cropId = el.dataset.crop;
+      if (!CROPS[cropId]) return;
+      if (el.dataset.kind === 'seed') {
+        openSeedModal(cropId, { buy: false });
+        return;
+      }
+      const n = count(produceId(cropId));
+      openCropModal(cropId, {
+        status: [
+          `<span class="sd-chip">仓库 ${n} 份</span>`,
+          `<span class="sd-chip">单价 💰${CROPS[cropId].sell}</span>`,
+        ].join(''),
+        foot: '这是你自己的库存，关掉详情再点「选这个」就能送人',
+      });
+      return;
+    }
+    if (action !== 'peer-gift-ask') return;
+    openPeerGiftConfirm(friend, el.dataset.id);
+  });
+}
+
+/**
+ * 选中一样之后确认份数。送出即从背包扣掉，对方拒收 / 超时会自动退回。
+ * @param {object} friend
+ * @param {string} itemId
+ */
+function openPeerGiftConfirm(friend, itemId) {
+  const have = count(itemId);
+  if (have <= 0) {
+    notify('背包里已经没有了');
+    return;
+  }
+  const { emoji, name } = splitLabel(itemId);
+  let qty = 1;
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🎁 送出前确认</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="sd-hero">
+      <div class="sd-emoji">${emoji}</div>
+      <div class="sd-id">
+        <div class="sd-name">${escapeHtml(name)}</div>
+        <div class="sd-tags"><span class="sd-chip">送出后等他确认</span></div>
+      </div>
+    </div>
+    <div class="sd-grid">
+      <div class="sd-cell"><span>送给</span><b>${escapeHtml(friend.name)}</b></div>
+      <div class="sd-cell"><span>背包现有</span><b>${have} 份</b></div>
+      <div class="sd-cell"><span>送出后剩余</span><b data-role="left">${have - 1} 份</b></div>
+      <div class="sd-cell"><span>到账方式</span><b>对方点收下</b></div>
+    </div>
+    <div class="sd-gain">对方拒收或 90 秒不回应，东西会退回来，不会凭空消失</div>
+    <div class="gift-confirm">
+      <div class="qty">
+        <button class="qty-btn" data-action="peer-gift-minus" aria-label="减少数量">−</button>
+        <span class="qty-num" data-role="qty">1</span>
+        <button class="qty-btn" data-action="peer-gift-plus" aria-label="增加数量">+</button>
+      </div>
+      ${have > 1 ? '<button class="gift-max" data-action="peer-gift-max">全送</button>' : ''}
+      <div class="gift-confirm-btns">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn" data-action="peer-gift-send" data-role="send">确认送出</button>
+      </div>
+    </div>
+  `, (action) => {
+    if (action === 'peer-gift-minus' || action === 'peer-gift-plus' || action === 'peer-gift-max') {
+      if (action === 'peer-gift-max') qty = have;
+      else qty = Math.min(have, Math.max(1, qty + (action === 'peer-gift-plus' ? 1 : -1)));
+      paintPeerGift();
+      return;
+    }
+    if (action !== 'peer-gift-send') return;
+    if (sendGiftToPeer(friend.connectId, itemId, qty)) closeModal();
+  });
+
+  /** 同步份数到界面（不改状态） */
+  function paintPeerGift() {
+    const card = document.querySelector('#modal .modal-card');
+    if (!card) return;
+    card.querySelector('[data-role="qty"]').textContent = qty;
+    card.querySelector('[data-role="left"]').textContent = `${have - qty} 份`;
+    card.querySelector('[data-role="send"]').textContent = `确认送出 ${qty} 份`;
+    card.querySelector('[data-action="peer-gift-minus"]').disabled = qty <= 1;
+    card.querySelector('[data-action="peer-gift-plus"]').disabled = qty >= have;
+  }
+
+  paintPeerGift();
+}
+
+/**
+ * 帮联机好友施肥：只能用**自己包裹里**的化肥。
+ * 效果与给自己施肥一致，由对方在自己的地上执行。
+ * @param {object} friend
+ * @param {number} index 地块序号
+ */
+function openPeerFertPicker(friend, index) {
+  const owned = Object.keys(ITEMS).filter((id) => ITEMS[id].fert && count(id) > 0);
+  const rows = owned.map((id) => {
+    const item = ITEMS[id];
+    return `
+      <div class="shop-item">
+        <div class="si-emoji">${item.emoji}</div>
+        <div class="si-body">
+          <div class="si-name">${escapeHtml(item.name)}</div>
+          <div class="si-meta">${escapeHtml(item.desc || '')}</div>
+        </div>
+        <span class="si-count">×${count(id)}</span>
+        <button class="btn small ghost" data-action="peer-fert-use" data-id="${id}"
+                data-plot="${index}">使用</button>
+      </div>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🧪 帮 ${escapeHtml(friend.name)} 施肥</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">用你自己的化肥；对方确认生效后才会从包裹里扣掉</div>
+    ${owned.length
+      ? `<div class="list">${rows}</div>`
+      : '<div class="empty-tip">🧪<br>包裹里没有化肥了<br>去商店买一点</div>'}
+  `, async (action, el) => {
+    // 叠层：动作只会派给最上面这张卡，所以「使用」必须在这里处理，
+    // 不能指望下面那层邻居弹窗接住
+    if (action !== 'peer-fert-use') return;
+    await fertPeer(friend.connectId, Number(el.dataset.plot), el.dataset.id);
+    closeModal();
+  });
+}
+
+/**
+ * 联机好友的农场不收推送就过期了：对方一动手，这里把弹窗里的地块与信息刷一遍。
+ * 只重绘内容，不改滚动位置。
+ */
+let livePeer = null;
+
+on(EVENTS.PEER, (farmId) => {
+  if (livePeer && livePeer.id === farmId) livePeer.refresh();
+});
+
 /**
  * 拜访弹窗。顶部的信息区拆成独立的卡片，而不是把一堆文字挤在一行里。
  * 地块格子统一高度：按钮用 margin-top:auto 顶到底部，
@@ -402,6 +674,8 @@ function confirmGift(friendId, cropId, onDone) {
 export function openFriendModal(friendId) {
   const friend = getFriend(friendId);
   if (!friend) return;
+  // 联机好友：数据是对方浏览器的只读快照，所有会改状态的操作都不做
+  const remote = friend.net === true;
   // 串门本身就是引导目标：打开任意一座邻居农场就算「第一次串门」
   completeGuide('visit');
   const now = Date.now();
@@ -422,7 +696,8 @@ export function openFriendModal(friendId) {
       { k: '等级', v: `Lv.${current.level}` },
       { k: '身家', v: `${formatCoins(current.coins)} 💰` },
       { k: '地块', v: `${current.plots.length} 块` },
-      {
+      // 联机好友还没有好感度体系（P1 只读），别拿本地的 0 糊弄人
+      current.net ? null : {
         k: '好感',
         v: `<span class="rel-tag rel-${rel.key}">${rel.label} ${rel.text}</span>`,
       },
@@ -433,8 +708,11 @@ export function openFriendModal(friendId) {
           ? `${breedInfo.emoji} ${breedInfo.name} · ${satiety > 0 ? `${satiety}% 在看家` : '饿着，不设防'}`
           : '🐶 没有狗',
       },
-      { k: '偷菜', wide: true, v: STEAL_LABELS[current.steal] || '偶尔顺菜' },
-    ].map((s) => `<div class="npc-stat${s.wide ? ' wide' : ''}"><span>${s.k}</span><b>${s.v}</b></div>`)
+      current.net
+        ? { k: '来历', wide: true, v: '🛰 联机好友' }
+        : { k: '偷菜', wide: true, v: STEAL_LABELS[current.steal] || '偶尔顺菜' },
+    ].filter(Boolean)
+      .map((s) => `<div class="npc-stat${s.wide ? ' wide' : ''}"><span>${s.k}</span><b>${s.v}</b></div>`)
       .join('');
   }
 
@@ -445,8 +723,8 @@ export function openFriendModal(friendId) {
     const badge = document.querySelector('#modal [data-role="badge"]');
     const left = social.stealableCount(current, at);
     if (badge) {
-      badge.textContent = left > 0 ? `可偷 ${left}` : '暂无可偷';
-      badge.classList.toggle('ripe', left > 0);
+      badge.textContent = current.net ? '🛰 联机' : left > 0 ? `可偷 ${left}` : '暂无可偷';
+      badge.classList.toggle('ripe', left > 0 && !current.net);
     }
 
     const tip = document.querySelector('#modal [data-role="tip"]');
@@ -485,6 +763,9 @@ export function openFriendModal(friendId) {
     refreshChrome(current, at);
   }
 
+  // 联机好友的弹窗要跟着对方的推送实时刷新
+  livePeer = { id: friend.id, refresh: () => refreshAll() };
+
   /** 整片地块重绘：被狗抓住、一键照料这类会同时改动很多格的操作走这里 */
   function refreshAll() {
     const current = getFriend(friendId);
@@ -503,12 +784,12 @@ export function openFriendModal(friendId) {
       <div class="npc-id">
         <div class="npc-name">${escapeHtml(friend.name)}</div>
         <div class="npc-sub">
-          ${escapeHtml(PERSONALITIES[friend.personality]?.name || '邻居')}
+          ${remote ? '联机好友' : escapeHtml(PERSONALITIES[friend.personality]?.name || '邻居')}
           · ${escapeHtml(friend.profession || '农户')}
         </div>
       </div>
-      <div class="npc-badge ${stealable > 0 ? 'ripe' : ''}" data-role="badge">
-        ${stealable > 0 ? `可偷 ${stealable}` : '暂无可偷'}
+      <div class="npc-badge ${stealable > 0 && !remote ? 'ripe' : ''}" data-role="badge">
+        ${remote ? '🛰 联机' : stealable > 0 ? `可偷 ${stealable}` : '暂无可偷'}
       </div>
     </div>
 
@@ -529,6 +810,34 @@ export function openFriendModal(friendId) {
     <p class="npc-tip" data-role="tip">${tipText(friend, now)}</p>
   `, async (action, el) => {
     const index = Number(el.dataset.plot);
+    // 联机好友：详情、送礼、照料、偷菜走各自的通道，其它一律不接
+    if (remote && action === 'peer-water') {
+      await waterPeer(friend.connectId, index);
+      return;
+    }
+    if (remote && action === 'peer-pest') {
+      await pestPeer(friend.connectId, index);
+      return;
+    }
+    if (remote && action === 'peer-steal') {
+      const result = await stealPeer(friend.connectId, index);
+      if (result?.caught) refreshAll();
+      return;
+    }
+    if (remote && action === 'peer-fert') {
+      openPeerFertPicker(friend, index);
+      return;
+    }
+    if (remote && action === 'peer-fert-use') {
+      await fertPeer(friend.connectId, Number(el.dataset.plot), el.dataset.id);
+      closeModal();
+      return;
+    }
+    if (remote && action !== 'crop-info' && action !== 'peer-gift-open') return;
+    if (action === 'peer-gift-open') {
+      openPeerGiftPicker(friend);
+      return;
+    }
     if (action === 'gift-open') {
       openGiftPicker(friendId, () => refreshChrome(getFriend(friendId), Date.now()));
       return;

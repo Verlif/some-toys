@@ -8,6 +8,7 @@ import { renderShop, setShopTab } from './views/shop.js';
 import { enterFriendsPage } from './views/friends.js';
 import { enterNewsPage } from './views/news.js';
 import { openSheet } from './sheet.js';
+import { openVillage } from './village-sheet.js';
 
 /** 页面 id → 进入该页时要做的事。邻居页特殊一些：进入时要先补算离线结算。 */
 const PAGE_ENTER = {
@@ -65,6 +66,11 @@ export function mountTabs() {
   delegate(byId('tabbar'), 'click', 'button', (btn) => {
     if (btn.dataset.sheet !== undefined) {
       openSheet();
+      return;
+    }
+    // 村镇不是主页面，是一个浮窗（进村后才在中间出现）
+    if (btn.dataset.village !== undefined) {
+      openVillage();
       return;
     }
     activatePage(btn.dataset.page);

@@ -7,6 +7,7 @@ import { on, EVENTS } from '../core/bus.js';
 import { MORE_MENU_ITEMS, NOT_READY_TOAST } from '../data/navigation.js';
 import { openSubpage } from './subpage.js';
 import { openAdventureLauncher } from './adventure.js';
+import { openVillage } from './village-sheet.js';
 import { showToast } from './toast.js';
 import { dragToClose } from './drag-close.js';
 import { claimableCount } from '../store/titles.js';
@@ -61,6 +62,7 @@ export function mountSheet() {
     // 等浮窗收起动画走完再推开子页面，避免两层位移打架
     setTimeout(() => {
       if (item.action === 'adventure') openAdventureLauncher();
+      else if (item.action === 'village') openVillage();
       else openSubpage(item.key);
     }, 130);
   });

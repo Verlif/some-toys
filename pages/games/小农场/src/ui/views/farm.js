@@ -15,7 +15,6 @@ import { CROPS, CROP_ARCHS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeco
 import { FERTILIZER_IDS, ITEMS } from '../../data/items.js';
 import { toolCountText, toolUses } from '../../store/tools.js';
 import { SOILS } from '../../data/soils.js';
-import { PLOT_UNLOCK_LV } from '../../data/progression.js';
 import { seedId } from '../../data/keys.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
@@ -39,14 +38,20 @@ let grid = null;
  *               固定宽度、不撑开格子，按钮再多也不会挤出滚动条
  */
 
-function lockedHTML(plot) {
-  // 锁定中的地不摆图标，只留一行「Lv.X 解锁」；但占位盒要和作物图标
-  // 一样大，下面的文字才能落在和已播种地块相同的高度上 ——
-  // 同一片网格里忽高忽低，看着像少了几块地
+/**
+ * 荒地：还没买下的地。
+ *
+ * 占位盒和作物图标一样大，下面的文字才落在与已播种地块相同的高度上 ——
+ * 同一片网格里忽高忽低，看着像少了几块地。
+ * 价格跟着已拥有数量涨，按钮上直接写出来，不用点进去才知道多少钱。
+ */
+function lockedHTML() {
+  const price = farm.nextPlotPrice();
   return `
     <div class="plot-main">
       <div class="plot-lock" aria-hidden="true"></div>
-      <div class="plot-sub">Lv.${PLOT_UNLOCK_LV[plot.id]} 解锁</div>
+      <div class="plot-sub">荒地 · 未开垦</div>
+      <button class="btn small unlock" data-action="unlock-plot">🔓 ${price} 💰</button>
     </div>`;
 }
 
@@ -159,7 +164,7 @@ function ripeHTML(plot) {
 }
 
 function plotInnerHTML(plot, status) {
-  if (status === 'locked') return lockedHTML(plot);
+  if (status === 'locked') return lockedHTML();
   if (status === 'empty') return emptyHTML(plot);
   if (status === 'ripe') return ripeHTML(plot);
   return growingHTML(plot);
@@ -198,13 +203,13 @@ const FOLD_KEY = '__locked-more';
  * 未解锁地块最多只画第一个，其余全部折叠成一行汇总。
  * 40 块地逐个画锁图标既占地方又没有信息量。
  */
-function foldHTML(count, nextLv) {
+function foldHTML(count, price) {
   return `
     <div class="plot-fold">
       <div class="plot-fold-icon">🔒</div>
       <div class="plot-fold-text">
-        还有 <b>${count}</b> 块地待解锁
-        ${nextLv ? `· 下一块在 <b>Lv.${nextLv}</b>` : ''}
+        还有 <b>${count}</b> 块荒地待开垦
+        ${price ? `· 下一块 <b>${price}</b> 💰` : ''}
       </div>
     </div>`;
 }
@@ -236,15 +241,12 @@ export function renderFarm() {
     updateNode(node, plot, status, key);
   }
 
-  // 折叠行
-  // 「下一块在 Lv.X 解锁」说的是**紧跟着已解锁部分的那一块**，
-  // 也就是 id = 已解锁数量的那块。之前错用了最后一块锁定地，
-  // 于是永远显示 Lv200。
-  const nextLv = firstLocked === null ? 0 : PLOT_UNLOCK_LV[firstLocked];
-  const foldKey = `fold-${lockedCount}-${nextLv}`;
+  // 折叠行：荒地按 id 顺序买，所以价格永远是「下一块」的价
+  const nextPrice = farm.nextPlotPrice();
+  const foldKey = `fold-${lockedCount}-${nextPrice}`;
   const foldNode = ensureNode(FOLD_KEY, foldKey, null, 'fold');
   if (lockedCount > 1) {
-    updateNode(foldNode, { id: FOLD_KEY, count: lockedCount - 1, nextLv }, 'fold', foldKey);
+    updateNode(foldNode, { id: FOLD_KEY, count: lockedCount - 1, price: nextPrice }, 'fold', foldKey);
   } else {
     foldNode.el.remove();
     nodes.delete(FOLD_KEY);
@@ -348,7 +350,7 @@ function updateNode(node, plot, status, key) {
     node.key = key;
     if (status === 'fold') {
       node.el.className = 'plot-fold';
-      node.el.innerHTML = foldHTML(plot.count, plot.nextLv);
+      node.el.innerHTML = foldHTML(plot.count, plot.price);
       return;
     }
 
@@ -612,6 +614,7 @@ const PLOT_ACTIONS = {
   fert: (id) => openFertModal(id),
   harvest: (id) => farm.harvest(id),
   remove: (id) => confirmRemove(id),
+  'unlock-plot': () => farm.unlockPlot(),
 };
 
 /** 底部一键照料按钮：与地块上的单块操作是两套入口 */

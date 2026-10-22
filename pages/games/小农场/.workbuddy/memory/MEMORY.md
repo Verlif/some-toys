@@ -1,6 +1,7 @@
 # 项目长期约定 · 文字版阳光牧场
 
 纯前端（原生 ESM、零构建、`node server.mjs`），存档 IndexedDB（`sun_farm_v2`），无后端。
+局域网联机走 WebRTC P2P（`vendor/webconnect.js`，见下「村镇联机」）。
 220 作物（165 商店 + 55 限定）/ 40 块地 / 8 档土地 / 32 位邻居。
 
 ## 工程约定
@@ -29,6 +30,10 @@
   多茬（手写名单，regrow **0.16**）、常规。产量倍率 0.45/2.6/0.28/1.35/0.26/1。
   ⚠️ 售价公式没改（整轮收益÷总产量）；**速生按公式每小时最高**（用户明确要严格公式）。
   换图标改 CATALOG 的 emoji，生成器 emoji 上限是 8 次（原先 3 次逼出一堆色块）。
+- **地块**：不再按等级送，`plot.usable` 落库存档；开局 6 块，之后第 N 块
+  `(已拥有-6)×1000+500`（6→500 … 39→33500，全买 ≈58 万）。`farm.unlockPlot()`
+  只能按 id 顺序买，`unlockedPlotCount()` 数 `usable`。**升级不再给地**（`unlockedPlots` 恒 0）。
+  老档读档时按「原等级解锁数」折算 usable，不会掉地。
 - 经验 `expForLevel(n)=100n(n+1)`（200 级 = Infinity，折算 `expForProgress()`）；只看产出：
   每份 `(作物等级+2) × 土地 expMul`。售价不自由：`整轮收益=(种子价×1.2+等级×10)×(1+0.05×整轮小时)`，
   只该比「每小时金币」。藏宝图：限定种子上限 = 需求等级+10，商店 = 需求等级×2；**`special` 只能挖**。
@@ -162,6 +167,54 @@
   ⚠️ NPC→玩家农场的动作**逻辑一直都有**，用户「看不到」是因为混在同一个 60 条日志里被
   玩家自己的操作刷掉（现已分 tab），外加送礼要好感 ≥60、照料要有缺水/生虫的未成熟地、
   偷菜要 `STEAL_CHANCE` 掷中 —— 这些是门槛不是 bug。
+
+## 村镇联机
+
+- 一个村镇 = 一个房间（channelName），`appName='sun-farm'`，口令留空则用村镇名。
+  配置存 localStorage `sun_farm_village`，进游戏自动回村。
+- **四层**：`net/link.js`（连接与收发，全部是 JSON 字符串）→ `net/protocol.js`
+  （hello / snap / snap:res + 外来数据清洗）→ `store/peers.js`（`state.peers` 名册）
+  → `ui/subpages/village.js`（设置 + 在线名单 + 访问）。
+- **真人 ≠ NPC**：`state.peers` 只在内存，**不落库、不进 `npc-sim`**；`getFriend()`
+  先 friends 后 peers，所以真人与 NPC 共用同一个邻居弹窗。
+- **两个硬前提**：页面必须 https / localhost（库用 `crypto.subtle` 派生房间密钥，
+  非安全上下文直接抛错）；两端都要能上外网（信令走公共 tracker/MQTT/Nostr）。
+  `server.mjs --https` 用 openssl 自动签证书（`certs/`，已 gitignore）；
+  `npm run start:https`。
+- 公共 relay 会常驻控制台红字（`tracker.btorrent.xyz` 500、`relay.nostrdice.com` DNS 失败），
+  **连接仍然成功**，别当 bug 修。
+- 换村镇时旧连接的回调用 `alive()` 拦；库里 `Disconnect()` 在没有 peer 时是空操作，
+  所以额外对三个 room 补 `leave()`。
+- 快照约 10 KB（40 地块 + 12 条日志），`DATA_VERSION = 作物种类数`，不一致拒绝连接；
+  `cleanText()` 按**码点**截断（直接 slice 会劈开 emoji）。
+- **真人农场可动手**：`store/peer-actions.js` 的 `act / act:res / act:pay`。
+  主人权威：访客发请求 → 主人在自己的地上校验并执行 → 回执 → 访客只做自己这侧记账
+  （经验 / 扣化肥 / 拿 1 个产出 / 交罚款）。偷菜每块每轮 1 个（主人 `stolen` 兜底），
+  被狗抓住 → 主人把全场地标 `guarded` + 罚款 `售价×5`，访客扣钱后 `act:pay` 给主人入账
+  （主人回执时 `fines` 记下金额，回款 ≤ 该值）。施肥用**访客自己的**化肥。
+  弹窗地块按 `friend.net` 换 `peer-` 前缀动作；一键照料对真人仍隐藏。
+- **安全**：`link.js` 丢 >48KB 报文、每人 5s 最多 60 条；`protocol` 夹取地块/日志/等级/金币/时间，
+  文本去 `<> & " '` 并按码点截断；`isItemKey` 与 CROPS/SOILS 查表一律 `hasOwnProperty`
+  （`__proto__` 会命中原型对象）；礼物 1~999、同人 3s 一条、最多 10 笔待确认；
+  快照请求 1s 一次；toast 1.5s 一条。
+- **入口**：底部 tab 栏第 3 位（邻居之后）的「村镇」按钮，**进村后才出现**
+  （`[hidden]` 要单独写 `display:none`，否则被 `.tabbar button{display:flex}` 盖掉）；
+  没进村时走「☰ 其他 → 村镇」打开的同一个浮窗（内容是加入表单）。
+  浮窗 `ui/village-sheet.js`：平铺无卡片，村镇名不可编辑 + 右侧昵称，
+  点标题展开（连接号/在线数/昵称/离开），点空白收起且**输入框从 DOM 摘掉**。
+- **孤岛**：加入失败 toast「正处在孤岛中」并退回单机；`quitVillage()` 断连 + 清名册 +
+  localStorage `auto=false`（下次不自动连）；加入成功置 `auto=true`，重开自动回村。
+- **同步**：`peers.js` 监听 `FARM/PLAYER/INVENTORY`，1.2s 节流后广播 `snap:res{push:true}`
+  （无 req）；收方更新名册并 `emit(EVENTS.PEER, id)`，`friend-modal` 就地 `refreshAll()`
+  （滚动位置不变）。
+- **广播**：`broadcastToast(text)`（≤40 字）→ 收方 `avatar 名字：text`。
+  挂点：升级（player）、播种（farm.plant）、稀有种子与冒险结算（adventure）、收礼（peer-gift）。
+- **玩家送礼**（`store/peer-gift.js` + `ui/peer-gift.js`）：`gift:offer → accept → ack{ok}`
+  三段握手。**送方发要约时先扣货**，拒收/90s 超时自动退回；**收方等到 ack 才入包**
+  （防双花）。包裹道具与仓库产出都能送（`isItemKey()` 白名单）。收下后全村广播。
+- 快照只发 `usable` 的地；`peer-gift` 的 `initPeerGift()` 要在 main 里显式调用
+  （它监听 `EVENTS.PEER_MSG`，peers 只负责转发未知报文）。
+- **下一期**：远程偷菜/浇水/杀虫（`reqId` 幂等 + 5s 超时）、真人好感度、邻居页展示真人。
 
 ## 其它
 

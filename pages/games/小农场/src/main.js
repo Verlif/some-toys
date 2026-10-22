@@ -19,6 +19,8 @@ import { mountInlineActions } from './ui/inline-actions.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
 import { mountDogCaught } from './ui/dog-caught.js';
 import { flushOfflineGifts, mountGift } from './ui/gift.js';
+import { mountPeerGift } from './ui/peer-gift.js';
+import { mountVillage } from './ui/village-sheet.js';
 import { mountHud, renderHud } from './ui/hud.js';
 import { mountSubpage, renderCurrent, syncCoins } from './ui/subpage.js';
 import { mountSheet } from './ui/sheet.js';
@@ -30,6 +32,9 @@ import { mountShop, renderShop } from './ui/views/shop.js';
 import { mountFriends, renderFriends, checkOnlineVisits } from './ui/views/friends.js';
 import { mountNews, renderNews } from './ui/views/news.js';
 import { markSessionStart, pollOnline } from './store/social.js';
+import { initPeers, joinVillage, villageConfig } from './store/peers.js';
+import { initPeerGift } from './store/peer-gift.js';
+import { initPeerActions } from './store/peer-actions.js';
 
 /** 地块倒计时刷新间隔 */
 const TICK_MS = 500;
@@ -59,6 +64,8 @@ async function boot() {
   mountSignCelebrate();
   mountDogCaught();
   mountGift();
+  mountPeerGift();
+  mountVillage();
   mountHud();
   mountSubpage();
   mountSheet();
@@ -102,6 +109,15 @@ async function boot() {
 
   // 离线期间邻居送的礼：启动画面收起来之后再整屏补播
   flushOfflineGifts();
+
+  // 联机：上次是「在村镇里」就自动回去；主动退出过的人不再打扰
+  initPeers();
+  initPeerGift();
+  initPeerActions();
+  const village = villageConfig();
+  if (village.name && village.auto) {
+    joinVillage(village.name, village.password).catch((error) => console.error(error));
+  }
 
   /* ⑤ 心跳与轮询 */
   // 心跳只在农场页可见时刷新地块

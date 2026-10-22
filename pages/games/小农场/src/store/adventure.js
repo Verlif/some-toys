@@ -14,6 +14,7 @@ import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { MAP_TIERS, buildRun, describeReward, mapTier } from '../data/adventure.js';
 import { CROPS } from '../data/crops.js';
+import { broadcastToast } from './peers.js';
 import { mapId, produceId, seedId } from '../data/keys.js';
 import { formatCoins } from '../core/utils.js';
 import { addDogBreed, ownedBreedIds } from './dogs.js';
@@ -95,6 +96,8 @@ function announceReward(reward, card) {
     crop: reward.id,
     cat: 'adventure',
   });
+  // 限定种子是稀有事件，值得让全村都知道
+  broadcastToast(`${crop.emoji} 挖到了稀有种子「${crop.name}」`);
 }
 
 /**
@@ -148,6 +151,10 @@ export async function finishRun() {
   if (map && value > map.price * 2) {
     addNews('💰', `${state.farm.name} 在${map.name}里挖到大奖，带回约 ${formatCoins(value)} 的奖励`);
   }
+  // 冒险结算：带回多少件东西，村里的人也想知道
+  broadcastToast(earned.length
+    ? `🧭 冒险归来，带回 ${earned.length} 份奖励`
+    : '🧭 冒险归来，两手空空');
 
   run = null;
   await persist();

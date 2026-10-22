@@ -29,6 +29,12 @@ export const EVENTS = {
   NEWS: 'state:news',
   /** 好感度变化（偷菜掉、打理涨、送礼涨） */
   RELATION: 'state:relation',
+  /** 联机好友的农场有新快照，payload 为对方农场 id（`peer:xxx`） */
+  PEER: 'state:peer',
+  /** 收到联机好友的送礼请求，payload 为请求详情（ui/peer-gift.js 消费） */
+  GIFT_OFFER: 'ui:gift-offer',
+  /** 其它联机报文（送礼回执等），payload 为 { msg, peerId }，由 store/peer-gift.js 消费 */
+  PEER_MSG: 'net:peer-msg',
   /** 收到邻居的赠礼，payload 为 { at, from, avatar, cropId, name, emoji, n, offline } */
   GIFT: 'ui:gift',
   /** 领域层请求弹一条提示，由 UI 层的 toast 组件消费 */

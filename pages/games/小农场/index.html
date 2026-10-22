@@ -95,10 +95,27 @@
   <nav class="tabbar" id="tabbar">
     <button data-page="farm" class="active"><span>🌱</span>农场</button>
     <button data-page="friends"><span>👥</span>邻居</button>
+    <button data-village hidden><span>🏘</span>村镇</button>
     <button data-page="news"><span>📰</span>时报</button>
     <button data-page="shop"><span>🏪</span>商店</button>
     <button data-sheet><span>☰</span>其他</button>
   </nav>
+</div>
+
+<!-- 村镇浮窗：进村后才出现，从底部导航中间的「村镇」按钮打开 -->
+<div id="villageSheet">
+  <div class="village-mask" data-close-village></div>
+  <div class="village-panel">
+    <div class="village-handle"></div>
+    <div class="village-head" data-action="village-toggle" role="button" tabindex="0">
+      <span class="vh-icon">🏘</span>
+      <span class="vh-title" data-role="village-title">村镇</span>
+      <span class="vh-me" data-role="village-me"></span>
+      <span class="vh-caret" data-role="village-caret">⌄</span>
+    </div>
+    <div class="village-more" data-role="village-more" hidden></div>
+    <div class="village-online" data-role="village-online"></div>
+  </div>
 </div>
 
 <!-- 底部浮窗：更多功能 -->
