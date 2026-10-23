@@ -655,14 +655,23 @@ export async function feedFriendDog(friendId) {
     notify('对方没有养狗');
     return false;
   }
+
+  const now = Date.now();
+  const before = dogSatietyAt(friend.dog, now);
+  if (before >= DOG_SATIETY_MAX - 1) {
+    notify(`🐕 ${friend.name} 的狗粮槽已经满了`);
+    return false;
+  }
   if (!inventory.take('dogFood', 1)) {
     notify('没有狗粮，去商店买吧');
     return false;
   }
-  const now = Date.now();
-  const next = Math.min(DOG_SATIETY_MAX, dogSatietyAt(friend.dog, now) + DOG_FOOD_SATIETY);
+
+  const next = Math.min(DOG_SATIETY_MAX, before + DOG_FOOD_SATIETY);
   friend.dog.satiety = next;
-  friend.dog.fedAt = now;
+  // ⚠️ 写的是 `at` 而不是 `fedAt`：`dogSatietyAt()` 按 `at`（上次结算那一刻）算衰减，
+  // 只改 satiety 不改 at，等于把「从很久以前到现在」的消耗重新扣一遍，喂了也白喂
+  friend.dog.at = now;
   adjustRelation(PLAYER_ID, friend.id, 1);
   bump(PLAYER_ID, 'care', 1, now);
   player.addLog('🦴', `给 ${friend.name} 的守护犬添了狗粮`);

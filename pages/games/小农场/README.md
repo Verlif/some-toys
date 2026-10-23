@@ -115,3 +115,6 @@ npm run check          # 静态校验（零依赖）
 Service Worker 是**网络优先**：页面与 `/src`、`/styles`、`/vendor` 有网就取最新文件，
 断网才用缓存 —— 改完代码刷新即生效。遇到过不去的旧缓存时，用 `?nosw` 打开一次即可
 注销 SW 并清空缓存（详见 [docs/01-快速开始](./docs/01-快速开始.md)）。
+
+图标源文件是根目录的 `sims-farm.png`，生成 favicon / 192 / 512 / maskable / apple-touch
+五版，各尺寸的裁剪比例与规范见 [docs/09-UI规范](./docs/09-UI规范.md#pwa-图标)。

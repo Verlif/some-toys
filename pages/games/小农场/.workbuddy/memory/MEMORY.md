@@ -68,6 +68,10 @@
 
 10 档（比熊 20%→龙犬 80%），只有一只能上岗。`catchChance(rate,sat)=rate×(0.5+0.5×sat/100)`。
 被抓住按 `crop.sell×5` 罚款 + 掉好感 `max(1,round(售价/10))`。
+⚠️ 饱腹度是「基准值 + 基准时刻 `dog.at`」两件套，`dogSatietyAt()` **只认 `at`**。
+写存量时必须 `dog.satiety = 新值; dog.at = now;` 成对写，只写 satiety 会把
+「从上次结算到现在」的衰减重算一遍，喂了等于没喂（NPC/联机喂狗粮踩过，
+当时错写成了不存在的 `fedAt`）。满槽（≥99）要拒收并退回狗粮，别白花一份。
 
 ## 邻居与世界
 
@@ -92,7 +96,11 @@
 - 称号 38 个分三类 tab；引导 17 项；签到不发经验，历史 90 天。
 - **自动签到**（第 34 轮）：开机自动签 + **跨 0 点在线也签**（挂在分钟 tick 的日期检查上），照播庆祝画面。
 - **日历空位按「当月 1 号」周几算**。
-- **PWA**（第 35 轮）：manifest.json + sw.js + icons/（192/512 PNG + SVG）。
+- **PWA**（第 35 轮）：manifest.json + sw.js + icons/（全 PNG，源图 `sims-farm.png`）。
+  图标按用途各裁一版：favicon-32（主体 90%）、icon-192/512（82%）、
+  icon-maskable-512（70% + `#f4f8f0` 底，安卓圆形安全区）、apple-touch-icon-180（铺底，iOS 不吃透明）。
+  **先裁正方形再缩**（源图主体只占 45%×70%，整缩会变成贴纸）。改图标要同步
+  manifest / index.html 两个 link / sw.js 的 CORE，并升 `VERSION`。
   ⚠️ sw.js 是**网络优先**（页面导航 + `/src` `/styles` `/vendor` 有网取新、断网回退缓存），
   图标/manifest 才走缓存优先。**别改回 cache-first** —— v1 那样改完代码刷新永远看不到
   （SW 拦截后压根不走网络）。`updateViaCache:'none'` + 注册后 `reg.update()`；

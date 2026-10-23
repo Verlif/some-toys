@@ -13,7 +13,7 @@
  *
  * ⚠️ 开发时想要「零缓存」，地址后面加 `?nosw`：main.js 会注销 SW 并清空所有缓存。
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `ximi-farm-${VERSION}`;
 
 /** 安装时预缓存的核心资源（离线兜底用） */
@@ -21,9 +21,11 @@ const CORE = [
   './',
   './index.html',
   './manifest.json',
-  './icons/icon.svg',
+  './icons/favicon-32.png',
+  './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './icons/icon-maskable-512.png',
 ];
 
 /** 这些路径走网络优先 —— 改完立刻生效的那些 */

@@ -209,6 +209,11 @@ export async function feedPeerDog(peerId) {
     notify('对方没有养狗');
     return false;
   }
+  // 先用快照预判：满了就别白扣一份狗粮、也别白打扰对方一次请求
+  if (dogSatietyAt(peer.dog, Date.now()) >= DOG_SATIETY_MAX - 1) {
+    notify(`🐕 ${peer.name} 的狗粮槽已经满了`);
+    return false;
+  }
   if (!take('dogFood', 1)) {
     notify('没有狗粮，去商店买吧');
     return false;
@@ -219,6 +224,12 @@ export async function feedPeerDog(peerId) {
     add('dogFood', 1);
     notify(res?.reason || '对方没有响应');
     return false;
+  }
+  // 主人回执里带着新存量：先把本地快照对齐，弹窗上的数字立刻就对，
+  // 不用等 1.2 秒后那次快照推送
+  if (Number.isFinite(res.satiety)) {
+    peer.dog.satiety = res.satiety;
+    peer.dog.at = Date.now();
   }
   player.addLog('🦴', `给 ${peer.name} 的守护犬添了狗粮`);
   await commit({ farms: [state.farm], bag: state.bag });
@@ -257,12 +268,19 @@ function handleAct(msg, peerId) {
       return;
     }
     const now = Date.now();
-    const next = Math.min(DOG_SATIETY_MAX, dogSatietyAt(state.farm.dog, now) + DOG_FOOD_SATIETY);
+    const before = dogSatietyAt(state.farm.dog, now);
+    if (before >= DOG_SATIETY_MAX - 1) {
+      // 满了就明确拒收，访客那边会把狗粮退回去，别让人白花一份
+      reply({ ok: false, reason: '狗粮槽已经满了' });
+      return;
+    }
+    const next = Math.min(DOG_SATIETY_MAX, before + DOG_FOOD_SATIETY);
     state.farm.dog.satiety = next;
-    state.farm.dog.fedAt = now;
+    // ⚠️ 必须是 `at`（衰减基准时刻），不是 `fedAt` —— 见 social.feedFriendDog 的注释
+    state.farm.dog.at = now;
     player.addLog('🦴', `${peer.name} 给你的守护犬添了狗粮`, now, peer.id);
     commit({ farms: [state.farm] }).then(() => emit(EVENTS.FARM));
-    reply({ ok: true });
+    reply({ ok: true, satiety: Math.round(next) });
     return;
   }
 
