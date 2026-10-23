@@ -32,9 +32,11 @@ import { mountShop, renderShop } from './ui/views/shop.js';
 import { mountFriends, renderFriends, checkOnlineVisits } from './ui/views/friends.js';
 import { mountNews, renderNews } from './ui/views/news.js';
 import { markSessionStart, pollOnline } from './store/social.js';
+import { checkRollover, flushDaily } from './store/daily.js';
 import { initPeers, joinVillage, villageConfig } from './store/peers.js';
 import { initPeerGift } from './store/peer-gift.js';
 import { initPeerActions } from './store/peer-actions.js';
+import { notify } from './store/notify.js';
 
 /** 地块倒计时刷新间隔 */
 const TICK_MS = 500;
@@ -92,6 +94,8 @@ async function boot() {
   on(EVENTS.SIGN, renderCurrent);
   on(EVENTS.CODEX, renderCurrent);
   on(EVENTS.TITLES, renderCurrent);
+  on(EVENTS.DAILY, renderCurrent);
+  on(EVENTS.STATS, renderCurrent);
 
   /* ④ 补算玩家不在时邻居做的事。离线久了会分很多帧，所以带进度 */
   bootStage('正在进入农场', '看看邻居们干了什么…', 44);
@@ -107,8 +111,33 @@ async function boot() {
 
   await bootDone();
 
+  // PWA：注册 Service Worker（离线缓存）
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  // iOS Safari 的 IndexedDB 7 天清理风险：两层防护
+  // ① 申请持久化存储（Chrome/Safari 都支持）
+  // ② iOS 且未添加到主屏时提示玩家添加（独立应用模式下 Safari 不会清存档）
+  if (navigator.storage?.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (isIOS && !isStandalone && !localStorage.getItem('sun_farm_a2hs_hint')) {
+    localStorage.setItem('sun_farm_a2hs_hint', '1');
+    // 延迟 3 秒再弹，等首页渲染稳定
+    setTimeout(() => {
+      notify('💡 把本页「添加到主屏幕」可防止 Safari 清理存档（7 天不访问会被清）', 'gold');
+    }, 3000);
+  }
+
   // 离线期间邻居送的礼：启动画面收起来之后再整屏补播
   flushOfflineGifts();
+
+  // 每日榜单：补算可能跨越了几天，先把结束的日子结算掉（0 点整在线也会走到这）
+  //  —— 在 settleWorld 之后调用，补算出来的邻居行为才会记进正确的日期
+  checkRollover();
 
   // 联机：上次是「在村镇里」就自动回去；主动退出过的人不再打扰
   initPeers();
@@ -126,19 +155,32 @@ async function boot() {
   }, TICK_MS);
 
   // 邻居的成长在玩家在线时持续推进：他们上线时弹一条提示，
-  // 之后每做一件事（顺菜、照料）都隔几秒才发生，见 store/social.js
+  // 之后每做一件事（顺菜、照料）都隔几秒才发生，见 store/social.js。
+  // 同一个轮次上还挂着两件「跨天」的事：
+  //   - 每日排行榜：0 点那一刻正好在线上，分钟级发现翻日就当场结算并发 toast；
+  //   - 自动签到：翻日也自动把今天的签到领了（已签过则什么都不做），
+  //     庆祝画面照播，与开机时那次一致。
   setInterval(() => {
     if (document.hidden) return;
     checkOnlineVisits();
+    checkRollover();
+    autoSignIn().catch((error) => console.error(error));
   }, VISIT_POLL_MS);
 
   // 从后台切回来时立刻补一次渲染，避免看到过期的倒计时
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) return;
+    if (document.hidden) {
+      // 记账是防抖落盘的，藏进后台前把排队的那次写掉
+      flushDaily();
+      return;
+    }
     renderFarm();
     renderCurrent();
-    // 切回来时可能已经过了邻居的上线点，立刻查一次
+    // 切回来时可能已经过了邻居的上线点，立刻查一次；
+    // 也可能正好跨过了 0 点，顺手把昨日榜单与今天的签到都结算了
     checkOnlineVisits();
+    checkRollover();
+    autoSignIn().catch((error) => console.error(error));
   });
 
   // 打开页面就结算今天的签到：已签过什么都不做，未签则发奖并播庆祝画面。

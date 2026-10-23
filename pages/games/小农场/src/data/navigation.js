@@ -13,6 +13,8 @@ export const MORE_MENU_ITEMS = [
   { key: 'dog',         icon: '🐕', label: '狗窝',   ready: true },
   { key: 'adventure',   icon: '🧭', label: '冒险',   ready: true, action: 'adventure' },
   { key: 'seedshop',    icon: '🌱', label: '种子制造间', ready: true },
+  { key: 'rank',        icon: '🏆', label: '排行榜',   ready: true },
+  { key: 'manual',      icon: '📘', label: '手册',   ready: true },
   { key: 'village',     icon: '🏘', label: '村镇',   ready: true, action: 'village' },
   { key: 'ranch',       icon: '🐄', label: '牧场',   ready: false },
   { key: 'settings',    icon: '⚙️', label: '设置',   ready: false },
@@ -28,6 +30,8 @@ export const SUBPAGE_TITLES = {
   guide: '🏅 新手引导',
   dog: '🐕 狗窝',
   seedshop: '🌱 种子制造间',
+  rank: '🏆 每日排行榜',
+  manual: '📘 游戏手册',
   ranch: '🐄 牧场',
   settings: '⚙️ 设置',
 };

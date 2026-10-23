@@ -129,3 +129,20 @@ export function carePenalty(plot) {
   const lost = dry && buggy ? CARE_PENALTY_BOTH : CARE_PENALTY;
   return { mul: 1 - lost, dry, buggy, pct: Math.round(lost * 100) };
 }
+
+/**
+ * 地块左上角那个「+XX%」角标的数值（渲染见 views/farm.js 的 boostHTML）。
+ *
+ * 两种来源相乘：捉虫累积（每只 +10%）× 增产剂（一次性 10/20/30%），
+ * 显示的是合并后的实际增幅（百分比取整）。
+ *
+ * 每日排行榜的「打理王」用它当口径：收获时这块地带着多少加成，就记多少。
+ * NPC 地块没有增产剂（yieldBonus 缺省按 0），两边同一套公式才公平。
+ *
+ * @param {object} plot
+ * @returns {number} 整数百分比，如 69；没有任何加成返回 0
+ */
+export function cornerBonusPct(plot) {
+  const total = (1 + (plot?.boost || 0)) * (1 + (plot?.yieldBonus || 0)) - 1;
+  return Math.round(total * 100);
+}

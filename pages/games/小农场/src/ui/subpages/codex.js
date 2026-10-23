@@ -142,12 +142,16 @@ export const codexPage = {
         <div class="codex-head-row">
           <div>
             <div class="codex-head-title">已收集 ${summary.collected} / ${summary.total}</div>
-            <div class="codex-head-sub">已点亮 ${summary.lit} 种 · 已解锁 ${summary.unlocked} 种 · 收集进度 ${summary.percent}%</div>
+            <div class="codex-head-sub">已点亮 ${summary.lit} 种 · 已解锁 ${summary.unlocked} 种 · 收集 ${summary.percent}% · 点亮 ${summary.litPercent}%</div>
           </div>
         </div>
-        <div class="codex-bar"><i style="width:${summary.percent}%"></i></div>
+        <div class="codex-bar" role="img"
+             aria-label="收集进度 ${summary.percent}%，点亮进度 ${summary.litPercent}%">
+          <i class="bar-lit" style="width:${summary.litPercent}%"></i>
+          <i class="bar-collected" style="width:${summary.percent}%"></i>
+        </div>
         <div class="codex-filters">${chips}</div>
-        <div class="codex-tip">彩色 = 已点亮 · 灰色 = 已收集未点亮 · ❔ = 没见过　｜　做一份标本（${SPECIMEN_COST} 个）点亮</div>
+        <div class="codex-tip">金色 = 已点亮 · 绿色 = 已收集 · 彩色卡片 = 已点亮 · 灰色 = 已收集未点亮 · ❔ = 没见过　｜　做一份标本（${SPECIMEN_COST} 个）点亮</div>
       </div>
       ${shown.length
         ? `<div class="codex-grid">${shown.map(cardHTML).join('')}</div>`

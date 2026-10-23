@@ -1,0 +1,165 @@
+/**
+ * 游戏手册子页面。
+ *
+ * 以「软件图标」风格平铺（float: left），每个图标 = 一个游戏系统的说明入口。
+ * 点图标弹出详情弹窗，内容平铺展示 —— 和手机桌面点 App 图标打开应用一个感觉。
+ */
+import { escapeHtml } from '../../core/dom.js';
+import { openModal, closeModal } from '../modal.js';
+
+/** 手册分类：icon + 标题 + 要点列表 */
+const MANUALS = [
+  {
+    key: 'plant', icon: '🌱', name: '种植',
+    points: [
+      '选种子播种，浇水可加速当前阶段 20%',
+      '生虫了要捉虫，每只虫 +10% 产量（上限 50%）',
+      '成熟时欠水 −15%、欠虫 −40%，细心照料才有满产',
+      '收获后可再生（多茬作物），铲除腾地重种',
+      '8 档土地从普通到神话，逐级晋升（空闲地才能升）',
+      '土地倍率：产量 / 速度 / 经验三方面生效',
+    ],
+  },
+  {
+    key: 'dog', icon: '🐕', name: '守护犬',
+    points: [
+      '10 个犬种，从比熊（20%）到龙犬（80%），只有一只能上岗',
+      '狗粮槽全窝共享，上岗时按 6.25%/小时消耗',
+      '拦截率 = 犬种基础 × (0.5 + 0.5 × 饱腹度/100)',
+      '被抓住：罚款 = 售价 × 5，好感下降 = max(1, 售价/10)',
+      '可以给邻居的狗添狗粮（好感 +1，计入最友善榜）',
+    ],
+  },
+  {
+    key: 'friend', icon: '🤝', name: '邻居',
+    points: [
+      '32 位邻居，各有性格、等级、财富和好感度',
+      '好感度 −200 ~ 200，六档：仇视 / 冷淡 / 一般 / 熟络 / 热络 / 挚交',
+      '帮忙浇水 +1、送礼 +max(1, 等级/2)',
+      '好感 ≥100 是亲近档：NPC 优先来帮你打理、按性格送礼',
+      '可以帮邻居一键浇水 / 一键杀虫（消耗自己的道具）',
+    ],
+  },
+  {
+    key: 'steal', icon: '🥷', name: '偷菜',
+    points: [
+      '每块地每轮只能偷 1 个，成熟后才能偷',
+      '偷菜成功不掉好感，但被守护犬抓住要罚款 + 掉好感',
+      '被抓住后那座农场本轮全部封锁（标记 guarded）',
+      'NPC 也会来你家偷菜 —— 看家护院全靠狗',
+    ],
+  },
+  {
+    key: 'adv', icon: '🧭', name: '冒险',
+    points: [
+      '藏宝图分 5 档，等级和金币都要达标才能买',
+      '走格子收集奖励：金币 / 道具 / 限定种子 / 稀有犬种',
+      '限定种子只能从藏宝图挖到，商店买不到',
+      '冒险收益计入每日「冒险王」榜（按图等级分档）',
+    ],
+  },
+  {
+    key: 'title', icon: '🏅', name: '称号',
+    points: [
+      '38 个称号分三类，手动领取，同时只能戴一个',
+      '达成条件自动解锁（收获量 / 偷菜数 / 好感度 / 图鉴…）',
+      '戴称号有仪式感，部分称号有道具奖励',
+    ],
+  },
+  {
+    key: 'codex', icon: '📖', name: '图鉴',
+    points: [
+      '收集 = 产出进过仓库；点亮 = 做过标本（消耗 50 个产出）',
+      '图鉴卡片：点亮=彩色、已收集=灰色、没见过=❔',
+      '双重进度条：绿色=已收集，金色=已点亮',
+      '送礼 / 偷菜得到的产出也算收集，灰卡也能点开做标本',
+    ],
+  },
+  {
+    key: 'village', icon: '🏘', name: '村镇',
+    points: [
+      '同一 WiFi 下填相同村镇名即可联机（需 https 或 localhost）',
+      '可以访问真人玩家的农场：帮忙 / 偷菜 / 送礼 / 喂狗',
+      '主人权威：所有操作由农场主人校验执行，防止作弊',
+      '三段握手送礼：先扣货、对方确认才入包，防双花',
+    ],
+  },
+  {
+    key: 'rank', icon: '🏆', name: '排行榜',
+    points: [
+      '每日 0 点结算昨天的榜单，前三名递减发奖，并列都发',
+      '6 张榜：最友善 / 狗狗王 / 打理王 / 送礼达人 / 农事劳模 / 冒险王',
+      '冒险王按藏宝图等级分 5 档各排一张',
+      '今日实时排名随时可看，但不计奖',
+    ],
+  },
+  {
+    key: 'workshop', icon: '🏭', name: '种子制造间',
+    points: [
+      'Lv.5 + 2000 金币解锁，1~10 级',
+      '消耗产出 + 工本费 → 制造同种作物种子',
+      '份数 = 一轮平均产出 ÷ 2，工本费 = 种子价 ÷ 2',
+      '升级看造过的作物种类数（不是次数）',
+      '限定作物不能造，只能从藏宝图挖',
+    ],
+  },
+  {
+    key: 'sell', icon: '💰', name: '仓库与卖出',
+    points: [
+      '收获的产出进仓库，可分批卖出（步进器调数量，默认全量）',
+      '卖出不可撤销，确认框会显示合计金额',
+      '名称后面有 📖 标记 = 这个作物的图鉴已点亮',
+    ],
+  },
+  {
+    key: 'sign', icon: '📅', name: '签到',
+    points: [
+      '每天自动签到（开机自动 + 跨 0 点在线也签）',
+      '周末六有盲盒惊喜',
+      '签到不发经验，但有金币和道具',
+      '历史记录保留 90 天，日历上可回看',
+    ],
+  },
+];
+
+/** 一行「软件图标」 */
+function iconHTML(item) {
+  return `
+    <div class="manual-icon" data-action="manual-detail" data-key="${item.key}" role="button" tabindex="0">
+      <div class="manual-icon-emoji">${item.icon}</div>
+      <div class="manual-icon-name">${item.name}</div>
+    </div>`;
+}
+
+/** 详情弹窗 */
+function openDetail(key) {
+  const item = MANUALS.find((m) => m.key === key);
+  if (!item) return;
+  openModal(`
+    <div class="modal-head">
+      <h3>${item.icon} ${escapeHtml(item.name)}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="manual-detail">
+      <ul class="manual-list">
+        ${item.points.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}
+      </ul>
+    </div>
+  `);
+}
+
+export const manualPage = {
+  render(body) {
+    body.innerHTML = `
+      <div class="manual-tip">📘 点图标查看各系统说明</div>
+      <div class="manual-grid">
+        ${MANUALS.map(iconHTML).join('')}
+      </div>`;
+  },
+
+  actions: {
+    'manual-detail'(el) {
+      openDetail(el.dataset.key);
+    },
+  },
+};

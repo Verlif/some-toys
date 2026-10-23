@@ -13,7 +13,9 @@
  *   - **被守护犬抓住才掉好感**：按想偷的那个果实售价折算，`max(1, round(售价 / 10))`；
  *   - **打理加好感**：每照料一块地 +1；
  *   - **送礼加好感**：按送出的那份产出的等级，`round(等级 / 2)`，至少 1；
- *   - 好感低的人更爱来偷、好感高的人更愿意来帮忙与送礼（见下面的权重函数）。
+ *   - 好感低的人更爱来偷、好感高的人更愿意来帮忙与送礼（见下面的权重函数）；
+ *   - **亲近档（≥100）是道坎**：NPC 上线会优先登门打理这些农场，
+ *     打理完还按性格系数加权概率顺手送一份礼（见 REL_CARE_PRIORITY / closeGiftChanceFor）。
  *
  * 值本身存在 state.relations（`{ "a|b": v }`，a、b 按字典序排好，一对只有一条），
  * 落盘在 relation 表，见 core/storage.js。
@@ -123,3 +125,39 @@ export const helpWeightFor = (rel) => clamp(1 + rel / 200, 0.2, 2);
 export const giftChanceFor = (rel) => (
   rel < 60 ? 0 : clamp(0.04 + (rel - 60) / 140 * 0.26, 0, 0.3)
 );
+
+/**
+ * 「登门打理」的优先门槛：好感 ≥100（亲近档）的农场，
+ * NPC 上线时会优先去照顾它；一个 ≥100 的都没有才按老逻辑全量挑。
+ */
+export const REL_CARE_PRIORITY = 100;
+
+/**
+ * 亲近档的送礼概率：100 → 0.15，200 → 0.35，线性递增。
+ *
+ * 与 giftChanceFor（60 分起、封顶 0.3）是两档不同的交情：
+ * 老门槛管「偶尔念着你」，这个管「登门造访之后顺手带一份」。
+ * @param {number} rel
+ */
+export const closeGiftChanceFor = (rel) => (
+  rel < REL_CARE_PRIORITY ? 0 : clamp(0.15 + (rel - REL_CARE_PRIORITY) / 100 * 0.2, 0, 0.35)
+);
+
+/** 性格对亲近档送礼概率的修正：热心的最爱送，爱占便宜的最不爱 */
+const GIFT_PERSONALITY_FACTOR = {
+  friendly: 1.4,
+  diligent: 1.2,
+  scholar: 1.2,
+  boss: 1.1,
+  leisurely: 0.9,
+  thrifty: 1.0,
+  merchant: 0.7,
+  greedy: 0.5,
+};
+
+/**
+ * 送礼性格系数（只作用于亲近档的新概率，老门槛不受影响）。
+ * @param {string} personality data/friends.js 里 PERSONALITIES 的键
+ * @returns {number}
+ */
+export const giftPersonalityFactor = (personality) => GIFT_PERSONALITY_FACTOR[personality] ?? 1;

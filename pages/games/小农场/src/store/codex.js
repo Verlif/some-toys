@@ -211,6 +211,8 @@ export function codexSummary() {
     lit,
     /** 0~100 的收集进度 */
     percent: entries.length ? Math.round((collected / entries.length) * 100) : 0,
+    /** 0~100 的点亮进度（做过标本） */
+    litPercent: entries.length ? Math.round((lit / entries.length) * 100) : 0,
     /** 距离满级还有多少作物没解锁 */
     remainingToMaxLevel: entries.filter((e) => !e.unlocked && e.lv === MAX_LEVEL).length,
   };

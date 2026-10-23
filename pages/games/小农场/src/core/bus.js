@@ -37,6 +37,10 @@ export const EVENTS = {
   PEER_MSG: 'net:peer-msg',
   /** 收到邻居的赠礼，payload 为 { at, from, avatar, cropId, name, emoji, n, offline } */
   GIFT: 'ui:gift',
+  /** 每日排行榜跨天结算完成（发了奖、换了新的一天），payload 为结算结果 */
+  DAILY: 'state:daily',
+  /** 每日统计数值变化（bump 防抖后发），排行榜页靠它实时刷新 */
+  STATS: 'state:stats',
   /** 领域层请求弹一条提示，由 UI 层的 toast 组件消费 */
   NOTIFY: 'ui:notify',
   /** 请求播放「被守护犬抓住」的全屏提示，payload 为 { breed, owner, fine } */

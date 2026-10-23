@@ -23,6 +23,7 @@ import {
   villageConfig,
 } from '../store/peers.js';
 import { openFriendModal } from './friend-modal.js';
+import { dragToClose } from './drag-close.js';
 
 let root = null;
 let els = null;
@@ -214,6 +215,9 @@ export function mountVillage() {
     more: root.querySelector('[data-role="village-more"]'),
     online: root.querySelector('[data-role="village-online"]'),
   };
+
+  // 下拉关闭：与「更多」「农场日志」同一套手势（面板整块可滚）
+  dragToClose(root.querySelector('.sheet-panel'), { onClose: closeVillage, scrollArea: root.querySelector('.sheet-panel') });
 
   // 点空白：展开着就先收起，已经收起才关窗
   delegate(root, 'click', '[data-close-village]', () => {

@@ -4,8 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#327f37">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="阳光牧场">
   <title>🌾 阳光牧场 · 文字版</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
   <link rel="stylesheet" href="./styles/base.css">
   <link rel="stylesheet" href="./styles/components.css">
@@ -102,11 +107,12 @@
   </nav>
 </div>
 
-<!-- 村镇浮窗：进村后才出现，从底部导航中间的「村镇」按钮打开 -->
+<!-- 村镇浮窗：进村后才出现，从底部导航中间的「村镇」按钮打开。
+     与「更多功能」「农场日志」共用同一套通用底部浮窗（上滑进场 + 下拉关闭） -->
 <div id="villageSheet">
-  <div class="village-mask" data-close-village></div>
-  <div class="village-panel">
-    <div class="village-handle"></div>
+  <div class="sheet-mask" data-close-village></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
     <div class="village-head" data-action="village-toggle" role="button" tabindex="0">
       <span class="vh-icon">🏘</span>
       <span class="vh-title" data-role="village-title">村镇</span>

@@ -10,6 +10,7 @@
  *   news      全镇一张表，文案里自带人名（渲染时扫描匹配头像）
  *   relation  两点之间的好感度，[a, b] 复合主键（a < b，一对只有一条）
  *   inventory 玩家农场的背包，一件一行
+ *   daily     每日排行榜，一天一行（主键是本地日期键，见 store/daily.js）
  *
  * 写库以「农场」为单位：一次提交把这座农场的行、全部地块、整段日志
  * 一起写掉。地块与日志条数很少（≤ 40 块地 / ≤ 60 条日志），
@@ -35,16 +36,18 @@ const bySeq = (rows) => rows.sort((a, b) => a.seq - b.seq);
  *
  * @returns {Promise<{farms: object[], plots: Record<string, object[]>,
  *                    logs: Record<string, object[]>, news: object[],
- *                    bag: Record<string, number>}>}
+ *                    bag: Record<string, number>,
+ *                    dailyRows: Record<string, object>}>}
  */
 export async function loadSave() {
-  const [farmRows, plotRows, logRows, newsRows, relRows, invRows] = await Promise.all([
+  const [farmRows, plotRows, logRows, newsRows, relRows, invRows, dailyRows] = await Promise.all([
     getAll('farm'),
     getAll('plot'),
     getAll('log'),
     getAll('news'),
     getAll('relation'),
     getAll('inventory'),
+    getAll('daily'),
   ]);
 
   const plots = {};
@@ -78,6 +81,13 @@ export async function loadSave() {
       cat: cat || '',
     })),
     bag,
+    // 每日排行榜：一天一行，旧档没有这个字段返回空表（见 store/daily.js）
+    dailyRows: Object.fromEntries(
+      dailyRows.map(({ date, settled, stats }) => [
+        date,
+        { date, settled: Boolean(settled), stats: stats || {} },
+      ]),
+    ),
   };
 }
 
@@ -89,6 +99,7 @@ export async function loadSave() {
  * @param {Record<string, number>} [changes.bag] 背包（全量覆盖）
  * @param {object[]} [changes.news] 时报（全量覆盖）
  * @param {Record<string, number>} [changes.relations] 好感度（全量覆盖，键是 `a|b`）
+ * @param {Record<string, object>} [changes.dailyRows] 每日排行榜（全量覆盖，键是日期）
  */
 export function commit(changes = {}) {
   const farms = changes.farms || [];
@@ -97,6 +108,7 @@ export function commit(changes = {}) {
   if (changes.bag) stores.push('inventory');
   if (changes.news) stores.push('news');
   if (changes.relations) stores.push('relation');
+  if (changes.dailyRows) stores.push('daily');
   if (!stores.length) return Promise.resolve();
 
   return write(stores, (tx) => {
@@ -104,6 +116,7 @@ export function commit(changes = {}) {
     if (changes.bag) writeBag(tx, changes.bag);
     if (changes.news) writeNews(tx, changes.news);
     if (changes.relations) writeRelations(tx, changes.relations);
+    if (changes.dailyRows) writeDailyRows(tx, changes.dailyRows);
   });
 }
 
@@ -175,6 +188,20 @@ function writeRelations(tx, relations) {
 }
 
 /**
+ * 每日排行榜全量覆盖：一天一行（最多留 8 行），清空重写最不容易出错。
+ * @param {IDBTransaction} tx
+ * @param {Record<string, object>} dailyRows 键是本地日期键，见 store/daily.js
+ */
+function writeDailyRows(tx, dailyRows) {
+  const store = tx.objectStore('daily');
+  store.clear();
+  for (const row of Object.values(dailyRows)) {
+    if (!row?.date) continue;
+    store.put({ date: row.date, settled: Boolean(row.settled), stats: row.stats || {} });
+  }
+}
+
+/**
  * 删掉几座农场（连同它的地块与日志）。
  * 邻居名单缩水时由 initState 调用，避免留下没人认领的孤儿数据。
  * @param {string[]} ids
@@ -192,7 +219,7 @@ export function dropFarms(ids) {
 
 /** 清空全部存档（「重新开始」用） */
 export function wipeSave() {
-  const stores = ['farm', 'plot', 'log', 'news', 'relation', 'inventory'];
+  const stores = ['farm', 'plot', 'log', 'news', 'relation', 'inventory', 'daily'];
   return write(stores, (tx) => {
     for (const store of stores) tx.objectStore(store).clear();
   });

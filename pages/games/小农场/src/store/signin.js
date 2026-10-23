@@ -212,6 +212,9 @@ export async function signIn(now = Date.now()) {
 
 /**
  * 打开游戏时自动结算今天的签到，已签过就什么都不做。
+ *
+ * 也挂在 main.js 的分钟 tick 上：玩家跨 0 点还在线上时，
+ * 翻日的那一刻同样自动领（庆祝画面照播，与开机那次一致）。
  * @returns {Promise<null|object>} 同 signIn
  */
 export async function autoSignIn(now = Date.now()) {

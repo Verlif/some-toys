@@ -16,7 +16,7 @@
 export const DB_NAME = 'sun_farm_v2';
 
 /** 结构版本：字段不兼容时 +1，并在 upgrade 中补迁移逻辑 */
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 /**
  * 表结构声明：store 名 → 配置。
@@ -26,6 +26,7 @@ export const DB_VERSION = 2;
  *   farm      1 ── N log （[farmId, 序号]，0 = 最新一条）
  *   news           全镇时报，farmId 只标明来源
  *   relation       两点之间的好感度（[a, b]，a < b），与农场数量无关的一对一关系
+ *   daily         每日排行榜，一天一行（主键是本地日期键），最多留 8 行
  */
 export const SCHEMA = {
   farm: { keyPath: 'id' },
@@ -34,6 +35,7 @@ export const SCHEMA = {
   news: { keyPath: 'seq' },
   relation: { keyPath: ['a', 'b'] },
   inventory: { keyPath: 'itemId' },
+  daily: { keyPath: 'date' },
 };
 
 let db = null;

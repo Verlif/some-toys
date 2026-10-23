@@ -58,7 +58,8 @@ const HOUR = 3600_000;
 const PLOT_TIMES = ['plantedAt', 'readyAt', 'total', 'waterNext', 'pestNext', 'stolenAt'];
 
 /** @type {{farm: object, friends: object[], peers: object[], bag: Record<string, number>,
- *          relations: Record<string, number>, news: object[]}} */
+ *          relations: Record<string, number>, news: object[],
+ *          dailyRows: Record<string, object>}} */
 export const state = {
   farm: null,
   /** 32 位 NPC：会落库、会被模拟推进 */
@@ -72,6 +73,12 @@ export const state = {
   /** 好感度：`{ "npc01|npc02": 45 }`，一对只有一条，0 不落键 */
   relations: {},
   news: [],
+  /**
+   * 每日排行榜：本地日期键 → `{ date, settled, stats }`，一天一行。
+   * stats 按参与者记账（`{ npc01: { care: 3 } }`），最多留 8 天。
+   * 落库与结算都在 store/daily.js，这里只放数据。
+   */
+  dailyRows: {},
 };
 
 /* ============================================================
@@ -403,6 +410,7 @@ export async function initState() {
 
   state.bag = save.bag;
   state.news = save.news;
+  state.dailyRows = save.dailyRows || {};
 
   const rows = new Map(save.farms.filter((row) => row.id !== PLAYER_ID).map((row) => [row.id, row]));
   state.friends = NPCS.map((def) => {

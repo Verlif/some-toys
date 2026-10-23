@@ -24,7 +24,7 @@ import { ITEMS } from '../data/items.js';
 import { produceId } from '../data/keys.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { BOOST_CAP, PEST_YIELD_BONUS } from '../data/friends.js';
-import { DOG_FINE_MULTIPLE, catchChance, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, catchChance, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { isStealable } from './social.js';
 import { completeGuide } from './codex.js';
 import { commit } from '../core/storage.js';
@@ -64,13 +64,13 @@ export function initPeerActions() {
 /**
  * 发一个操作请求。
  * @param {string} peerId
- * @param {'water'|'pest'|'fert'|'steal'} kind
- * @param {number} index 地块序号
+ * @param {'water'|'pest'|'fert'|'steal'|'feedDog'} kind
+ * @param {number} index 地块序号（feedDog 传 -1 = 农场级操作）
  * @param {string} [itemId] 施肥用的道具
  * @returns {Promise<object|null>}
  */
 function request(peerId, kind, index, itemId = '') {
-  if (!Number.isInteger(index) || index < 0 || index > 39) return Promise.resolve(null);
+  if (kind !== 'feedDog' && (!Number.isInteger(index) || index < 0 || index > 39)) return Promise.resolve(null);
   seq += 1;
   const req = `${state.farm.id}:a${seq}:${Date.now()}`;
 
@@ -199,6 +199,34 @@ export async function stealPeer(peerId, index) {
   return { ok: true, cropId };
 }
 
+/**
+ * 给对方的狗添一份狗粮（从自己包裹扣）。
+ * 主人侧校验并加饱腹度；访客侧扣狗粮、记日志。
+ */
+export async function feedPeerDog(peerId) {
+  const peer = peerList().find((item) => item.connectId === peerId);
+  if (!peer?.dog?.breed) {
+    notify('对方没有养狗');
+    return false;
+  }
+  if (!take('dogFood', 1)) {
+    notify('没有狗粮，去商店买吧');
+    return false;
+  }
+  const res = await request(peerId, 'feedDog', -1);
+  if (!res?.ok) {
+    // 失败退回狗粮
+    add('dogFood', 1);
+    notify(res?.reason || '对方没有响应');
+    return false;
+  }
+  player.addLog('🦴', `给 ${peer.name} 的守护犬添了狗粮`);
+  await commit({ farms: [state.farm], bag: state.bag });
+  emit(EVENTS.INVENTORY);
+  notify(`🐕 给 ${peer.name} 的狗添了狗粮`, 'gold');
+  return true;
+}
+
 /** 对方回话了 */
 function handleResult(msg) {
   const req = String(msg.req || '').slice(0, 64);
@@ -218,9 +246,27 @@ function handleAct(msg, peerId) {
   const peer = peerList().find((item) => item.connectId === peerId);
   const index = Number(msg.plot);
   const req = typeof msg.req === 'string' ? msg.req.slice(0, 64) : '';
-  if (!peer || !req || !Number.isInteger(index) || index < 0 || index > 39) return;
+  if (!peer || !req) return;
 
   const reply = (payload) => sendToPeer(peerId, { t: MSG.ACT_RES, req, ...payload });
+
+  // 农场级操作：给狗添狗粮（不走地块校验）
+  if (msg.kind === 'feedDog') {
+    if (!state.farm.dog?.breed) {
+      reply({ ok: false, reason: '我家没有养狗' });
+      return;
+    }
+    const now = Date.now();
+    const next = Math.min(DOG_SATIETY_MAX, dogSatietyAt(state.farm.dog, now) + DOG_FOOD_SATIETY);
+    state.farm.dog.satiety = next;
+    state.farm.dog.fedAt = now;
+    player.addLog('🦴', `${peer.name} 给你的守护犬添了狗粮`, now, peer.id);
+    commit({ farms: [state.farm] }).then(() => emit(EVENTS.FARM));
+    reply({ ok: true });
+    return;
+  }
+
+  if (!Number.isInteger(index) || index < 0 || index > 39) return;
 
   const plot = state.farm.plots[index];
   if (!plot?.usable || !plot.cropId) {

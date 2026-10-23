@@ -6,7 +6,7 @@
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
-import { state, getPlot } from './state.js';
+import { state, getPlot, PLAYER_ID } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { CROPS, expOf } from '../data/crops.js';
@@ -16,12 +16,13 @@ import { SOILS, nextSoilId } from '../data/soils.js';
 import { plotPrice } from '../data/plots.js';
 import { seedId, produceId } from '../data/keys.js';
 import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
-import { carePenalty, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
+import { carePenalty, cornerBonusPct, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { randInt } from '../core/utils.js';
 import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
 import { notify } from './notify.js';
 import { broadcastToast } from './peers.js';
+import { bump } from './daily.js';
 
 /** 一次再生轮次的最短时长，防止高等级作物的 regrow 系数把时间压没 */
 const MIN_REGROW_MS = 30_000;
@@ -256,6 +257,7 @@ export async function plant(plotId, cropId) {
 
   const { crop, soil } = applyPlant(plot, cropId);
   recordPlanted(cropId);
+  bump(PLAYER_ID, 'work');
   player.addLog('🌱', `种下 ${crop.name}（${soil.name}）`);
   await persist();
   await completeGuide('plant');
@@ -287,6 +289,7 @@ export async function water(plotId) {
 
   plot.readyAt = Math.max(now, plot.readyAt - saved);
   serveCare(plot, 'water', now);
+  bump(PLAYER_ID, 'work');
   player.addExpRaw(crop.lv);
   player.addLog('💧', `给 ${crop.name} 浇水，当前阶段 -${Math.round(WATER_SPEEDUP * 100)}%`);
 
@@ -316,6 +319,7 @@ export async function catchPest(plotId) {
   const before = plot.boost || 0;
   plot.boost = Math.min(BOOST_CAP, before + PEST_YIELD_BONUS);
   serveCare(plot, 'pest', now);
+  bump(PLAYER_ID, 'work');
   player.addExpRaw(crop.lv);
   player.addLog('🐛', `给 ${crop.name} 捉虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%`);
 
@@ -355,6 +359,7 @@ export async function waterAll() {
     const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
     plot.readyAt = Math.max(now, plot.readyAt - saved);
     serveCare(plot, 'water', now);
+    bump(PLAYER_ID, 'work');
     exp += crop.lv;
   }
 
@@ -391,6 +396,7 @@ export async function catchPestAll() {
   for (const plot of targets) {
     plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
     serveCare(plot, 'pest', now);
+    bump(PLAYER_ID, 'work');
     exp += CROPS[plot.cropId].lv;
   }
 
@@ -435,6 +441,7 @@ export async function fertilize(plotId, itemId) {
   }
 
   inventory.take(itemId, 1);
+  bump(PLAYER_ID, 'work');
   const crop = CROPS[plot.cropId];
 
   // 增产剂：不改时间，只加产量
@@ -525,6 +532,9 @@ function collectPlot(plot) {
 
   // 收完之后地块会被重置，提示里要用的加成得先存下来
   const boost = plot.boost || 0;
+  // 每日榜单：打理王 = 收获时带着的角标加成（重置前算）；农事劳模 = 收获一块地
+  bump(PLAYER_ID, 'manage', cornerBonusPct(plot));
+  bump(PLAYER_ID, 'work');
   const remaining = beginRegrow(plot, crop, soil);
   if (!remaining) clearPlot(plot);
 
@@ -635,6 +645,7 @@ export async function removeCrop(plotId) {
   const crop = CROPS[plot.cropId];
   const ripe = Date.now() >= plot.readyAt;
   clearPlot(plot);
+  bump(PLAYER_ID, 'work');
 
   player.addLog('🪓', `铲除了 ${crop.emoji}${crop.name}${ripe ? '（已成熟，没收获）' : ''}`);
   await persist();

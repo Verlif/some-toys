@@ -712,7 +712,10 @@ export function openFriendModal(friendId) {
         k: '守护犬',
         wide: true,
         v: breedInfo
-          ? `${breedInfo.emoji} ${breedInfo.name} · ${satiety > 0 ? `${satiety}% 在看家` : '饿着，不设防'}`
+          ? `${breedInfo.emoji} ${breedInfo.name} · ${satiety > 0 ? `${satiety}% 在看家` : '饿着，不设防'}` +
+            (count('dogFood') > 0
+              ? ` <button class="btn small ghost feed-dog-btn" data-action="${current.net ? 'peer-feed-dog' : 'feed-friend-dog'}" data-id="${current.id}">🦴 添狗粮</button>`
+              : '')
           : '🐶 没有狗',
       },
       current.net
@@ -840,9 +843,19 @@ export function openFriendModal(friendId) {
       closeModal();
       return;
     }
-    if (remote && action !== 'crop-info' && action !== 'peer-gift-open') return;
+    if (remote && action !== 'crop-info' && action !== 'peer-gift-open' && action !== 'peer-feed-dog') return;
     if (action === 'peer-gift-open') {
       openPeerGiftPicker(friend);
+      return;
+    }
+    if (action === 'peer-feed-dog') {
+      // 联机好友的狗槽：走 peer-actions 的 act 协议（主人权威）
+      const { feedPeerDog } = await import('../store/peer-actions.js');
+      if (await feedPeerDog(friend.connectId)) refreshChrome(getFriend(friendId), Date.now());
+      return;
+    }
+    if (action === 'feed-friend-dog') {
+      if (await social.feedFriendDog(el.dataset.id)) refreshChrome(getFriend(friendId), Date.now());
       return;
     }
     if (action === 'gift-open') {

@@ -9,7 +9,7 @@
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
-import { state } from './state.js';
+import { PLAYER_ID, state } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { MAP_TIERS, buildRun, describeReward, mapTier } from '../data/adventure.js';
@@ -20,6 +20,7 @@ import { formatCoins } from '../core/utils.js';
 import { addDogBreed, ownedBreedIds } from './dogs.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
+import { bump } from './daily.js';
 
 /** 当前正在进行的冒险，null 表示没在冒险 */
 let run = null;
@@ -141,6 +142,9 @@ export async function finishRun() {
   const earned = run.earned.slice();
   const value = earned.reduce((sum, r) => sum + r.value, 0);
   const summary = { tier: run.tier, earned, totalRewards: run.totalRewards, value };
+
+  // 每日榜单「冒险王」：按藏宝图等级分榜，记这一趟带回的奖励总价值
+  bump(PLAYER_ID, `adv${run.tier}`, value);
 
   player.addLog('🏁', earned.length
     ? `寻宝结束，带回 ${earned.length} 份奖励（约值 ${value} 💰）`

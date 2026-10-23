@@ -23,7 +23,8 @@ import { BOOST_CAP, LIVE_STEP_MS, LOG_LIMIT, PEST_YIELD_BONUS } from '../data/fr
 import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
-import { catchChance, DOG_FINE_MULTIPLE, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { bump } from './daily.js';
+import { catchChance, DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
 import { notify } from './notify.js';
@@ -142,7 +143,7 @@ function receiveGift(at, npc, cropId, n = 1) {
  * 交给模拟层的上下文。
  *
  * npc-sim 是纯计算、不认识 store，所以「好感度怎么读怎么写」「收到礼物怎么办」
- * 都由这里注进去。farm 只建一次：一次结算里所有邻居看到的是同一份计数。
+ * 「每日榜单怎么记」都由这里注进去。farm 只建一次：一次结算里所有邻居看到的是同一份计数。
  *
  * @param {?object} farm 玩家农场视图
  */
@@ -153,6 +154,8 @@ function simCtx(farm = farmView()) {
     rel: getRelation,
     relAdjust: adjustRelation,
     receiveGift,
+    // 每日榜单记账：actor 是邻居农场 id，at 决定记到哪天（补算的访问发生在过去）
+    daily: (actor, metric, n = 1, at = Date.now()) => bump(actor, metric, n, at),
   };
 }
 
@@ -493,6 +496,7 @@ export async function waterNeighborPlot(friendId, index) {
 
   serveCare(target, 'water', now);
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE);
+  bump(PLAYER_ID, 'care');
   // 经验跟着被照料的作物走：作物几级就给几点，不随玩家等级膨胀
   const exp = CROPS[target.cropId].lv;
   player.addExpRaw(exp);
@@ -528,6 +532,7 @@ export async function catchPestNeighborPlot(friendId, index) {
   target.boost = Math.min(BOOST_CAP, (target.boost || 0) + PEST_YIELD_BONUS);
   serveCare(target, 'pest', now);
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE);
+  bump(PLAYER_ID, 'care');
   const exp = CROPS[target.cropId].lv;
   player.addExpRaw(exp);
   logFriend(friend, now, '🐛', `${state.farm.name} 来帮忙捉了虫`);
@@ -572,6 +577,8 @@ export async function waterAllNeighborPlots(friendId) {
   }
   // 打理一块 +1：一次浇满一片，交情自然涨得快
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE * targets.length);
+  // 最友善榜按「打理了几块地」记，与好感同口径
+  bump(PLAYER_ID, 'care', targets.length);
 
   player.addExpRaw(exp);
   logFriend(friend, now, '🚿', `${state.farm.name} 用洒水器帮他给 ${targets.length} 块地浇了水`);
@@ -616,6 +623,8 @@ export async function catchPestAllNeighborPlots(friendId) {
     exp += CROPS[plot.cropId].lv;
   }
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE * targets.length);
+  // 最友善榜按「打理了几块地」记，与好感同口径
+  bump(PLAYER_ID, 'care', targets.length);
 
   player.addExpRaw(exp);
   logFriend(friend, now, '🧴', `${state.farm.name} 用杀虫剂帮他给 ${targets.length} 块地除了虫`);
@@ -628,6 +637,38 @@ export async function catchPestAllNeighborPlots(friendId) {
 
   await completeGuide('care');
   notify(`🧴 帮 ${friend.name} 除了 ${targets.length} 块地的虫（经验 +${exp}，好感 +${targets.length}）`, 'gold');
+  return true;
+}
+
+/**
+ * 给邻居的狗添一份狗粮（从自己包裹扣）。
+ *
+ * 好感 +1，且计入每日「最友善」榜 —— 帮人喂狗和帮人浇水一样是善举。
+ *
+ * @param {string} friendId
+ * @returns {Promise<boolean>}
+ */
+export async function feedFriendDog(friendId) {
+  const friend = getFriend(friendId);
+  if (!friend?.dog?.breed) {
+    notify('对方没有养狗');
+    return false;
+  }
+  if (!inventory.take('dogFood', 1)) {
+    notify('没有狗粮，去商店买吧');
+    return false;
+  }
+  const now = Date.now();
+  const next = Math.min(DOG_SATIETY_MAX, dogSatietyAt(friend.dog, now) + DOG_FOOD_SATIETY);
+  friend.dog.satiety = next;
+  friend.dog.fedAt = now;
+  adjustRelation(PLAYER_ID, friend.id, 1);
+  bump(PLAYER_ID, 'care', 1, now);
+  player.addLog('🦴', `给 ${friend.name} 的守护犬添了狗粮`);
+  logFriend(friend, now, '🦴', `${state.farm.name} 给你的守护犬添了狗粮`);
+  notify(`🐕 ${friend.name} 的狗粮槽 ${Math.round(next)}%`, 'gold');
+  await commit({ farms: [friend], bag: state.bag, relations: state.relations });
+  emit(EVENTS.FRIENDS);
   return true;
 }
 
@@ -659,6 +700,7 @@ export async function sendGift(friendId, cropId, n = 1) {
   const gain = unit * qty;
   const now = Date.now();
   const relation = adjustRelation(PLAYER_ID, friend.id, gain);
+  bump(PLAYER_ID, 'gift', qty);
   const times = qty > 1 ? ` ×${qty}` : '';
 
   logFriend(friend, now, '🎁', `${state.farm.name} 送来 ${crop.emoji}${crop.name}${times}`);

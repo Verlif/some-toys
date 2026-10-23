@@ -43,11 +43,14 @@ import {
   shuffled,
   syncNpcPlots,
 } from '../data/friends.js';
-import { carePenalty, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
+import { carePenalty, cornerBonusPct, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import {
+  REL_CARE_PRIORITY,
   REL_PER_CARE,
+  closeGiftChanceFor,
   dogCaughtRelLoss,
   giftChanceFor,
+  giftPersonalityFactor,
   giftRelGain,
   helpWeightFor,
   stealWeightFor,
@@ -138,8 +141,14 @@ const stealable = (plot, at) =>
   Boolean(plot.cropId) && Boolean(CROPS[plot.cropId])
   && at >= plot.readyAt && !plot.stolen && !plot.guarded;
 
-/** 收获所有成熟的地 */
-function actHarvest(npc, at) {
+/**
+ * 收获所有成熟的地。
+ *
+ * @param {object} npc
+ * @param {?object} ctx 模拟上下文（含每日榜单记账，见 social.js 的 simCtx）
+ * @param {number} at
+ */
+function actHarvest(npc, ctx, at) {
   let acted = false;
   let totalValue = 0;
 
@@ -158,6 +167,10 @@ function actHarvest(npc, at) {
     totalValue += boosted * crop.sell;
     // 与玩家完全一致的经验公式：总时间/4×等级 + 等级×个数
     gainExp(npc, expOf(crop.lv, boosted));
+
+    // 每日榜单：打理王 = 收获时地块的角标加成；农事劳模 = 每收一块地
+    ctx?.daily?.(npc.id, 'manage', cornerBonusPct(plot), at);
+    ctx?.daily?.(npc.id, 'work', 1, at);
 
     // 多茬作物进入再生轮次，否则清空这块地
     plot.harvested = (plot.harvested || 0) + 1;
@@ -185,8 +198,14 @@ function actHarvest(npc, at) {
   return { emoji: '🌾', text: `收获了一批作物，+${formatCoins(totalValue)} 💰` };
 }
 
-/** 在空地上播种 */
-function actPlant(npc, at) {
+/**
+ * 在空地上播种。
+ *
+ * @param {object} npc
+ * @param {?object} ctx 模拟上下文（含每日榜单记账）
+ * @param {number} at
+ */
+function actPlant(npc, ctx, at) {
   const empties = npc.plots.filter((p) => !p.cropId);
   if (!empties.length) return null;
 
@@ -222,12 +241,20 @@ function actPlant(npc, at) {
   }
 
   gainExp(npc, 4 * names.length);
+  // 农事劳模：种下几块地记几笔
+  ctx?.daily?.(npc.id, 'work', names.length, at);
   const head = names.slice(0, 2).join('、');
   return { emoji: '🌱', text: `种下了 ${names.length} 块地：${head}${names.length > 2 ? ' 等' : ''}` };
 }
 
-/** 打理：给缺水的地浇水、给生虫的地捉虫 */
-function actTend(npc, at) {
+/**
+ * 打理：给缺水的地浇水、给生虫的地捉虫。
+ *
+ * @param {object} npc
+ * @param {?object} ctx 模拟上下文（含每日榜单记账）
+ * @param {number} at
+ */
+function actTend(npc, ctx, at) {
   let tended = 0;
   for (const plot of npc.plots) {
     if (!plot.cropId) continue;
@@ -244,6 +271,8 @@ function actTend(npc, at) {
   if (!tended) return null;
 
   gainExp(npc, 6 * tended);
+  // 农事劳模：打理几块地记几笔
+  ctx?.daily?.(npc.id, 'work', tended, at);
   return { emoji: '🧹', text: `打理了 ${tended} 块地，浇了水也除了虫` };
 }
 
@@ -346,6 +375,8 @@ function actSteal(npc, ctx, at) {
 
     if (isPlayer) {
       farm.caught += 1;
+      // 狗狗王：玩家农场拦下一次
+      ctx.daily?.(farm.id, 'dog', 1, at);
       farm.addCoins?.(paid);
       // by = npc.id：这条是「邻居对玩家农场做的事」，农场日志的邻居动向 tab 靠它认
       farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了，罚了 ${formatCoins(paid)} 金币（拦截率 ${Math.round(guard * 100)}%）`, npc.id);
@@ -354,6 +385,8 @@ function actSteal(npc, ctx, at) {
     }
 
     owner.coins += paid;
+    // 狗狗王：这座邻居农场拦下一次
+    ctx.daily?.(owner.id, 'dog', 1, at);
     log(owner, at, '🐕', `守护犬抓住了想顺菜的 ${npc.name}，罚了 ${formatCoins(paid)} 金币`);
     farm?.news?.(at, '🐕', `${npc.name} 想顺 ${owner.name} 家的菜，被守护犬抓住罚了款`);
     return { emoji: '🐕', text: `想顺 ${owner.name} 家的菜，被守护犬抓住罚了 ${formatCoins(paid)} 金币` };
@@ -397,7 +430,9 @@ const careWanted = (plot, at) => Boolean(plot.cropId)
  * 串门帮忙：给某户人家浇一块地 / 捉一次虫。
  *
  * 谁会去帮谁，看的是**好感度**（helpWeightFor）：交情越好越愿意跑腿，
- * 结了怨的基本绕着走。玩家农场照样有自己的权重（地最多、最扎眼），
+ * 结了怨的基本绕着走。**亲近档（好感 ≥100）优先** —— 上线先登门照顾这些
+ * 铁交情，一个 ≥100 的都没有才按老逻辑全量挑，低好感的偶尔也帮得上。
+ * 玩家农场照样有自己的权重（地最多、最扎眼），
  * 一次只帮一块地 —— 帮得再多也不该变成「一键托管」。
  */
 function actCare(npc, ctx, at) {
@@ -424,7 +459,9 @@ function actCare(npc, ctx, at) {
   }
   if (!targets.length) return null;
 
-  const { owner, plots } = pickWeighted(targets);
+  // 亲近档优先：有 ≥100 的目标就只从里面挑，一个都没有才回退全量
+  const close = targets.filter((t) => ctx.rel(npc.id, t.owner.id) >= REL_CARE_PRIORITY);
+  const { owner, plots } = pickWeighted(close.length ? close : targets);
   const plot = pick(plots);
   const crop = CROPS[plot.cropId];
   const isPlayer = owner === ctx.farm;
@@ -437,6 +474,8 @@ function actCare(npc, ctx, at) {
   }
   // 打理一次 +1 好感，不管帮的是玩家还是别的邻居
   ctx.relAdjust(npc.id, owner.id, REL_PER_CARE);
+  // 最友善榜：帮一次记一笔（记在帮忙的人头上）
+  ctx.daily?.(npc.id, 'care', 1, at);
 
   const emoji = water ? '💧' : '🐛';
   const verb = water ? '浇了水' : '捉了虫';
@@ -451,22 +490,33 @@ function actCare(npc, ctx, at) {
 }
 
 /**
- * 送礼：只会送给**交情够好**的人（好感 60 分起，越高越常送）。
+ * 送礼：只会送给**交情够好**的人。
+ *
+ * 两档交情两套概率：
+ *   - **亲近档（好感 ≥100）**：`closeGiftChanceFor`（100 → 0.15，200 → 0.35）
+ *     再乘**性格系数** —— 热心的几乎逢门就带礼，爱占便宜的打骨子里抠。
+ *     NPC 上线时先登门打理（见 actCare），顺手再送一份，是一条完整的「串门」；
+ *   - **老门槛（60~99）**：维持原来的 giftChanceFor，性格不掺和。
  *
  * 送给玩家的是真东西 —— 进背包、写日志，UI 还会弹一屏「收到赠礼」；
  * 送给别的邻居的只是人情（NPC 没有背包），两边各记一条动态。
  */
 function actGift(npc, ctx, at) {
+  const factor = giftPersonalityFactor(npc.personality);
   const cands = [];
   for (const other of ctx.neighbours) {
     if (other === npc) continue;
     const rel = ctx.rel(npc.id, other.id);
-    const chance = giftChanceFor(rel);
+    const chance = rel >= REL_CARE_PRIORITY
+      ? closeGiftChanceFor(rel) * factor
+      : giftChanceFor(rel);
     if (chance > 0) cands.push({ owner: other, rel, chance });
   }
   if (ctx.farm) {
     const rel = ctx.rel(npc.id, ctx.farm.id);
-    const chance = giftChanceFor(rel);
+    const chance = rel >= REL_CARE_PRIORITY
+      ? closeGiftChanceFor(rel) * factor
+      : giftChanceFor(rel);
     if (chance > 0) cands.push({ owner: ctx.farm, rel, chance });
   }
   if (!cands.length) return null;
@@ -482,6 +532,8 @@ function actGift(npc, ctx, at) {
   const crop = CROPS[cropId];
   const gain = giftRelGain(crop.lv);
   ctx.relAdjust(npc.id, target.owner.id, gain);
+  // 送礼达人榜：送出一份记一笔
+  ctx.daily?.(npc.id, 'gift', 1, at);
 
   if (target.owner === ctx.farm) {
     ctx.receiveGift?.(at, npc, cropId, 1);
@@ -494,11 +546,19 @@ function actGift(npc, ctx, at) {
 /**
  * 买张藏宝图去寻宝：等级门槛、价格、奖励池都和玩家完全一致，
  * 只是 NPC 不在场，奖励按池子价值直接算法结算。
+ *
+ * @param {object} npc
+ * @param {?object} farm 玩家农场视图（只为上报时报）
+ * @param {?object} ctx 模拟上下文（含每日榜单记账）
+ * @param {number} at
  */
-function actAdventure(npc, farm, at) {
+function actAdventure(npc, farm, ctx, at) {
   if (Math.random() >= NPC_ADVENTURE_CHANCE) return null;
   const trip = rollNpcAdventure(npc);
   if (!trip) return null;
+
+  // 冒险王榜：按藏宝图等级分榜，记这一趟带回的奖励价值
+  ctx?.daily?.(npc.id, `adv${trip.map.tier}`, trip.gain, at);
 
   const net = trip.net >= 0 ? `赚了 ${formatCoins(trip.net)}` : `亏了 ${formatCoins(-trip.net)}`;
   // 赚回图价以上才算「大奖」，亏本的不配上时报
@@ -518,18 +578,18 @@ function actAdventure(npc, farm, at) {
  * 动作内部自己挑需要的部分 —— 模拟层始终不认识 store，好感度也是「传进来的」。
  */
 const STEPS = {
-  harvest: (npc, at) => actHarvest(npc, at),
-  plant: (npc, at) => actPlant(npc, at),
-  tend: (npc, at) => actTend(npc, at),
+  harvest: (npc, at, ctx) => actHarvest(npc, ctx, at),
+  plant: (npc, at, ctx) => actPlant(npc, ctx, at),
+  tend: (npc, at, ctx) => actTend(npc, ctx, at),
   /** 收尾补种：有空地才种，不让邻居的农场长期荒着 */
-  replant: (npc, at) => (npc.plots.some((p) => !p.cropId) ? actPlant(npc, at) : null),
+  replant: (npc, at, ctx) => (npc.plots.some((p) => !p.cropId) ? actPlant(npc, ctx, at) : null),
   feed: (npc, at) => actFeedDog(npc, at),
   steal: (npc, at, ctx) => actSteal(npc, ctx, at),
-  /** 帮别人照料一块地（玩家或别的邻居，看交情） */
+  /** 帮别人照料一块地（玩家或别的邻居，≥100 的亲近档优先） */
   care: (npc, at, ctx) => actCare(npc, ctx, at),
-  /** 给交情够好的人送一份产出 */
+  /** 给交情够好的人送一份产出（≥100 走性格加权的新概率） */
   gift: (npc, at, ctx) => actGift(npc, ctx, at),
-  adventure: (npc, at, ctx) => actAdventure(npc, ctx.farm, at),
+  adventure: (npc, at, ctx) => actAdventure(npc, ctx.farm, ctx, at),
 };
 
 /**

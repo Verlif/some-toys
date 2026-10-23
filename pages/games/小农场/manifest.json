@@ -1,0 +1,30 @@
+{
+  "name": "阳光牧场 · 文字版",
+  "short_name": "阳光牧场",
+  "description": "种地、照料、收获、偷菜、喂狗、寻宝 —— 一个温暖的文字农场",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f8f0",
+  "theme_color": "#327f37",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
