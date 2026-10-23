@@ -27,8 +27,13 @@
 - **种子制造间**（`farm.workshop`）：Lv.5+2000 解锁。份数 `max(1, round(一轮平均产出/2))`，
   工本费 `round(种子价/2)`（第 34 轮改，原来是市价折算+全价工本费）。升级看**造过的种类数**。
 - **照料**：`下次 = now + [次数×1h, (次数×2+1)h]`，不排进成熟前 15 分钟。欠水 −15%、欠虫 −40%。
-- **每日排行榜**（`store/daily.js`）：`state.dailyRows` 一天一行，表 `daily` 留 8 天。11 张榜。
+- **每日排行榜**（`store/daily.js`）：`state.dailyRows` 一期一行，表 `daily` 留 8 天。11 张榜。
   **每天下午 2 点结算**（`boardDayKey(ts)=dayKey(ts-14h)`，14:00 切日；签到仍用 `dayKey` 0 点切）。
+  ⚠️ **行的 date = 账期开始那天**，一期 = 该日 14:00 → 次日 14:00，次日 14:00 开奖
+  （所以上午的活算进「昨天」那一期，这是 14 点切日的必然结果）。界面上必须用
+  `boardPeriodText(date)` 把区间写出来，只写「昨日 · 10-22」会被当成自然日。
+  旧 0 点账期留下的行与新账期**同键不同义** → 启动时 `migrateBoardRows()` 比对
+  `progress.boardVersion`（`BOARD_VERSION=2`），不一致整表清空一次。
   `bump` 累加 / `bumpMax` 只留峰值（打理王=全场最高角标）。送礼=产出售价总和。
   settled 冻结；bulkAdvance 不进榜。前三名递减、并列都发，金币 100/50/30。
   ⚠️ 结算 `persistNow(true)` 连 farm/bag/news 一起写。UI `ui/subpages/rank.js`。

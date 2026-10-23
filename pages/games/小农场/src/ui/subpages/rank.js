@@ -2,10 +2,10 @@
  * 每日排行榜子页面。
  *
  * 布局：底部 6 个大类 TAB 切换单榜；冒险王的档位分段条只在冒险王 TAB 下显示（顶部）。
- * 每张榜单卡片下方紧跟「今日实时排名」（含 NPC），bump 防抖后发 EVENTS.STATS，
+ * 每张榜单卡片下方紧跟「本期实时排名」（含 NPC），bump 防抖后发 EVENTS.STATS，
  * main.js 挂 renderCurrent 自动刷新。
  *
- * 展示**昨天**的榜单（下午 2 点结算，前三名递减发奖，并列都发）；
+ * 展示**昨日**那一期（统计昨日 14:00 → 今日 14:00，今天下午 2 点开奖）；
  * 本页只读 store/daily.js，不发奖、不改数据。
  */
 import { escapeHtml } from '../../core/dom.js';
@@ -18,8 +18,25 @@ import {
   todayRank,
   todayValue,
 } from '../../store/daily.js';
+import { boardCountdown, boardDayKey, boardPeriodText } from '../../core/utils.js';
 import { MAP_TIERS } from '../../data/adventure.js';
 import { keepBarScroll } from '../scroll-keep.js';
+
+/* ---------- 倒计时：每 30 秒刷新「距出榜结算」 ---------- */
+let countdownTimer = 0;
+
+function startCountdownTicker(body) {
+  stopCountdownTicker();
+  if (!body) return;
+  countdownTimer = setInterval(() => {
+    const el = body.querySelector('[data-role="countdown"]');
+    if (el && document.contains(el)) el.textContent = boardCountdown().text;
+    else stopCountdownTicker();
+  }, 30_000);
+}
+function stopCountdownTicker() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = 0; }
+}
 
 /** 底部 6 个大类 TAB */
 const TABS = [
@@ -67,7 +84,7 @@ function rowHTML(entry, board, extraClass = '') {
     </div>`;
 }
 
-/** 昨日榜单卡 */
+/** 上期榜单卡 */
 function yesterdayHTML(date, board) {
   const top = boardRank(date, board.metric, 3);
   const inTop = top.some((e) => e.actor === PLAYER_ID);
@@ -90,7 +107,7 @@ function yesterdayHTML(date, board) {
         <span class="rank-icon">${board.icon}</span>
         <div class="rank-head-text">
           <div class="rank-name">昨日 · ${board.name}</div>
-          <div class="rank-desc">${board.desc}</div>
+          <div class="rank-desc">${board.desc} · 统计 ${boardPeriodText(date)}</div>
         </div>
       </div>
       <div class="rank-rows">
@@ -102,7 +119,7 @@ function yesterdayHTML(date, board) {
     </div>`;
 }
 
-/** 今日实时排名卡（含 NPC，随 bump 实时刷新） */
+/** 本期实时排名卡（含 NPC，随 bump 实时刷新） */
 function todayHTML(board) {
   const top = todayRank(board.metric, 5);
   const inTop = top.some((e) => e.actor === PLAYER_ID);
@@ -123,14 +140,14 @@ function todayHTML(board) {
       <div class="rank-head">
         <span class="rank-icon">⏳</span>
         <div class="rank-head-text">
-          <div class="rank-name">今日实时 · ${board.name}</div>
-          <div class="rank-desc">今天的数据明天下午 2 点结算，这里实时更新，不计奖</div>
+          <div class="rank-name">本期实时 · ${board.name}</div>
+          <div class="rank-desc">统计 ${boardPeriodText(boardDayKey())} · 下午 2 点开奖，这里实时更新，不计奖</div>
         </div>
       </div>
       <div class="rank-rows">
         ${top.length
           ? top.map((e) => rowHTML(e, board, 'today')).join('')
-          : '<div class="rank-empty">今天这项还没人动手</div>'}
+          : '<div class="rank-empty">本期这项还没人动手</div>'}
         ${meRow}
       </div>
     </div>`;
@@ -156,11 +173,13 @@ function heroHTML() {
   return settled
     ? `<div class="rank-hero">
          <div class="rank-hero-date">📅 昨日榜单 · ${settled.date}</div>
-         <div class="rank-hero-sub">每天下午 2 点结算，前三名有奖，并列都发</div>
+         <div class="rank-hero-sub">统计 ${boardPeriodText(settled.date)} · 每天下午 2 点开奖，前三名有奖，并列都发</div>
+         <div class="rank-hero-count">⏳ 本期距出榜 <b data-role="countdown">${boardCountdown().text}</b></div>
        </div>`
     : `<div class="rank-hero empty">
          <div class="rank-hero-date">🏆 榜单准备中</div>
-         <div class="rank-hero-sub">第一页榜单在明天下午 2 点后产生，今天先努力表现吧</div>
+         <div class="rank-hero-sub">第一期榜单在下午 2 点后出，先努力表现吧</div>
+         <div class="rank-hero-count">⏳ 本期距出榜 <b data-role="countdown">${boardCountdown().text}</b></div>
        </div>`;
 }
 
@@ -170,6 +189,7 @@ export const rankPage = {
     const settled = latestSettled();
     const board = currentBoard();
     const isAdv = activeBoard === 'adv';
+    startCountdownTicker(body);
 
     body.innerHTML = `
       ${heroHTML()}

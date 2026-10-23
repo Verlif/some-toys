@@ -32,7 +32,7 @@ import { mountShop, renderShop } from './ui/views/shop.js';
 import { mountFriends, renderFriends, checkOnlineVisits } from './ui/views/friends.js';
 import { mountNews, renderNews } from './ui/views/news.js';
 import { markSessionStart, pollOnline } from './store/social.js';
-import { checkRollover, flushDaily } from './store/daily.js';
+import { checkRollover, flushDaily, migrateBoardRows } from './store/daily.js';
 import { initPeers, joinVillage, villageConfig } from './store/peers.js';
 import { initPeerGift } from './store/peer-gift.js';
 import { initPeerActions } from './store/peer-actions.js';
@@ -135,8 +135,14 @@ async function boot() {
   // 离线期间邻居送的礼：启动画面收起来之后再整屏补播
   flushOfflineGifts();
 
-  // 每日榜单：补算可能跨越了几天，先把结束的日子结算掉（0 点整在线也会走到这）
-  //  —— 在 settleWorld 之后调用，补算出来的邻居行为才会记进正确的日期
+  // 每日榜单：先确认账期版本（旧版 0 点账期的行与新账期同键不同义，整表清一次），
+  // 再补算跨越了几天、已经到期的期次 —— 必须在 settleWorld 之后，
+  // 补算出来的邻居行为才会记进正确的期次
+  try {
+    await migrateBoardRows();
+  } catch (error) {
+    console.error(error);
+  }
   checkRollover();
 
   // 联机：上次是「在村镇里」就自动回去；主动退出过的人不再打扰

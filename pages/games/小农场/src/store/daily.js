@@ -257,8 +257,15 @@ function settleDay(row) {
  */
 export function checkRollover(now = Date.now()) {
   const today = boardDayKey(now);
+  // 兜底：设备时钟被往前调过时可能结算出「未来」的行，把这类行解锁，
+  // 让它们等到真正到期再结算（正常时间线上这个循环不会命中）。
+  // 旧账期的历史行由 migrateBoardRows() 在启动时整表清掉，不走这里。
+  for (const row of Object.values(state.dailyRows)) {
+    if (row.settled && dayIndex(row.date) > dayIndex(today)) row.settled = false;
+  }
+  // 只结算**严格早于**当前 boardDayKey 的行
   const pending = Object.values(state.dailyRows)
-    .filter((row) => !row.settled && row.date !== today)
+    .filter((row) => !row.settled && dayIndex(row.date) < dayIndex(today))
     .sort((a, b) => dayIndex(a.date) - dayIndex(b.date));
   if (!pending.length) return [];
 
@@ -280,6 +287,34 @@ export function checkRollover(now = Date.now()) {
   const last = results[results.length - 1];
   notify(`🏆 ${last.date} 的每日榜单已出炉，去「更多 → 排行榜」看看`, 'gold');
   return results;
+}
+
+/* ---------- 账期版本 ---------- */
+
+/**
+ * 账期版本。
+ *
+ * v2 = 「昨天 14:00 → 今天 14:00 算一期，今天下午 2 点开奖」。
+ * 旧版（按 0 点切日）留下的行用的是**同一把日期键、不同的时间窗**，
+ * 混在一起会互相覆盖、还会让 `bump` 撞上 `settled` 把数据静默丢掉，
+ * 所以升级时整表清空一次（最多 8 天历史，代价可接受）。
+ */
+const BOARD_VERSION = 2;
+
+/**
+ * 校验账期版本，不一致就把每日榜单整表清空。
+ * 必须在 checkRollover 之前调用，否则旧行可能先被当成新账期结算掉。
+ * @returns {Promise<boolean>} 是否清空过
+ */
+export async function migrateBoardRows() {
+  const progress = state.farm?.progress;
+  if (!progress || progress.boardVersion === BOARD_VERSION) return false;
+  state.dailyRows = {};
+  progress.boardVersion = BOARD_VERSION;
+  // 进度字段在 farm 上，清空的是 daily 表，两张都要落盘
+  await persistNow(true);
+  emit(EVENTS.DAILY);
+  return true;
 }
 
 /* ---------- 查询（UI 只读） ---------- */

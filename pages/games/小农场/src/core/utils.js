@@ -84,11 +84,47 @@ export function dayKey(ts = Date.now()) {
  *
  * 14:00 之前算「昨天」，14:00 起算「今天」。
  * 实现：把时间往前拨 14 小时再取自然日 —— 13:59 的 3月15日 拨回 3月14日 23:59。
+ * 全部用本地时间（getFullYear/getMonth/getDate），不是 UTC。
  * @param {number} [ts]
  * @returns {string}
  */
 export function boardDayKey(ts = Date.now()) {
   return dayKey(ts - 14 * 3600_000);
+}
+
+/**
+ * 某一期榜单的统计区间文本，形如「10/22 14:00 → 10/23 14:00」。
+ *
+ * 行的 `date` 是**账期开始那天**（见 boardDayKey），所以区间是 date 14:00 到次日 14:00。
+ * 界面上必须把它写出来 —— 只写「昨日 · 10-22」的话，玩家会以为统计的是
+ * 10-22 的 0 点到 24 点（见 docs/04-数值平衡.md 的「每日排行榜」）。
+ * @param {string} dateKey
+ * @returns {string}
+ */
+export function boardPeriodText(dateKey) {
+  const [y, m, d] = String(dateKey).split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const start = new Date(y, m - 1, d, 14, 0);
+  const end = new Date(y, m - 1, d + 1, 14, 0);
+  const fmt = (dt) => `${dt.getMonth() + 1}/${dt.getDate()} 14:00`;
+  return `${fmt(start)} → ${fmt(end)}`;
+}
+
+/**
+ * 距离下一次「下午 2 点出榜」还剩多久。
+ * @param {number} [ts] 当前时刻
+ * @returns {{ms: number, text: string}} text 形如「3 小时 24 分」或「23 小时 59 分」
+ */
+export function boardCountdown(ts = Date.now()) {
+  const now = new Date(ts);
+  const target = new Date(now);
+  target.setHours(14, 0, 0, 0);
+  if (now >= target) target.setDate(target.getDate() + 1);
+  const ms = target - now;
+  const totalMin = Math.floor(ms / 60_000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return { ms, text: h > 0 ? `${h} 小时 ${m} 分` : `${m} 分` };
 }
 
 /**

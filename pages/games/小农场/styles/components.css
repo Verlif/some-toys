@@ -2816,3 +2816,16 @@
   color: var(--green);
   line-height: 1.4;
 }
+
+/* 排行榜出榜倒计时 */
+.rank-hero-count {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rank-hero-count b {
+  color: var(--green-d);
+  font-weight: 700;
+  font-family: inherit;
+}
+.rank-hero.empty .rank-hero-count b { color: var(--gold); }
