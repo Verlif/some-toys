@@ -146,3 +146,18 @@ export function cornerBonusPct(plot) {
   const total = (1 + (plot?.boost || 0)) * (1 + (plot?.yieldBonus || 0)) - 1;
   return Math.round(total * 100);
 }
+
+/**
+ * 一座农场所有地块里最高的角标加成百分比（「打理王」口径 = 全场当前最高）。
+ * @param {object[]} plots
+ * @returns {number} 整数百分比
+ */
+export function farmMaxBonus(plots) {
+  let max = 0;
+  for (const plot of plots || []) {
+    if (!plot?.cropId) continue;
+    const v = cornerBonusPct(plot);
+    if (v > max) max = v;
+  }
+  return max;
+}

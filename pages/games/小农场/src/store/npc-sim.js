@@ -43,7 +43,7 @@ import {
   shuffled,
   syncNpcPlots,
 } from '../data/friends.js';
-import { carePenalty, cornerBonusPct, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
+import { carePenalty, cornerBonusPct, farmMaxBonus, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import {
   REL_CARE_PRIORITY,
   REL_PER_CARE,
@@ -169,7 +169,7 @@ function actHarvest(npc, ctx, at) {
     gainExp(npc, expOf(crop.lv, boosted));
 
     // 每日榜单：打理王 = 收获时地块的角标加成；农事劳模 = 每收一块地
-    ctx?.daily?.(npc.id, 'manage', cornerBonusPct(plot), at);
+    ctx?.dailyMax?.(npc.id, 'manage', farmMaxBonus(npc.plots), at);
     ctx?.daily?.(npc.id, 'work', 1, at);
 
     // 多茬作物进入再生轮次，否则清空这块地
@@ -291,7 +291,7 @@ function actFeedDog(npc, at) {
   if (satiety > 60) return null;
 
   const weights = PERSONALITIES[npc.personality].weights;
-  if (Math.random() >= Math.min(0.85, weights.tend * 0.28)) return null;
+  if (Math.random() >= Math.min(0.95, weights.tend * 0.40)) return null;
   if (npc.coins < DOG_FOOD_PRICE) return null;
 
   npc.coins -= DOG_FOOD_PRICE;
@@ -437,7 +437,7 @@ const careWanted = (plot, at) => Boolean(plot.cropId)
  */
 function actCare(npc, ctx, at) {
   const weights = PERSONALITIES[npc.personality].weights;
-  if (Math.random() >= Math.min(0.6, weights.tend * 0.12)) return null;
+  if (Math.random() >= Math.min(0.85, weights.tend * 0.22)) return null;
 
   const targets = [];
   for (const other of ctx.neighbours) {
@@ -533,7 +533,7 @@ function actGift(npc, ctx, at) {
   const gain = giftRelGain(crop.lv);
   ctx.relAdjust(npc.id, target.owner.id, gain);
   // 送礼达人榜：送出一份记一笔
-  ctx.daily?.(npc.id, 'gift', 1, at);
+  ctx.daily?.(npc.id, 'gift', crop.sell, at);
 
   if (target.owner === ctx.farm) {
     ctx.receiveGift?.(at, npc, cropId, 1);

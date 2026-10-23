@@ -23,7 +23,7 @@ import { BOOST_CAP, LIVE_STEP_MS, LOG_LIMIT, PEST_YIELD_BONUS } from '../data/fr
 import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
-import { bump } from './daily.js';
+import { bump, bumpMax } from './daily.js';
 import { catchChance, DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
@@ -156,6 +156,7 @@ function simCtx(farm = farmView()) {
     receiveGift,
     // 每日榜单记账：actor 是邻居农场 id，at 决定记到哪天（补算的访问发生在过去）
     daily: (actor, metric, n = 1, at = Date.now()) => bump(actor, metric, n, at),
+    dailyMax: (actor, metric, n = 0, at = Date.now()) => bumpMax(actor, metric, n, at),
   };
 }
 
@@ -700,7 +701,7 @@ export async function sendGift(friendId, cropId, n = 1) {
   const gain = unit * qty;
   const now = Date.now();
   const relation = adjustRelation(PLAYER_ID, friend.id, gain);
-  bump(PLAYER_ID, 'gift', qty);
+  bump(PLAYER_ID, 'gift', crop.sell * qty);
   const times = qty > 1 ? ` ×${qty}` : '';
 
   logFriend(friend, now, '🎁', `${state.farm.name} 送来 ${crop.emoji}${crop.name}${times}`);

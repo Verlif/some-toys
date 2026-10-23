@@ -16,13 +16,13 @@ import { SOILS, nextSoilId } from '../data/soils.js';
 import { plotPrice } from '../data/plots.js';
 import { seedId, produceId } from '../data/keys.js';
 import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
-import { carePenalty, cornerBonusPct, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
+import { carePenalty, cornerBonusPct, farmMaxBonus, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { randInt } from '../core/utils.js';
 import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
 import { notify } from './notify.js';
 import { broadcastToast } from './peers.js';
-import { bump } from './daily.js';
+import { bump, bumpMax } from './daily.js';
 
 /** 一次再生轮次的最短时长，防止高等级作物的 regrow 系数把时间压没 */
 const MIN_REGROW_MS = 30_000;
@@ -533,7 +533,7 @@ function collectPlot(plot) {
   // 收完之后地块会被重置，提示里要用的加成得先存下来
   const boost = plot.boost || 0;
   // 每日榜单：打理王 = 收获时带着的角标加成（重置前算）；农事劳模 = 收获一块地
-  bump(PLAYER_ID, 'manage', cornerBonusPct(plot));
+  bumpMax(PLAYER_ID, 'manage', farmMaxBonus(state.farm.plots));
   bump(PLAYER_ID, 'work');
   const remaining = beginRegrow(plot, crop, soil);
   if (!remaining) clearPlot(plot);

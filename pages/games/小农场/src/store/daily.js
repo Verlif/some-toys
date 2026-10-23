@@ -1,5 +1,5 @@
 /**
- * 每日排行榜：当日行为计数 + 0 点结算 + 榜单查询。
+ * 每日排行榜：当日行为计数 + 下午 2 点结算 + 榜单查询。
  *
  * 数据形状（state.dailyRows：日期键 → 一行，一天一行）：
  *   { date: '2026-10-22', settled: false,
@@ -7,9 +7,9 @@
  * 33 个参与者（玩家 + 32 位邻居）共用一行，体量极小，整表清空重写最不容易出错。
  *
  * 三条设计底线：
- *   1. **按发生日记账**：bump 带 at，归到 dayKey(at) 那一天 ——
+ *   1. **按发生日记账**：bump 带 at，归到 boardDayKey(at) 那一天 ——
  *      离线补算的邻居访问发生在过去某天，不能记到「今天」头上；
- *   2. **已结算的日子冻结**：0 点发过奖的行不再接受迟到的动作，
+ *   2. **已结算的日子冻结**：下午 2 点发过奖的行不再接受迟到的动作，
  *      迟到的直播演出（跨 midnight 那一刻）也不会改写已发出的奖；
  *   3. **远期聚合不进榜**：bulkAdvance 没有 ctx，本来就调不到 bump，
  *      只有逐条模拟（最近 7 天）与实时演出记账 —— 模糊数据不跟精确数据同榜。
@@ -24,7 +24,7 @@ import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
-import { dayKey, formatCoins } from '../core/utils.js';
+import { boardDayKey, formatCoins } from '../core/utils.js';
 import { MAP_TIERS } from '../data/adventure.js';
 import { mapId, itemLabel } from '../data/keys.js';
 import { SPRINKLER_ID, PESTICIDE_ID, HARVESTER_ID } from '../data/items.js';
@@ -63,7 +63,7 @@ export const BOARDS = [
   },
   {
     metric: 'manage', icon: '🌾', name: '打理王',
-    desc: '收获时地块「+加成」角标的累计百分比',
+    desc: '农场内最高「+加成」角标的百分比（全场峰值）',
     format: (v) => `+${v}%`,
     rewards: [
       { coins: 100, items: { boost10: 3, [HARVESTER_ID]: 3 } },
@@ -73,8 +73,8 @@ export const BOARDS = [
   },
   {
     metric: 'gift', icon: '🎁', name: '送礼达人',
-    desc: '送出的礼物份数',
-    format: (v) => `${v} 份`,
+    desc: '送出礼物的总价值（产出售价合计）',
+    format: (v) => formatCoins(v),
     rewards: [
       { coins: 100, items: { boost10: 2 } },
       { coins: 50 },
@@ -131,17 +131,29 @@ function rowOf(key) {
  */
 export function bump(actor, metric, n = 1, at = Date.now()) {
   if (!actor || !metric || !Number.isFinite(n) || n === 0) return;
-  const row = rowOf(dayKey(at));
-  // 已结算的日子冻结：迟到的动作不改榜单、不改已发出的奖
+  const row = rowOf(boardDayKey(at));
   if (row.settled) return;
   const stats = row.stats[actor] || (row.stats[actor] = {});
   stats[metric] = (stats[metric] || 0) + n;
   schedulePersist();
 }
 
-/** 玩家今天某指标的值（0 点前「统计中」的展示用） */
+/**
+ * 记一笔「峰值」型行为：只保留最大值，不累加。
+ * 打理王（全场最高加成百分比）用这个。
+ */
+export function bumpMax(actor, metric, n = 0, at = Date.now()) {
+  if (!actor || !metric || !Number.isFinite(n) || n <= 0) return;
+  const row = rowOf(boardDayKey(at));
+  if (row.settled) return;
+  const stats = row.stats[actor] || (row.stats[actor] = {});
+  stats[metric] = Math.max(stats[metric] || 0, n);
+  schedulePersist();
+}
+
+/** 玩家今天某指标的值（下午 2 点前「统计中」的展示用） */
 export function todayValue(metric) {
-  const row = state.dailyRows[dayKey()];
+  const row = state.dailyRows[boardDayKey()];
   const value = row?.stats[PLAYER_ID]?.[metric];
   return Number.isFinite(value) ? value : 0;
 }
@@ -238,13 +250,13 @@ function settleDay(row) {
  * 跨天检查：把已经结束但还没结算的日子逐天结算掉。
  *
  * 两个调用时机：启动时（补算之后）与在线时的每分钟 tick。
- * 0 点那一刻玩家正好在线上 → 当场发奖并 toast；不在线则下次进游戏补结，同样提示。
+ * 下午 2 点那一刻玩家正好在线上 → 当场发奖并 toast；不在线则下次进游戏补结，同样提示。
  *
  * @param {number} [now]
  * @returns {Array<{date: string, awards: object[], playerWon: boolean}>} 结算掉的每一天（通常只有一页）
  */
 export function checkRollover(now = Date.now()) {
-  const today = dayKey(now);
+  const today = boardDayKey(now);
   const pending = Object.values(state.dailyRows)
     .filter((row) => !row.settled && row.date !== today)
     .sort((a, b) => dayIndex(a.date) - dayIndex(b.date));
@@ -295,7 +307,7 @@ export function playerStanding(date, metric) {
 
 /** 今日（未结算）某榜的实时排名，含 NPC */
 export function todayRank(metric, n = 5) {
-  const date = dayKey(Date.now());
+  const date = boardDayKey(Date.now());
   return rankOf(state.dailyRows[date] || { stats: {} }, metric, n);
 }
 

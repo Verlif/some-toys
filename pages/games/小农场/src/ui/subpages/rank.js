@@ -5,7 +5,7 @@
  * 每张榜单卡片下方紧跟「今日实时排名」（含 NPC），bump 防抖后发 EVENTS.STATS，
  * main.js 挂 renderCurrent 自动刷新。
  *
- * 展示**昨天**的榜单（0 点结算，前三名递减发奖，并列都发）；
+ * 展示**昨天**的榜单（下午 2 点结算，前三名递减发奖，并列都发）；
  * 本页只读 store/daily.js，不发奖、不改数据。
  */
 import { escapeHtml } from '../../core/dom.js';
@@ -124,7 +124,7 @@ function todayHTML(board) {
         <span class="rank-icon">⏳</span>
         <div class="rank-head-text">
           <div class="rank-name">今日实时 · ${board.name}</div>
-          <div class="rank-desc">今天的数据明天 0 点结算，这里实时更新，不计奖</div>
+          <div class="rank-desc">今天的数据明天下午 2 点结算，这里实时更新，不计奖</div>
         </div>
       </div>
       <div class="rank-rows">
@@ -156,11 +156,11 @@ function heroHTML() {
   return settled
     ? `<div class="rank-hero">
          <div class="rank-hero-date">📅 昨日榜单 · ${settled.date}</div>
-         <div class="rank-hero-sub">每天 0 点结算，前三名有奖，并列都发</div>
+         <div class="rank-hero-sub">每天下午 2 点结算，前三名有奖，并列都发</div>
        </div>`
     : `<div class="rank-hero empty">
          <div class="rank-hero-date">🏆 榜单准备中</div>
-         <div class="rank-hero-sub">第一页榜单在明天 0 点后产生，今天先努力表现吧</div>
+         <div class="rank-hero-sub">第一页榜单在明天下午 2 点后产生，今天先努力表现吧</div>
        </div>`;
 }
 

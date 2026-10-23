@@ -119,11 +119,11 @@ export const helpWeightFor = (rel) => clamp(1 + rel / 200, 0.2, 2);
 
 /**
  * 送礼的门槛：好感不够的人不会收到礼物。
- * 60 分以下免谈，越高越容易 —— 但整体仍然是一件稀罕事。
+ * 60 分以下免谈，越高越容易。
  * @param {number} rel
  */
 export const giftChanceFor = (rel) => (
-  rel < 60 ? 0 : clamp(0.04 + (rel - 60) / 140 * 0.26, 0, 0.3)
+  rel < 60 ? 0 : clamp(0.08 + (rel - 60) / 140 * 0.42, 0, 0.5)
 );
 
 /**
@@ -133,14 +133,14 @@ export const giftChanceFor = (rel) => (
 export const REL_CARE_PRIORITY = 100;
 
 /**
- * 亲近档的送礼概率：100 → 0.15，200 → 0.35，线性递增。
+ * 亲近档的送礼概率：100 → 0.25，200 → 0.55，线性递增。
  *
- * 与 giftChanceFor（60 分起、封顶 0.3）是两档不同的交情：
+ * 与 giftChanceFor（60 分起、封顶 0.5）是两档不同的交情：
  * 老门槛管「偶尔念着你」，这个管「登门造访之后顺手带一份」。
  * @param {number} rel
  */
 export const closeGiftChanceFor = (rel) => (
-  rel < REL_CARE_PRIORITY ? 0 : clamp(0.15 + (rel - REL_CARE_PRIORITY) / 100 * 0.2, 0, 0.35)
+  rel < REL_CARE_PRIORITY ? 0 : clamp(0.25 + (rel - REL_CARE_PRIORITY) / 100 * 0.3, 0, 0.55)
 );
 
 /** 性格对亲近档送礼概率的修正：热心的最爱送，爱占便宜的最不爱 */

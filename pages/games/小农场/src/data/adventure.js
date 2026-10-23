@@ -95,7 +95,7 @@ const POOL_VALUE_RATIO = 3;
 const REWARD_CARD_RATIO = 0.3;
 
 /** 邻居每次上线去买藏宝图的概率 */
-export const NPC_ADVENTURE_CHANCE = 0.12;
+export const NPC_ADVENTURE_CHANCE = 0.20;
 
 /**
  * 每张图额外附带一只守护犬的概率。

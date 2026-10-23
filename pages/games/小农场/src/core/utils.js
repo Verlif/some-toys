@@ -70,12 +70,25 @@ export function formatCoins(n) {
 
 /**
  * 本地日期键 YYYY-M-D（不用 toISOString，避免时区偏移）
+ * 0 点切日 —— 签到、日历等按自然日的地方用这个。
  * @param {number} [ts]
  * @returns {string}
  */
 export function dayKey(ts = Date.now()) {
   const d = new Date(ts);
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+/**
+ * 排行榜日期键：**按 14:00 切日**（每天下午 2 点结算前一天）。
+ *
+ * 14:00 之前算「昨天」，14:00 起算「今天」。
+ * 实现：把时间往前拨 14 小时再取自然日 —— 13:59 的 3月15日 拨回 3月14日 23:59。
+ * @param {number} [ts]
+ * @returns {string}
+ */
+export function boardDayKey(ts = Date.now()) {
+  return dayKey(ts - 14 * 3600_000);
 }
 
 /**

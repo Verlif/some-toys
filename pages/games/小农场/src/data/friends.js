@@ -43,7 +43,7 @@ export const PERSONALITIES = {
  * 单独抽出来而不是混进性格权重：「偷不偷」是邻居之间最直观的差异，
  * 玩家被顺几次就能记住谁手不干净，而不是靠概率表算出来的错觉。
  */
-export const STEAL_CHANCE = { never: 0, rare: 0.12, often: 0.45, always: 0.9 };
+export const STEAL_CHANCE = { never: 0, rare: 0.18, often: 0.65, always: 0.95 };
 
 /** 倾向的中文说明，显示在邻居详情里 */
 export const STEAL_LABELS = {

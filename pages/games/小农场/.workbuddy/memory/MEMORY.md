@@ -28,11 +28,13 @@
   工本费 `round(种子价/2)`（第 34 轮改，原来是市价折算+全价工本费）。升级看**造过的种类数**。
 - **照料**：`下次 = now + [次数×1h, (次数×2+1)h]`，不排进成熟前 15 分钟。欠水 −15%、欠虫 −40%。
 - **每日排行榜**（`store/daily.js`）：`state.dailyRows` 一天一行，表 `daily` 留 8 天。11 张榜。
-  `bump(actor, metric, n, at)` 按 `dayKey(at)` 记账；settled 冻结；bulkAdvance 不进榜。
-  结算 `checkRollover()`：启动+每分钟 tick+visibilitychange。前三名递减、并列都发，金币 100/50/30。
+  **每天下午 2 点结算**（`boardDayKey(ts)=dayKey(ts-14h)`，14:00 切日；签到仍用 `dayKey` 0 点切）。
+  `bump` 累加 / `bumpMax` 只留峰值（打理王=全场最高角标）。送礼=产出售价总和。
+  settled 冻结；bulkAdvance 不进榜。前三名递减、并列都发，金币 100/50/30。
   ⚠️ 结算 `persistNow(true)` 连 farm/bag/news 一起写。UI `ui/subpages/rank.js`。
 - **好感度**：−200~200，打理 +1、偷菜成功 0、被逮 `dogCaughtRelLoss(售价)=max(1,round(售价/10))`、
-  送 `max(1,等级/2)`。**亲近档 ≥100**：NPC 优先打理 ≥100，送礼按 `closeGiftChanceFor×性格系数`。
+  送 `max(1,等级/2)`。**亲近档 ≥100**：NPC 优先打理 ≥100，`closeGiftChanceFor`（100→0.25，200→0.55）
+  ×性格系数送礼；<100 `giftChanceFor` 封顶 0.5。概率第 36 轮整体上调约 1.5~2 倍。
 - **土地逐级晋升**：`nextSoilId`，`upgradeSoil` 拦跳级。效果：yieldMul/timeMul/expMul 三处生效。
 - **仓库卖出**：`.qty` 步进器，默认全量。列表图鉴标记 `.codex-mark` **只在点亮时渲染**（第 32 轮）。
 
@@ -60,7 +62,8 @@
 
 - 邻居同用 `unlockedPlotCount`；偷菜 `stealable()` 要 `!plot.guarded`。
 - NPC 模拟纯计算，`simCtx()` 注入 rel/receiveGift/daily，npc-sim 不 import store。
-- **NPC 喂狗** `min(0.85, tend×0.28)`；NPC→玩家动作逻辑一直都有（被 60 条日志上限冲掉，已分 tab）。
+- **NPC 概率**（第 36 轮上调约 1.5~2 倍）：喂狗 `min(0.95, tend×0.40)`、打理 `min(0.85, tend×0.22)`、
+  偷菜 `{rare:0.18, often:0.65, always:0.95}`、冒险 0.20。NPC→玩家动作逻辑一直都有。
 
 ## 村镇联机
 
