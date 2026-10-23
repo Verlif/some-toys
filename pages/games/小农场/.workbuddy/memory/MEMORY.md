@@ -51,6 +51,9 @@
 
 ## UI 硬约束
 
+- **农场页顶部操作条**（第 37 轮）：`.farm-bar` 一张白卡放 `#page-farm` 首位、**流内跟着土地列表滚**，
+  上排守护犬+日志方块、下排三格一键（图标/名字/橙色待办数/灰色存量）。**不要再往底部堆 fixed 浮层**，
+  `--farm-tools-h` 已删；`data-action` 必须写字面量（check.mjs 扫不到模板拼接的名字）。
 - 浮层统一：上滑进场、下拉关闭（`drag-close.js`）。**拖拽三条铁律**：①move 先查 tracking ②鼠标事件只在按下期间挂 ③Touch+preventDefault。
 - **弹窗四段式**：handle/head/body/foot。别用 sticky 代替 foot。支持叠层。
 - 地块 `.plot-main`+`.plot-side`(34px)；`.plot-side` ≤4 按钮。锁定地块 `.plot-lock` 空占位盒(47/38px)。

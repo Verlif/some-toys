@@ -270,128 +270,149 @@
 .tabbar button span { font-size: 19px; line-height: 1; }
 .tabbar button.active { color: var(--green-d); background: #eef7e9; }
 
-/* 农场日志入口：浮在底部导航上方，只在农场页出现 */
-.log-fab {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(74px + env(safe-area-inset-bottom) + var(--farm-tools-h));
-  z-index: 58;
-  display: none;
-  align-items: center;
-  gap: 6px;
-  border: none;
-  border-radius: 99px;
-  padding: 9px 16px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  color: #40503c;
-  background: rgba(255, 255, 255, .94);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 6px 18px rgba(50, 90, 45, .18);
-  cursor: pointer;
-  transition: transform .16s ease, box-shadow .16s ease;
-}
-body[data-page="farm"] .log-fab { display: inline-flex; }
-.log-fab:active { transform: translateX(-50%) scale(.95); }
-.log-fab span { font-size: 14px; line-height: 1; }
+/* ---------- 农场顶部操作条：守护犬 + 日志 + 一键照料 ----------
+   这一条在 `#page-farm` 里面、土地列表之上，**跟着列表一起滚走**。
+   以前它和日志按钮都是 fixed 浮在底部：滚到底时最后一排地块永远压在
+   它们下面，页面还得额外留 118px 空白去让位。挪到顶部后这些补丁全废。
 
-/* ---------- 底部工具条：守护犬 + 一键照料 ----------
-   一条竖着的堆叠：上面是上岗的守护犬，下面才是一键按钮。
-   整条的**实际高度**由 renderFarmTools() 量出来写进 --farm-tools-h，
-   日志按钮再用它抬起自己 —— 狗行有没有、按钮行有没有，都不会叠上去。 */
-body {
-  /* 兜底值：工具条还没渲染时日志按钮停在原位 */
-  --farm-tools-h: 0px;
-}
-
-.farm-tools {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(74px + env(safe-area-inset-bottom));
-  z-index: 59;
-  display: none;
+   造型是**一张卡**，不是几颗散落的药丸：
+     ① 上排 守护犬信息（左）+ 日志按钮（右）
+     ② 下排 一键照料三格，一行等宽、细分割线；没工具时整排不出现
+   两张皮贴在一起、共用一条圆角边，比浮在页面上的三个组件安静得多。 */
+.farm-bar {
+  display: flex;
   flex-direction: column;
+  margin: 12px 15px 0;
+  border: 1px solid #dce9d4;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(40, 80, 40, .06);
+  overflow: hidden;
+}
+.farm-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 12px;
+}
+.farm-bar-dog { flex: 1; min-width: 0; display: flex; }
+
+/* 守护犬：有没有狗、什么品种、拦得住几成（狗粮条贴着右侧，像一行读数） */
+.farm-dog {
+  display: flex;
   align-items: center;
   gap: 7px;
-  padding: 0 12px;
-}
-body[data-page="farm"] .farm-tools { display: flex; }
-.farm-tools[hidden] { display: none; }
-
-/* 农场页底部浮着三样东西：导航 74px + 工具条（高度不定）+ 日志按钮 34px。
-   滚动内容要给它们让位，否则滚到底时最后一排地块永远压在工具条底下。
-   118 = 74（导航）+ 34（日志按钮）+ 10（余量）。 */
-body[data-page="farm"] .app {
-  padding-bottom: calc(118px + env(safe-area-inset-bottom) + var(--farm-tools-h));
-}
-
-/* 上岗的守护犬：农场的常驻信息，独占一行 */
-.farm-dog-row { width: 100%; display: flex; justify-content: center; }
-.farm-dog {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 99px;
+  width: 100%;
+  min-width: 0;
+  min-height: 26px;
   font-size: 11.5px;
   font-weight: 600;
   color: #40503c;
-  background: #fff;
-  border: 1px solid #d8e6cf;
-  box-shadow: 0 4px 12px rgba(50, 90, 45, .1);
   white-space: nowrap;
 }
-.farm-dog.off { color: #a0aa9c; border-color: #e6ebe1; }
-.farm-dog-bar {
-  display: inline-block;
-  width: 42px;
+.farm-dog .fd-emoji { font-size: 15px; line-height: 1; font-style: normal; }
+.farm-dog .fd-name { flex-shrink: 0; }
+.farm-dog .fd-bar {
+  width: 46px;
   height: 5px;
+  flex-shrink: 0;
   border-radius: 99px;
   background: #eef1ea;
   overflow: hidden;
 }
-.farm-dog-bar > b {
+.farm-dog .fd-bar > b {
   display: block;
   height: 100%;
   border-radius: 99px;
   background: var(--gold);
   transition: width .3s ease;
 }
+.farm-dog .fd-pct { flex-shrink: 0; color: var(--green-d); font-variant-numeric: tabular-nums; }
+.farm-dog.off { color: #a7b1a3; }
 
-/* 一键工具按钮排成一行 */
-/* 三件工具（浇水 / 杀虫 / 收获）要挤在一行里：430px 刚好放得下，
-   360px 的小屏会换行 —— 宁可换行，也不要横向溢出把按钮切掉 */
-.farm-tool-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+/* 日志按钮：卡片右上角的小方块，和农田内容同一个平面，不再浮起来 */
+.farm-log {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: #f4f8f0;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .14s ease, background .14s ease;
+}
+.farm-log:active { transform: scale(.92); background: #e9f2e2; }
 
-.tool-btn {
-  display: inline-flex;
+/* 一键照料：三格等宽，靠一条 1px 竖线分隔。
+   宽屏上不给格子无限拉伸 —— 每格 290px 时内容缩在中间，
+   三个小字飘在一条长带上很难看；封顶 190px 居中成一排按钮。 */
+.farm-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border-top: 1px solid #eef3e9;
+}
+.farm-actions[hidden] { display: none; }
+@media (min-width: 720px) {
+  .farm-actions { grid-auto-columns: 190px; justify-content: center; }
+}
+
+.fa-btn {
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  border: 1px solid #d8e6cf;
-  border-radius: 99px;
-  padding: 8px 12px;
+  min-width: 0;
+  padding: 9px 4px;
+  border: none;
+  border-left: 1px solid #eef3e9;
+  background: none;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #40503c;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(50, 90, 45, .12);
   cursor: pointer;
-  white-space: nowrap;
+  transition: background .14s ease;
 }
-.tool-btn b { color: var(--green-d); }
-.tool-btn:disabled { color: #a8b3a5; border-color: #e6ebe1; box-shadow: none; cursor: default; }
-.tool-btn .tool-count {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #8a978a;
-  background: #f2f6ee;
+.fa-btn:first-child { border-left: none; }
+.fa-btn:active { background: #f2f7ee; }
+
+/* 待处理块数：紧跟在名字后面的橙色小药丸。
+   不钉在图标角上 —— 图标和名字只隔 5px，角标一定会压到名字上；
+   也不钉在格子角上 —— 离图标太远，看起来像分隔线上的一个点 */
+.fa-ico { font-size: 14px; line-height: 1; }
+.fa-badge {
+  min-width: 14px;
+  padding: 0 4px;
   border-radius: 99px;
-  padding: 1px 5px;
+  background: #e2844a;
+  color: #fff;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* 道具存量：永久版 ∞，消耗版 ×N */
+.fa-stock {
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #f3f7ef;
+  color: #8a978a;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 窄屏（<380px）三件工具齐活时，存量退场，只留「图标 + 名字 + 待办数」 */
+@media (max-width: 379px) {
+  .fa-stock { display: none; }
 }
 
 /* 主页面是文档滚动（农场 / 邻居）。

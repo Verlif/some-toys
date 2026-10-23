@@ -69,7 +69,15 @@
 
   <main>
     <section id="page-farm" class="page active">
-      <!-- 顶部条：农场名 + 全镇被偷计数（玩家与邻居累计，sticky 贴在顶栏下方） -->
+      <!-- 顶部操作条：守护犬 + 农场日志 + 一键照料。
+           在土地列表之上、跟着列表一起滚走 —— 不再浮在底部压住最后一排地块 -->
+      <div class="farm-bar">
+        <div class="farm-bar-row">
+          <div class="farm-bar-dog" id="farmTools"></div>
+          <button class="farm-log" id="logBtn" aria-label="农场日志" title="农场日志">📔</button>
+        </div>
+        <div class="farm-actions" id="farmActions" hidden></div>
+      </div>
       <div class="grid" id="plots"></div>
     </section>
     <section id="page-friends" class="page">
@@ -92,11 +100,6 @@
     <section id="page-news" class="page"><div id="news"></div></section>
     <section id="page-shop" class="page"><div id="shop"></div></section>
   </main>
-
-  <!-- 一键浇水 / 杀虫：只有背包里有道具时才显示 -->
-  <div class="farm-tools" id="farmTools" hidden></div>
-
-  <button class="log-fab" id="logBtn"><span>📔</span>农场日志</button>
 
   <nav class="tabbar" id="tabbar">
     <button data-page="farm" class="active"><span>🌱</span>农场</button>

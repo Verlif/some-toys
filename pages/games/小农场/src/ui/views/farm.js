@@ -259,77 +259,77 @@ export function renderFarm() {
 }
 
 /**
- * 底部的一键照料条。
+ * 农场顶部操作条。
  *
  * 两块内容：
- *   - **上岗的守护犬**：常驻信息，有没有狗、什么品种、拦得住几成。
- *     它和背包里的道具无关，只要农场上有狗就显示；
- *   - **一键按钮**：只有真拿得出工具时才出现（有永久版或消耗版），
- *     括号里是「待处理块数」，后面的 ×N 是道具存量 —— 永久版显示 ∞。
+ *   - **上岗的守护犬**：常驻信息，有没有狗、什么品种、拦得住几成、狗粮剩多少；
+ *   - **一键按钮**：只有真拿得出工具时才出现。名字后面的橙色小药丸是「待处理块数」，
+ *     右边的小字是道具存量（永久版显示 ∞）。
+ *
+ * 整条在 `#page-farm` 里、土地列表之上，**跟着列表一起滚走**，
+ * 所以不再需要量高度去抬别的浮层（旧的 --farm-tools-h 已删）。
  *
  * 数量或需求数没变就不重建 DOM，否则 500ms 一次的心跳会把正在按的按钮换掉。
  */
 let toolsKey = '';
 
 function renderFarmTools() {
-  const el = byId('farmTools');
-  if (!el) return;
+  const dogEl = byId('farmTools');
+  const actEl = byId('farmActions');
+  if (!dogEl || !actEl) return;
 
   // Infinity = 买过永久版；0 = 没有这件工具（按钮直接不出现）
   const water = toolUses('water');
   const pest = toolUses('pest');
   const harvester = toolUses('harvest');
 
-  // 上岗的守护犬是农场的常驻信息：有没有狗、什么品种、拦得住几成
   const breed = activeBreed();
-  const dogTag = breed
-    ? `<span class="farm-dog" title="${breed.name} 正在看家，拦截率 ${Math.round(guardChanceNow() * 100)}%">
-        ${breed.emoji} ${breed.name} · 拦截 ${Math.round(guardChanceNow() * 100)}%
-        <i class="farm-dog-bar"><b style="width:${Math.round(dogSatiety())}%"></b></i>
-      </span>`
-    : '<span class="farm-dog off">🐶 没有狗上岗</span>';
+  const guardPct = Math.round(guardChanceNow() * 100);
+  const satiety = Math.round(dogSatiety());
 
   const now = Date.now();
   const needWater = state.farm.plots.filter((p) => farm.needsWater(p, now)).length;
   const needPest = state.farm.plots.filter((p) => farm.needsPest(p, now)).length;
   const needRipe = state.farm.plots.filter((p) => farm.plotStatus(p) === 'ripe').length;
+
   const key = [
     water, pest, harvester, needWater, needPest, needRipe,
-    breed?.id || '', Math.round(dogSatiety()),
+    breed?.id || '', guardPct, satiety,
   ].join('|');
+  if (key === toolsKey) return;
+  toolsKey = key;
 
-  if (key !== toolsKey) {
-    toolsKey = key;
+  // 没有狗也要说实话：新玩家得知道「上岗」这回事，所以这一格永远在
+  dogEl.innerHTML = breed
+    ? `<span class="farm-dog" title="${breed.name} 正在看家：拦截率 ${guardPct}%，狗粮 ${satiety}%">
+        <i class="fd-emoji">${breed.emoji}</i>
+        <span class="fd-name">${breed.name}</span>
+        <i class="fd-bar"><b style="width:${satiety}%"></b></i>
+        <span class="fd-pct">拦 ${guardPct}%</span>
+      </span>`
+    : '<span class="farm-dog off"><i class="fd-emoji">🐶</i><span class="fd-name">没有狗上岗</span></span>';
 
-    // 没有道具就只剩守护犬那一行：不能因此把整条藏掉，
-    // 否则新玩家（还没买过洒水器）永远看不到自己养了条狗。
-    //
-    // 三个按钮要挤在一行里，文案必须短：手机上 430px 只放得下
-    // 「🚿 浇水（6）· 🧴 杀虫（2）· 🚜 收获（12）」这种长度。
-    // 没需求时连括号都不给，按钮灰掉即可 —— 完整文案留给 title。
-    const toolRow = (water || pest || harvester)
-      ? `<div class="farm-tool-row">${[
-        water ? `<button class="tool-btn" data-action="water-all" ${needWater ? '' : 'disabled'}
-          title="一键浇水：把整座农场缺水的地一次浇完">
-          🚿 浇水${needWater ? `（${needWater}）` : ''} <span class="tool-count">${toolCountText('water')}</span></button>` : '',
-        pest ? `<button class="tool-btn" data-action="pest-all" ${needPest ? '' : 'disabled'}
-          title="一键杀虫：把整座农场生虫的地一次杀完">
-          🧴 杀虫${needPest ? `（${needPest}）` : ''} <span class="tool-count">${toolCountText('pest')}</span></button>` : '',
-        harvester ? `<button class="tool-btn" data-action="harvest-all" ${needRipe ? '' : 'disabled'}
-          title="一键收获：把整座农场成熟的地一次收完">
-          🚜 收获${needRipe ? `（${needRipe}）` : ''} <span class="tool-count">${toolCountText('harvest')}</span></button>` : '',
-      ].join('')}</div>`
-      : '';
+  // 三件工具一格：图标 + 名字 + 待办数 + 存量。
+  // 没待办时按钮不置灰（灰掉整条会像坏了），只是不挂那个橙色数字；
+  // 真空着点下去 store 会提示「现在没有需要浇水的地」。
+  //
+  // 动作名必须是字面量：tools/check.mjs 靠扫 data-action="..." 校验
+  // 「每个动作都有处理器」，`${kind}-all` 拼出来的名字它扫不到。
+  const cellBody = (emoji, label, need, itemId) => `
+    <span class="fa-ico">${emoji}</span>
+    <span class="fa-label">${label}</span>
+    ${need ? `<i class="fa-badge">${need}</i>` : ''}
+    <span class="fa-stock">${toolCountText(itemId)}</span>`;
+  const tip = (label, need) => `一键${label}：${need ? `${need} 块地待处理` : '暂时没有要处理的地'}`;
 
-    el.hidden = false;
-    el.innerHTML = `<div class="farm-dog-row">${dogTag}</div>${toolRow}`;
-  }
+  const cells = [
+    water ? `<button class="fa-btn" data-action="water-all" title="${tip('浇水', needWater)}">${cellBody('🚿', '浇水', needWater, 'water')}</button>` : '',
+    pest ? `<button class="fa-btn" data-action="pest-all" title="${tip('杀虫', needPest)}">${cellBody('🧴', '杀虫', needPest, 'pest')}</button>` : '',
+    harvester ? `<button class="fa-btn" data-action="harvest-all" title="${tip('收获', needRipe)}">${cellBody('🚜', '收获', needRipe, 'harvest')}</button>` : '',
+  ].filter(Boolean);
 
-  // 日志按钮按工具条的**实际**高度抬起来（含 8px 间隙）。
-  // 不能写死：只有狗行是 26px 左右，多了一键按钮就是两倍高。
-  // 页面不可见时 offsetHeight 为 0，这时不要覆盖，等下一次渲染再量。
-  const height = el.offsetHeight;
-  if (height) document.body.style.setProperty('--farm-tools-h', `${height + 8}px`);
+  actEl.hidden = !cells.length;
+  actEl.innerHTML = cells.join('');
 }
 
 /** 取（或创建）某个地块的 DOM 节点 */
@@ -633,9 +633,10 @@ export function mountFarm() {
     PLOT_ACTIONS[el.dataset.action]?.(Number(el.dataset.id));
   });
 
-  const tools = byId('farmTools');
-  if (tools) {
-    delegate(tools, 'click', '[data-action]', (el) => {
+  // 一键照料的三个格子在顶部操作条里（与地块上的单块操作是两套入口）
+  const actions = byId('farmActions');
+  if (actions) {
+    delegate(actions, 'click', '[data-action]', (el) => {
       FARM_TOOL_ACTIONS[el.dataset.action]?.(el);
     });
   }
@@ -643,7 +644,7 @@ export function mountFarm() {
   on(EVENTS.PLAYER, renderFarm);
   on(EVENTS.FARM, renderFarm);
   on(EVENTS.INVENTORY, renderFarm);
-  // 换狗、喂狗、狗粮槽变化都要更新顶上的守护犬信息
+  // 换狗、喂狗、狗粮槽变化都要更新顶部的守护犬信息
   on(EVENTS.PETS, renderFarmTools);
   // 邻居被偷计数变化时更新右上角的「全镇被偷」
 }
