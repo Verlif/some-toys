@@ -14,11 +14,12 @@
  */
 import { commit } from '../core/storage.js';
 import { on, emit, EVENTS } from '../core/bus.js';
-import { state } from './state.js';
+import { PLAYER_ID, state } from './state.js';
 import { notify } from './notify.js';
 import * as player from './player.js';
 import { add, count, take } from './inventory.js';
-import { isItemKey, itemLabel } from '../data/keys.js';
+import { bump } from './daily.js';
+import { isItemKey, itemLabel, itemValue } from '../data/keys.js';
 import { MSG, giftOfferOf, readGiftOffer } from '../net/protocol.js';
 import { broadcastToast, peerList, sendToPeer } from './peers.js';
 
@@ -203,6 +204,9 @@ function handleAccept(msg, peerId) {
 
   const peer = peerList().find((item) => item.connectId === peerId);
   player.addLog('🎁', `送给 ${peer?.name || '邻居'} ${itemLabel(offer.itemId)} ×${offer.n}`);
+  // 送礼达人榜：**等对方真的收下才记**。发要约时就记会虚增 ——
+  // 拒收和超时都会把货退回来，那一份礼等于没送出去
+  bump(PLAYER_ID, 'gift', itemValue(offer.itemId) * offer.n);
   commit({ farms: [state.farm] }).catch((error) => console.error(error));
   emit(EVENTS.FARM);
 

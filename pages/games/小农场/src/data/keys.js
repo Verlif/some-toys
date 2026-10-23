@@ -42,6 +42,25 @@ export function itemLabel(id) {
   return item ? `${item.emoji}${item.name}` : id;
 }
 /**
+ * 一个背包 key 的「价值」—— 送礼达人榜按它计分。
+ *
+ * 产出按农产品售价、种子 / 道具按商店价、藏宝图按图价；
+ * 认不出来的 key 返回 0（联机收礼时对方可能发任意字符串过来）。
+ * @param {string} id
+ * @returns {number}
+ */
+export function itemValue(id) {
+  if (typeof id !== 'string' || !id) return 0;
+  if (id.startsWith(PRODUCE_PREFIX)) return CROPS[id.slice(PRODUCE_PREFIX.length)]?.sell || 0;
+  if (id.startsWith(SEED_PREFIX)) return CROPS[id.slice(SEED_PREFIX.length)]?.seed || 0;
+  if (id.startsWith(MAP_PREFIX)) {
+    const tier = Number(id.slice(MAP_PREFIX.length));
+    return MAP_TIERS.find((m) => m.tier === tier)?.price || 0;
+  }
+  return ITEMS[id]?.price || 0;
+}
+
+/**
  * 这个背包 key 是不是游戏里真实存在的东西。
  *
  * 联机收礼要用：对方可以随便发字符串过来，认不出来的 key 直接丢掉，

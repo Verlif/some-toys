@@ -13,7 +13,7 @@ import * as player from '../../store/player.js';
 import { count } from '../../store/inventory.js';
 import { CROPS, CROP_ARCHS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
 import { FERTILIZER_IDS, ITEMS } from '../../data/items.js';
-import { toolCountText, toolUses } from '../../store/tools.js';
+import { toolUses } from '../../store/tools.js';
 import { SOILS } from '../../data/soils.js';
 import { seedId } from '../../data/keys.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
@@ -264,7 +264,7 @@ export function renderFarm() {
  * 两块内容：
  *   - **上岗的守护犬**：常驻信息，有没有狗、什么品种、拦得住几成、狗粮剩多少；
  *   - **一键按钮**：只有真拿得出工具时才出现。名字后面的橙色小药丸是「待处理块数」，
- *     右边的小字是道具存量（永久版显示 ∞）。
+ *     右边的小字是道具存量 —— 只标消耗版余量；买过永久版就不显示数字（无限用）。
  *
  * 整条在 `#page-farm` 里、土地列表之上，**跟着列表一起滚走**，
  * 所以不再需要量高度去抬别的浮层（旧的 --farm-tools-h 已删）。
@@ -309,23 +309,30 @@ function renderFarmTools() {
       </span>`
     : '<span class="farm-dog off"><i class="fd-emoji">🐶</i><span class="fd-name">没有狗上岗</span></span>';
 
-  // 三件工具一格：图标 + 名字 + 待办数 + 存量。
+  // 三件工具一格：图标 + 名字 + 待办数 + 存量（永久版不显示存量，见下）。
   // 没待办时按钮不置灰（灰掉整条会像坏了），只是不挂那个橙色数字；
   // 真空着点下去 store 会提示「现在没有需要浇水的地」。
   //
   // 动作名必须是字面量：tools/check.mjs 靠扫 data-action="..." 校验
   // 「每个动作都有处理器」，`${kind}-all` 拼出来的名字它扫不到。
-  const cellBody = (emoji, label, need, itemId) => `
+  // 存量只认消耗版：买过永久版就不显示数字（永久 = 无限用，挂个 ×N 反而误导），
+  // 但在悬停提示里补一句「永久版，不消耗」，免得玩家以为存量掉了。
+  const cellBody = (emoji, label, need, kind) => {
+    const uses = toolUses(kind);
+    const stock = Number.isFinite(uses) ? `<span class="fa-stock">×${uses}</span>` : '';
+    return `
     <span class="fa-ico">${emoji}</span>
     <span class="fa-label">${label}</span>
     ${need ? `<i class="fa-badge">${need}</i>` : ''}
-    <span class="fa-stock">${toolCountText(itemId)}</span>`;
-  const tip = (label, need) => `一键${label}：${need ? `${need} 块地待处理` : '暂时没有要处理的地'}`;
+    ${stock}`;
+  };
+  const tip = (label, need, kind) => `一键${label}：${need ? `${need} 块地待处理` : '暂时没有要处理的地'}`
+    + (Number.isFinite(toolUses(kind)) ? '' : ' · 永久版，不消耗');
 
   const cells = [
-    water ? `<button class="fa-btn" data-action="water-all" title="${tip('浇水', needWater)}">${cellBody('🚿', '浇水', needWater, 'water')}</button>` : '',
-    pest ? `<button class="fa-btn" data-action="pest-all" title="${tip('杀虫', needPest)}">${cellBody('🧴', '杀虫', needPest, 'pest')}</button>` : '',
-    harvester ? `<button class="fa-btn" data-action="harvest-all" title="${tip('收获', needRipe)}">${cellBody('🚜', '收获', needRipe, 'harvest')}</button>` : '',
+    water ? `<button class="fa-btn" data-action="water-all" title="${tip('浇水', needWater, 'water')}">${cellBody('🚿', '浇水', needWater, 'water')}</button>` : '',
+    pest ? `<button class="fa-btn" data-action="pest-all" title="${tip('杀虫', needPest, 'pest')}">${cellBody('🧴', '杀虫', needPest, 'pest')}</button>` : '',
+    harvester ? `<button class="fa-btn" data-action="harvest-all" title="${tip('收获', needRipe, 'harvest')}">${cellBody('🚜', '收获', needRipe, 'harvest')}</button>` : '',
   ].filter(Boolean);
 
   actEl.hidden = !cells.length;

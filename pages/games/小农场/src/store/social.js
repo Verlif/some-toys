@@ -445,6 +445,10 @@ export async function steal(friendId, index) {
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
     // 想偷还被当场逮住，关系只会更差：按这个果实的售价折算（至少 1）
     adjustRelation(PLAYER_ID, friend.id, -dogCaughtRelLoss(crop.sell));
+    // 狗狗王记在**狗主人**头上：谁家的狗拦下的功劳就归谁。
+    // 玩家偷 NPC 被抓时玩家一分不得 —— 这里是玩家唯一能给别人刷分的地方，
+    // 所以漏了这一笔，NPC 的狗狗王就永远是 0（曾经真的漏了）
+    bump(friend.id, 'dog', 1, now);
     logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币`);
     player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now);
     addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, { at: now });

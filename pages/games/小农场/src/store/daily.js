@@ -74,7 +74,7 @@ export const BOARDS = [
   },
   {
     metric: 'gift', icon: '🎁', name: '送礼达人',
-    desc: '送出礼物的总价值（产出售价合计）',
+    desc: '送出礼物的总价值（产出按售价、道具按商店价）',
     format: (v) => formatCoins(v),
     rewards: [
       { coins: 100, items: { boost10: 2 } },

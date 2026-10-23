@@ -25,7 +25,7 @@ function isPermanent(kind) {
 
 /**
  * 还剩几次可用：永久版是 `Infinity`，否则是背包里的数量。
- * 界面上 `Infinity` 一律显示成 ∞（见 `toolCountText`）。
+ * 界面上的存量规则：只标消耗版余量，永久版不显示数字（见 ui/views/farm.js）。
  */
 export function toolUses(kind) {
   if (isPermanent(kind)) return Infinity;
@@ -50,9 +50,3 @@ export function useTool(kind) {
   if (inventory.has(tool.permanent)) return true;
   return inventory.take(tool.consumable, 1);
 }
-
-/** 界面上的数量文本：`×3` / `∞` */
-export const toolCountText = (kind) => {
-  const n = toolUses(kind);
-  return Number.isFinite(n) ? `×${n}` : '∞';
-};

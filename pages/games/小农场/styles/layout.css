@@ -399,7 +399,7 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-/* 道具存量：永久版 ∞，消耗版 ×N */
+/* 道具存量：只标消耗版余量；永久版无限用，不显示数字 */
 .fa-stock {
   padding: 0 4px;
   border-radius: 99px;

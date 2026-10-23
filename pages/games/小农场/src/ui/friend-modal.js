@@ -20,8 +20,8 @@ import { isItemKey, itemLabel, produceId } from '../data/keys.js';
 import { clampRelation, giftRelGain } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
 import { PERSONALITIES } from '../data/friends.js';
-import { DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
-import { toolCountText, toolUses } from '../store/tools.js';
+import { DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { toolUses } from '../store/tools.js';
 import { count } from '../store/inventory.js';
 import { stageEmoji, stageName, stageOf } from '../data/stages.js';
 import { fmtDuration, formatCoins } from '../core/utils.js';
@@ -31,7 +31,7 @@ import { openCropModal } from './crop-detail.js';
 import { openSeedModal } from './seed-detail.js';
 import { recordItemsHTML } from './records.js';
 import { sendGiftToPeer } from '../store/peer-gift.js';
-import { fertPeer, pestPeer, stealPeer, waterPeer } from '../store/peer-actions.js';
+import { feedPeerDog, fertPeer, pestPeer, stealPeer, waterPeer } from '../store/peer-actions.js';
 import { on, EVENTS } from '../core/bus.js';
 
 /**
@@ -258,7 +258,71 @@ function feedChipHTML(friend, now) {
   const satiety = Math.round(dogSatietyAt(friend.dog, now));
   if (count('dogFood') <= 0 || satiety >= DOG_SATIETY_MAX - 1) return '';
   return `<button class="npc-chip icon" data-action="${friend.net ? 'peer-feed-dog' : 'feed-friend-dog'}"
-    data-id="${friend.id}" title="添一份狗粮">🦴</button>`;
+    data-id="${friend.id}" title="添一份狗粮（消耗自己包裹里的 1 份）">🦴</button>`;
+}
+
+/**
+ * 添狗粮的确认框。
+ *
+ * 喂别人的狗，花的是**自己包裹里的狗粮** —— 点一下就没了一份，
+ * 所以先把代价摆清楚再让玩家按确认：对方是谁、粮槽能到多少、
+ * 包裹里少一份之后还剩几份。确认才动手，和送礼的「送出前确认」同一个次序。
+ *
+ * @param {object} friend 邻居（NPC 或联机好友，都带 dog 快照）
+ * @param {(ok: boolean) => void} onDone 执行后的回调：成功了就刷新外层弹窗
+ */
+function confirmFeedDog(friend, onDone) {
+  const have = count('dogFood');
+  // 芯片只在有粮时才画出来，这里兜一手：万一背包刚被别处清空，
+  // 别弹出「添完后剩余 -1 份」这种笑话（store 自己也会再查一次）
+  if (have <= 0) {
+    notify('没有狗粮，去商店买吧');
+    return;
+  }
+
+  const remote = friend.net === true;
+  const before = Math.round(dogSatietyAt(friend.dog, Date.now()));
+  const after = Math.min(DOG_SATIETY_MAX, before + DOG_FOOD_SATIETY);
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🦴 添狗粮 · ${escapeHtml(friend.name)}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+
+    <div class="sd-hero">
+      <div class="sd-emoji">${ITEMS.dogFood.emoji}</div>
+      <div class="sd-id">
+        <div class="sd-name">${ITEMS.dogFood.name} ×1</div>
+        <div class="sd-tags"><span class="sd-lv">消耗品</span></div>
+      </div>
+    </div>
+
+    <div class="sd-grid">
+      <div class="sd-cell"><span>狗粮槽</span><b>${before}% → ${after}%</b></div>
+      <div class="sd-cell"><span>包裹现有</span><b>${have} 份</b></div>
+      <div class="sd-cell"><span>添完后剩余</span><b>${have - 1} 份</b></div>
+      ${remote ? '' : '<div class="sd-cell"><span>好感变化</span><b class="rel-gain">+1</b></div>'}
+    </div>
+
+    <div class="sd-gain">这会消耗你包裹里的 1 份狗粮</div>
+
+    <div class="modal-foot">
+      <div class="rm-actions">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn" data-action="feed-dog-ok">确认添粮</button>
+      </div>
+    </div>
+  `, async (action) => {
+    if (action !== 'feed-dog-ok') return;
+    // 先收确认层回到邻居农场，再动手 —— 和送礼确认框同一个次序
+    closeModal();
+    // 联机好友的狗槽走 peer-actions 的 act 协议（主人权威），NPC 走 social
+    const ok = remote
+      ? await feedPeerDog(friend.connectId)
+      : await social.feedFriendDog(friend.id);
+    onDone(ok);
+  });
 }
 
 /**
@@ -327,11 +391,15 @@ function secToolsHTML(friend, now) {
   const needWater = friend.plots.filter((p) => social.needsWater(p, now)).length;
   const needPest = friend.plots.filter((p) => social.needsPest(p, now)).length;
 
-  const btn = (action, emoji, need, kind, label) => `
-    <button class="npc-tool" data-action="${action}" data-id="${friend.id}"
-      ${need ? '' : 'disabled'} title="${label}（${need} 块待处理）${toolCountText(kind)}">
+  // 存量规则与自家农场页一致：永久版不标数量，消耗版才标 ×N
+  const btn = (action, emoji, need, kind, label) => {
+    const uses = toolUses(kind);
+    const stock = Number.isFinite(uses) ? `×${uses}` : '· 永久版，不消耗';
+    return `<button class="npc-tool" data-action="${action}" data-id="${friend.id}"
+      ${need ? '' : 'disabled'} title="${label}（${need} 块待处理）${stock}">
       ${emoji}${need ? `<i>${need}</i>` : ''}
     </button>`;
+  };
 
   return [
     water ? btn('npc-water-all', '🚿', needWater, 'water', '一键浇水') : '',
@@ -912,14 +980,11 @@ export function openFriendModal(friendId) {
       openPeerGiftPicker(friend);
       return;
     }
-    if (action === 'peer-feed-dog') {
-      // 联机好友的狗槽：走 peer-actions 的 act 协议（主人权威）
-      const { feedPeerDog } = await import('../store/peer-actions.js');
-      if (await feedPeerDog(friend.connectId)) refreshChrome(getFriend(friendId), Date.now());
-      return;
-    }
-    if (action === 'feed-friend-dog') {
-      if (await social.feedFriendDog(el.dataset.id)) refreshChrome(getFriend(friendId), Date.now());
+    // 添狗粮花的是自己包裹里的存货，先过一道确认框（NPC 与联机好友同一套）
+    if (action === 'peer-feed-dog' || action === 'feed-friend-dog') {
+      confirmFeedDog(friend, (ok) => {
+        if (ok) refreshChrome(getFriend(friendId), Date.now());
+      });
       return;
     }
     if (action === 'open-friend-log') {

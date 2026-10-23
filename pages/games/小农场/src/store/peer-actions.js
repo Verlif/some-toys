@@ -15,9 +15,10 @@
  * 请求带 `req` + 4 秒超时：对方掉线时不会让按钮一直转。
  */
 import { on, emit, EVENTS } from '../core/bus.js';
-import { state } from './state.js';
+import { PLAYER_ID, state } from './state.js';
 import { notify } from './notify.js';
 import * as player from './player.js';
+import { bump } from './daily.js';
 import { add, has, take } from './inventory.js';
 import { CROPS } from '../data/crops.js';
 import { ITEMS } from '../data/items.js';
@@ -103,6 +104,8 @@ export async function waterPeer(peerId, index) {
   }
   const exp = CROPS[cropId].lv;
   player.addExpRaw(exp);
+  // 最友善榜：帮真人打理和帮 NPC 打理是同一件事，口径必须一致
+  bump(PLAYER_ID, 'care');
   player.addLog('💧', `帮 ${peer.name} 浇了 ${CROPS[cropId].name}（经验 +${exp}）`);
   await commit({ farms: [state.farm] });
   emit(EVENTS.FARM);
@@ -125,6 +128,7 @@ export async function pestPeer(peerId, index) {
   }
   const exp = CROPS[cropId].lv;
   player.addExpRaw(exp);
+  bump(PLAYER_ID, 'care');
   player.addLog('🐛', `帮 ${peer.name} 捉了虫（经验 +${exp}）`);
   await commit({ farms: [state.farm] });
   emit(EVENTS.FARM);
@@ -145,6 +149,7 @@ export async function fertPeer(peerId, index, itemId) {
     return false;
   }
   take(itemId, 1);
+  bump(PLAYER_ID, 'care');
   player.addLog(ITEMS[itemId].emoji, `帮 ${peer.name} 施了${ITEMS[itemId].name}`);
   await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.FARM);
@@ -231,6 +236,8 @@ export async function feedPeerDog(peerId) {
     peer.dog.satiety = res.satiety;
     peer.dog.at = Date.now();
   }
+  // 和给 NPC 家狗添粮同一个口径：也算一次「帮邻里打理」
+  bump(PLAYER_ID, 'care');
   player.addLog('🦴', `给 ${peer.name} 的守护犬添了狗粮`);
   await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.INVENTORY);
@@ -353,6 +360,8 @@ function handleAct(msg, peerId) {
       }
       const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE);
       fines.set(req, fine);
+      // 狗狗王：我家的狗拦下了真人访客 —— 和拦下 NPC 是同一件事
+      bump(PLAYER_ID, 'dog', 1, now);
       player.addLog('🐕', `守护犬抓住了想偷菜的 ${peer.name}（罚款 ${fine} 金币）`, now, peer.id);
       commit({ farms: [state.farm] })
         .then(() => emit(EVENTS.FARM))

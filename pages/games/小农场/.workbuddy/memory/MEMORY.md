@@ -52,8 +52,10 @@
 ## UI 硬约束
 
 - **农场页顶部操作条**（第 37 轮）：`.farm-bar` 一张白卡放 `#page-farm` 首位、**流内跟着土地列表滚**，
-  上排守护犬+日志方块、下排三格一键（图标/名字/橙色待办数/灰色存量）。**不要再往底部堆 fixed 浮层**，
+  上排守护犬+日志方块、下排三格一键（图标/名字/橙色待办数/存量）。**不要再往底部堆 fixed 浮层**，
   `--farm-tools-h` 已删；`data-action` 必须写字面量（check.mjs 扫不到模板拼接的名字）。
+  **存量只标消耗版 `×N`，永久版不显示数字**（第 38 轮；悬停提示补「永久版，不消耗」，
+  邻居农场 🚿/🧴 标题栏同一规则）。
 - 浮层统一：上滑进场、下拉关闭（`drag-close.js`）。**拖拽三条铁律**：①move 先查 tracking ②鼠标事件只在按下期间挂 ③Touch+preventDefault。
 - **弹窗四段式**：handle/head/body/foot。别用 sticky 代替 foot。支持叠层。
 - 地块 `.plot-main`+`.plot-side`(34px)；`.plot-side` ≤4 按钮。锁定地块 `.plot-lock` 空占位盒(47/38px)。
@@ -68,6 +70,9 @@
   （两行：农场 N 块 + 🚿🧴 ｜ 🐕 粮槽进度条 + 🦴 + 📜）→ 地块 → 🎁 送礼 + 提示。
   控制台是**普通文档流，故意不做 sticky**（跟着地块一起滚）。日志**不再常驻**，
   `📜` 走 `openFriendLog()` 开叠层（`.npc-log.tall`）。
+  **🦴 添狗粮**（第 38 轮）：走 `confirmFeedDog` 确认叠层 —— 消耗玩家自己包裹 1 份狗粮
+  （sd-grid 写狗粮槽 before→after / 包裹现有 / 剩余，NPC 另标好感 +1），
+  确认才 `closeModal()` 回弹窗再扣粮；NPC 与联机好友（`feedPeerDog`）同一套。
 - **农场日志双 tab**：「我的操作」= `!entry.by`，「邻居动向」= `entry.by`。tab 在面板底部。
 - **送礼三层**：清单→确认框→发送。赠礼层 `ui/gift.js` 不做 opacity 动画。
 
