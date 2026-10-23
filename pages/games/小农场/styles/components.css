@@ -834,8 +834,10 @@
 }
 
 /* ---------- Toast ---------- */
+/* 背景统一 .75 透明度：文字保持纯白不泛白，背后内容能透出来，不挡视线。
+   用的是背景 alpha 而不是 opacity 属性 —— 后者会把文字一起淡掉。 */
 .toast {
-  background: rgba(34, 48, 31, .92);
+  background: rgba(34, 48, 31, .75);
   color: #fff;
   font-size: 12.5px;
   font-weight: 500;
@@ -847,7 +849,7 @@
   text-align: center;
 }
 .toast.out { animation: toastOut .28s ease forwards; }
-.toast.gold { background: linear-gradient(135deg, #f5a623, #e8871e); }
+.toast.gold { background: linear-gradient(135deg, rgba(245, 166, 35, .75), rgba(232, 135, 30, .75)); }
 
 /* ---------- 被守护犬抓住（全屏闪一下） ----------
    偷菜被狗逮住是玩家吃瘪的时刻，一条 toast 很容易看漏，

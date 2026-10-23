@@ -56,6 +56,11 @@
   `--farm-tools-h` 已删；`data-action` 必须写字面量（check.mjs 扫不到模板拼接的名字）。
   **存量只标消耗版 `×N`，永久版不显示数字**（第 38 轮；悬停提示补「永久版，不消耗」，
   邻居农场 🚿/🧴 标题栏同一规则）。
+- **土地列表顺序**（第 39 轮）：`已解锁地块 → 荒地卡（未解锁只画第一张，🔓价格按钮）
+  → .plot-fold 汇总行永远垫底`。开垦后新建的荒地卡节点会 append 到汇总行**后面**，
+  `renderFarm` 末尾必须 `grid.appendChild(foldNode.el)` 把汇总行挪回末尾（移动已有节点）。
+- **toast**：背景 .75 透明度（深色 `rgba(34,48,31,.75)`、金色渐变两色标同 alpha），
+  文字保持纯白 —— 用背景 alpha 不用 `opacity` 属性，别把字一起淡掉（第 39 轮）。
 - 浮层统一：上滑进场、下拉关闭（`drag-close.js`）。**拖拽三条铁律**：①move 先查 tracking ②鼠标事件只在按下期间挂 ③Touch+preventDefault。
 - **弹窗四段式**：handle/head/body/foot。别用 sticky 代替 foot。支持叠层。
 - 地块 `.plot-main`+`.plot-side`(34px)；`.plot-side` ≤4 按钮。锁定地块 `.plot-lock` 空占位盒(47/38px)。

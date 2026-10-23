@@ -247,6 +247,11 @@ export function renderFarm() {
   const foldNode = ensureNode(FOLD_KEY, foldKey, null, 'fold');
   if (lockedCount > 1) {
     updateNode(foldNode, { id: FOLD_KEY, count: lockedCount - 1, price: nextPrice }, 'fold', foldKey);
+    // 折叠行永远垫在土地列表最后。开垦一块地后，「下一块荒地」的节点是这时
+    // 才新建的，append 会落到折叠行后面去 —— 荒地卡就串到汇总行下方了
+    // （首次加载不会，那时两者都是按顺序新建的）。appendChild 移动已有
+    // 节点把它拽回末尾；没有新节点时这就是次空操作。
+    grid.appendChild(foldNode.el);
   } else {
     foldNode.el.remove();
     nodes.delete(FOLD_KEY);
