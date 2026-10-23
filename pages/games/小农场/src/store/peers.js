@@ -33,6 +33,11 @@ const pending = new Map();
 let seq = 0;
 let inited = false;
 
+/** 版本不一致的现场（给村镇浮窗用），一致了就清掉 */
+let versionMismatch = null;
+/** 版本不一致的 toast 节流：同一秒来十条 hello 也只提示一次 */
+let lastMismatchAt = 0;
+
 /** 读本机保存的村镇配置 */
 export function villageConfig() {
   try {
@@ -75,6 +80,36 @@ export function linkInfo() {
     peerId: link.myConnectId(),
     village: link.currentVillage(),
   };
+}
+
+/**
+ * 村镇诊断信息。
+ *
+ * 联机出问题的时候，光看「在线邻居 0 人」根本没法判断是没连上、连到别的房间、
+ * 还是对方版本不一样 —— 这里把判断依据一次性摊开给界面。
+ */
+export function linkDiag() {
+  return {
+    status: link.linkStatus(),
+    village: link.currentVillage(),
+    peerId: link.myConnectId(),
+    peers: state.peers.length,
+    version: DATA_VERSION,
+    /** 有人因为版本不同被拒之门外时，记下是谁、他是什么版本 */
+    mismatch: versionMismatch,
+  };
+}
+
+/**
+ * 主动重连：断开后用上次的村镇名再进一次。
+ *
+ * 公共信令（torrent tracker / MQTT / Nostr）偶尔会整体抽风，这时页面看着「在村里」
+ * 但谁也发现不了 —— 重连一次往往就好了，比让玩家关掉页面重开省事。
+ */
+export async function reconnectVillage() {
+  const cfg = villageConfig();
+  if (!cfg.name) return false;
+  return joinVillage(cfg.name, cfg.password);
 }
 
 /** 一句人话说明当前联机状态 */
@@ -282,8 +317,19 @@ let lastToastAt = 0;
 /** 对方的 hello：写进名册（第一次见），顺手把资料刷新一遍 */
 function handleHello(msg, peerId) {
   if (msg.v !== DATA_VERSION) {
-    notify('🏘 对方的游戏版本不一样，先连不上', 'gold');
+    // 记下来给村镇浮窗显示：只靠一条 1 秒就消失的 toast，玩家根本存不下这个信息
+    versionMismatch = { peerId, theirs: String(msg.v || '?'), mine: DATA_VERSION, at: Date.now() };
+    const now = Date.now();
+    if (now - lastMismatchAt > 8000) {
+      lastMismatchAt = now;
+      notify(`🏘 对方的版本是 v${msg.v}，我这边是 v${DATA_VERSION}，先连不上`, 'gold');
+    }
+    emit(EVENTS.FRIENDS);
     return;
+  }
+  if (versionMismatch?.peerId === peerId) {
+    versionMismatch = null;
+    emit(EVENTS.FRIENDS);
   }
   const profile = msg.profile || {};
   const farmId = farmIdOf(peerId);

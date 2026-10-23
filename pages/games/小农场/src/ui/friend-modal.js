@@ -19,8 +19,8 @@ import { SOILS } from '../data/soils.js';
 import { isItemKey, itemLabel, produceId } from '../data/keys.js';
 import { clampRelation, giftRelGain } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
-import { PERSONALITIES, STEAL_LABELS } from '../data/friends.js';
-import { dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { PERSONALITIES } from '../data/friends.js';
+import { DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { toolCountText, toolUses } from '../store/tools.js';
 import { count } from '../store/inventory.js';
 import { stageEmoji, stageName, stageOf } from '../data/stages.js';
@@ -206,16 +206,109 @@ function twoDaysFrom(now) {
   return d.getTime() - 24 * 3600_000;
 }
 
-/** 弹窗里的操作记录：今天 + 昨天全部，放在固定高度的滚动区里 */
-function logBoxHTML(friend, now) {
+/**
+ * 操作记录：今天 + 昨天全部。
+ *
+ * 弹窗里不再常驻这一块 —— 它曾经占掉两百多像素，一进邻居农场要滚很久才摸到
+ * 底部的送礼。现在由控制台上的「📜 日志」按需打开，单独一个浮层，
+ * 高度也就能给得更大方（`tall`）。
+ *
+ * @param {object} friend
+ * @param {number} now
+ * @param {{tall?: boolean}} [opts]
+ */
+function logBoxHTML(friend, now, { tall = false } = {}) {
   const items = recordItemsHTML(friend.log, {
     now,
     withDay: true,
     since: twoDaysFrom(now),
   });
+  const cls = `friend-log npc-log${tall ? ' tall' : ''}`;
   return items
-    ? `<div class="friend-log npc-log" data-role="log">${items}</div>`
-    : '<div class="npc-log empty" data-role="log">最近两天没有发生什么事</div>';
+    ? `<div class="${cls}" data-role="log">${items}</div>`
+    : `<div class="${cls} empty" data-role="log">最近两天没有发生什么事</div>`;
+}
+
+/**
+ * 农场控制台里的守护犬一行：品种 + 迷你粮槽 + 存量，饿了变红。
+ *
+ * 狗的状态决定「偷菜会不会被逮住」，是访客最关心的一件事，所以它不该
+ * 藏在信息格里、也不该只在狗窝里看得见。添一份狗粮做成图标按钮，
+ * 只有「手里有粮 + 槽没满」时才出现。
+ */
+function dogLineHTML(friend, now) {
+  const breed = dogBreed(friend.dog?.breed);
+  if (!breed) return '<span class="npc-dog none">🐶 没有狗</span>';
+
+  const satiety = Math.round(dogSatietyAt(friend.dog, now));
+  const hungry = satiety <= 0;
+  return `
+    <span class="npc-dog${hungry ? ' hungry' : ''}">
+      <span class="nd-emoji">${breed.emoji}</span>
+      <span class="nd-name">${breed.name}</span>
+      <span class="nd-bar"><i style="width:${Math.max(4, Math.min(100, satiety))}%"></i></span>
+      <b class="nd-pct">${hungry ? '饿了' : `${satiety}%`}</b>
+    </span>`;
+}
+
+/** 手里有粮、槽没满时才有添狗粮的入口 */
+function feedChipHTML(friend, now) {
+  const breed = dogBreed(friend.dog?.breed);
+  if (!breed) return '';
+  const satiety = Math.round(dogSatietyAt(friend.dog, now));
+  if (count('dogFood') <= 0 || satiety >= DOG_SATIETY_MAX - 1) return '';
+  return `<button class="npc-chip icon" data-action="${friend.net ? 'peer-feed-dog' : 'feed-friend-dog'}"
+    data-id="${friend.id}" title="添一份狗粮">🦴</button>`;
+}
+
+/**
+ * 农场控制台：农场标题 + 一键照料 + 守护犬 + 日志入口。
+ *
+ * 这几样原来散在三个地方（一键按钮挤在标题行尾、守护犬占信息格一整行、
+ * 记录区钉在页面最底部），玩家要判断「现在该不该动手」得上下扫一遍。
+ * 收成一整块之后高度只有两行，**跟着地块一起滚**（不做 sticky）——
+ * 滚到哪儿它就退到哪儿，不会一直压在地块上。
+ *
+ * @param {object} friend
+ * @param {number} now
+ */
+function boardHTML(friend, now) {
+  return `
+    <div class="npc-board" data-role="board">
+      <div class="npc-board-top">
+        <span class="npc-board-title">🟫 农场 <b>${friend.plots.length}</b> 块</span>
+        <span class="npc-sec-tools">${secToolsHTML(friend, now)}</span>
+      </div>
+      <div class="npc-board-bot">
+        ${dogLineHTML(friend, now)}
+        <div class="npc-board-acts">
+          ${feedChipHTML(friend, now)}
+          <button class="npc-chip" data-action="open-friend-log" data-id="${friend.id}">
+            📜 日志
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+/**
+ * 邻居的农场日志：单独一个浮层。
+ *
+ * 走 `openModal` 的叠层：关掉之后回到邻居农场，地块与滚动位置都还在
+ * （`closeModal()` 会还原整张卡的快照）。
+ * @param {string} friendId
+ */
+function openFriendLog(friendId) {
+  const friend = getFriend(friendId);
+  if (!friend) return;
+  openModal(`
+    <div class="modal-head">
+      <h3>📜 ${escapeHtml(friend.name)} 的农场日志</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">最近两天 · 只记正经动静，打理与偷菜都在里面</div>
+    ${logBoxHTML(friend, Date.now(), { tall: true })}
+  `, () => {});
 }
 
 /**
@@ -689,40 +782,25 @@ export function openFriendModal(friendId) {
   const stealable = social.stealableCount(friend, now);
 
   /**
-   * 顶部信息格。
+   * 顶部信息格：正好 2×2 四格。
    *
-   * 从「4 列 × 2 行」改成「守护犬与偷菜各占两格」：守护犬那句
-   * 「🐕 柴犬 · 62% 在看家」在手机上根本塞不进 1/4 宽，会被省略号吃掉
-   * —— 这正是玩家反馈的那个溢出。
+   * 守护犬与偷菜档位从这里搬走了 —— 狗的粮槽在农场控制台里（做成进度条，
+   * 比一行文字直观），偷菜档位则由右上角「可偷 N」的角标表达，
+   * 留在信息格里只是多占一行高度。
    */
   function statsHTML(current) {
-    const satiety = Math.round(dogSatietyAt(current.dog, now));
-    const breedInfo = dogBreed(current.dog.breed);
     const rel = relationBadge(getRelation(PLAYER_ID, current.id));
     return [
       { k: '等级', v: `Lv.${current.level}` },
       { k: '身家', v: `${formatCoins(current.coins)} 💰` },
       { k: '地块', v: `${current.plots.length} 块` },
       // 联机好友还没有好感度体系（P1 只读），别拿本地的 0 糊弄人
-      current.net ? null : {
+      current.net ? { k: '来历', v: '🛰 联机' } : {
         k: '好感',
         v: `<span class="rel-tag rel-${rel.key}">${rel.label} ${rel.text}</span>`,
       },
-      {
-        k: '守护犬',
-        wide: true,
-        v: breedInfo
-          ? `${breedInfo.emoji} ${breedInfo.name} · ${satiety > 0 ? `${satiety}% 在看家` : '饿着，不设防'}` +
-            (count('dogFood') > 0
-              ? ` <button class="btn small ghost feed-dog-btn" data-action="${current.net ? 'peer-feed-dog' : 'feed-friend-dog'}" data-id="${current.id}">🦴 添狗粮</button>`
-              : '')
-          : '🐶 没有狗',
-      },
-      current.net
-        ? { k: '来历', wide: true, v: '🛰 联机好友' }
-        : { k: '偷菜', wide: true, v: STEAL_LABELS[current.steal] || '偶尔顺菜' },
-    ].filter(Boolean)
-      .map((s) => `<div class="npc-stat${s.wide ? ' wide' : ''}"><span>${s.k}</span><b>${s.v}</b></div>`)
+    ]
+      .map((s) => `<div class="npc-stat"><span>${s.k}</span><b>${s.v}</b></div>`)
       .join('');
   }
 
@@ -743,18 +821,9 @@ export function openFriendModal(friendId) {
     const quick = document.querySelector('#modal [data-role="quick"]');
     if (quick) quick.innerHTML = quickButtons(current);
 
-    // 标题右侧的一键按钮同样要跟着地块状态变（几块缺水 / 道具存量）
-    const tools = document.querySelector('#modal [data-role="tools"]');
-    if (tools) tools.innerHTML = secToolsHTML(current, at);
-
-    const logBox = document.querySelector('#modal [data-role="log"]');
-    if (logBox) {
-      // 记录区自己也有滚动位置，重绘后要还回去
-      const keep = logBox.scrollTop;
-      logBox.outerHTML = logBoxHTML(current, at);
-      const next = document.querySelector('#modal [data-role="log"]');
-      if (next) next.scrollTop = keep;
-    }
+    // 控制台整块重绘：狗粮槽、一键按钮的角标都跟着操作变
+    const board = document.querySelector('#modal [data-role="board"]');
+    if (board) board.outerHTML = boardHTML(current, at);
 
     // 好感度会跟着偷菜 / 打理 / 送礼变，信息格一起刷
     const statsBox = document.querySelector('#modal [data-role="stats"]');
@@ -805,17 +874,11 @@ export function openFriendModal(friendId) {
 
     <div class="npc-stats" data-role="stats">${stats}</div>
 
-    <div class="npc-section-title">
-      <span>🟫 农场（${friend.plots.length} 块）</span>
-      <span class="npc-sec-tools" data-role="tools">${secToolsHTML(friend, now)}</span>
-    </div>
+    ${boardHTML(friend, now)}
     <div class="npc-plots">
       ${friend.plots.map((_, i) => plotCardHTML(friend, i, now)).join('')}
     </div>
     <div class="npc-quick" data-role="quick">${quickButtons(friend)}</div>
-
-    <div class="npc-section-title">📜 最近操作</div>
-    ${logBoxHTML(friend, now)}
 
     <p class="npc-tip" data-role="tip">${tipText(friend, now)}</p>
   `, async (action, el) => {
@@ -843,7 +906,8 @@ export function openFriendModal(friendId) {
       closeModal();
       return;
     }
-    if (remote && action !== 'crop-info' && action !== 'peer-gift-open' && action !== 'peer-feed-dog') return;
+    // 联机好友只读，但看日志、送礼、喂狗粮是允许的
+    if (remote && !['crop-info', 'peer-gift-open', 'peer-feed-dog', 'open-friend-log'].includes(action)) return;
     if (action === 'peer-gift-open') {
       openPeerGiftPicker(friend);
       return;
@@ -856,6 +920,10 @@ export function openFriendModal(friendId) {
     }
     if (action === 'feed-friend-dog') {
       if (await social.feedFriendDog(el.dataset.id)) refreshChrome(getFriend(friendId), Date.now());
+      return;
+    }
+    if (action === 'open-friend-log') {
+      openFriendLog(friendId);
       return;
     }
     if (action === 'gift-open') {

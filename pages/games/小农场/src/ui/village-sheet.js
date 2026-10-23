@@ -17,9 +17,11 @@ import {
   announce,
   ensureSnap,
   joinVillage,
+  linkDiag,
   linkInfo,
   peerList,
   quitVillage,
+  reconnectVillage,
   villageConfig,
 } from '../store/peers.js';
 import { openFriendModal } from './friend-modal.js';
@@ -75,12 +77,49 @@ function joinHTML() {
     </div>`;
 }
 
+/**
+ * 常驻状态行。
+ *
+ * 以前浮窗里只有「在线邻居（0）」—— 玩家看不出是没连上、连到别的房间、
+ * 还是对方版本不一样。这一行把判断依据直接写出来。
+ */
+function statusView() {
+  const info = linkDiag();
+  if (info.mismatch) {
+    return {
+      variant: 'error',
+      html: `⚠️ 有人的数据版本是 v${escapeHtml(info.mismatch.theirs)}，我这边是 v${escapeHtml(info.mine)}
+        —— 让对方强制刷新一次页面`,
+    };
+  }
+  if (info.status === 'online') {
+    const id = info.peerId ? info.peerId.slice(0, 6) : '—';
+    return {
+      variant: 'online',
+      html: `🛰 已连接 · ${info.peers + 1} 人在线 · 连接号 ${escapeHtml(id)}`,
+    };
+  }
+  if (info.status === 'connecting') {
+    return { variant: '', html: '⏳ 正在连接村镇…' };
+  }
+  return {
+    variant: 'error',
+    html: '⚠️ 没连上村镇 · <b data-action="village-reconnect">点这里重新连接</b>',
+  };
+}
+
 /** 已进村：展开面板（村镇信息 + 昵称 + 离开） */
 function moreHTML() {
   const info = linkInfo();
+  const diag = linkDiag();
   return `
     <div class="village-row"><span>连接号</span><b>${escapeHtml((info.peerId || '—').slice(0, 8))}</b></div>
     <div class="village-row"><span>在线</span><b>${peerList().length + 1} 人</b></div>
+    <div class="village-row">
+      <span>数据版本</span>
+      <b>v${escapeHtml(String(diag.version))}</b>
+      <button class="btn small ghost" data-action="village-reconnect">重新连接</button>
+    </div>
     <div class="village-row">
       <span>我的昵称</span>
       <input id="villageNick" class="village-input" maxlength="10" autocomplete="off"
@@ -135,6 +174,20 @@ function paint() {
     els.more.innerHTML = '';
   }
 
+  // 可选链：万一拿到的是缓存的旧 index.html（没有这个节点），浮窗也不能整个挂掉
+  if (els.status) {
+    if (joined) {
+      // 样式类挂在容器上，HTML 只放文字 —— 别在容器里再套一层 .village-status
+      const view = statusView();
+      els.status.className = `village-status ${view.variant}`.trim();
+      els.status.innerHTML = view.html;
+      els.status.hidden = false;
+    } else {
+      els.status.innerHTML = '';
+      els.status.hidden = true;
+    }
+  }
+
   const peers = peerList();
   els.online.innerHTML = joined
     ? `<div class="village-section">🛰 在线邻居（${peers.length}）</div>
@@ -184,6 +237,16 @@ const VILLAGE_ACTIONS = {
     });
   },
 
+  /** 重新连接：公共信令抽风时，重连一次往往就好了 */
+  'village-reconnect'() {
+    notify('🔄 正在重新连接村镇…');
+    reconnectVillage().then((ok) => {
+      notify(ok ? '🛰 已重新连上村镇' : '没连上，检查一下网络或 https', ok ? 'gold' : '');
+      syncTab();
+      paint();
+    });
+  },
+
   'village-quit'() {
     quitVillage();
     closeVillage();
@@ -212,6 +275,7 @@ export function mountVillage() {
     title: root.querySelector('[data-role="village-title"]'),
     me: root.querySelector('[data-role="village-me"]'),
     caret: root.querySelector('[data-role="village-caret"]'),
+    status: root.querySelector('[data-role="village-status"]'),
     more: root.querySelector('[data-role="village-more"]'),
     online: root.querySelector('[data-role="village-online"]'),
   };

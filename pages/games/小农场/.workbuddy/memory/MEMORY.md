@@ -61,6 +61,10 @@
 - **邻居页**筛选与排序两条独立状态；筛选只认点击（滑动手势已删）。
 - **记录只有一种长相** `recordItemsHTML`；行内标签 `inlineTagsHTML`（人名+作物名一次正则）。
 - **作物详情只有一个弹窗** `openCropModal`；**邻居农场弹窗只有一个** `openFriendModal`。
+  ⚠️ 邻居弹窗结构：头部 → 数据卡 2×2（等级/身家/地块/好感）→ **农场控制台 `.npc-board`**
+  （两行：农场 N 块 + 🚿🧴 ｜ 🐕 粮槽进度条 + 🦴 + 📜）→ 地块 → 🎁 送礼 + 提示。
+  控制台是**普通文档流，故意不做 sticky**（跟着地块一起滚）。日志**不再常驻**，
+  `📜` 走 `openFriendLog()` 开叠层（`.npc-log.tall`）。
 - **农场日志双 tab**：「我的操作」= `!entry.by`，「邻居动向」= `entry.by`。tab 在面板底部。
 - **送礼三层**：清单→确认框→发送。赠礼层 `ui/gift.js` 不做 opacity 动画。
 
@@ -89,6 +93,10 @@
   挂 `dragToClose`，与「更多」「农场日志」同一套下拉关闭手势。
 - **玩家送礼**：`peer-gift.js` 三段握手，送方先扣货，收方 ack 才入包。
 - 安全：丢 >48KB 报文、`cleanText()` 按码点截断、`isItemKey` 用 `hasOwnProperty`。
+- **诊断**（浮窗顶部 `.village-status`）：已连接·N人在线·连接号 / 正在连接 / 没连上（可点重连）/
+  对方版本不一致。`peers.linkDiag()` + `reconnectVillage()`；版本不一致记在 `versionMismatch`
+  （toast 8s 节流 + emit FRIENDS 让浮窗常驻显示）。
+  ⚠️ 样式类挂容器上，`statusView()` 只返回文字 —— 别在容器里再套一层 `.village-status`。
 
 ## 其它
 

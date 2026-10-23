@@ -660,6 +660,9 @@
   border-top: 1px solid var(--line);
   -webkit-overflow-scrolling: touch;
 }
+/* 日志浮层（从控制台的「📜 日志」打开）：这里可以给得高一些 */
+.npc-log.tall { max-height: 56vh; margin-bottom: 0; }
+
 .npc-log.empty {
   max-height: none;
   font-size: 11.5px;
@@ -704,13 +707,6 @@
 }
 .npc-badge.ripe { background: #fdf0d4; color: #a07818; }
 
-.npc-section-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #5c6b57;
-  letter-spacing: .4px;
-  margin: 4px 0 9px;
-}
 /* 列数跟玩家农场同一套断点（手机 2 列 / ≥720 三列 / ≥960 四列）——
    以前是 auto-fill minmax(116px)，宽屏下一路排到六七列，
    邻居的地看起来比玩家的窄一大截，像是两个游戏 */
@@ -1835,8 +1831,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 占满一行：守护犬 / 偷菜这类长文案 */
-.npc-stat.wide { grid-column: 1 / -1; }
 
 /* ============================================================
    藏宝图与冒险（弹窗部分）
@@ -2471,13 +2465,108 @@
 .seed-row-kind.kind-bounty { background: #fde8cd; color: #a45a12; }
 .seed-row-kind.kind-premium { background: #f0e9fb; color: #6b45b0; }
 
-/* ---------- 邻居弹窗：农场标题右侧的一键按钮 ---------- */
-.npc-section-title {
+/* ---------- 邻居弹窗：农场控制台 ----------
+   两行收掉原来散在三处的三样东西：农场标题 + 一键照料（第一行）、
+   守护犬粮槽 + 日志入口（第二行）。
+   ⚠️ 它是普通文档流，**不要写 position: sticky** —— 玩家要的是「跟着地块一起滚」，
+   吸顶会一直压在地块上。 */
+.npc-board {
+  margin: 12px 0 11px;
+  padding: 9px 11px 8px;
+  background: #f7faf4;
+  border: 1px solid #e6eddf;
+  border-radius: 14px;
+}
+.npc-board-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
+.npc-board-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c6b57;
+  letter-spacing: .3px;
+}
+.npc-board-title b {
+  font-size: 13px;
+  color: #40503c;
+  font-variant-numeric: tabular-nums;
+}
+.npc-board-top .npc-sec-tools { margin-left: auto; }
+.npc-board-bot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px dashed #e3ead9;
+}
+/* 左边是「读数」，右边是「动作」——动作成组靠右，不在中间插一个按钮 */
+.npc-board-acts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* 守护犬：品种 + 迷你粮槽 + 存量。饿了整行转红，比一句文字更快读懂 */
+.npc-dog {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11.5px;
+  color: #5c6b57;
+}
+.nd-emoji { font-size: 14px; line-height: 1; }
+.nd-name { font-weight: 600; white-space: nowrap; }
+.nd-bar {
+  width: 48px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 99px;
+  background: #e4ebdc;
+  overflow: hidden;
+}
+.nd-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #8fd07a, #4caf50);
+  transition: width .2s ease;
+}
+.nd-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4c8a46;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.npc-dog.hungry .nd-bar i { background: #e8804f; }
+.npc-dog.hungry .nd-pct { color: #c25a34; }
+.npc-dog.none { color: var(--muted); }
+
+/* 小胶囊：日志 / 添狗粮。24px 高，不抢地块的视觉重心 */
+.npc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  padding: 0 9px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5c6b57;
+  background: #fff;
+  border: 1px solid #e2ead9;
+  border-radius: 99px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.npc-chip.icon { padding: 0 7px; font-size: 12px; }
+.npc-chip:active { transform: scale(.95); }
+
 .npc-sec-tools { display: flex; gap: 5px; }
 .npc-sec-tools:empty { display: none; }
 /* 图标按钮：标题行只有 34px 高，塞不下文字按钮，所以只留 emoji + 角标 */
@@ -2599,6 +2688,26 @@
 
 /* 展开面板：平铺，不做卡片（面板自身已有 16px 左右内边距） */
 .village-more { padding: 2px 0 4px; border-top: 1px dashed var(--line); }
+
+/* 常驻状态行：连上了 / 没连上 / 对方版本不一样，一眼能分清 */
+.village-status {
+  margin-bottom: 8px;
+  padding: 7px 11px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  background: #f5f7f2;
+  border-radius: 9px;
+}
+.village-status[hidden] { display: none; }
+.village-status.online { color: var(--green-d); background: #eef6e9; }
+.village-status.error { color: #b4552f; background: #fdf0e9; }
+.village-status b {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 .village-row {
   display: flex;
   align-items: center;
@@ -2741,15 +2850,6 @@
 .rank-tabs .filter-chip {
   flex-shrink: 0;
   white-space: nowrap;
-}
-
-/* 邻居弹窗守护犬行里的「添狗粮」按钮 */
-.feed-dog-btn {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 3px 8px;
-  font-size: 11px;
-  vertical-align: 1px;
 }
 
 /* ---------- 游戏手册 ---------- */
