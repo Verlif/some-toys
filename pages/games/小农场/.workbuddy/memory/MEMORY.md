@@ -92,7 +92,12 @@
 - 称号 38 个分三类 tab；引导 17 项；签到不发经验，历史 90 天。
 - **自动签到**（第 34 轮）：开机自动签 + **跨 0 点在线也签**（挂在分钟 tick 的日期检查上），照播庆祝画面。
 - **日历空位按「当月 1 号」周几算**。
-- **PWA**（第 35 轮）：manifest.json + sw.js（cache-first）+ icons/（192/512 PNG + SVG）。
+- **PWA**（第 35 轮）：manifest.json + sw.js + icons/（192/512 PNG + SVG）。
+  ⚠️ sw.js 是**网络优先**（页面导航 + `/src` `/styles` `/vendor` 有网取新、断网回退缓存），
+  图标/manifest 才走缓存优先。**别改回 cache-first** —— v1 那样改完代码刷新永远看不到
+  （SW 拦截后压根不走网络）。`updateViaCache:'none'` + 注册后 `reg.update()`；
+  activate 里发现「非当前版本缓存」就让受控页面 `client.navigate()` 重载一次
+  （旧页面跑的是旧代码，claim 换不掉），首次安装不刷。开发排查用 `?nosw` 注销并清缓存。
   iOS 走 `navigator.storage.persist()` + 添加到主屏提示（toast 一次，localStorage 记已提示）。
 - **游戏手册**（`subpages/manual.js`）：「更多→📘 手册」，float:left 图标网格（25% 宽），
   点图标弹 `openModal` 详情（平铺 `.manual-list`）。12 个分类。

@@ -111,10 +111,7 @@ async function boot() {
 
   await bootDone();
 
-  // PWA：注册 Service Worker（离线缓存）
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
+  mountServiceWorker();
 
   // iOS Safari 的 IndexedDB 7 天清理风险：两层防护
   // ① 申请持久化存储（Chrome/Safari 都支持）
@@ -202,3 +199,34 @@ boot().catch((error) => {
   console.error(error);
   bootFail(error?.message || '未知错误，刷新页面再试试');
 });
+
+/**
+ * 注册 Service Worker。
+ *
+ * 只有一件事必须做对：`updateViaCache: 'none'` —— 别让浏览器用 HTTP 缓存里的
+ * sw.js 判断「有没有新版本」，否则新 SW 永远装不上，缓存策略会一直停在老版本。
+ *
+ * 新版本接管后的刷新由 sw.js 自己负责（它在 activate 里发现旧缓存就让页面重载），
+ * 这里**不要**再监听 controllerchange 去 reload —— 两处都做会白刷一次。
+ *
+ * 地址后面加 `?nosw` 是开发开关：注销 SW 并清空所有缓存，
+ * 适合「改了 CSS 死活不生效」的时候一次性把环境擦干净。
+ */
+function mountServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  if (new URLSearchParams(location.search).has('nosw')) {
+    navigator.serviceWorker.getRegistrations()
+      .then((regs) => Promise.all(regs.map((reg) => reg.unregister())))
+      .then(() => (caches ? caches.keys() : []))
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+      .then(() => console.info('[sw] 已注销 Service Worker 并清空缓存，之后每次都是最新文件'))
+      .catch((error) => console.error(error));
+    return;
+  }
+
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+    // 注册后立刻查一次更新：不然要等浏览器自己想到（可能几十分钟后）
+    .then((reg) => reg.update())
+    .catch(() => {});
+}
