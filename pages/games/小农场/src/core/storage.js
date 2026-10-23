@@ -83,9 +83,9 @@ export async function loadSave() {
     bag,
     // 每日排行榜：一天一行，旧档没有这个字段返回空表（见 store/daily.js）
     dailyRows: Object.fromEntries(
-      dailyRows.map(({ date, settled, stats }) => [
+      dailyRows.map(({ date, start, settled, stats }) => [
         date,
-        { date, settled: Boolean(settled), stats: stats || {} },
+        { date, start: Number(start) || 0, settled: Boolean(settled), stats: stats || {} },
       ]),
     ),
   };
@@ -197,7 +197,13 @@ function writeDailyRows(tx, dailyRows) {
   store.clear();
   for (const row of Object.values(dailyRows)) {
     if (!row?.date) continue;
-    store.put({ date: row.date, settled: Boolean(row.settled), stats: row.stats || {} });
+    // start 是账期起点（date 14:00），用来识别旧账期留下的同键行
+    store.put({
+      date: row.date,
+      start: Number(row.start) || 0,
+      settled: Boolean(row.settled),
+      stats: row.stats || {},
+    });
   }
 }
 

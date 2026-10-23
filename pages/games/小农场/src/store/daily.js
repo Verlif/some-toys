@@ -24,7 +24,8 @@ import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
-import { boardDayKey, formatCoins } from '../core/utils.js';
+import { boardDayKey, boardPeriodStart, formatCoins } from '../core/utils.js';
+import { farmMaxBonus } from '../data/care.js';
 import { MAP_TIERS } from '../data/adventure.js';
 import { mapId, itemLabel } from '../data/keys.js';
 import { SPRINKLER_ID, PESTICIDE_ID, HARVESTER_ID } from '../data/items.js';
@@ -63,7 +64,7 @@ export const BOARDS = [
   },
   {
     metric: 'manage', icon: '🌾', name: '打理王',
-    desc: '农场内最高「+加成」角标的百分比（全场峰值）',
+    desc: '自己农场里最高的那一个「+加成」角标',
     format: (v) => `+${v}%`,
     rewards: [
       { coins: 100, items: { boost10: 3, [HARVESTER_ID]: 3 } },
@@ -112,13 +113,65 @@ for (const map of MAP_TIERS) {
 
 /* ---------- 记账 ---------- */
 
-/** 取某一天的行，没有就建一行（未结算） */
+/** 一期从账期开始那天（`date`）的 14:00 起算 */
+const periodStart = (key) => boardPeriodStart(key);
+
+/**
+ * 取某一期的行，没有就建一行（未结算）。
+ *
+ * 每一行都记着 `start`（这一期的起点时间戳）。旧账期（0 点切日）留下的行用的是
+ * **同一把日期键、不同的时间窗** —— 直接拿来用就等于把昨天的数当成今天的，
+ * 所以 start 对不上就丢掉重开。历史期直接返回一个「已结算」的空行，
+ * 让 bump 安静丢弃，而不是凭空造一期出来补奖。
+ */
 function rowOf(key) {
+  const start = periodStart(key);
   let row = state.dailyRows[key];
-  if (!row) {
-    row = state.dailyRows[key] = { date: key, settled: false, stats: {} };
+
+  if (row && row.start !== start) {
+    if (key !== boardDayKey()) return { date: key, start, settled: true, stats: {} };
+    delete state.dailyRows[key];
+    row = null;
   }
+
+  if (!row) row = state.dailyRows[key] = { date: key, start, settled: false, stats: {} };
   return row;
+}
+
+/**
+ * 当前这一期的行（只读）。
+ * start 对不上就当成空行 —— 界面上绝不显示旧账期的数字。
+ */
+function currentRow() {
+  const key = boardDayKey();
+  const start = periodStart(key);
+  const row = state.dailyRows[key];
+  return row && row.start === start ? row : { date: key, start, settled: false, stats: {} };
+}
+
+/**
+ * 打理王的实时口径。
+ *
+ * 榜上每个人 = **自己农场里当前最高的那一个「+加成」角标**，不累计、也不依赖
+ * 「收获过」这个事件 —— 否则地里挂着高加成却还没收，人就上不了榜。
+ * 记账里的峰值仍取较大值保留：收获后角标会回落，数值不该跟着往回走。
+ * @param {Record<string, object>} baseStats
+ * @returns {Record<string, object>}
+ */
+function mergeLiveManage(baseStats) {
+  const stats = {};
+  for (const [id, row] of Object.entries(baseStats || {})) stats[id] = { ...row };
+
+  const take = (id, plots) => {
+    const value = farmMaxBonus(plots);
+    if (value <= 0) return;
+    const entry = stats[id] || (stats[id] = {});
+    entry.manage = Math.max(entry.manage || 0, value);
+  };
+
+  if (state.farm) take(PLAYER_ID, state.farm.plots);
+  for (const friend of state.friends || []) take(friend.id, friend.plots);
+  return stats;
 }
 
 /**
@@ -151,10 +204,11 @@ export function bumpMax(actor, metric, n = 0, at = Date.now()) {
   schedulePersist();
 }
 
-/** 玩家今天某指标的值（下午 2 点前「统计中」的展示用） */
+/** 玩家本期某指标的值（实时榜里「我」那一行用） */
 export function todayValue(metric) {
-  const row = state.dailyRows[boardDayKey()];
-  const value = row?.stats[PLAYER_ID]?.[metric];
+  const row = currentRow();
+  const stats = metric === 'manage' ? mergeLiveManage(row.stats) : row.stats;
+  const value = stats[PLAYER_ID]?.[metric];
   return Number.isFinite(value) ? value : 0;
 }
 
@@ -222,7 +276,17 @@ function grantReward(reward) {
  * 结算一天：每张榜前三名发奖，玩家写农场日志，NPC 冠军上报一条时报。
  * @returns {{date: string, awards: object[], playerWon: boolean}} 本日发奖记录
  */
-function settleDay(row) {
+function settleDay(row, now = Date.now()) {
+  // 打理王看的是「农场里最高的那一个加成」，期结束那一刻再量一次：
+  // 有人的高加成本期没收获过，也该算成绩。
+  // 只补「刚结束两小时内」的那一期 —— 补算三天前的榜时，玩家的农场早就不是当时的模样了，
+  // 拿现在的数据去填旧榜只会失真。
+  const start = periodStart(row.date);
+  const end = start + 24 * 3600_000;
+  if (row.start === start && now >= end && now - end < 2 * 3600_000) {
+    row.stats = mergeLiveManage(row.stats);
+  }
+
   const awards = [];
   let playerWon = false;
   for (const board of BOARDS) {
@@ -263,13 +327,16 @@ export function checkRollover(now = Date.now()) {
   for (const row of Object.values(state.dailyRows)) {
     if (row.settled && dayIndex(row.date) > dayIndex(today)) row.settled = false;
   }
-  // 只结算**严格早于**当前 boardDayKey 的行
+  // 只结算**严格早于**当前 boardDayKey、且账期起点对得上的行 ——
+  // 旧口径残留的行（start 缺失或对不上）一律不结算，免得给一个语义不同的榜发奖
   const pending = Object.values(state.dailyRows)
-    .filter((row) => !row.settled && dayIndex(row.date) < dayIndex(today))
+    .filter((row) => !row.settled
+      && row.start === boardPeriodStart(row.date)
+      && dayIndex(row.date) < dayIndex(today))
     .sort((a, b) => dayIndex(a.date) - dayIndex(b.date));
   if (!pending.length) return [];
 
-  const results = pending.map(settleDay);
+  const results = pending.map((row) => settleDay(row, now));
 
   // 只留最近这些天，行虽小也不该无限堆
   const floor = dayIndex(today) - KEEP_DAYS;
@@ -294,12 +361,13 @@ export function checkRollover(now = Date.now()) {
 /**
  * 账期版本。
  *
- * v2 = 「昨天 14:00 → 今天 14:00 算一期，今天下午 2 点开奖」。
+ * v3 = 行里带 `start`（账期起点）之后的账期；v2 是「昨天 14:00 → 今天 14:00 一期、
+ * 今天下午 2 点开奖」但行里没记起点，v1 是 0 点切日。
  * 旧版（按 0 点切日）留下的行用的是**同一把日期键、不同的时间窗**，
  * 混在一起会互相覆盖、还会让 `bump` 撞上 `settled` 把数据静默丢掉，
  * 所以升级时整表清空一次（最多 8 天历史，代价可接受）。
  */
-const BOARD_VERSION = 2;
+const BOARD_VERSION = 3;
 
 /**
  * 校验账期版本，不一致就把每日榜单整表清空。
@@ -309,11 +377,21 @@ const BOARD_VERSION = 2;
 export async function migrateBoardRows() {
   const progress = state.farm?.progress;
   if (!progress || progress.boardVersion === BOARD_VERSION) return false;
-  state.dailyRows = {};
+
+  // 只清「不属于当前账期口径」的行：start 对得上的（新口径写出来的）原样留下，
+  // 旧账期的行则整行丢掉 —— 它们的时间窗和现在完全不同，留着只会污染统计
+  const kept = {};
+  let dropped = 0;
+  for (const [key, row] of Object.entries(state.dailyRows || {})) {
+    if (row?.start === boardPeriodStart(key)) kept[key] = row;
+    else dropped += 1;
+  }
+  state.dailyRows = kept;
   progress.boardVersion = BOARD_VERSION;
   // 进度字段在 farm 上，清空的是 daily 表，两张都要落盘
   await persistNow(true);
   emit(EVENTS.DAILY);
+  if (dropped) console.info(`[daily] 清理了 ${dropped} 行旧账期榜单`);
   return true;
 }
 
@@ -340,10 +418,11 @@ export function playerStanding(date, metric) {
   return mine ? { rank: mine.rank, value: mine.value } : { rank: 0, value: 0 };
 }
 
-/** 今日（未结算）某榜的实时排名，含 NPC */
+/** 本期（未结算）某榜的实时排名，含 NPC */
 export function todayRank(metric, n = 5) {
-  const date = boardDayKey(Date.now());
-  return rankOf(state.dailyRows[date] || { stats: {} }, metric, n);
+  const row = currentRow();
+  const stats = metric === 'manage' ? mergeLiveManage(row.stats) : row.stats;
+  return rankOf({ stats }, metric, n);
 }
 
 /* ---------- 落盘 ---------- */

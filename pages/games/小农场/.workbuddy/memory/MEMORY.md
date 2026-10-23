@@ -33,7 +33,13 @@
   （所以上午的活算进「昨天」那一期，这是 14 点切日的必然结果）。界面上必须用
   `boardPeriodText(date)` 把区间写出来，只写「昨日 · 10-22」会被当成自然日。
   旧 0 点账期留下的行与新账期**同键不同义** → 启动时 `migrateBoardRows()` 比对
-  `progress.boardVersion`（`BOARD_VERSION=2`），不一致整表清空一次。
+  `progress.boardVersion`（`BOARD_VERSION=3`），**只丢掉 `start` 对不上的行**。
+  ⚠️ 每行都存 `start`（账期起点 ms，`boardPeriodStart(date)`）：`rowOf` 记账时 start 不对
+  就重开一行、`currentRow()` 读的时候直接当空行、`checkRollover` 也不结算这类行 ——
+  三道闸门保证「本期一定从 14:00 起算」，存档里躺着旧行也不会串味。
+  打理王 `manage` 是**当前值不是累计**：实时榜 = `farmMaxBonus(自己农场)`（不靠收获事件，
+  地里挂着高加成没收获也上榜），与记账峰值取较大；结算时对**期结束后 2 小时内**的那一期
+  再量一次（久远补算不追溯，农场早不是当时模样）。
   `bump` 累加 / `bumpMax` 只留峰值（打理王=全场最高角标）。送礼=产出售价总和。
   settled 冻结；bulkAdvance 不进榜。前三名递减、并列都发，金币 100/50/30。
   ⚠️ 结算 `persistNow(true)` 连 farm/bag/news 一起写。UI `ui/subpages/rank.js`。

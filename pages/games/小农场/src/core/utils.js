@@ -93,6 +93,20 @@ export function boardDayKey(ts = Date.now()) {
 }
 
 /**
+ * 某一期的起点时间戳：`date` 那天的 14:00（本地时间）。
+ *
+ * 行里存一份 `start` 就是为了防「同键不同义」——旧账期的行可能和现在用同一把日期键，
+ * 但时间窗完全不同，靠它一眼就能认出来（见 store/daily.js 的 rowOf）。
+ * @param {string} dateKey
+ * @returns {number}
+ */
+export function boardPeriodStart(dateKey) {
+  const [y, m, d] = String(dateKey).split('-').map(Number);
+  if (!y || !m || !d) return 0;
+  return new Date(y, m - 1, d, 14, 0, 0, 0).getTime();
+}
+
+/**
  * 某一期榜单的统计区间文本，形如「10/22 14:00 → 10/23 14:00」。
  *
  * 行的 `date` 是**账期开始那天**（见 boardDayKey），所以区间是 date 14:00 到次日 14:00。
