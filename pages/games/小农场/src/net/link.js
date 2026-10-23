@@ -20,6 +20,7 @@ export const LINK_STATUS = {
 };
 
 /** 房间前缀：同一个 appName 下不同游戏不会串房 */
+// 游戏已更名《西米的农场》，APP_NAME 保持 sun-farm 不变 —— 改了新旧版本就无法互联
 const APP_NAME = 'sun-farm';
 
 /** 单条报文的字节上限：快照约 10 KB，48 KB 已经宽松到不可能误伤 */

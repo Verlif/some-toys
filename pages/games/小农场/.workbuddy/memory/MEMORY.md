@@ -1,6 +1,7 @@
-# 项目长期约定 · 文字版阳光牧场
+# 项目长期约定 · 西米的农场
 
 纯前端（原生 ESM、零构建、`node server.mjs`），存档 IndexedDB（`sun_farm_v2`），无后端。
+游戏正式更名《西米的农场》（原名「阳光牧场 · 文字版」），但 DB_NAME/localStorage key/APP_NAME 保持 sun_farm* 不变（存档兼容）。
 局域网联机走 WebRTC P2P（`vendor/webconnect.js`）。220 作物 / 40 块地 / 8 档土地 / 32 位邻居。
 
 ## 工程约定

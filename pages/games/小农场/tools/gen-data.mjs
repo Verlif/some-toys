@@ -99,7 +99,7 @@ const TITLES = [
   { id: 'lv150', name: '大地主', emoji: '🎩', skin: 9, need: { type: 'level', value: 150 }, items: { organic: 8, sprinkler: 20, pesticide: 20 } },
   { id: 'lv165', name: '农业传奇', emoji: '🗿', skin: 9, need: { type: 'level', value: 165 }, items: { boost30: 8, sprinkler: 20, pesticide: 20 } },
   { id: 'lv180', name: '田园之神', emoji: '☀️', skin: 9, need: { type: 'level', value: 180 }, items: { organic: 10, sprinkler: 25, pesticide: 25 } },
-  { id: 'lv200', name: '阳光牧场主', emoji: '🌞', skin: 10, need: { type: 'level', value: 200 }, items: { boost30: 10, dogFood: 30, sprinkler: 30, pesticide: 30, map_5: 1 } },
+  { id: 'lv200', name: '西米农场主', emoji: '🌞', skin: 10, need: { type: 'level', value: 200 }, items: { boost30: 10, dogFood: 30, sprinkler: 30, pesticide: 30, map_5: 1 } },
 
   // ── 图鉴称号（按点亮的图鉴数量，7 档）──────────────
   // 图鉴称号必定附一张藏宝图：收集本身就是往图鉴里填限定种子，给图是闭环
@@ -345,7 +345,7 @@ const STAGE_PATHS = {
 /**
  * 成熟时间（秒）。
  *
- * 参照《阳光牧场》的节奏：最短一小时，最长几天。
+ * 参照《阳光牧场》原作的节奏：最短一小时，最长几天。
  * 之所以要这么慢，是为了让「缺水 / 虫害」这两个每 6 / 12 小时出现一次的
  * 照料操作有意义 —— 如果作物 40 秒就熟，玩家根本遇不到需要浇水的时候。
  *

@@ -1,7 +1,7 @@
 {
   "name": "sun-farm",
   "version": "1.0.0",
-  "description": "阳光牧场 · 文字版 —— 零构建原生 ESM 网页游戏",
+  "description": "西米的农场 —— 零构建原生 ESM 网页游戏",
   "type": "module",
   "private": true,
   "scripts": {

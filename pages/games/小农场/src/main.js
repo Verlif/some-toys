@@ -124,8 +124,8 @@ async function boot() {
   }
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-  if (isIOS && !isStandalone && !localStorage.getItem('sun_farm_a2hs_hint')) {
-    localStorage.setItem('sun_farm_a2hs_hint', '1');
+  if (isIOS && !isStandalone && !localStorage.getItem('ximi_a2hs_hint')) {
+    localStorage.setItem('ximi_a2hs_hint', '1');
     // 延迟 3 秒再弹，等首页渲染稳定
     setTimeout(() => {
       notify('💡 把本页「添加到主屏幕」可防止 Safari 清理存档（7 天不访问会被清）', 'gold');

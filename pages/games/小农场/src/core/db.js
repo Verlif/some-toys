@@ -12,7 +12,8 @@
  * 事件循环回到空转时会自动提交，中途 await 会导致事务失效。
  */
 
-/** 全新存档库名。旧库 sun_farm_v1 / homeland_farm_v2 原样留在浏览器里，不迁移也不复用 */
+/** 全新存档库名。旧库 sun_farm_v1 / homeland_farm_v2 原样留在浏览器里，不迁移也不复用。
+ * 游戏已更名《西米的农场》，但库名保持 sun_farm_v2 不变 —— 改了老玩家的存档就找不回来 */
 export const DB_NAME = 'sun_farm_v2';
 
 /** 结构版本：字段不兼容时 +1，并在 upgrade 中补迁移逻辑 */

@@ -52,7 +52,7 @@ export const TITLES = [
   { id: 'lv150', name: '大地主', emoji: '🎩', skin: 9, need: { type: 'level', value: 150 }, coins: undefined, items: {'organic':8,'sprinkler':20,'pesticide':20} },
   { id: 'lv165', name: '农业传奇', emoji: '🗿', skin: 9, need: { type: 'level', value: 165 }, coins: undefined, items: {'boost30':8,'sprinkler':20,'pesticide':20} },
   { id: 'lv180', name: '田园之神', emoji: '☀️', skin: 9, need: { type: 'level', value: 180 }, coins: undefined, items: {'organic':10,'sprinkler':25,'pesticide':25} },
-  { id: 'lv200', name: '阳光牧场主', emoji: '🌞', skin: 10, need: { type: 'level', value: 200 }, coins: undefined, items: {'boost30':10,'dogFood':30,'sprinkler':30,'pesticide':30,'map_5':1} },
+  { id: 'lv200', name: '西米农场主', emoji: '🌞', skin: 10, need: { type: 'level', value: 200 }, coins: undefined, items: {'boost30':10,'dogFood':30,'sprinkler':30,'pesticide':30,'map_5':1} },
   { id: 'cx10', name: '拾穗学徒', emoji: '🌾', skin: 1, need: { type: 'codex', value: 10 }, coins: undefined, items: {'fertilizer':5,'dogFood':5,'map_1':1} },
   { id: 'cx30', name: '苗圃园丁', emoji: '🌱', skin: 2, need: { type: 'codex', value: 30 }, coins: undefined, items: {'fert1h':5,'sprinkler':5,'map_2':1} },
   { id: 'cx60', name: '丰穑之士', emoji: '🪴', skin: 3, need: { type: 'codex', value: 60 }, coins: undefined, items: {'organic':2,'sprinkler':10,'pesticide':10,'map_3':1} },

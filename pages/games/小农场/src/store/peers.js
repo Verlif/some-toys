@@ -19,6 +19,7 @@ import * as link from '../net/link.js';
 import { DATA_VERSION, MSG, helloOf, readMessage, readSnapshot, snapshotOf, toastOf } from '../net/protocol.js';
 
 /** 村镇配置存在 localStorage：它是「这台设备的联机设置」，不该跟着存档走 */
+// 游戏已更名《西米的农场》，key 保持 sun_farm_village 不变 —— 改了老玩家的村镇配置就丢了
 const CONFIG_KEY = 'sun_farm_village';
 
 /** 快照请求超时：同网段正常是几十毫秒，4 秒没回就是真的不在 */

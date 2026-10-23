@@ -8,8 +8,8 @@
  *
  * ⚠️ 新增 / 改名静态资源时要同步更新 ASSETS 列表，否则离线会缺文件。
  */
-const VERSION = 'sun-farm-v1';
-const CACHE = `sun-farm-${VERSION}`;
+const VERSION = 'ximi-farm-v1';
+const CACHE = `ximi-farm-${VERSION}`;
 
 /** 核心资源：安装时一次性全部缓存 */
 const ASSETS = [

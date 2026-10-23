@@ -71,7 +71,7 @@ function ensureCert() {
       'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
       '-keyout', keyPath, '-out', certPath,
       '-days', '825',
-      '-subj', '/CN=sun-farm.local',
+      '-subj', '/CN=ximi-farm.local',
       '-addext', `subjectAltName=${san}`,
     ], { stdio: 'pipe' });
     fs.writeFileSync(metaPath, JSON.stringify({ ips, at: Date.now() }, null, 2));
@@ -120,7 +120,7 @@ if (USE_HTTPS) {
 
 server.listen(PORT, () => {
   const scheme = server instanceof https.Server ? 'https' : 'http';
-  console.log(`阳光牧场已启动： ${scheme}://localhost:${PORT}`);
+  console.log(`西米的农场已启动： ${scheme}://localhost:${PORT}`);
   for (const ip of lanAddresses()) console.log(`  同一局域网： ${scheme}://${ip}:${PORT}`);
   if (scheme === 'https') console.log('  自签证书首次访问会被拦一次，点「继续前往」即可。');
 });

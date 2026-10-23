@@ -359,7 +359,7 @@ try {
 }
 
 /* ---------- 输出 ---------- */
-console.log('静态校验：阳光牧场');
+console.log('静态校验：西米的农场');
 for (const note of notes) console.log(`  · ${note}`);
 
 if (problems.length) {
