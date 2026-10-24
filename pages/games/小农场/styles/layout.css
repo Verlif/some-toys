@@ -401,17 +401,20 @@
 }
 /* 道具存量：只标消耗版余量；永久版无限用，不显示数字 */
 .fa-stock {
-  padding: 0 4px;
+  padding: 0 3px;
   border-radius: 99px;
   background: #f3f7ef;
   color: #8a978a;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-/* 窄屏（<380px）三件工具齐活时，存量退场，只留「图标 + 名字 + 待办数」 */
-@media (max-width: 379px) {
+/* 极窄屏（<330px）才让存量退场，只留「图标 + 名字 + 待办数」。
+   门槛早先是 380px —— 360px 的常见安卓窄屏（和 375px 的 iPhone SE）
+   正好命中，玩家看不到 ×N，还以为被「永久版不显示」的规则吃掉了
+   （2026-10-24 反馈）。配合上面收窄的字号与内边距，360px 三格不溢出。 */
+@media (max-width: 329px) {
   .fa-stock { display: none; }
 }
 

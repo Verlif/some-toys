@@ -15,7 +15,7 @@
  *
  * 结算分两段，避免「离线一年回来」卡死：
  *   - 远期（超过 7 天）：聚合公式一次性推进等级与财富，不记日志，
- *     也不动玩家农场；
+ *     只把玩家农场上过期的照料需求一并结掉（邻居们这些天帮忙打理过了）；
  *   - 近期（7 天内）：逐条执行上线会话，行为写进双方日志。
  *
  * 这个模块是纯计算，不碰存储也不碰 DOM：
@@ -28,8 +28,8 @@ import { formatCoins, randInt } from '../core/utils.js';
 import {
   ACTIONS_PER_VISIT,
   BOOST_CAP,
+  CARE_PLAYER_WEIGHT,
   DETAILED_WINDOW,
-  LOG_LIMIT,
   MAX_VISITS_PER_NPC,
   PERSONALITIES,
   PEST_YIELD_BONUS,
@@ -42,6 +42,7 @@ import {
   npcGrowMs,
   shuffled,
   syncNpcPlots,
+  trimLog,
 } from '../data/friends.js';
 import { carePenalty, cornerBonusPct, farmMaxBonus, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import {
@@ -101,11 +102,11 @@ function pickWeighted(list) {
   return list.at(-1);
 }
 
-/** 新建一条动态（最新在前，最多留 LOG_LIMIT 条） */
+/** 新建一条动态（最新在前，只留最近 7 天，见 trimLog） */
 function log(npc, at, emoji, text) {
   const list = npc.log ?? (npc.log = []);
   list.unshift({ at, emoji, text });
-  if (list.length > LOG_LIMIT) list.length = LOG_LIMIT;
+  trimLog(list);
 }
 
 /* ============================================================
@@ -432,12 +433,19 @@ const careWanted = (plot, at) => Boolean(plot.cropId)
  * 谁会去帮谁，看的是**好感度**（helpWeightFor）：交情越好越愿意跑腿，
  * 结了怨的基本绕着走。**亲近档（好感 ≥100）优先** —— 上线先登门照顾这些
  * 铁交情，一个 ≥100 的都没有才按老逻辑全量挑，低好感的偶尔也帮得上。
- * 玩家农场照样有自己的权重（地最多、最扎眼），
- * 一次只帮一块地 —— 帮得再多也不该变成「一键托管」。
+ * 玩家农场照样有自己的权重（地最多、最扎眼，care 专用 CARE_PLAYER_WEIGHT），
+ * **一次最多 2 块地** —— 帮得再多也不该变成「一键托管」。
+ *
+ * 概率与块数都是 2026-10-24 调过的：原来每次上线只可能碰 1 块地、
+ * 命中率还只有 tend×0.22，32 个邻居分 33 座农场，玩家农场长期没人管，
+ * 离线几天回来一片缺水生虫，高好感邻居像白交的一样。
  */
+/** 一次串门最多照料几块地：2 块是「真的在帮」和「全托管」之间的线 */
+const CARE_MAX_PLOTS = 2;
+
 function actCare(npc, ctx, at) {
   const weights = PERSONALITIES[npc.personality].weights;
-  if (Math.random() >= Math.min(0.85, weights.tend * 0.22)) return null;
+  if (Math.random() >= Math.min(0.90, weights.tend * 0.30)) return null;
 
   const targets = [];
   for (const other of ctx.neighbours) {
@@ -453,7 +461,9 @@ function actCare(npc, ctx, at) {
       targets.push({
         owner: ctx.farm,
         plots: needs,
-        weight: PLAYER_FARM_WEIGHT * helpWeightFor(ctx.rel(npc.id, ctx.farm.id)),
+        // 照顾用 care 专用权重（偷菜的 PLAYER_FARM_WEIGHT 不动）：
+        // 「地最多、最扎眼」在偷菜上是 2，在帮忙上该更愿意来
+        weight: CARE_PLAYER_WEIGHT * helpWeightFor(ctx.rel(npc.id, ctx.farm.id)),
       });
     }
   }
@@ -462,31 +472,39 @@ function actCare(npc, ctx, at) {
   // 亲近档优先：有 ≥100 的目标就只从里面挑，一个都没有才回退全量
   const close = targets.filter((t) => ctx.rel(npc.id, t.owner.id) >= REL_CARE_PRIORITY);
   const { owner, plots } = pickWeighted(close.length ? close : targets);
-  const plot = pick(plots);
-  const crop = CROPS[plot.cropId];
-  const isPlayer = owner === ctx.farm;
-  const water = needsWater(plot, at);
+  // 一次最多 2 块，且**缺水生虫一起处理**（原来只修一个，另一个白挂着）
+  const chosen = shuffled(plots).slice(0, CARE_MAX_PLOTS);
 
-  if (water) serveCare(plot, 'water', at);
-  else {
-    plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
-    serveCare(plot, 'pest', at);
+  let tended = 0;
+  const names = [];
+  for (const plot of chosen) {
+    const crop = CROPS[plot.cropId];
+    const water = needsWater(plot, at);
+    const pest = needsPest(plot, at);
+    if (water) serveCare(plot, 'water', at);
+    if (pest) {
+      plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
+      serveCare(plot, 'pest', at);
+    }
+    tended += 1;
+    names.push(`${crop.emoji}${crop.name}`);
   }
-  // 打理一次 +1 好感，不管帮的是玩家还是别的邻居
-  ctx.relAdjust(npc.id, owner.id, REL_PER_CARE);
-  // 最友善榜：帮一次记一笔（记在帮忙的人头上）
-  ctx.daily?.(npc.id, 'care', 1, at);
+  if (!tended) return null;
 
-  const emoji = water ? '💧' : '🐛';
-  const verb = water ? '浇了水' : '捉了虫';
-  if (isPlayer) {
-    owner.cared += 1;
+  // 每块 +1 好感，与玩家一键帮邻居浇多块地同一口径
+  ctx.relAdjust(npc.id, owner.id, REL_PER_CARE * tended);
+  // 最友善榜：帮几块记几笔（记在帮忙的人头上）
+  ctx.daily?.(npc.id, 'care', tended, at);
+
+  const detail = names.join('、');
+  if (owner === ctx.farm) {
+    owner.cared += tended;
     // by = npc.id：邻居主动帮忙，归进农场日志的「邻居动向」tab
-    owner.log(at, emoji, `${npc.name} 顺手帮你给 ${crop.emoji}${crop.name} ${verb}`, npc.id);
+    owner.log(at, '🤝', `${npc.name} 顺手帮你照料了 ${detail}`, npc.id);
   } else {
-    log(owner, at, emoji, `${npc.name} 路过，顺手给 ${crop.emoji}${crop.name} ${verb}`);
+    log(owner, at, '🤝', `${npc.name} 路过，顺手给 ${detail} 浇了水除了虫`);
   }
-  return { emoji: '🤝', text: `帮 ${owner.name} 给 ${crop.emoji}${crop.name} ${verb}` };
+  return { emoji: '🤝', text: `帮 ${owner.name} 照料了 ${tended} 块地` };
 }
 
 /**
@@ -684,8 +702,15 @@ function runVisit(npc, ctx, at) {
 /**
  * 把 NPC 从当前时间直接推进到 until，不逐条执行会话。
  * 用于超过精细模拟窗口的长离线，只能得到「总量」而非「过程」。
+ *
+ * @param {object} npc
+ * @param {number} until
+ * @param {?object} [ctx] 模拟上下文。远期窗口里没人逐次模拟，但邻居们
+ *   （尤其高好感的）这些天也没闲着 —— 顺手把玩家农场上过期的照料需求
+ *   一并结掉，当作他们帮忙打理过了。32 个邻居各跑一次，第一个结掉后
+ *   后面的看到的已是「无需照料」，天然幂等。
  */
-function bulkAdvance(npc, until) {
+function bulkAdvance(npc, until, ctx) {
   const span = Math.max(HOUR, until - (npc.lastVisitAt || until - HOUR));
   const visits = Math.max(1, Math.round(span / expectedGapMs(npc)));
 
@@ -742,6 +767,29 @@ function bulkAdvance(npc, until) {
   const weights = PERSONALITIES[npc.personality].weights;
   npc.dog.satiety = Math.min(DOG_SATIETY_MAX, 25 + weights.tend * 16);
   npc.dog.at = until;
+
+  // 远期补账：玩家农场这些天没人逐次照料，把过期的浇水 / 杀虫需求结掉 ——
+  // 相当于那些天里邻居们（按人数与交情）已经帮忙打理过了。
+  // 不补的话离线一个月回来一片缺水生虫，高好感邻居像白交的一样
+  // （2026-10-24 用户反馈）。
+  if (ctx?.farm) {
+    let cared = 0;
+    for (const plot of ctx.farm.plots) {
+      if (needsWater(plot, until)) {
+        serveCare(plot, 'water', until);
+        cared += 1;
+      }
+      if (needsPest(plot, until)) {
+        serveCare(plot, 'pest', until);
+        cared += 1;
+      }
+    }
+    if (cared > 0) {
+      // 汇总计数走 farmView：邻居页那句「你不在时：邻居帮你照料了 N 块地」
+      ctx.farm.cared += cared;
+      ctx.farm.news?.(until, '🤝', `你不在的这些天，邻居们帮你照料了 ${cared} 块地`);
+    }
+  }
 }
 
 /* ============================================================
@@ -789,7 +837,7 @@ export function simulateNpcUntil(npc, ctx, now, onVisit = null, deferFrom = Infi
   while ((npc.nextVisitAt || 0) <= now && guard < MAX_VISITS_PER_NPC) {
     guard += 1;
     if (npc.nextVisitAt < boundary) {
-      bulkAdvance(npc, boundary);
+      bulkAdvance(npc, boundary, ctx);
       continue;
     }
 

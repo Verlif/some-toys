@@ -19,8 +19,9 @@ import { estimateWork, planVisit, runStep, simulateNpcUntil } from './npc-sim.js
 import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
-import { BOOST_CAP, LIVE_STEP_MS, LOG_LIMIT, PEST_YIELD_BONUS } from '../data/friends.js';
+import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, trimLog } from '../data/friends.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
+import { stageBounds } from '../data/stages.js';
 import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
 import { bump, bumpMax } from './daily.js';
@@ -29,7 +30,7 @@ import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
-import { formatCoins, randInt } from '../core/utils.js';
+import { fmtSaved, formatCoins, randInt } from '../core/utils.js';
 
 /* ---------- 邻居状态查询 ---------- */
 
@@ -273,7 +274,8 @@ export async function persistFriends() {
 function logFriend(friend, at, emoji, text) {
   friend.log ??= [];
   friend.log.unshift({ at, emoji, text });
-  if (friend.log.length > LOG_LIMIT) friend.log.length = LOG_LIMIT;
+  // 与玩家农场日志同一套规则：只按 7 天裁剪，不设条数上限
+  trimLog(friend.log);
 }
 
 /* ---------- 在线演出 ---------- */
@@ -486,6 +488,10 @@ export async function steal(friendId, index) {
 
 /**
  * 帮邻居的地浇水。只能对**具体那块地**操作。
+ *
+ * 效果与自家农场浇水完全一致：当前生长阶段砍 10%（WATER_SPEEDUP）。
+ * 少了这一段，帮忙浇水就只剩好感和经验，作物该多久熟还是多久熟 ——
+ * 玩家在邻居家看不到任何时间变化，还会白等（2026-10-24 反馈）。
  * @returns {Promise<boolean>} 是否操作成功
  */
 export async function waterNeighborPlot(friendId, index) {
@@ -499,11 +505,16 @@ export async function waterNeighborPlot(friendId, index) {
     return false;
   }
 
+  const crop = CROPS[target.cropId];
+  const bounds = stageBounds(target, crop, now);
+  const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
+  target.readyAt = Math.max(now, target.readyAt - saved);
+
   serveCare(target, 'water', now);
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE);
   bump(PLAYER_ID, 'care');
   // 经验跟着被照料的作物走：作物几级就给几点，不随玩家等级膨胀
-  const exp = CROPS[target.cropId].lv;
+  const exp = crop.lv;
   player.addExpRaw(exp);
   logFriend(friend, now, '💧', `${state.farm.name} 来帮忙浇了水`);
 
@@ -515,7 +526,10 @@ export async function waterNeighborPlot(friendId, index) {
   // 在邻居家浇水也算「第一次浇水」——引导不该分自家还是别人家
   await completeGuide('water');
   await completeGuide('care');
-  notify(`💧 帮 ${friend.name} 浇了水（经验 +${exp}，好感 +${REL_PER_CARE}）`);
+  notify(
+    `💧 帮 ${friend.name} 浇了水，当前阶段缩短 ${Math.round(WATER_SPEEDUP * 100)}%`
+    + `（约 ${fmtSaved(saved)}）　经验 +${exp}，好感 +${REL_PER_CARE}`,
+  );
   return true;
 }
 

@@ -189,6 +189,16 @@ export const LIVE_STEP_MS = [3000, 7000];
 export const PLAYER_FARM_WEIGHT = 2;
 
 /**
+ * 「串门帮忙」挑农场时给「玩家农场」的权重。
+ *
+ * 和偷菜的 PLAYER_FARM_WEIGHT 分开：帮忙是另一回事 ——
+ * 32 个邻居分 33 座农场，权重不给足，玩家农场长期没人管，
+ * 离线几天回来一片缺水生虫，高好感邻居像白交了一样
+ * （2026-10-24 用户反馈「我有很多好感度高的邻居，他们上线时应该会帮我打理啊」）。
+ */
+export const CARE_PLAYER_WEIGHT = 3;
+
+/**
  * 精细模拟的时间窗口：只有这段时间内的上线会被逐条执行并写进动态日志，
  * 更久远的部分用聚合公式一次性结算，否则离线几个月会把浏览器卡死。
  */
@@ -241,6 +251,32 @@ export function expectedGapMs(npc) {
   return ((schedule.min + schedule.max) / 2) * HOUR;
 }
 
+/* ---------- 日志保留 ---------- */
+
+/**
+ * 日志（玩家农场日志 / 邻居动态）统一保留这么多天。
+ *
+ * **只按天、不设条数上限**：早年玩家农场日志两个 tab 共用 60 条，
+ * 玩家自己一天的操作就能把「邻居动向」挤光，看起来像没保存
+ * （2026-10-24 用户反馈）；邻居自己的动态也曾压到 10 条，同样不按天。
+ */
+export const LOG_KEEP_DAYS = 7;
+
+/**
+ * 按时间裁剪一条日志列表（原地改）。
+ *
+ * 数组是按写入顺序存的（最新在前），但邻居结算会补写过去的时间点，
+ * 所以不能假设它有序 —— 必须 filter，不能从头截断。
+ * @param {Array<{at: number}>} list
+ * @param {number} [now]
+ */
+export function trimLog(list, now = Date.now()) {
+  const cutoff = now - LOG_KEEP_DAYS * 86_400_000;
+  const kept = list.filter((entry) => entry.at >= cutoff);
+  list.length = 0;
+  list.push(...kept);
+}
+
 /* ---------- 守护犬 ---------- */
 
 /**
@@ -250,9 +286,6 @@ export function expectedGapMs(npc) {
  * 等级越高越可能养得起好狗。他们的狗只看「基础拦截率 × 饱腹度」，
  * 和玩家同一套公式。
  */
-
-/** 每个邻居保留的操作记录条数（玩家页最多显示 10 条） */
-export const LOG_LIMIT = 10;
 
 /* ---------- 照料（浇水 / 捉虫）---------- */
 

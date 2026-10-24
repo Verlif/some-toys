@@ -24,7 +24,8 @@ import { CROPS } from '../data/crops.js';
 import { ITEMS } from '../data/items.js';
 import { produceId } from '../data/keys.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
-import { BOOST_CAP, PEST_YIELD_BONUS } from '../data/friends.js';
+import { stageBounds } from '../data/stages.js';
+import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
 import { DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, catchChance, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { isStealable } from './social.js';
 import { completeGuide } from './codex.js';
@@ -101,6 +102,11 @@ export async function waterPeer(peerId, index) {
   if (!res?.ok) {
     notify(res?.reason || '浇水没有成功');
     return false;
+  }
+  // 主人回执里带着新的成熟时间：本地快照当场对齐，
+  // 弹窗里的倒计时立刻降，不用等下一轮快照推送
+  if (Number.isFinite(res.readyAt) && peer.plots?.[index]) {
+    peer.plots[index].readyAt = res.readyAt;
   }
   const exp = CROPS[cropId].lv;
   player.addExpRaw(exp);
@@ -308,9 +314,14 @@ function handleAct(msg, peerId) {
       reply({ ok: false, reason: '这块地不缺水' });
       return;
     }
+    // 与自家农场 / NPC 家同一套：当前阶段砍 10%，别让浇水只剩交情没有效果
+    const bounds = stageBounds(plot, crop, now);
+    const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
+    plot.readyAt = Math.max(now, plot.readyAt - saved);
     serveCare(plot, 'water', now);
     player.addLog('💧', `${peer.name} 帮你给 ${crop.name} 浇了水`, now, peer.id);
-    applyHostChange(reply);
+    // 回执带上新成熟时间：访客拿它就地对齐本地快照，倒计时当场降
+    applyHostChange(reply, { ok: true, readyAt: plot.readyAt });
     return;
   }
 

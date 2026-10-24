@@ -15,6 +15,7 @@ import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
 import { expForLevel, MAX_LEVEL } from '../data/progression.js';
+import { trimLog } from '../data/friends.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
 import { broadcastToast } from './peers.js';
@@ -104,12 +105,6 @@ export async function renamePlayer(raw) {
 
 /* ---------- 农场日志 ---------- */
 
-/** 农场日志只保留最近这么多天 */
-const LOG_KEEP_DAYS = 7;
-
-/** 再多也留这么些条，避免存档无限膨胀 */
-const LOG_CAP = 60;
-
 /**
  * 记一条农场日志（内存操作，随下一次 commit 一起落盘）。
  *
@@ -131,11 +126,9 @@ const LOG_CAP = 60;
 export function addLog(emoji, text, at = Date.now(), by = '') {
   const log = state.farm.log ?? (state.farm.log = []);
   log.unshift({ at, emoji, text, by: by || '' });
-
-  const cutoff = Date.now() - LOG_KEEP_DAYS * 86_400_000;
-  const kept = log.filter((entry) => entry.at >= cutoff).slice(0, LOG_CAP);
-  log.length = 0;
-  log.push(...kept);
+  // 只按 7 天裁剪、不设条数上限：早年两个 tab 共用 60 条，
+  // 玩家自己一天的操作就能把「邻居动向」挤光（2026-10-24 反馈）
+  trimLog(log);
 }
 
 /* ---------- 落盘 ---------- */

@@ -55,7 +55,8 @@
   上排守护犬+日志方块、下排三格一键（图标/名字/橙色待办数/存量）。**不要再往底部堆 fixed 浮层**，
   `--farm-tools-h` 已删；`data-action` 必须写字面量（check.mjs 扫不到模板拼接的名字）。
   **存量只标消耗版 `×N`，永久版不显示数字**（第 38 轮；悬停提示补「永久版，不消耗」，
-  邻居农场 🚿/🧴 标题栏同一规则）。
+  邻居农场 🚿/🧴 标题栏同一规则）。`.fa-stock` 只在 **<330px** 才隐藏（第 40 轮从 380px 降的，
+  360px 安卓 / 375px iPhone SE 要能看见 ×N）。
 - **土地列表顺序**（第 39 轮）：`已解锁地块 → 荒地卡（未解锁只画第一张，🔓价格按钮）
   → .plot-fold 汇总行永远垫底`。开垦后新建的荒地卡节点会 append 到汇总行**后面**，
   `renderFarm` 末尾必须 `grid.appendChild(foldNode.el)` 把汇总行挪回末尾（移动已有节点）。
@@ -79,6 +80,8 @@
   （sd-grid 写狗粮槽 before→after / 包裹现有 / 剩余，NPC 另标好感 +1），
   确认才 `closeModal()` 回弹窗再扣粮；NPC 与联机好友（`feedPeerDog`）同一套。
 - **农场日志双 tab**：「我的操作」= `!entry.by`，「邻居动向」= `entry.by`。tab 在面板底部。
+- **称号页**：`.title-card > :last-child` 固定 28px 高并居中（佩戴中/佩戴/领取/未达成四种结局
+  必须等高，否则点佩戴整行跳）；`.title-hero-badge` 钉 62×62（第 40 轮）。
 - **送礼三层**：清单→确认框→发送。赠礼层 `ui/gift.js` 不做 opacity 动画。
 
 ## 守护犬
@@ -94,8 +97,14 @@
 
 - 邻居同用 `unlockedPlotCount`；偷菜 `stealable()` 要 `!plot.guarded`。
 - NPC 模拟纯计算，`simCtx()` 注入 rel/receiveGift/daily，npc-sim 不 import store。
-- **NPC 概率**（第 36 轮上调约 1.5~2 倍）：喂狗 `min(0.95, tend×0.40)`、打理 `min(0.85, tend×0.22)`、
-  偷菜 `{rare:0.18, often:0.65, always:0.95}`、冒险 0.20。NPC→玩家动作逻辑一直都有。
+- **NPC 概率**（第 36 轮上调约 1.5~2 倍，第 40 轮再调照料）：喂狗 `min(0.95, tend×0.40)`、
+  串门打理 `min(0.90, tend×0.30)`、偷菜 `{rare:0.18, often:0.65, always:0.95}`、冒险 0.20。
+  **actCare 每次上限 2 块地**（`CARE_MAX_PLOTS`）且缺水生虫一起处理；挑农场时玩家农场用
+  `CARE_PLAYER_WEIGHT=3`（care 专用，偷菜的 `PLAYER_FARM_WEIGHT=2` 不动）。
+  ⚠️ 远期 `bulkAdvance(npc, until, ctx)` 会把玩家农场过期的照料需求聚合结掉并 `cared+=n`
+  （32 个 NPC 各跑一次，天然幂等）；落盘靠「bulkAdvance 后必有详细访问」触发 persistFriends。
+  **帮邻居浇水与自家同款**：`waterNeighborPlot` / 联机主机侧都 `readyAt −= stageBounds×10%`
+  （第 40 轮补，原来只剩好感经验；联机回执带 readyAt，访客就地齐快照）。
 
 ## 村镇联机
 
@@ -113,7 +122,8 @@
 
 ## 其它
 
-- 时报 7 天/80 条、日志 7 天/60 条。时报条目 `{at, emoji, text, crop, cat}`。
+- 时报 7 天/80 条；**农场日志与邻居动态纯 7 天、不设条数上限**（`data/friends.js` 的
+  `trimLog`；第 40 轮改，早先是两个 tab 共用 60 条 + 邻居 log 10 条，会被自家操作挤光）。
 - 称号 38 个分三类 tab；引导 17 项；签到不发经验，历史 90 天。
 - **自动签到**（第 34 轮）：开机自动签 + **跨 0 点在线也签**（挂在分钟 tick 的日期检查上），照播庆祝画面。
 - **日历空位按「当月 1 号」周几算**。

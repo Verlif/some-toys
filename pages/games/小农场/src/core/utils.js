@@ -24,6 +24,19 @@ export function fmtDuration(ms) {
 }
 
 /**
+ * 把「省下来的毫秒数」说成人话，用于浇水 / 施肥的提示文案。
+ * 例：45000 → "45 秒"，5400000 → "1.5 小时"
+ * @param {number} ms
+ * @returns {string}
+ */
+export function fmtSaved(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) return '0 秒';
+  if (ms < 60_000) return `${Math.round(ms / 1000)} 秒`;
+  if (ms < 3600_000) return `${Math.round(ms / 60_000)} 分钟`;
+  return `${(ms / 3600_000).toFixed(1)} 小时`;
+}
+
+/**
  * 把任意值转成一个有限数字，拿不到就返回兜底值。
  * 用于清洗存档里可能缺失或为 undefined 的字段。
  * @param {unknown} value

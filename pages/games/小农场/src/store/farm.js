@@ -18,7 +18,7 @@ import { seedId, produceId } from '../data/keys.js';
 import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
 import { carePenalty, cornerBonusPct, farmMaxBonus, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
-import { randInt } from '../core/utils.js';
+import { fmtSaved, randInt } from '../core/utils.js';
 import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
 import { notify } from './notify.js';
 import { broadcastToast } from './peers.js';
@@ -479,13 +479,6 @@ export async function fertilize(plotId, itemId) {
     item.instant ? 'gold' : '',
   );
   return true;
-}
-
-/** 把毫秒数说成人话，用于提示文案 */
-function fmtSaved(ms) {
-  if (ms < 60_000) return `${Math.round(ms / 1000)} 秒`;
-  if (ms < 3600_000) return `${Math.round(ms / 60_000)} 分钟`;
-  return `${(ms / 3600_000).toFixed(1)} 小时`;
 }
 
 /**
