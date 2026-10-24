@@ -673,6 +673,11 @@
 }
 #modal.show .modal-card { transform: translateY(0); }
 
+/* 不在线的邻居农场：整张弹窗浅灰底（含底栏），一眼看出「这家没人」。
+   类由 ui/friend-modal.js 按 onlineUntil 挂，叠层关闭时由 modal.js 还原 */
+.modal-card.npc-offline { background: #eef0ec; }
+.modal-card.npc-offline .modal-foot { background: #eef0ec; border-top-color: #e0e4dc; }
+
 .modal-body {
   flex: 1;
   min-height: 0;

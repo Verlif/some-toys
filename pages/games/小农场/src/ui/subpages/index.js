@@ -11,7 +11,7 @@ import { dogPage } from './dog.js';
 import { workshopPage } from './workshop.js';
 import { rankPage } from './rank.js';
 import { manualPage } from './manual.js';
-import { placeholderPage } from './placeholder.js';
+import { ordersPage } from './orders.js';
 
 /** @type {Record<string, {render: (body: HTMLElement, ctx: any) => void, actions?: Record<string, Function>}>} */
 export const subpages = {
@@ -25,6 +25,5 @@ export const subpages = {
   seedshop: workshopPage,
   rank: rankPage,
   manual: manualPage,
-  ranch: placeholderPage,
-  settings: placeholderPage,
+  orders: ordersPage,
 };

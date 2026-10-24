@@ -32,10 +32,10 @@ import { randInt } from '../core/utils.js';
  */
 export const MAP_TIERS = [
   { tier: 1, name: '一级藏宝图', price: 2_500, unlock: 10, seedCap: 20, shopSeedCap: 20, swipes: 15, emoji: '🗺️' },
-  { tier: 2, name: '二级藏宝图', price: 5_000, unlock: 20, seedCap: 30, shopSeedCap: 40, swipes: 20, emoji: '🧭' },
-  { tier: 3, name: '三级藏宝图', price: 10_000, unlock: 30, seedCap: 40, shopSeedCap: 60, swipes: 25, emoji: '📜' },
-  { tier: 4, name: '四级藏宝图', price: 20_000, unlock: 40, seedCap: 50, shopSeedCap: 80, swipes: 30, emoji: '🏴‍☠️' },
-  { tier: 5, name: '五级藏宝图', price: 40_000, unlock: 50, seedCap: 60, shopSeedCap: 100, swipes: 35, emoji: '💎' },
+  { tier: 2, name: '二级藏宝图', price: 5_000, unlock: 30, seedCap: 60, shopSeedCap: 60, swipes: 20, emoji: '🧭' },
+  { tier: 3, name: '三级藏宝图', price: 10_000, unlock: 60, seedCap: 120, shopSeedCap: 120, swipes: 25, emoji: '📜' },
+  { tier: 4, name: '四级藏宝图', price: 20_000, unlock: 80, seedCap: 160, shopSeedCap: 160, swipes: 30, emoji: '🏴‍☠️' },
+  { tier: 5, name: '五级藏宝图', price: 40_000, unlock: 100, seedCap: 200, shopSeedCap: 200, swipes: 35, emoji: '💎' },
 ];
 
 /** 按档位取藏宝图，越界返回 null */
@@ -98,6 +98,30 @@ const REWARD_CARD_RATIO = 0.3;
 export const NPC_ADVENTURE_CHANCE = 0.20;
 
 /**
+ * 守护犬品阶 → 藏宝图档位：每两级对应一档。
+ * 品阶 1-2 → 一级图，3-4 → 二级，5-6 → 三级，7-8 → 四级，9-10 → 五级。
+ * 好狗才能带上好图 —— 挖宝奖励的上下限由品种决定。
+ * @param {number} breedTier 品种品阶（1~10）
+ * @returns {number} 藏宝图档位（1~5）
+ */
+export const dogMapTier = (breedTier) => Math.min(5, Math.max(1, Math.ceil((Number(breedTier) || 1) / 2)));
+
+/**
+ * 守护犬每日挖宝：从「品种品阶对应档位」的藏宝图奖励池里随机抽一份。
+ *
+ * 不传 opts.dog —— 挖宝不会挖出另一只狗（那只会让收藏失去意义）。
+ * 池子里有什么全看档位：金币 / 商店种子 / 成熟产出 / 道具 / 限定种子。
+ *
+ * @param {number} breedTier 上岗品种的品阶
+ * @returns {?object} 一份奖励；池子为空时返回 null
+ */
+export function rollDogDigReward(breedTier) {
+  const pool = buildRewardPool(dogMapTier(breedTier));
+  if (!pool.rewards.length) return null;
+  return pool.rewards[randInt(0, pool.rewards.length - 1)];
+}
+
+/**
  * 每张图额外附带一只守护犬的概率。
  *
  * 守护犬是**低概率**的长期目标：十个品种只有冒险这一条来源，
@@ -156,8 +180,7 @@ function rollKind() {
 /**
  * 这张图能挖到的商店种子：等级不超过「买图所需的农场等级 × 2」。
  *
- * 上限比限定种子的 seedCap 高得多 —— 限定种子一共只有到 Lv60，
- * 商店种子才是越级挖宝的主要惊喜来源。
+ * 越级挖到才有惊喜感 —— 商店种子有真实的种子价，是挖宝的主要收获来源。
  */
 function shopSeedsWithin(cap) {
   const all = Object.keys(CROPS).filter((id) => !CROPS[id].special && CROPS[id].lv <= cap);

@@ -6,7 +6,7 @@ import { on, EVENTS } from '../core/bus.js';
 import { renderFarm } from './views/farm.js';
 import { renderShop, setShopTab } from './views/shop.js';
 import { enterFriendsPage } from './views/friends.js';
-import { enterNewsPage } from './views/news.js';
+import { enterCenterPage } from './views/center.js';
 import { openSheet } from './sheet.js';
 import { openVillage } from './village-sheet.js';
 
@@ -14,7 +14,7 @@ import { openVillage } from './village-sheet.js';
 const PAGE_ENTER = {
   farm: renderFarm,
   friends: enterFriendsPage,
-  news: enterNewsPage,
+  center: enterCenterPage,
   shop: renderShop,
 };
 

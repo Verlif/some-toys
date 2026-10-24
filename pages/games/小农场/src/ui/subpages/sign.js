@@ -51,9 +51,9 @@ function cycleHTML() {
 
   const dots = Array.from({ length: CYCLE_DAYS }, (_, i) => {
     const n = i + 1;
-    const cls = broken
-      ? (n < day ? 'done' : '')
-      : (n < day ? 'done' : n === day ? 'current' : '');
+    // 中断时 day 是 1（重新开始的那天），照样标 current ——
+    // 玩家一眼看得出「断在这儿，明天从第 1 天重新起」
+    const cls = n < day ? 'done' : n === day ? 'current' : '';
     return `<div class="cycle-dot ${cls}">${n}</div>`;
   }).join('');
 

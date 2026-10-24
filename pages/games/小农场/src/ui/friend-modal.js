@@ -21,6 +21,7 @@ import { clampRelation, giftRelGain } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
 import { PERSONALITIES } from '../data/friends.js';
 import { DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { isNpcOnline } from '../data/friends.js';
 import { toolUses } from '../store/tools.js';
 import { count } from '../store/inventory.js';
 import { stageEmoji, stageName, stageOf } from '../data/stages.js';
@@ -1027,4 +1028,9 @@ export function openFriendModal(friendId) {
       if (await social.catchPestAllNeighborPlots(el.dataset.id)) refreshAll();
     }
   });
+
+  // 不在线的邻居：整张弹窗浅灰底（含底栏），一眼看出「这家没人」。
+  // 类名挂在 #modal 的卡片上，弹窗叠层关闭时由 modal.js 的快照栈还原
+  document.querySelector('#modal .modal-card')
+    ?.classList.toggle('npc-offline', !isNpcOnline(friend, now));
 }

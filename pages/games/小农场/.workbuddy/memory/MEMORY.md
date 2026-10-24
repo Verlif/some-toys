@@ -2,7 +2,7 @@
 
 纯前端（原生 ESM、零构建、`node server.mjs`），存档 IndexedDB（`sun_farm_v2`），无后端。
 游戏正式更名《西米的农场》（原名「阳光牧场 · 文字版」），但 DB_NAME/localStorage key/APP_NAME 保持 sun_farm* 不变（存档兼容）。
-局域网联机走 WebRTC P2P（`vendor/webconnect.js`）。220 作物 / 40 块地 / 8 档土地 / 32 位邻居。
+局域网联机走 WebRTC P2P（`vendor/webconnect.js`）。267 作物（165 常规 + 102 限定）/ 40 块地 / 8 档土地 / 32 位邻居。
 
 ## 工程约定
 
@@ -25,7 +25,9 @@
 - 经验 `expForLevel(n)=100n(n+1)`；售价 `整轮收益=(种子价×1.2+等级×10)×(1+0.05×整轮小时)`。
 - **三件省手道具**（洒水器/杀虫剂/采收机）各 200 金币，各有永久版。先查永久再查消耗。
 - **种子制造间**（`farm.workshop`）：Lv.5+2000 解锁。份数 `max(1, round(一轮平均产出/2))`，
-  工本费 `round(种子价/2)`（第 34 轮改，原来是市价折算+全价工本费）。升级看**造过的种类数**。
+  工本费 `round(种子价/4)`（第 43 轮由 ÷2 再减半）。升级看**造过的种类数**。
+  第 43 轮起**限定作物也能造**（`craftables/craft` 不再挡 `crop.special`，
+  `state.js` 的 `workshop.kinds` 规范化也放开 special）。
 - **照料**：`下次 = now + [次数×1h, (次数×2+1)h]`，不排进成熟前 15 分钟。欠水 −15%、欠虫 −40%。
 - **每日排行榜**（`store/daily.js`）：`state.dailyRows` 一期一行，表 `daily` 留 8 天。11 张榜。
   **每天下午 2 点结算**（`boardDayKey(ts)=dayKey(ts-14h)`，14:00 切日；签到仍用 `dayKey` 0 点切）。
@@ -50,6 +52,12 @@
 - **仓库卖出**：`.qty` 步进器，默认全量。列表图鉴标记 `.codex-mark` **只在点亮时渲染**（第 32 轮）。
 
 ## UI 硬约束
+
+- **四个主页面 tab**：农场 / 邻居 / **村中心 🏡**（第 42 轮由「📰 时报」改造，
+  `views/center.js`）/ 商店。⚠️ 村中心 🏡 ≠ 村镇 🏘（联机浮窗，进村才出现），图标刻意区分。
+  村中心 = 总览卡（在线/总人数**含玩家**，默认收起、点开名单）+ 📢 公告栏大按钮；
+  公告栏是时报弹窗，**过滤/排序栏在列表下面**（modal-foot 位）；TICK+FRIENDS 实时刷
+  计数/头像行/圆点，不重建名单。老 `views/news.js` 已删。
 
 - **农场页顶部操作条**（第 37 轮）：`.farm-bar` 一张白卡放 `#page-farm` 首位、**流内跟着土地列表滚**，
   上排守护犬+日志方块、下排三格一键（图标/名字/橙色待办数/存量）。**不要再往底部堆 fixed 浮层**，
@@ -86,25 +94,60 @@
 
 ## 守护犬
 
-10 档（比熊 20%→龙犬 80%），只有一只能上岗。`catchChance(rate,sat)=rate×(0.5+0.5×sat/100)`。
+10 档（比熊 20%→龙犬 80%），只有一只能上岗。`catchChance(rate,sat,max)=rate×(0.5+0.5×sat/max)`。
 被抓住按 `crop.sell×5` 罚款 + 掉好感 `max(1,round(售价/10))`。
 ⚠️ 饱腹度是「基准值 + 基准时刻 `dog.at`」两件套，`dogSatietyAt()` **只认 `at`**。
 写存量时必须 `dog.satiety = 新值; dog.at = now;` 成对写，只写 satiety 会把
 「从上次结算到现在」的衰减重算一遍，喂了等于没喂（NPC/联机喂狗粮踩过，
-当时错写成了不存在的 `fedAt`）。满槽（≥99）要拒收并退回狗粮，别白花一份。
+当时错写成了不存在的 `fedAt`）。满槽（≥ 容量-1）要拒收并退回狗粮，别白花一份。
+⚠️ 第 43 轮起槽容量随**狗窝等级**变（`farm.dogHouse.level` 0~5，容量 `100+30×级`），
+`dogSatietyAt` / `catchChance` 都加了 `max` 形参（默认 100，邻居与联机狗不变），
+玩家侧必须传 `kennelCapacity()`；界面上存量是**点数 `45/100`**不是百分比。
+
+- **狗窝升级**（第 43 轮）：只花金币，费用 2000/5000/10000/15000/25000（0→5 级），
+  每级 +30 容量。升级前必须 `settleSatiety(now)`，否则衰减会按旧基准重算。
+- **每日挖宝**（第 43 轮）：**有狗上岗 且 槽里有粮**时每天 30% 掷一次，
+  按品阶对应藏宝图档位（`ceil(品阶/2)`：1-2→一级…9-10→五级）从该档奖励池抽一份
+  （`rollDogDigReward`，不传 opts.dog）。**只掷已过完的天**，`farm.dogHouse.digDay`
+  记账，离线补掷 ≤7 天。⚠️ 掷完无论中没中都要推进 digDay 并落盘（否则每次启动白掷）；
+  新档 digDay 初始化成**昨天**（否则漏第一天）。挂启动 + 分钟 tick。
+- **狗粮两种**：`dogFood` +45（50 金币）、`dogFoodPro` +100（100 金币），
+  点数存在 `ITEMS[id].food`，`feedDog(itemId)` 按道具取。
+
 
 ## 邻居与世界
 
 - 邻居同用 `unlockedPlotCount`；偷菜 `stealable()` 要 `!plot.guarded`。
 - NPC 模拟纯计算，`simCtx()` 注入 rel/receiveGift/daily，npc-sim 不 import store。
 - **NPC 概率**（第 36 轮上调约 1.5~2 倍，第 40 轮再调照料）：喂狗 `min(0.95, tend×0.40)`、
-  串门打理 `min(0.90, tend×0.30)`、偷菜 `{rare:0.18, often:0.65, always:0.95}`、冒险 0.20。
+  串门打理 `min(0.90, tend×0.30)`、偷菜 `{rare:0.18, often:0.65, always:0.95}`、冒险 0.20、
+  发订单 0.3（生意人 ×1.6 / 场面人 ×1.4）。
   **actCare 每次上限 2 块地**（`CARE_MAX_PLOTS`）且缺水生虫一起处理；挑农场时玩家农场用
   `CARE_PLAYER_WEIGHT=3`（care 专用，偷菜的 `PLAYER_FARM_WEIGHT=2` 不动）。
   ⚠️ 远期 `bulkAdvance(npc, until, ctx)` 会把玩家农场过期的照料需求聚合结掉并 `cared+=n`
   （32 个 NPC 各跑一次，天然幂等）；落盘靠「bulkAdvance 后必有详细访问」触发 persistFriends。
   **帮邻居浇水与自家同款**：`waterNeighborPlot` / 联机主机侧都 `readyAt −= stageBounds×10%`
   （第 40 轮补，原来只剩好感经验；联机回执带 readyAt，访客就地齐快照）。
+- **在线窗口**（第 41 轮）：`beginVisit` 写 `npc.onlineUntil = at + onlineMs(npc)`，
+  时长 = 性格表（10~30 分钟）+ 身份关键词微调（退休 +4 / 司机主播 −3 / 师生 −2）±2 浮动，
+  `data/friends.js` 的 `ONLINE_MINUTES` / `onlineMs` / `isNpcOnline`。bulkAdvance 不设。
+  下游：邻居页绿点/灰度头像（`.friend-dot` + `grayscale(.55)`，TICK 只改 class 不重绘）；
+  **偷在线 NPC 被狗抓住双倍惩罚**（罚款与 `dogCaughtRelLoss` ×2，social.steal）；
+  邻居列表排序加「上线」档（在线优先 + onlineUntil 降序）；**不在线 = 弹窗与列表卡片
+  都浅灰**（`.npc-offline` / `.friend-card.offline`，modal.js 快照栈要存/还原
+  card.className，否则关子层会串灰）。
+- **订单系统**（第 41 轮，`data/orders.js` + `store/orders.js` + `subpages/orders.js`）：
+  订单 = `{id, ownerId, itemId, qty, reward, createdAt, deadline}`，**只认产出**。
+  NPC 单挂 `npc.order`（同时 1 条）、玩家单挂 `state.farm.orders`（上限 5 条）——
+  都落在农场行上**零改表**。统一 1.2 倍（`ORDER_MULT`），赏金创建即托管、过期/撤销退还。
+  **需求池 = 1 级 ~（NPC 自有等级 + `ORDER_LEVEL_FLOAT=5`）随机抽，不看玩家等级**
+  （第 42 轮改，原来是取两者较低等级）。
+  npc-sim 新步骤 `order`（发单，掏不出钱不发）与 `fill`（接单，每次上线 1 条，
+  优先玩家单，完成双方好感 +5，回执带 farms 一起落盘）——
+  ⚠️ **STEPS 表注册 + planVisit 尾巴，两边都要加**。
+  NPC 仓库 `npc.bag`：`actHarvest` 按 `KEEP_RATIO`（性格）保留入库，`NPC_BAG_CAP=60` 封顶。
+  过期清扫 `expireOrders` 挂在 settleWorld 开头。「更多」里 📋 订单（替换掉的牧场/设置已删，
+  placeholder.js 已删）。
 
 ## 村镇联机
 
@@ -125,6 +168,19 @@
 - 时报 7 天/80 条；**农场日志与邻居动态纯 7 天、不设条数上限**（`data/friends.js` 的
   `trimLog`；第 40 轮改，早先是两个 tab 共用 60 条 + 邻居 log 10 条，会被自家操作挤光）。
 - 称号 38 个分三类 tab；引导 17 项；签到不发经验，历史 90 天。
+- **签到连签判定必须按自然日**（第 43 轮修）：`streakBroken()` 用
+  `dayIndex(now) - dayIndex(lastSign) > 1`（`core/utils.js` 的 `dayIndex` 接受时间戳或
+  'YYYY-M-D' 键）。⚠️ 早先拿 24 小时门槛，昨晚 23 点签的今早看就被判「已中断」——
+  顶部连签显示与下方日历各说各话。日历读 `signDays`（历史），所以日历一直是对的。
+- **图鉴点亮奖 1 颗同种种子**（第 43 轮）：`codex.js CODEX_SEED_REWARD=1`，
+  `makeSpecimen` 点亮时发；老档由 `compensateLitSeeds()` 按 `progress.codexSeeds` 标记一次性补发
+  （`main.js` 启动调用）。
+- **限定作物 102 种铺到 Lv2-200**（第 43 轮，`tools/gen-data.mjs` 的 `SPECIAL_CATALOG`）：
+  五档藏宝图种子上限 20/60/120/160/200（用户自己改的 MAP_TIERS）。⚠️ 生成器会拦**重名**与
+  **emoji 超 8 次**，加限定作物时要先查名与 emoji。**播种限定种子的地块挂 `.plot.special`**，
+  金边用 `box-shadow` 内阴影画 —— 不能用 border（会把卡片撑高一像素、整列参差）。
+- **游戏手册**（`subpages/manual.js`）：「更多→📘 手册」，float:left 图标网格（25% 宽），
+  点图标弹 `openModal` 详情（平铺 `.manual-list`）。13 个分类（第 41 轮加「订单」）。
 - **自动签到**（第 34 轮）：开机自动签 + **跨 0 点在线也签**（挂在分钟 tick 的日期检查上），照播庆祝画面。
 - **日历空位按「当月 1 号」周几算**。
 - **PWA**（第 35 轮）：manifest.json + sw.js + icons/（全 PNG，源图 `sims-farm.png`）。
@@ -138,8 +194,6 @@
   activate 里发现「非当前版本缓存」就让受控页面 `client.navigate()` 重载一次
   （旧页面跑的是旧代码，claim 换不掉），首次安装不刷。开发排查用 `?nosw` 注销并清缓存。
   iOS 走 `navigator.storage.persist()` + 添加到主屏提示（toast 一次，localStorage 记已提示）。
-- **游戏手册**（`subpages/manual.js`）：「更多→📘 手册」，float:left 图标网格（25% 宽），
-  点图标弹 `openModal` 详情（平铺 `.manual-list`）。12 个分类。
 - **排行榜底部 TAB**（第 35 轮改版）：6 大类 TAB 放 `setFoot`（横滚 keepBarScroll），
   冒险王档位只在冒险 TAB 下显示；每榜下方挂「今日实时排名」（`todayRank`），
   `EVENTS.STATS`（bump 防抖发）触发 renderCurrent 刷新。

@@ -16,8 +16,7 @@ export const MORE_MENU_ITEMS = [
   { key: 'rank',        icon: '🏆', label: '排行榜',   ready: true },
   { key: 'manual',      icon: '📘', label: '手册',   ready: true },
   { key: 'village',     icon: '🏘', label: '村镇',   ready: true, action: 'village' },
-  { key: 'ranch',       icon: '🐄', label: '牧场',   ready: false },
-  { key: 'settings',    icon: '⚙️', label: '设置',   ready: false },
+  { key: 'orders',      icon: '📋', label: '订单',   ready: true },
 ];
 
 /** 子页面顶部标题 */
@@ -32,8 +31,7 @@ export const SUBPAGE_TITLES = {
   seedshop: '🌱 种子制造间',
   rank: '🏆 每日排行榜',
   manual: '📘 游戏手册',
-  ranch: '🐄 牧场',
-  settings: '⚙️ 设置',
+  orders: '📋 订单',
 };
 
 /** 尚未实现的功能点击时给出的提示 */

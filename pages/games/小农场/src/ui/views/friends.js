@@ -10,10 +10,11 @@
  */
 import { byId, delegate, escapeHtml, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
-import { PLAYER_ID, state } from '../../store/state.js';
+import { PLAYER_ID, getFriend, state } from '../../store/state.js';
 import * as social from '../../store/social.js';
 import { formatCoins } from '../../core/utils.js';
 import { getRelation, relationBadge } from '../../store/relation.js';
+import { isNpcOnline } from '../../data/friends.js';
 import { recordItemsHTML } from '../records.js';
 import { openFriendModal } from '../friend-modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
@@ -44,6 +45,8 @@ const SORTS = [
   { key: 'lv', label: '等级', value: (f) => f.level },
   { key: 'coins', label: '财富', value: (f) => f.coins },
   { key: 'rel', label: '好感', value: (f) => getRelation(PLAYER_ID, f.id) },
+  // 上线：在线的排前面（1e13 压过任何时间戳），其后按 onlineUntil 越大越近
+  { key: 'online', label: '上线', value: (f) => (isNpcOnline(f) ? 1e13 : 0) + (f.onlineUntil || 0) },
 ];
 
 let filterKey = 'all';
@@ -67,17 +70,25 @@ function logHTML(friend, now, limit = 3) {
   return recordItemsHTML(friend.log, { now, limit, compact: true, relative: true });
 }
 
-function cardHTML(friend, now) {
+/**
+ * 邻居卡片。村中心的名单也复用它（导出）。
+ * @param {object} friend 邻居农场
+ * @param {number} now
+ */
+export function friendCardHTML(friend, now) {
   const ripe = social.stealableCount(friend, now);
   const care = social.careCount(friend, now);
   const rel = relationBadge(getRelation(PLAYER_ID, friend.id));
+  // 在线标识：按性格与身份 10~30 分钟的窗口（见 data/friends.js 的 onlineMs）
+  const online = isNpcOnline(friend, now);
 
   return `
-    <div class="friend-card" data-action="visit" data-id="${friend.id}" role="button" tabindex="0">
+    <div class="friend-card ${online ? '' : 'offline'}" data-action="visit" data-id="${friend.id}" role="button" tabindex="0">
       <div class="friend-avatar">${friend.avatar}</div>
       <div class="friend-body">
         <div class="friend-name">
           ${escapeHtml(friend.name)}
+          <i class="friend-dot ${online ? 'on' : 'off'}" title="${online ? '在线' : '离线'}"></i>
           <span class="lv">Lv.${friend.level}</span>
           <span class="friend-chevron">›</span>
         </div>
@@ -175,7 +186,7 @@ export function renderFriends() {
         <span class="shop-filter-count">${list.length} / ${state.friends.length}</span>
       </div>
       <div class="friend-list">${list.length
-        ? list.map((friend) => cardHTML(friend, now)).join('')
+        ? list.map((friend) => friendCardHTML(friend, now)).join('')
         : emptyFriendsHTML()}</div>`);
   });
 
@@ -307,4 +318,27 @@ export function mountFriends() {
   });
 
   on(EVENTS.FRIENDS, renderFriends);
+  // 在线窗口（10~30 分钟）会自己走到头：每分钟只改圆点与灰度类，
+  // 不重绘列表 —— 整列表重建会把玩家的滚动位置打回原型
+  on(EVENTS.TICK, refreshOnline);
+}
+
+/**
+ * 在线状态随时间翻：只改卡片上的类，不动 DOM 结构。
+ * 选择器是文档级的 —— 邻居页与村中心名单不会同时出现，谁开著刷谁。
+ */
+export function refreshOnline() {
+  if (document.hidden) return;
+  const now = Date.now();
+  for (const card of document.querySelectorAll('.friend-card[data-id]')) {
+    const friend = getFriend(card.dataset.id);
+    if (!friend) continue;
+    const on = isNpcOnline(friend, now);
+    card.classList.toggle('offline', !on);
+    const dot = card.querySelector('.friend-dot');
+    if (!dot) continue;
+    dot.classList.toggle('on', on);
+    dot.classList.toggle('off', !on);
+    dot.title = on ? '在线' : '离线';
+  }
 }

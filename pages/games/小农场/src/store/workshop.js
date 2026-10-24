@@ -86,13 +86,15 @@ export function upgradeState() {
  *
  * 金币不够的**仍然列出来**（`coinsOk: false`），只是按钮灰掉：
  * 玩家得看得见「差 12 金币」，而不是整行凭空消失。
+ *
+ * 第 43 轮起**限定作物也能造**（同样的份数与工本费逻辑）——
+ * 挖宝挖多了的限定产出终于有变现以外的出路。
  */
 export function craftables() {
   const out = [];
   for (const id of CROP_IDS) {
     const crop = CROPS[id];
-    // 限定作物只能靠藏宝图挖，不能在这里复刻，否则它的稀缺性就没了
-    if (!crop || crop.special) continue;
+    if (!crop) continue;
     const need = produceCost(crop);
     const have = inventory.count(produceId(id));
     if (have < need) continue;
@@ -132,7 +134,7 @@ export async function unlock() {
 /**
  * 制造一次。
  *
- * 两道消耗：**产出份数**（半轮产量）+ **工本费**（半颗种子的价钱）。
+ * 两道消耗：**产出份数**（半轮产量）+ **工本费**（四分之一颗种子的价钱）。
  * 都先扣、再摇数量，所有改动在同一个事务里落盘 ——
  * 中途关页面不会出现「产出没了、金币扣了、种子却没到」。
  *
@@ -146,7 +148,8 @@ export async function craft(cropId) {
   }
 
   const crop = CROPS[cropId];
-  if (!crop || crop.special) return 0;
+  if (!crop) return 0;
+  // 第 43 轮起限定作物也能制造（产出从藏宝图来，这里只负责复刻成种子）
 
   // 先在**扣东西之前**把两道关卡都过一遍：扣了产出再发现金币不够，
   // 就得把它原样加回去，多一条容易漏的回滚路径

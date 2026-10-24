@@ -31,12 +31,15 @@ const stack = [];
 export function openModal(html, onAction) {
   if (!root) mountModal();
 
-  // 已经开着一个：把现在这张整卡快照压栈，关掉新的这一层时原样还回去
+  // 已经开着一个：把现在这张整卡快照压栈，关掉新的这一层时原样还回去。
+  // cls 也要存：卡片类名是运行时挂的（比如邻居农场的「不在线」灰底），
+  // 不还原的话从灰底弹窗里关掉子层，会连下面那张一起变灰
   if (root.classList.contains('show') && card.innerHTML) {
     stack.push({
       html: card.innerHTML,
       handler: actionHandler,
       scrollTop: card.querySelector('.modal-body')?.scrollTop || 0,
+      cls: card.className,
     });
   }
 
@@ -89,6 +92,8 @@ export function closeModal() {
   const prev = stack.pop();
   if (prev) {
     card.innerHTML = prev.html;
+    // 类名一起还原（见 openModal 里压栈时的说明）
+    card.className = prev.cls;
     actionHandler = prev.handler;
     const body = card.querySelector('.modal-body');
     if (body) {

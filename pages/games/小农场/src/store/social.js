@@ -16,10 +16,11 @@ import { PLAYER_ID, state, getFriend } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { estimateWork, planVisit, runStep, simulateNpcUntil } from './npc-sim.js';
+import { expireOrders, orderBoard, removeOrder } from './orders.js';
 import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
-import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, trimLog } from '../data/friends.js';
+import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, isNpcOnline, trimLog } from '../data/friends.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain } from '../data/relation.js';
@@ -90,7 +91,7 @@ export const needsHelp = (friend, now = Date.now()) => careCount(friend, now) > 
  */
 function farmView() {
   const farm = state.farm;
-  return {
+  const view = {
     id: farm.id,
     // 邻居的动态文案里要写玩家的真实名字（「帮 XX 浇水」），不能硬编码「农场主」
     name: farm.name,
@@ -98,6 +99,8 @@ function farmView() {
     stolen: 0,
     cared: 0,
     caught: 0,
+    /** NPC 交货会动玩家的包：置 true 后结算把背包一起落盘 */
+    bagDirty: false,
     // by 是「这件事是谁干的」：邻居对玩家农场的操作会传自己的 id，
     // 农场日志浮窗据此分出「我的操作」与「邻居动向」两个 tab（见 ui/log-sheet.js）
     log: (at, emoji, text, by = '') => player.addLog(emoji, text, at, by),
@@ -105,7 +108,14 @@ function farmView() {
     dogGuardChanceAt: (at) => guardChance(at),
     /** 守护犬拦下小偷时玩家入账的罚款（内存操作，随当次结算一起落盘） */
     addCoins: (amount) => player.addCoins(amount),
+    /** NPC 交单：产出进玩家包裹（图鉴收集埋点在 inventory.add 里） */
+    giveItem: null,
   };
+  view.giveItem = (itemId, n) => {
+    inventory.add(itemId, n);
+    view.bagDirty = true;
+  };
+  return view;
 }
 
 /**
@@ -158,6 +168,9 @@ function simCtx(farm = farmView()) {
     // 每日榜单记账：actor 是邻居农场 id，at 决定记到哪天（补算的访问发生在过去）
     daily: (actor, metric, n = 1, at = Date.now()) => bump(actor, metric, n, at),
     dailyMax: (actor, metric, n = 0, at = Date.now()) => bumpMax(actor, metric, n, at),
+    // 订单看板与摘单：npc-sim 是纯计算，不认 state（见 store/orders.js）
+    orders: () => orderBoard(),
+    removeOrder: (order) => removeOrder(order),
   };
 }
 
@@ -205,6 +218,8 @@ export function settleWorld(onProgress) {
 async function runSettle(onProgress) {
   const npcs = state.friends;
   const now = Date.now();
+  // 过期订单先清掉（赏金退还），再补算上线 —— 别让 NPC 接过期的单
+  await expireOrders(now);
   const total = estimateWork(npcs, now);
   const farm = farmView();
   const ctx = simCtx(farm);
@@ -234,7 +249,7 @@ async function runSettle(onProgress) {
   }
 
   // 没有新事情就别写库：轮询是定时跑的，每次都落盘太浪费
-  if (visits.length) await persistFriends();
+  if (visits.length) await persistFriends(farm);
 
   return {
     total,
@@ -248,12 +263,15 @@ async function runSettle(onProgress) {
  * 把整批农场落盘。
  *
  * 结算会同时动玩家的地块与日志，所以玩家农场与邻居一起提交。
+ * @param {?object} [farm] 本次结算用的玩家农场视图：NPC 交货动过包裹时才带 bag
  */
-export async function persistFriends() {
+export async function persistFriends(farm = null) {
   await commit({
     farms: [state.farm, ...state.friends],
     news: state.news,
     relations: state.relations,
+    // NPC 交货会动玩家的包：脏了才带（动了才带）
+    ...(farm?.bagDirty ? { bag: state.bag } : {}),
   });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.FARM);
@@ -335,15 +353,20 @@ async function runLiveStep() {
     const entry = runStep(npc, visit.at, kind, simCtx());
     if (entry) {
       spoke = true;
-      // 落盘：这位邻居 + 玩家农场（可能刚被他顺走一块地 / 帮他浇了水 / 送了礼）
+      // 接单可能动了别的 NPC 的农场与玩家的包：涉及的农场一并落盘
+      const extra = (entry.farms || [])
+        .map((id) => state.friends.find((f) => f.id === id))
+        .filter((f) => f && f !== npc);
       await commit({
-        farms: [state.farm, npc],
+        farms: [state.farm, npc, ...extra],
+        ...(entry.gave ? { bag: state.bag } : {}),
         news: state.news,
         relations: state.relations,
       });
       emit(EVENTS.FARM);
       emit(EVENTS.FRIENDS);
       emit(EVENTS.PLAYER);
+      if (entry.gave) emit(EVENTS.INVENTORY);
       notify(`${npc.avatar} ${npc.name}：${entry.emoji} ${entry.text}`);
     }
   } catch (error) {
@@ -435,25 +458,30 @@ export async function steal(friendId, index) {
   // 玩家钱不够就倾家荡产，不记负债。
   const breed = dogBreed(friend.dog.breed);
   const chance = breed ? catchChance(breed.rate, dogSatietyAt(friend.dog, now)) : 0;
+  // 偷**正在在线**的邻居被抓住：双倍惩罚（金币与好感）—— 人家盯着呢。
+  // 联机好友没有在线态（onlineUntil 缺省 0），天然不触发
+  const online = isNpcOnline(friend, now);
+  const mul = online ? 2 : 1;
   if (chance > 0 && Math.random() < chance) {
     for (const plot of friend.plots) {
       if (plot.cropId) plot.guarded = true;
     }
-    const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE);
+    const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE) * mul;
     const paid = Math.min(state.farm.coins, fine);
     player.addCoins(-paid);
     friend.coins += paid;
     // 文案里要写真实名字（不是硬编码「农场主」）：日志与时报会把名字就地
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
     // 想偷还被当场逮住，关系只会更差：按这个果实的售价折算（至少 1）
-    adjustRelation(PLAYER_ID, friend.id, -dogCaughtRelLoss(crop.sell));
+    adjustRelation(PLAYER_ID, friend.id, -dogCaughtRelLoss(crop.sell) * mul);
     // 狗狗王记在**狗主人**头上：谁家的狗拦下的功劳就归谁。
     // 玩家偷 NPC 被抓时玩家一分不得 —— 这里是玩家唯一能给别人刷分的地方，
     // 所以漏了这一笔，NPC 的狗狗王就永远是 0（曾经真的漏了）
     bump(friend.id, 'dog', 1, now);
-    logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币`);
-    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币`, now);
-    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币`, { at: now });
+    const doubleNote = online ? '（对方在线，双倍惩罚）' : '';
+    logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币${doubleNote}`);
+    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币${doubleNote}`, now);
+    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币${doubleNote}`, { at: now });
 
     await commit({ farms: [state.farm, friend], news: state.news, relations: state.relations });
     emit(EVENTS.FRIENDS);
@@ -462,7 +490,11 @@ export async function steal(friendId, index) {
     // 全屏闪一下这只狗：玩家正盯着地块点偷，toast 很容易看漏
     emit(EVENTS.DOG_CAUGHT, { breed: friend.dog.breed, owner: friend.name, fine: paid });
 
-    notify(`🐕 被 ${friend.name} 家的守护犬抓住了！罚款 ${formatCoins(paid)} 金币，这一轮他家的作物都不敢碰了`, 'gold');
+    notify(
+      `🐕 被 ${friend.name} 家的守护犬抓住了！${online ? '对方在线，双倍罚款！' : ''}`
+      + `罚款 ${formatCoins(paid)} 金币，这一轮他家的作物都不敢碰了`,
+      'gold',
+    );
     return { ok: false, caught: true, reason: '被守护犬抓住了' };
   }
 

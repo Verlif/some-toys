@@ -22,7 +22,7 @@
  */
 import { CROPS } from '../../data/crops.js';
 import { MAP_TIERS } from '../../data/adventure.js';
-import { SPECIMEN_COST, codexEntries, codexSummary, makeSpecimen } from '../../store/codex.js';
+import { CODEX_SEED_REWARD, SPECIMEN_COST, codexEntries, codexSummary, makeSpecimen } from '../../store/codex.js';
 import { closeModal } from '../modal.js';
 import { openCropModal } from '../crop-detail.js';
 
@@ -100,7 +100,7 @@ function openDetailModal(cropId) {
     ? `<div class="modal-foot">
         <div class="sd-buybar">
           <button class="btn sd-buy" data-action="specimen-make" data-id="${cropId}">
-            🧪 制作标本（花掉 ${SPECIMEN_COST} 个${crop.name}）
+            🧪 制作标本（花掉 ${SPECIMEN_COST} 个${crop.name}）· 点亮奖 ${CODEX_SEED_REWARD} 颗种子
           </button>
         </div>
       </div>`
@@ -151,7 +151,7 @@ export const codexPage = {
           <i class="bar-collected" style="width:${summary.percent}%"></i>
         </div>
         <div class="codex-filters">${chips}</div>
-        <div class="codex-tip">金色 = 已点亮 · 绿色 = 已收集 · 彩色卡片 = 已点亮 · 灰色 = 已收集未点亮 · ❔ = 没见过　｜　做一份标本（${SPECIMEN_COST} 个）点亮</div>
+        <div class="codex-tip">金色 = 已点亮 · 绿色 = 已收集 · 彩色卡片 = 已点亮 · 灰色 = 已收集未点亮 · ❔ = 没见过　｜　做一份标本（${SPECIMEN_COST} 个）点亮 · 奖 ${CODEX_SEED_REWARD} 颗种子</div>
       </div>
       ${shown.length
         ? `<div class="codex-grid">${shown.map(cardHTML).join('')}</div>`

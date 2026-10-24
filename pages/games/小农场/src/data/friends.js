@@ -198,6 +198,52 @@ export const PLAYER_FARM_WEIGHT = 2;
  */
 export const CARE_PLAYER_WEIGHT = 3;
 
+/* ---------- 在线时长 ---------- */
+
+/**
+ * NPC「在线」状态持续多久（分钟）—— 按**性格**定基调：
+ * 热心 / 勤勉的老在村里转悠，悠闲 / 爱占便宜的神龙见首不见尾。
+ * 上线一次就把 `onlineUntil` 设成「上线时刻 + 这个时长」（见 npc-sim 的
+ * beginVisit），邻居页的绿点与「偷在线邻居被狗抓住双倍惩罚」都看它。
+ */
+export const ONLINE_MINUTES = {
+  diligent: [25, 30],
+  scholar: [22, 28],
+  friendly: [25, 30],
+  boss: [18, 25],
+  thrifty: [15, 22],
+  merchant: [15, 22],
+  leisurely: [10, 16],
+  greedy: [10, 15],
+};
+
+/**
+ * **身份**（职业）对在线时长的微调：退休的老有空，跑外的没空。
+ * 命中一条关键词就加 / 减，都不命中不调整。
+ */
+const ONLINE_PROFESSION_BONUS = [
+  { keys: ['退休'], bonus: 4 },
+  { keys: ['司机', '主播'], bonus: -3 },
+  { keys: ['学生', '技术员', '老师'], bonus: -2 },
+];
+
+/**
+ * 这位邻居这次上线要「挂机」多久（毫秒）。
+ * 10~30 分钟封顶：性格定区间、身份微调、再掷 ±2 分钟浮动。
+ * @param {{personality: string, profession?: string}} npc
+ * @returns {number}
+ */
+export function onlineMs(npc) {
+  const range = ONLINE_MINUTES[npc.personality] || [15, 22];
+  const prof = npc.profession || '';
+  const bonus = ONLINE_PROFESSION_BONUS.find((r) => r.keys.some((k) => prof.includes(k)))?.bonus || 0;
+  const minutes = randInt(range[0], range[1]) + bonus + randInt(-2, 2);
+  return Math.min(30, Math.max(10, minutes)) * 60_000;
+}
+
+/** 这位邻居现在是否在线（onlineUntil 是 ms 时间戳，缺省 0 = 不在线） */
+export const isNpcOnline = (npc, now = Date.now()) => now < (npc.onlineUntil || 0);
+
 /**
  * 精细模拟的时间窗口：只有这段时间内的上线会被逐条执行并写进动态日志，
  * 更久远的部分用聚合公式一次性结算，否则离线几个月会把浏览器卡死。

@@ -25,19 +25,24 @@ import {
   NPCS,
   PERSONALITIES,
   STEAL_CHANCE,
+  cropsNearLevel,
   emptyNpcPlot,
   generateNpcPlots,
   nextVisitAt,
   npcStartCoins,
   rollNpcLevel,
   rollNpcSoil,
+  shuffled,
   syncNpcPlots,
 } from '../data/friends.js';
 import { CROPS } from '../data/crops.js';
 import { SOILS } from '../data/soils.js';
+import { PRODUCE_PREFIX, produceId } from '../data/keys.js';
+import { PLAYER_ORDER_LIMIT } from '../data/orders.js';
 import {
   BREED_MIGRATION,
   FIRST_DOG_ID,
+  KENNEL_MAX_LEVEL,
   LEGACY_BREED_MAP,
   dogBreed,
   rollNpcDogBreed,
@@ -104,6 +109,11 @@ function createPlayerFarm() {
       at: Date.now(),
     },
     /**
+     * 狗窝：level 是等级（0~5，每级 +30 狗粮槽容量，见 data/dogs.js），
+     * digDay 是守护犬最后一次「每日挖宝」掷骰的日期键（dayKey）
+     */
+    dogHouse: { level: 0, digDay: '' },
+    /**
      * 种子制造间：level 0 = 还没开张。
      * kinds 是「作物 id → 造过几次」，**升级只看它有几个 key**（造过多少种）
      */
@@ -125,6 +135,8 @@ function createPlayerFarm() {
     },
     plots: [],
     log: [],
+    /** 我发布的订单（NPC 上线时按仓库存货接单），形状见 data/orders.js */
+    orders: [],
   };
 }
 
@@ -191,12 +203,73 @@ function createNpc(def, now) {
     steal: def.steal,
     lastVisitAt,
     nextVisitAt: nextVisitAt(def, lastVisitAt),
+    /** 在线窗口的截止时刻（ms），由 npc-sim 的 beginVisit 维护；0 = 不在线 */
+    onlineUntil: 0,
+    /** NPC 自己的小仓库：收获时按性格留一部分，接订单 / 互通有无靠它 */
+    bag: {},
+    /** 张榜中的收购订单（同时最多 1 条），null = 没有 */
+    order: null,
     dog: { breed: rollNpcDogBreed(level).id, satiety: rollNpcDogSatiety(), at: lastVisitAt },
     plots: [],
     log: [],
   };
   npc.plots = generateNpcPlots(npc, now);
+  // 起步家底：几条等级附近的产出，让订单功能一上来就转得动
+  seedNpcBag(npc);
   return npc;
+}
+
+/**
+ * 给 NPC 补一点「家底」：等级附近随机几件产出。
+ * 新档开局与旧档迁移都用它 —— 没点存货的话，玩家发布的订单要等好几天
+ * 才有 NPC 交得出（2026-10-24 订单功能）。
+ * @param {object} npc
+ */
+function seedNpcBag(npc) {
+  npc.bag ??= {};
+  const pool = shuffled(cropsNearLevel(npc.level));
+  for (const cropId of pool.slice(0, randInt(3, 6))) {
+    const key = produceId(cropId);
+    npc.bag[key] = (npc.bag[key] || 0) + randInt(1, 4);
+  }
+}
+
+/**
+ * 清洗一条订单（NPC 的或玩家的，形状完全一样）。
+ *
+ * 需求只认**产出**（NPC 仓库里只有产出，种子订单没人交得了）；
+ * 缺时间戳 / 数量 / 赏金的当没有，别让坏行把界面带崩。
+ * @param {any} raw 存档里的原始行
+ * @param {string} ownerId 下单方农场 id
+ * @param {string} id 订单 id（NPC 用自己的 id，玩家用发布时生成的）
+ * @returns {?object}
+ */
+function cleanOrder(raw, ownerId, id) {
+  if (!raw || typeof raw !== 'object') return null;
+  const itemId = String(raw.itemId || '');
+  if (!itemId.startsWith(PRODUCE_PREFIX) || !CROPS[itemId.slice(PRODUCE_PREFIX.length)]) return null;
+  const createdAt = safeNum(raw.createdAt, 0);
+  const deadline = safeNum(raw.deadline, 0);
+  if (!createdAt || !deadline) return null;
+  return {
+    id,
+    ownerId,
+    itemId,
+    qty: Math.max(1, Math.floor(Number(raw.qty) || 0)),
+    reward: Math.max(1, Math.round(Number(raw.reward) || 0)),
+    createdAt,
+    deadline,
+  };
+}
+
+/** NPC 仓库清洗：只认产出 key，正数才留 */
+function cleanNpcBag(raw) {
+  const bag = {};
+  for (const [id, n] of Object.entries(raw || {})) {
+    if (!id.startsWith(PRODUCE_PREFIX) || !CROPS[id.slice(PRODUCE_PREFIX.length)]) continue;
+    bag[id] = Math.max(0, Math.floor(Number(n) || 0));
+  }
+  return bag;
 }
 
 /* ============================================================
@@ -305,6 +378,12 @@ function normalizePlayerFarm(row, save) {
   dog.satiety = safeNum(dog.satiety, 0);
   dog.at = safeNum(dog.at, Date.now());
 
+  // 狗窝：旧档没有这个字段，补 0 级（容量 100，与早先一致）；
+  // digDay 空串 = 还没掷过挖宝，第一次结算只记账不补发
+  const dogHouse = { ...base.dogHouse, ...(row.dogHouse || {}) };
+  dogHouse.level = Math.min(KENNEL_MAX_LEVEL, Math.max(0, safeNum(dogHouse.level, 0)));
+  dogHouse.digDay = typeof dogHouse.digDay === 'string' ? dogHouse.digDay : '';
+
   // 种子制造间：旧档没有这个字段，补 0（未解锁）
   const workshop = { ...base.workshop, ...(row.workshop || {}) };
   workshop.level = Math.min(WORKSHOP_MAX_LEVEL, Math.max(0, safeNum(workshop.level, 0)));
@@ -313,7 +392,8 @@ function normalizePlayerFarm(row, save) {
   delete workshop.uses;
   workshop.kinds = {};
   for (const [id, times] of Object.entries(row.workshop?.kinds || {})) {
-    if (CROPS[id] && !CROPS[id].special) workshop.kinds[id] = Math.max(1, safeNum(times, 1));
+    // 第 43 轮起限定作物也能制造，kinds 不再按 special 过滤
+    if (CROPS[id]) workshop.kinds[id] = Math.max(1, safeNum(times, 1));
   }
 
   const farm = {
@@ -326,10 +406,17 @@ function normalizePlayerFarm(row, save) {
     coins: safeNum(row.coins, 0),
     createdAt: safeNum(row.createdAt, base.createdAt),
     dog,
+    dogHouse,
     workshop,
     progress,
     plots: [],
     log: save.logs[PLAYER_ID] || [],
+    orders: Array.isArray(row.orders)
+      ? row.orders
+        .map((item, i) => cleanOrder(item, PLAYER_ID, String(item?.id || `p${i}-${safeNum(item?.createdAt, 0)}`)))
+        .filter(Boolean)
+        .slice(0, PLAYER_ORDER_LIMIT)
+      : [],
   };
 
   // 地块：不足 TOTAL_PLOTS 就补齐，多的不删
@@ -370,6 +457,9 @@ function normalizeNpc(row, def, save) {
     coins: safeNum(row.coins, 0) || fresh.coins,
     lastVisitAt: safeNum(row.lastVisitAt, fresh.lastVisitAt),
     nextVisitAt: safeNum(row.nextVisitAt, fresh.nextVisitAt),
+    onlineUntil: safeNum(row.onlineUntil, 0),
+    bag: cleanNpcBag(row.bag),
+    order: cleanOrder(row.order, def.id, def.id),
     dog: { ...fresh.dog, ...(row.dog || {}) },
     plots: [],
     log: save.logs[def.id] || [],
@@ -378,6 +468,8 @@ function normalizeNpc(row, def, save) {
   if (!dogBreed(npc.dog.breed)) npc.dog.breed = rollNpcDogBreed(npc.level).id;
   npc.dog.satiety = safeNum(npc.dog.satiety, rollNpcDogSatiety());
   npc.dog.at = safeNum(npc.dog.at, npc.lastVisitAt);
+  // 旧档没有仓库字段：补一份家底，订单功能一上来就转得动
+  if (!row.bag) seedNpcBag(npc);
 
   const saved = (save.plots[def.id] || []).map((plot, i) => normalizeNpcPlot(plot, i, npc.level));
   npc.plots = saved.length ? saved : fresh.plots;

@@ -1,34 +1,75 @@
 /**
- * 守护犬：品种表、狗粮槽（饱腹度）、拦截概率。
+ * 守护犬：品种表、狗粮槽（饱腹度）、拦截概率、狗窝升级与每日挖宝。
  *
- * 早期只有一条狗，拦截概率全由饱腹度决定。现在拆成两层：
- *   - **品种**决定「这只狗能有多灵」：田园犬 20% … 龙犬 80%；
+ * 早期只有一条狗，拦截概率全由饱腹度决定。现在拆成三层：
+ *   - **品种**决定「这只狗能有多灵」：比熊 20% … 龙犬 80%；
  *   - **狗粮槽**决定「它现在有没有力气」：满槽时按品种的基础率生效，
- *     饿了按比例打折，空槽则完全不设防。
+ *     饿了按比例打折，空槽则完全不设防。槽的容量随**狗窝等级**长（100+30×级）；
+ *   - **每日挖宝**：有狗上岗且槽里有粮时，每天有机会按品种品阶对应的
+ *     藏宝图档位挖一份奖励（见 rollDogDigReward，data/adventure.js）。
  *
  * 狗粮槽是**整个狗窝共用**的一份存货：喂一次所有狗都受益，
  * 但同一时刻只有一只狗「上岗」（active）。没有狗上岗时槽不会消耗 ——
  * 狗在窝里睡觉，不掉饥饿。
  *
  * 品种来源：
- *   - 初始赠送最低品种（田园犬）；
+ *   - 初始赠送最低品种（比熊）；
  *   - 冒险的低概率奖励：按藏宝图档位决定品阶上限，且不会重复获得。
  */
 import { ITEMS } from './items.js';
 
 /* ---------- 狗粮槽 ---------- */
 
-/** 槽的上限 */
+/** 槽的基础上限（狗窝 0 级） */
 export const DOG_SATIETY_MAX = 100;
 
-/** 每份狗粮恢复的饱腹度 */
-export const DOG_FOOD_SATIETY = 45;
+/** 每份普通狗粮恢复的饱腹度 */
+export const DOG_FOOD_SATIETY = ITEMS.dogFood.food;
+
+/** 每份精品狗粮恢复的饱腹度（双倍价，商店有售） */
+export const DOG_FOOD_PRO_SATIETY = ITEMS.dogFoodPro.food;
 
 /** 每小时掉多少饱腹度：喂满一次大约守护 16 小时 */
 export const DOG_SATIETY_DECAY = 6.25;
 
 /** 邻居给狗添一次食要花的钱：和玩家买一份狗粮同价 */
 export const DOG_FOOD_PRICE = ITEMS.dogFood.price;
+
+/* ---------- 狗窝升级 ---------- */
+
+/** 狗窝最高等级 */
+export const KENNEL_MAX_LEVEL = 5;
+
+/** 每升一级，狗粮槽容量 +30 */
+export const KENNEL_CAPACITY_STEP = 30;
+
+/**
+ * 升到下一级要付的金币，下标 0 = 0 级升 1 级。
+ * 五档价格对应五级（0 → 5），容量从 100 一路加到 250。
+ */
+export const KENNEL_UPGRADE_COSTS = [2_000, 5_000, 10_000, 15_000, 25_000];
+
+/**
+ * 狗窝容量 = 基础 100 + 30 × 等级。
+ * 邻居的狗不升级（没有狗窝这个概念），恒为 100。
+ * @param {number} [level]
+ * @returns {number}
+ */
+export function dogHouseCapacity(level = 0) {
+  const lv = Math.min(KENNEL_MAX_LEVEL, Math.max(0, Math.round(Number(level) || 0)));
+  return DOG_SATIETY_MAX + KENNEL_CAPACITY_STEP * lv;
+}
+
+/* ---------- 守护犬每日挖宝 ---------- */
+
+/** 每天挖到一份奖励的概率（有狗上岗且槽里有粮才掷） */
+export const DOG_DIG_CHANCE = 0.30;
+
+/** 「不饿」的阈值：槽里有粮就算（> 0） */
+export const DOG_DIG_MIN_SATIETY = 1;
+
+/** 离线期间最多补掷几天（与游戏其他离线窗口一致，防止一次补发几十份） */
+export const DOG_DIG_MAX_CATCHUP = 7;
 
 /**
  * 被守护犬抓住的罚款倍数。
@@ -120,11 +161,12 @@ export function rollDogBreed(mapTier, owned = []) {
  *
  * @param {number} baseRate 品种基础率（0~1）
  * @param {number} satiety 槽内饱腹度（0~100）
+ * @param {number} [max] 槽容量：玩家的狗窝升级后大于 100，邻居恒为 100
  * @returns {number} 0~1
  */
-export function catchChance(baseRate, satiety) {
+export function catchChance(baseRate, satiety, max = DOG_SATIETY_MAX) {
   if (satiety <= 0) return 0;
-  const ratio = Math.min(1, satiety / DOG_SATIETY_MAX);
+  const ratio = Math.min(1, satiety / (max || DOG_SATIETY_MAX));
   return baseRate * (0.5 + 0.5 * ratio);
 }
 
@@ -144,13 +186,15 @@ export const rollNpcDogSatiety = () => Math.floor(Math.random() * 71);
  *
  * @param {{satiety?: number, at?: number, breed?: string}} dog
  * @param {number} at 毫秒时间戳
- * @returns {number} 0~100
+ * @param {number} [max] 槽容量：玩家的狗窝升级后大于 100，邻居恒为 100
+ * @returns {number} 0~max
  */
-export function dogSatietyAt(dog, at) {
+export function dogSatietyAt(dog, at, max = DOG_SATIETY_MAX) {
+  const cap = max || DOG_SATIETY_MAX;
   const raw = Math.max(0, Number(dog?.satiety) || 0);
-  if (!dog?.breed) return Math.min(DOG_SATIETY_MAX, raw);
+  if (!dog?.breed) return Math.min(cap, raw);
   const hours = Math.max(0, (at - (Number(dog.at) || 0)) / 3600_000);
-  return Math.max(0, Math.min(DOG_SATIETY_MAX, raw - hours * DOG_SATIETY_DECAY));
+  return Math.max(0, Math.min(cap, raw - hours * DOG_SATIETY_DECAY));
 }
 
 /**

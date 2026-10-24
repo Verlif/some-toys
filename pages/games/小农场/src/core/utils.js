@@ -93,6 +93,30 @@ export function dayKey(ts = Date.now()) {
 }
 
 /**
+ * 本地日期序号（0 点切日）：同一天相等，相差几天直接相减。
+ *
+ * dayKey 是字符串，算「隔了几天」得先拆年月日；比较跨度用这个。
+ * 也接受 'YYYY-M-D' 日期键（读档里的存的就是这个）。
+ * @param {number|string} [ts] 时间戳或日期键
+ * @returns {number}
+ */
+export function dayIndex(ts = Date.now()) {
+  let y;
+  let m;
+  let d;
+  if (typeof ts === 'string') {
+    [y, m, d] = ts.split('-').map(Number);
+    if (!y || !m || !d) return 0;
+  } else {
+    const dt = new Date(ts);
+    y = dt.getFullYear();
+    m = dt.getMonth() + 1;
+    d = dt.getDate();
+  }
+  return Math.floor(new Date(y, m - 1, d).getTime() / 86_400_000);
+}
+
+/**
  * 排行榜日期键：**按 14:00 切日**（每天下午 2 点结算前一天）。
  *
  * 14:00 之前算「昨天」，14:00 起算「今天」。

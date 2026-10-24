@@ -18,10 +18,8 @@ import { CYCLE_DAYS, DAILY_ITEM, daysLeftInCycle, isBigDay, rewardFor, SIGN_KEEP
 import { CROPS } from '../data/crops.js';
 import { MAP_TIERS, buildRewardPool } from '../data/adventure.js';
 import { produceId, seedId } from '../data/keys.js';
-import { dayKey, isSameDay, randInt } from '../core/utils.js';
+import { dayIndex, dayKey, isSameDay, randInt } from '../core/utils.js';
 import { completeGuide } from './codex.js';
-
-const DAY_MS = 86_400_000;
 
 /** 补齐后来新增的字段 */
 export function ensureSignFields() {
@@ -48,12 +46,17 @@ export function signedOn(ts) {
 
 /**
  * 连续签到是否已中断（昨天没签，且不是今天）
+ *
+ * ⚠️ 必须按**自然日**算，不能拿 24 小时门槛：昨晚 23 点签的、今早 0 点看
+ * 只隔了 1 小时却被判「已中断」，而签到记录（日历）明明连着 ——
+ * 顶部的连签显示和下方的日历各说各话（2026-10-24 用户反馈的 bug）。
+ * 昨天签过就不算断：今天的签到还能续上。
  * @returns {boolean}
  */
 export function streakBroken(now = Date.now()) {
   const { lastSign, signStreak } = state.farm.progress;
   if (!lastSign || signStreak === 0) return false;
-  return !isSameDay(lastSign, now) && now - lastSign > DAY_MS;
+  return dayIndex(now) - dayIndex(lastSign) > 1;
 }
 
 /** 今天是本轮的第几天（1 起算） */

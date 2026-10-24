@@ -20,7 +20,7 @@ import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
 import { stackClass, yieldClass } from '../meta-tags.js';
 import { closeModal, openModal } from '../modal.js';
-import { activeBreed, dogSatiety, guardChanceNow } from '../../store/dogs.js';
+import { activeBreed, dogSatiety, guardChanceNow, kennelCapacity } from '../../store/dogs.js';
 import { openCropModal, plotStatusHTML } from '../crop-detail.js';
 import { carePenalty } from '../../data/care.js';
 
@@ -291,6 +291,9 @@ function renderFarmTools() {
   const breed = activeBreed();
   const guardPct = Math.round(guardChanceNow() * 100);
   const satiety = Math.round(dogSatiety());
+  // 狗粮槽按容量算比例：升过狗窝之后满槽是 130/160/…，直接拿点数当百分比会溢出
+  const cap = kennelCapacity();
+  const bowlPct = Math.round((satiety / cap) * 100);
 
   const now = Date.now();
   const needWater = state.farm.plots.filter((p) => farm.needsWater(p, now)).length;
@@ -299,17 +302,17 @@ function renderFarmTools() {
 
   const key = [
     water, pest, harvester, needWater, needPest, needRipe,
-    breed?.id || '', guardPct, satiety,
+    breed?.id || '', guardPct, satiety, cap,
   ].join('|');
   if (key === toolsKey) return;
   toolsKey = key;
 
   // 没有狗也要说实话：新玩家得知道「上岗」这回事，所以这一格永远在
   dogEl.innerHTML = breed
-    ? `<span class="farm-dog" title="${breed.name} 正在看家：拦截率 ${guardPct}%，狗粮 ${satiety}%">
+    ? `<span class="farm-dog" title="${breed.name} 正在看家：拦截率 ${guardPct}%，狗粮 ${satiety}/${cap}">
         <i class="fd-emoji">${breed.emoji}</i>
         <span class="fd-name">${breed.name}</span>
-        <i class="fd-bar"><b style="width:${satiety}%"></b></i>
+        <i class="fd-bar"><b style="width:${bowlPct}%"></b></i>
         <span class="fd-pct">拦 ${guardPct}%</span>
       </span>`
     : '<span class="farm-dog off"><i class="fd-emoji">🐶</i><span class="fd-name">没有狗上岗</span></span>';
@@ -367,12 +370,16 @@ function updateNode(node, plot, status, key) {
     }
 
     const warn = status !== 'locked' && farm.hasIssue(plot);
+    // 播种了限定种子的地描一道金边：限定作物是挖宝专属，值得一眼认出来。
+    // 用 box-shadow 内阴影画（见 components.css），不占布局 ——
+    // 换成 border 会把每张卡撑高一像素，整列参差
+    const special = status !== 'locked' && status !== 'empty' && CROPS[plot.cropId]?.special;
     node.el.className = 'plot' + (
       status === 'locked' ? ' locked'
         : warn ? ' warn'
           : status === 'ripe' ? ' ripe'
             : status === 'growing' ? ' growing' : ''
-    ) + (status === 'locked' ? '' : soilBgClass(plot.soil));
+    ) + (special ? ' special' : '') + (status === 'locked' ? '' : soilBgClass(plot.soil));
     node.el.innerHTML = plotInnerHTML(plot, status);
     node.bar = node.el.querySelector('.bar > i');
     node.time = node.el.querySelector('.ptime');

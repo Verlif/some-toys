@@ -63,8 +63,8 @@ function lockedHTML() {
     </div>
     <div class="ws-tips">
       <div>· 一次制造吃掉 <b>半轮产量</b>的产出（一轮平均产出 ÷ 2，至少 1 份；多茬按整轮算）</div>
-      <div>· 每次还要付一笔 <b>工本费</b>，等于半颗同种作物种子的价钱</div>
-      <div>· 限定作物只能从藏宝图挖，这里复刻不了</div>
+      <div>· 每次还要付一笔 <b>工本费</b>，等于四分之一颗同种作物种子的价钱</div>
+      <div>· <b>限定作物也能造</b>：挖宝挖多了的限定产出，可以在这里复刻成种子</div>
       <div>· 升级看的是<b>造过多少种作物</b>，同一种造一百次也只算 1 种</div>
     </div>`;
 }
@@ -93,7 +93,8 @@ function statusHTML() {
   const level = workshopLevel();
   const st = upgradeState();
   const kinds = workshopKinds();
-  const total = Object.keys(CROPS).filter((id) => !CROPS[id].special).length;
+  // 第 43 轮起限定作物也计入「可以造多少种」
+  const total = Object.keys(CROPS).length;
 
   const upgradeBlock = st.maxed
     ? '<div class="ws-upgrade maxed">已是最高等级</div>'
@@ -136,6 +137,7 @@ function listHTML() {
           <div class="si-body">
             <div class="si-name">
               ${crop.name}<span class="si-own">· 拥有 ${have}</span>
+              ${crop.special ? '<span class="ws-kind" title="藏宝图限定作物">限定</span>' : ''}
               ${kindDone(id) ? `<span class="ws-kind" title="造过 ${kindTimes(id)} 次">已造过</span>` : ''}
             </div>
             <div class="si-meta">
@@ -154,7 +156,6 @@ function listHTML() {
 function almostHTML() {
   const rows = [];
   for (const [id, crop] of Object.entries(CROPS)) {
-    if (crop.special) continue;
     const need = produceCost(crop);
     const have = count(produceId(id));
     if (have > 0 && have < need) rows.push({ crop, have, need });

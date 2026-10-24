@@ -69,6 +69,12 @@
   transition: .18s;
   text-align: center;
 }
+/* 播种了限定种子的地：一道金边。用内阴影而不是 border ——
+   不参与盒模型，不会把卡片撑高一像素、不会让整列参差 */
+.plot.special {
+  border-color: #e3b23c;
+  box-shadow: inset 0 0 0 2px #f0c94b, 0 2px 6px rgba(70, 90, 60, .06);
+}
 .plot-main {
   flex: 1;
   min-width: 0;
@@ -599,6 +605,121 @@
   line-height: 1;
 }
 .friend-card:hover .friend-chevron { color: var(--green-d); }
+/* 在线标识：名字后面一颗小圆点，绿 = 在线、灰 = 离线（窗口 10~30 分钟，
+   按性格与身份定，见 data/friends.js 的 onlineMs） */
+.friend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #ccd6c8;
+}
+.friend-dot.on {
+  background: #58b531;
+  box-shadow: 0 0 0 3px rgba(88, 181, 49, .16);
+}
+/* 不在线：头像降饱和 + 轻微减淡 —— 是「减色」不是「全灰」，还得认得出是谁 */
+.friend-card.offline .friend-avatar { filter: grayscale(.55); opacity: .82; }
+/* 不在线：卡片浅灰底，和头像灰度是一套意思（2026-10-24） */
+.friend-card.offline { background: #f0f2ee; }
+
+/* ---------- 村中心 ---------- */
+/* 顶部一行：总览卡（可点，展开名单）+ 公告栏大按钮 */
+.center-head {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 13px 13px 4px;
+}
+.center-overview {
+  flex: 1;
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px 11px;
+  cursor: pointer;
+}
+.center-overview:active { transform: scale(.99); }
+.co-title { font-size: 12px; font-weight: 700; color: var(--muted); }
+.co-count { font-size: 25px; font-weight: 800; color: #3c4a39; line-height: 1.25; }
+.co-count b { font-variant-numeric: tabular-nums; }
+.co-count span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.co-sub { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+/* 在线头像行：玩家在最前 */
+.co-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  min-height: 26px;
+}
+.co-face {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #eef7e9;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  line-height: 1;
+}
+.co-face.more { background: #e7ece3; color: #6c7a67; font-size: 10px; font-weight: 700; }
+.co-caret { margin-top: 8px; font-size: 10.5px; color: #9db08f; text-align: center; }
+/* 公告栏：总览右侧的大图标按钮 */
+.center-board {
+  width: 78px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #ead9ae;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #fff8e8, #fdeec9);
+  cursor: pointer;
+  font-family: inherit;
+}
+.center-board:active { transform: scale(.97); }
+.cb-ico { font-size: 27px; line-height: 1; }
+.cb-label { font-size: 11px; font-weight: 700; color: #a0730f; }
+/* 名单里「你自己」那张卡 */
+.friend-card.me { background: #f2f9ef; border-color: #c4e0b8; }
+.me-chip { color: #6b9c52; font-weight: 700; }
+/* 公告栏弹窗：过滤 / 排序栏在列表下面（弹窗底栏位），可换行 */
+.board-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* ---------- 订单页 ---------- */
+/* 行尾一列：奖励（金）/ 时限（灰）*/
+.order-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.order-reward { font-size: 12px; font-weight: 700; color: #a0730f; }
+.order-left { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 发布弹窗底栏：数量步进器 + 赏金 + 发布 */
+.order-publish-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.order-publish-foot .qty { flex-shrink: 0; }
+.order-publish-reward {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+.order-publish-reward b { color: #a0730f; font-size: 13px; }
+/* 发布弹窗里选中的那一行 */
+.seed-row.on { background: #f2f9ef; border-color: #c4e0b8; }
 .friend-stats {
   display: flex;
   flex-wrap: wrap;
@@ -1920,6 +2041,10 @@
 .dog-state { font-size: 11px; font-weight: 600; }
 .dog-state.on { color: var(--green-d); }
 .dog-state.off { color: var(--danger); }
+
+/* 两个喂粮按钮竖排（普通 / 精品），不挤占 si-body 的宽度 */
+.dog-feed { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.dog-feed .btn { white-space: nowrap; }
 
 .dog-bar {
   height: 7px;

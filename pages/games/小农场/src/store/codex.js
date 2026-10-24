@@ -5,7 +5,8 @@
  *
  * **收集**的判定是「产出进过一次仓库」（`store/collected.js` 在 `inventory.add()`
  * 处记账，只增不减）—— 收的、偷的、邻居送的都算。图鉴墙据此显示真图标。
- * **点亮**的判定更严：做一份标本要花掉仓库里 50 个同样的产出，所以它是成就。
+ * **点亮**的判定更严：做一份标本要花掉仓库里 50 个同样的产出，所以它是成就
+ * （第 43 轮起点亮还奖 1 颗同种种子，见 CODEX_SEED_REWARD）。
  *
  * 标本存在 player.specimens 上，结构是 { 作物id: true }。
  *
@@ -26,6 +27,14 @@ import { notify } from './notify.js';
 
 /** 制作一份标本要消耗多少个产出 */
 export const SPECIMEN_COST = 50;
+
+/**
+ * 点亮一个图鉴奖励的种子数（第 43 轮新增）。
+ *
+ * 点亮要花掉 50 个产出，奖 1 颗同种种子算是「纪念品 + 复种的火种」——
+ * 种子价随等级自然缩放，高级图鉴一颗就值几万，不会失衡。
+ */
+export const CODEX_SEED_REWARD = 1;
 
 /** 补齐后来新增的字段 */
 export function ensureStats() {
@@ -119,6 +128,8 @@ export function specimenReady(cropId) {
 /**
  * 制作一份标本：扣掉仓库里 50 个同样的产出，点亮该图鉴。
  *
+ * 点亮同时奖励 1 颗同种作物的种子（见 CODEX_SEED_REWARD）。
+ *
  * @param {string} cropId
  * @returns {Promise<boolean>} 是否制作成功
  */
@@ -137,14 +148,41 @@ export async function makeSpecimen(cropId) {
 
   take(produceId(cropId), SPECIMEN_COST);
   state.farm.progress.specimens[cropId] = true;
+  // 点亮的纪念：1 颗同种种子，让这份图鉴不只是个记号
+  add(seedId(cropId), CODEX_SEED_REWARD);
 
   await commit({ farms: [state.farm], bag: state.bag });
   emit(EVENTS.CODEX);
   emit(EVENTS.INVENTORY);
 
   await completeGuide('specimen');
-  notify(`${crop.emoji} 做好了${crop.name}的标本，图鉴已点亮`, 'gold');
+  notify(`${crop.emoji} 做好了${crop.name}的标本，图鉴已点亮 · 奖励 ${crop.name}种子 ×${CODEX_SEED_REWARD}`, 'gold');
   return true;
+}
+
+/**
+ * 老档补偿：此前已经点亮的图鉴，各补发 1 颗种子（一次性）。
+ *
+ * 2026-10-24 新增「点亮奖种子」之前的存档里，点亮是只有荣誉没有实物的，
+ * 这里在启动时按 `progress.codexSeeds` 标记补发一次，之后不再触发。
+ *
+ * @returns {Promise<number>} 补发的种数（0 = 无需补偿或已补过）
+ */
+export async function compensateLitSeeds() {
+  ensureStats();
+  if (state.farm.progress.codexSeeds) return 0;
+  state.farm.progress.codexSeeds = true;
+
+  const lit = Object.keys(state.farm.progress.specimens).filter((id) => CROPS[id]);
+  if (!lit.length) return 0;
+
+  for (const id of lit) add(seedId(id), CODEX_SEED_REWARD);
+  await commit({ farms: [state.farm], bag: state.bag });
+  emit(EVENTS.CODEX);
+  emit(EVENTS.INVENTORY);
+
+  notify(`📖 图鉴补偿：已点亮的 ${lit.length} 种作物，各补发 1 颗种子`, 'gold');
+  return lit.length;
 }
 
 /**

@@ -47,6 +47,8 @@ export const EVENTS = {
   DOG_CAUGHT: 'ui:dog-caught',
   /** 请求切换主页面，payload 为页面名（farm / friends / news / shop） */
   NAVIGATE: 'ui:navigate',
+  /** 每分钟一跳（挂在主轮询上）：在线标识、订单倒计时等时间驱动的刷新 */
+  TICK: 'ui:tick',
 };
 
 /**

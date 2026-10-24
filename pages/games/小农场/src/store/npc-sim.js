@@ -25,6 +25,18 @@ import { CROPS, expOf } from '../data/crops.js';
 import { expForLevel, MAX_LEVEL } from '../data/progression.js';
 import { NPC_ADVENTURE_CHANCE, rollNpcAdventure } from '../data/adventure.js';
 import { formatCoins, randInt } from '../core/utils.js';
+import { itemLabel, produceId } from '../data/keys.js';
+import {
+  KEEP_RATIO,
+  NPC_BAG_CAP,
+  ORDER_CHANCE,
+  ORDER_CHANCE_BONUS,
+  ORDER_DAYS_RANGE,
+  ORDER_LEVEL_FLOAT,
+  ORDER_QTY_RANGE,
+  ORDER_REL_GAIN,
+  orderReward,
+} from '../data/orders.js';
 import {
   ACTIONS_PER_VISIT,
   BOOST_CAP,
@@ -40,6 +52,7 @@ import {
   expectedGapMs,
   nextVisitAt,
   npcGrowMs,
+  onlineMs,
   shuffled,
   syncNpcPlots,
   trimLog,
@@ -68,9 +81,13 @@ import {
 } from '../data/dogs.js';
 
 const HOUR = 3600_000;
+const DAY = 24 * HOUR;
 
 /** 一次上线对玩家农场的影响（给「你不在时」的汇总用） */
 const noDelta = () => ({ stolen: 0, cared: 0, caught: 0 });
+
+/** NPC 仓库总件数（有上限，超了收获时直接卖掉） */
+const bagCount = (bag) => Object.values(bag || {}).reduce((sum, n) => sum + n, 0);
 
 /* ============================================================
    随机选择
@@ -152,6 +169,9 @@ const stealable = (plot, at) =>
 function actHarvest(npc, ctx, at) {
   let acted = false;
   let totalValue = 0;
+  npc.bag ??= {};
+  // 收获时按性格保留入库的比例：不是全卖（没金币收入），也不是全留（没法和别人互通有无）
+  const keepRatio = KEEP_RATIO[npc.personality] ?? 0.3;
 
   for (const plot of npc.plots) {
     if (!plot.cropId || at < plot.readyAt) continue;
@@ -165,7 +185,13 @@ function actHarvest(npc, ctx, at) {
     boosted = Math.floor(boosted * carePenalty(plot).mul);
     // 被顺走过几个就少收几个 —— 不做「减半」这种翻倍惩罚
     boosted = Math.max(0, boosted - (plot.stolenCount || 0));
-    totalValue += boosted * crop.sell;
+    // 收成分裂：留一部分进仓库（订单功能要用的就是它），其余卖成金币。
+    // 仓库有上限，放不下的部分照样卖
+    const key = produceId(plot.cropId);
+    const room = Math.max(0, NPC_BAG_CAP - bagCount(npc.bag));
+    const keep = Math.min(boosted, Math.floor(boosted * keepRatio), room);
+    if (keep > 0) npc.bag[key] = (npc.bag[key] || 0) + keep;
+    totalValue += (boosted - keep) * crop.sell;
     // 与玩家完全一致的经验公式：总时间/4×等级 + 等级×个数
     gainExp(npc, expOf(crop.lv, boosted));
 
@@ -562,6 +588,104 @@ function actGift(npc, ctx, at) {
 }
 
 /**
+ * 张榜收购：上线时若没有进行中的订单，按概率发一条（不一定每次都有）。
+ *
+ * 需求从 **1 级 ~（NPC 自己等级 + ORDER_LEVEL_FLOAT）** 之间随机抽，
+ * 不看玩家等级 —— 高阶邻居就该开出高阶单，接不了是玩家自己的取舍
+ * （2026-10-24 用户明确要求，早先是「取两者较低等级」，低阶邻居永远开低阶单）。
+ *
+ * 赏金 = 售价 ×1.2× 数量，**当场从 NPC 金币托管**（掏不出钱就不张榜，不开空头支票）；
+ * 期限 1~3 天，每个 NPC 同时最多 1 条（NPC_ORDER_LIMIT）。
+ */
+function actOrder(npc, ctx, at) {
+  if (npc.order) return null;
+  // 不一定每次上线都有订单：基础 30%，生意人 / 场面人更爱张榜
+  const bonus = ORDER_CHANCE_BONUS[npc.personality] || 1;
+  if (Math.random() >= ORDER_CHANCE * bonus) return null;
+
+  const pool = Object.keys(CROPS).filter(
+    (id) => !CROPS[id].special && CROPS[id].lv <= npc.level + ORDER_LEVEL_FLOAT,
+  );
+  if (!pool.length) return null;
+
+  const cropId = pick(pool);
+  const crop = CROPS[cropId];
+  const qty = randInt(ORDER_QTY_RANGE[0], ORDER_QTY_RANGE[1]);
+  const reward = orderReward(crop.sell, qty);
+  if (npc.coins < reward) return null;
+  npc.coins -= reward;
+
+  npc.order = {
+    id: npc.id,
+    ownerId: npc.id,
+    itemId: produceId(cropId),
+    qty,
+    reward,
+    createdAt: at,
+    deadline: at + randInt(ORDER_DAYS_RANGE[0], ORDER_DAYS_RANGE[1]) * DAY,
+  };
+  log(npc, at, '📋', `张榜收购 ${crop.emoji}${crop.name} ×${qty}，赏金 ${formatCoins(reward)} 💰`);
+  return { emoji: '📋', text: `张榜收购 ${crop.emoji}${crop.name} ×${qty}` };
+}
+
+/**
+ * 接单：从看板上挑一条**不是自己发的**、自家仓库凑得齐的订单交货。
+ *
+ * 每次上线最多 1 条；优先接**玩家**的单（我发的单真有人接），
+ * 其余按赏金从高到低挑 —— NPC 之间也互通有无。完成一笔，
+ * 接单方与下单方好感 +5：互通有无也是交情。
+ */
+function actFill(npc, ctx, at) {
+  const orders = ctx.orders?.() || [];
+  const can = orders.filter((o) => o.ownerId !== npc.id && (npc.bag?.[o.itemId] || 0) >= o.qty);
+  if (!can.length) return null;
+
+  const mine = can.filter((o) => o.ownerId === ctx.farm?.id);
+  const pool = mine.length ? mine : can;
+  pool.sort((a, b) => b.reward - a.reward);
+  const order = pool[0];
+
+  const label = itemLabel(order.itemId);
+  const ownerIsPlayer = order.ownerId === ctx.farm?.id;
+  const owner = ownerIsPlayer
+    ? ctx.farm
+    : ctx.neighbours.find((n) => n.id === order.ownerId);
+  // 下单方不在（理论上不会）：这条单跳过，别白白扣自己的货
+  if (!owner) return null;
+
+  // 交货：从自己仓库扣，转给下单方
+  npc.bag[order.itemId] -= order.qty;
+  if (npc.bag[order.itemId] <= 0) delete npc.bag[order.itemId];
+
+  if (ownerIsPlayer) {
+    ctx.farm.giveItem?.(order.itemId, order.qty);
+  } else {
+    owner.bag ??= {};
+    owner.bag[order.itemId] = (owner.bag[order.itemId] || 0) + order.qty;
+  }
+  // 赏金从托管里出来，归接单的人；完成一笔双方好感 +5
+  npc.coins += order.reward;
+  ctx.relAdjust(npc.id, order.ownerId, ORDER_REL_GAIN);
+  ctx.removeOrder?.(order);
+
+  if (ownerIsPlayer) {
+    // by = npc.id：邻居主动帮忙，归进农场日志的「邻居动向」tab
+    ctx.farm.log?.(at, '📦', `${npc.name} 帮你凑齐了 ${label} ×${order.qty}`, npc.id);
+  } else {
+    log(owner, at, '📦', `${npc.name} 帮你凑齐了 ${label} ×${order.qty}`);
+    // 邻里之间互通有无：时报最喜欢的素材
+    ctx.farm.news?.(at, '📦', `${npc.name} 帮 ${owner.name} 凑齐了 ${label} ×${order.qty}`);
+  }
+  // 回执带上涉及的农场：接 NPC 的单时，对方的行也要一起落盘
+  return {
+    emoji: '📦',
+    text: `帮 ${owner.name} 凑齐了 ${label} ×${order.qty}`,
+    farms: [npc.id, order.ownerId],
+    gave: ownerIsPlayer,
+  };
+}
+
+/**
  * 买张藏宝图去寻宝：等级门槛、价格、奖励池都和玩家完全一致，
  * 只是 NPC 不在场，奖励按池子价值直接算法结算。
  *
@@ -592,8 +716,8 @@ function actAdventure(npc, farm, ctx, at) {
 
 /**
  * 每种动作的签名统一成 (npc, at, ctx)：
- * ctx = { neighbours, farm, rel, relAdjust, receiveGift }，
- * 动作内部自己挑需要的部分 —— 模拟层始终不认识 store，好感度也是「传进来的」。
+ * ctx = { neighbours, farm, rel, relAdjust, receiveGift, orders, removeOrder }，
+ * 动作内部自己挑需要的部分 —— 模拟层始终不认识 store，好感度与订单看板都是「传进来的」。
  */
 const STEPS = {
   harvest: (npc, at, ctx) => actHarvest(npc, ctx, at),
@@ -608,6 +732,10 @@ const STEPS = {
   /** 给交情够好的人送一份产出（≥100 走性格加权的新概率） */
   gift: (npc, at, ctx) => actGift(npc, ctx, at),
   adventure: (npc, at, ctx) => actAdventure(npc, ctx.farm, ctx, at),
+  /** 张榜收购产出（手里没有进行中订单时才掷，赏金托管） */
+  order: (npc, at, ctx) => actOrder(npc, ctx, at),
+  /** 从看板接一条交得起的订单交货（每次上线最多 1 条） */
+  fill: (npc, at, ctx) => actFill(npc, ctx, at),
 };
 
 /**
@@ -636,8 +764,8 @@ export function planVisit(npc) {
     steps.push(action);
   }
 
-  // 顺菜、串门帮忙、送礼不受性格权重的名额限制 —— 上线再忙也可能做一件
-  return [...steps, 'replant', 'feed', 'steal', 'care', 'gift', 'adventure'];
+  // 顺菜、串门帮忙、送礼、订单不受性格权重的名额限制 —— 上线再忙也可能做一件
+  return [...steps, 'replant', 'feed', 'steal', 'care', 'gift', 'adventure', 'order', 'fill'];
 }
 
 /**
@@ -658,6 +786,9 @@ export function beginVisit(npc, at) {
   // 地块数量和玩家一样按等级解锁：升了级就该有新地（直接种上，和初始生成一致）
   syncNpcPlots(npc, at);
   npc.lastVisitAt = at;
+  // 在线窗口：按性格与身份 10~30 分钟。邻居页的绿点、偷菜双倍惩罚都看它 ——
+  // 只有精细访问走这里，远期聚合不设，别让上古上线也「在线」
+  npc.onlineUntil = at + onlineMs(npc);
   npc.nextVisitAt = nextVisitAt(npc, at);
   return levelBefore;
 }

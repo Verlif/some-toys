@@ -49,7 +49,7 @@ export const GUIDES = [
   { key: 'care', name: '第一次帮忙', emoji: '🤝', desc: '在邻居的地块上浇水或捉虫',
     chain: 2,
     coins: 0, exp: 30, items: { dogFood: 2 } },
-  { key: 'news', name: '第一次看时报', emoji: '📰', desc: '翻开全镇时报，看看最近发生了什么',
+  { key: 'news', name: '第一次看时报', emoji: '📰', desc: '翻开村中心的公告栏，看看最近发生了什么',
     chain: 2,
     coins: 20, exp: 10, items: {} },
   { key: 'shop', name: '第一次采购', emoji: '🛒', desc: '在商店买下第一件东西',

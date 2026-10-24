@@ -11,6 +11,8 @@ import { openDatabase } from './core/db.js';
 import { on, EVENTS } from './core/bus.js';
 import { initState } from './store/state.js';
 import { autoSignIn } from './store/signin.js';
+import { settleDogDig } from './store/dogs.js';
+import { compensateLitSeeds } from './store/codex.js';
 
 import { bootDone, bootFail, bootProgress, bootStage } from './ui/boot.js';
 import { mountToast } from './ui/toast.js';
@@ -30,7 +32,7 @@ import { mountTabs, activatePage, currentPage } from './ui/tabs.js';
 import { mountFarm, renderFarm } from './ui/views/farm.js';
 import { mountShop, renderShop } from './ui/views/shop.js';
 import { mountFriends, renderFriends, checkOnlineVisits } from './ui/views/friends.js';
-import { mountNews, renderNews } from './ui/views/news.js';
+import { mountCenter, renderCenter } from './ui/views/center.js';
 import { markSessionStart, pollOnline } from './store/social.js';
 import { checkRollover, flushDaily, migrateBoardRows } from './store/daily.js';
 import { initPeers, joinVillage, villageConfig } from './store/peers.js';
@@ -76,14 +78,14 @@ async function boot() {
   mountFarm();
   mountShop();
   mountFriends();
-  mountNews();
+  mountCenter();
   mountTabs();
 
   renderHud();
   renderFarm();
   renderShop();
   renderFriends();
-  renderNews();
+  renderCenter();
   activatePage('farm');
 
   // 子页面顶部的金币与内容跟随状态变化
@@ -142,6 +144,20 @@ async function boot() {
   }
   checkRollover();
 
+  // 守护犬每日挖宝：离线期间按天补掷（最多 7 天），启动时先结一次
+  try {
+    await settleDogDig();
+  } catch (error) {
+    console.error(error);
+  }
+
+  // 图鉴点亮奖种子是第 43 轮新增的：老档已点亮的图鉴在这里一次性补发
+  try {
+    await compensateLitSeeds();
+  } catch (error) {
+    console.error(error);
+  }
+
   // 联机：上次是「在村镇里」就自动回去；主动退出过的人不再打扰
   initPeers();
   initPeerGift();
@@ -159,15 +175,19 @@ async function boot() {
 
   // 邻居的成长在玩家在线时持续推进：他们上线时弹一条提示，
   // 之后每做一件事（顺菜、照料）都隔几秒才发生，见 store/social.js。
-  // 同一个轮次上还挂着两件「跨天」的事：
+  // 同一个轮次上还挂着三件「跨天」的事：
   //   - 每日排行榜：0 点那一刻正好在线上，分钟级发现翻日就当场结算并发 toast；
   //   - 自动签到：翻日也自动把今天的签到领了（已签过则什么都不做），
-  //     庆祝画面照播，与开机时那次一致。
+  //     庆祝画面照播，与开机时那次一致；
+  //   - 守护犬挖宝：翻日把「昨天」的挖宝掷了（离线补掷在启动时做）。
   setInterval(() => {
     if (document.hidden) return;
     checkOnlineVisits();
     checkRollover();
     autoSignIn().catch((error) => console.error(error));
+    settleDogDig().catch((error) => console.error(error));
+    // 时间驱动的界面刷新：邻居的在线圆点、订单页的时限倒计时
+    emit(EVENTS.TICK);
   }, VISIT_POLL_MS);
 
   // 从后台切回来时立刻补一次渲染，避免看到过期的倒计时
