@@ -55,7 +55,9 @@
 
 - **四个主页面 tab**：农场 / 邻居 / **村中心 🏡**（第 42 轮由「📰 时报」改造，
   `views/center.js`）/ 商店。⚠️ 村中心 🏡 ≠ 村镇 🏘（联机浮窗，进村才出现），图标刻意区分。
-  村中心 = 总览卡（在线/总人数**含玩家**，默认收起、点开名单）+ 📢 公告栏大按钮；
+  村中心 = 总览卡（在线/总人数**含玩家**；第 44 轮起占满一行，**点击弹窗看名单**，
+  弹窗里「全部 / 在线」筛选）+ 下方并排两枚按钮：📢 公告栏、📋 订单
+  （订单徽标常驻总数，**订单唯一入口**，「更多」里已删）。
   公告栏是时报弹窗，**过滤/排序栏在列表下面**（modal-foot 位）；TICK+FRIENDS 实时刷
   计数/头像行/圆点，不重建名单。老 `views/news.js` 已删。
 
@@ -72,6 +74,8 @@
   文字保持纯白 —— 用背景 alpha 不用 `opacity` 属性，别把字一起淡掉（第 39 轮）。
 - 浮层统一：上滑进场、下拉关闭（`drag-close.js`）。**拖拽三条铁律**：①move 先查 tracking ②鼠标事件只在按下期间挂 ③Touch+preventDefault。
 - **弹窗四段式**：handle/head/body/foot。别用 sticky 代替 foot。支持叠层。
+  `.modal-sub` **不许负上边距**（body 是 overflow 容器，顶出去会被裁）；
+  `openModal(html, fn, cardClass)` 第三参挂整卡类名（每次打开重置）。
 - 地块 `.plot-main`+`.plot-side`(34px)；`.plot-side` ≤4 按钮。锁定地块 `.plot-lock` 空占位盒(47/38px)。
 - **土地底纹** `soilbg-<id>` 用 `::before` 叠渐变，**不能改 `background`**，只声明 `--soil-tint`（135deg，alpha .52~.66）。
 - **横滚芯片条接力** `ui/scroll-keep.js` 的 `keepBarScroll(root, sel, render)`：friends/news/shop 三处。
@@ -178,7 +182,9 @@
 - **限定作物 102 种铺到 Lv2-200**（第 43 轮，`tools/gen-data.mjs` 的 `SPECIAL_CATALOG`）：
   五档藏宝图种子上限 20/60/120/160/200（用户自己改的 MAP_TIERS）。⚠️ 生成器会拦**重名**与
   **emoji 超 8 次**，加限定作物时要先查名与 emoji。**播种限定种子的地块挂 `.plot.special`**，
-  金边用 `box-shadow` 内阴影画 —— 不能用 border（会把卡片撑高一像素、整列参差）。
+  第 44 轮起金边是 `<i class="plot-aura">` 上的 `conic-gradient` **旋转**边（`@property --plot-spin`）；
+  缺水/生虫（红）/ 成熟待收（橙）在同层的 `::after` 做 `scale(1→1.06)` 外扩环。
+  `.plot` 自己的 `::before/::after` 被底纹与压边占着，**不能动**。
 - **游戏手册**（`subpages/manual.js`）：「更多→📘 手册」，float:left 图标网格（25% 宽），
   点图标弹 `openModal` 详情（平铺 `.manual-list`）。13 个分类（第 41 轮加「订单」）。
 - **自动签到**（第 34 轮）：开机自动签 + **跨 0 点在线也签**（挂在分钟 tick 的日期检查上），照播庆祝画面。

@@ -16,7 +16,8 @@ export const MORE_MENU_ITEMS = [
   { key: 'rank',        icon: '🏆', label: '排行榜',   ready: true },
   { key: 'manual',      icon: '📘', label: '手册',   ready: true },
   { key: 'village',     icon: '🏘', label: '村镇',   ready: true, action: 'village' },
-  { key: 'orders',      icon: '📋', label: '订单',   ready: true },
+  // 订单在村中心（📋 按钮带总数徽标），这里是唯一入口；子页面本身还在
+  // （SUBPAGE_TITLES / subpages 注册都没删，只是「更多」里不再重复一个入口）
 ];
 
 /** 子页面顶部标题 */

@@ -926,11 +926,17 @@ export function openFriendModal(friendId) {
     refreshChrome(current, at);
   }
 
+  // 联机好友不在 NPC 的「在线窗口」体系里（他能出现在村镇里就是在线），
+  // 所以只有 NPC 才挂在线 / 离线标识，免得和右上角的「🛰 联机」重复
+  const online = isNpcOnline(friend, now);
+
   openModal(`
     <div class="modal-head npc-head">
-      <div class="npc-avatar">${friend.avatar}</div>
+      <div class="npc-avatar${remote || online ? '' : ' off'}">${friend.avatar}</div>
       <div class="npc-id">
-        <div class="npc-name">${escapeHtml(friend.name)}</div>
+        <div class="npc-name">
+          ${escapeHtml(friend.name)}${remote ? '' : `<span class="npc-live ${online ? 'on' : 'off'}"><i class="friend-dot ${online ? 'on' : 'off'}"></i>${online ? '在线' : '离线'}</span>`}
+        </div>
         <div class="npc-sub">
           ${remote ? '联机好友' : escapeHtml(PERSONALITIES[friend.personality]?.name || '邻居')}
           · ${escapeHtml(friend.profession || '农户')}

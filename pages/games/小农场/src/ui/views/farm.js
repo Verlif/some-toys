@@ -20,6 +20,7 @@ import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
 import { fmtDuration } from '../../core/utils.js';
 import { stackClass, yieldClass } from '../meta-tags.js';
 import { closeModal, openModal } from '../modal.js';
+import { openSubpage } from '../subpage.js';
 import { activeBreed, dogSatiety, guardChanceNow, kennelCapacity } from '../../store/dogs.js';
 import { openCropModal, plotStatusHTML } from '../crop-detail.js';
 import { carePenalty } from '../../data/care.js';
@@ -200,6 +201,15 @@ const DENSE_THRESHOLD = 15;
 const FOLD_KEY = '__locked-more';
 
 /**
+ * 地块的动效层：限定作物的旋转金边、缺水 / 成熟的外扩环都画在它身上。
+ *
+ * `.plot` 自己的 `::before`（土地底纹）与 `::after`（底部暖色压边）都被占了，
+ * 所以另起一个绝对定位的空壳 —— 不参与 flex、不改盒模型，
+ * 地块排多少列都不会因为它多出一像素（见 styles/components.css）。
+ */
+const AURA_HTML = '<i class="plot-aura" aria-hidden="true"></i>';
+
+/**
  * 未解锁地块最多只画第一个，其余全部折叠成一行汇总。
  * 40 块地逐个画锁图标既占地方又没有信息量。
  */
@@ -307,15 +317,21 @@ function renderFarmTools() {
   if (key === toolsKey) return;
   toolsKey = key;
 
-  // 没有狗也要说实话：新玩家得知道「上岗」这回事，所以这一格永远在
+  // 没有狗也要说实话：新玩家得知道「上岗」这回事，所以这一格永远在。
+  // 整格是个按钮 —— 点它直接开狗窝（换狗 / 喂粮 / 升级狗窝都在那一页）
   dogEl.innerHTML = breed
-    ? `<span class="farm-dog" title="${breed.name} 正在看家：拦截率 ${guardPct}%，狗粮 ${satiety}/${cap}">
+    ? `<button class="farm-dog" data-action="open-doghouse"
+        title="${breed.name} 正在看家（拦截率 ${guardPct}%，狗粮 ${satiety}/${cap}）· 点开狗窝">
         <i class="fd-emoji">${breed.emoji}</i>
         <span class="fd-name">${breed.name}</span>
         <i class="fd-bar"><b style="width:${bowlPct}%"></b></i>
         <span class="fd-pct">拦 ${guardPct}%</span>
-      </span>`
-    : '<span class="farm-dog off"><i class="fd-emoji">🐶</i><span class="fd-name">没有狗上岗</span></span>';
+        <span class="fd-more">›</span>
+      </button>`
+    : `<button class="farm-dog off" data-action="open-doghouse" title="去狗窝养一只守护犬">
+        <i class="fd-emoji">🐶</i><span class="fd-name">没有狗上岗</span>
+        <span class="fd-more">›</span>
+      </button>`;
 
   // 三件工具一格：图标 + 名字 + 待办数 + 存量（永久版不显示存量，见下）。
   // 没待办时按钮不置灰（灰掉整条会像坏了），只是不挂那个橙色数字；
@@ -380,7 +396,7 @@ function updateNode(node, plot, status, key) {
           : status === 'ripe' ? ' ripe'
             : status === 'growing' ? ' growing' : ''
     ) + (special ? ' special' : '') + (status === 'locked' ? '' : soilBgClass(plot.soil));
-    node.el.innerHTML = plotInnerHTML(plot, status);
+    node.el.innerHTML = `${AURA_HTML}${plotInnerHTML(plot, status)}`;
     node.bar = node.el.querySelector('.bar > i');
     node.time = node.el.querySelector('.ptime');
     node.stageEl = node.el.querySelector('[data-role="stage"]');
@@ -638,11 +654,13 @@ const PLOT_ACTIONS = {
   'unlock-plot': () => farm.unlockPlot(),
 };
 
-/** 底部一键照料按钮：与地块上的单块操作是两套入口 */
+/** 顶部操作条上的按钮：与地块上的单块操作是两套入口 */
 const FARM_TOOL_ACTIONS = {
   'water-all': () => farm.waterAll(),
   'pest-all': () => farm.catchPestAll(),
   'harvest-all': () => farm.harvestAll(),
+  // 守护犬那一格：直接开狗窝子页面
+  'open-doghouse': () => openSubpage('dog'),
 };
 
 export function mountFarm() {
@@ -652,12 +670,14 @@ export function mountFarm() {
     PLOT_ACTIONS[el.dataset.action]?.(Number(el.dataset.id));
   });
 
-  // 一键照料的三个格子在顶部操作条里（与地块上的单块操作是两套入口）
-  const actions = byId('farmActions');
-  if (actions) {
-    delegate(actions, 'click', '[data-action]', (el) => {
-      FARM_TOOL_ACTIONS[el.dataset.action]?.(el);
-    });
+  // 顶部操作条：守护犬那一格 + 一键照料三格，用同一张动作表
+  for (const id of ['farmTools', 'farmActions']) {
+    const box = byId(id);
+    if (box) {
+      delegate(box, 'click', '[data-action]', (el) => {
+        FARM_TOOL_ACTIONS[el.dataset.action]?.(el);
+      });
+    }
   }
 
   on(EVENTS.PLAYER, renderFarm);

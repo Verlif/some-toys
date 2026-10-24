@@ -69,11 +69,11 @@
   transition: .18s;
   text-align: center;
 }
-/* 播种了限定种子的地：一道金边。用内阴影而不是 border ——
-   不参与盒模型，不会把卡片撑高一像素、不会让整列参差 */
+/* 播种了限定种子的地：一圈会转的金边（见文件下方的 .plot-aura）。
+   这里只留一道淡金描边当底色，旋转金边叠在它上面，
+   不再用 inset 阴影 —— 内外两圈会互相打架 */
 .plot.special {
-  border-color: #e3b23c;
-  box-shadow: inset 0 0 0 2px #f0c94b, 0 2px 6px rgba(70, 90, 60, .06);
+  border-color: #dcb45c;
 }
 .plot-main {
   flex: 1;
@@ -174,6 +174,93 @@
 .plot-corner.b1, .np-boost.b1 { background: #6aa84f; }
 .plot-corner.b2, .np-boost.b2 { background: #e0912f; }
 .plot-corner.b3, .np-boost.b3 { background: #d1483f; }
+
+/* ---------- 地块的两圈动态边框 ----------
+   `.plot::before` 被土地底纹占着、`::after` 被底部暖色压边占着，
+   所以另起一个 absolute 的 `.plot-aura`（JS 插在地块最前面）来画。
+   它不参与 flex 布局、也不改盒模型，40 块地排开不会有一像素参差。
+
+   ① 限定作物：conic-gradient 金边绕圈转。角度动画只能靠 @property 注册
+      自定义属性，否则 `--a: 360deg` 不会插值，边就静止了（老浏览器降级成
+      静态渐变金边，不难看）；
+   ② 缺水 / 生虫：红环；成熟待收：橙环（与 💧🐛、收获按钮同色）。
+      环向外扩 6% 再淡出，scale + opacity 都走合成层，不影响布局。 */
+/* 三个动效变量在根上给兜底值：`.plot.warn` / `.plot.ripe` 会各自覆盖，
+   这里是保证单独看某个类时 var() 也有东西可算（也方便静态校验） */
+:root {
+  --plot-spin: 0deg;
+  --plot-pulse-a: rgba(224, 90, 78, .85);
+  --plot-pulse-b: rgba(240, 160, 150, .04);
+}
+
+@property --plot-spin {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.plot-aura {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 一圈环形描边：padding 决定边宽，两层 mask 相减只留外环 */
+.plot.special .plot-aura::before,
+.plot.warn .plot-aura::after,
+.plot.ripe .plot-aura::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.plot.special .plot-aura::before {
+  background: conic-gradient(from var(--plot-spin),
+    #f8e6a4, #c8931f, #fffbe6, #e0a92c, #f8e6a4);
+  animation: plot-spin 4.5s linear infinite;
+}
+@keyframes plot-spin {
+  to { --plot-spin: 360deg; }
+}
+
+.plot.warn .plot-aura::after,
+.plot.ripe .plot-aura::after {
+  /* 比金边再往外 1px：限定作物 + 缺水同时出现时，两圈不会叠成一条 */
+  inset: -1px;
+  background: linear-gradient(135deg, var(--plot-pulse-a), var(--plot-pulse-b));
+  animation: plot-pulse 1.9s ease-out infinite;
+}
+/* 与地块上的按钮同色：💧🐛 是 warn 红，收获是 harvest 橙 */
+.plot.warn {
+  --plot-pulse-a: rgba(224, 90, 78, .85);
+  --plot-pulse-b: rgba(240, 160, 150, .04);
+}
+.plot.ripe {
+  --plot-pulse-a: rgba(240, 138, 30, .9);
+  --plot-pulse-b: rgba(255, 200, 120, .04);
+}
+
+@keyframes plot-pulse {
+  0% { transform: scale(1); opacity: .75; }
+  72% { transform: scale(1.06); opacity: 0; }
+  100% { transform: scale(1.06); opacity: 0; }
+}
+
+/* 关掉动效偏好：金边留静态的，扩散环直接不画 */
+@media (prefers-reduced-motion: reduce) {
+  .plot.special .plot-aura::before,
+  .plot.warn .plot-aura::after,
+  .plot.ripe .plot-aura::after { animation: none; }
+  .plot.warn .plot-aura::after,
+  .plot.ripe .plot-aura::after { display: none; }
+}
 
 /* 紧凑模式（.grid.dense 下生效，手机竖屏也走这套）：地块缩小以容纳 40 块。
    最坏情况（生长中 + 缺水生虫）内容约 118px，留一点余量不贴边框。 */
@@ -624,16 +711,14 @@
 .friend-card.offline { background: #f0f2ee; }
 
 /* ---------- 村中心 ---------- */
-/* 顶部一行：总览卡（可点，展开名单）+ 公告栏大按钮 */
+/* 顶部：总览卡占满一行（点开弹窗看名单），下面并排两枚入口按钮。
+   以前是「总览 + 右侧 78px 竖条按钮」，公告栏只能挤成一个窄条；
+   2026-10-24 改成整行总览 + 两个半宽按钮，两个入口都有地方放字。 */
 .center-head {
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-  padding: 13px 13px 4px;
+  padding: 13px 13px 0;
 }
 .center-overview {
-  flex: 1;
-  min-width: 0;
+  display: block;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -666,29 +751,83 @@
 }
 .co-face.more { background: #e7ece3; color: #6c7a67; font-size: 10px; font-weight: 700; }
 .co-caret { margin-top: 8px; font-size: 10.5px; color: #9db08f; text-align: center; }
-/* 公告栏：总览右侧的大图标按钮 */
-.center-board {
-  width: 78px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid #ead9ae;
-  border-radius: 16px;
-  background: linear-gradient(160deg, #fff8e8, #fdeec9);
-  cursor: pointer;
-  font-family: inherit;
+
+/* 两个入口：图标 + 名字 + 一行说明，右上角挂计数 */
+.center-acts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px 13px 4px;
 }
-.center-board:active { transform: scale(.97); }
-.cb-ico { font-size: 27px; line-height: 1; }
-.cb-label { font-size: 11px; font-weight: 700; color: #a0730f; }
+.center-act {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--card);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .14s ease;
+}
+.center-act:active { transform: scale(.97); }
+.center-act .ca-ico {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #eef7e9;
+  font-size: 19px;
+  line-height: 1;
+}
+.center-act .ca-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.center-act .ca-body b { font-size: 13px; font-weight: 700; color: #3c4a39; white-space: nowrap; }
+.center-act .ca-body i {
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 公告栏走金色系，和「村里的大事」这个身份对上 */
+.center-act.board { border-color: #ead9ae; background: linear-gradient(160deg, #fff8e8, #fdeec9); }
+.center-act.board .ca-ico { background: #fff2cf; }
+.center-act.board .ca-body b { color: #a0730f; }
+.center-act.board .ca-body i { color: #b08a3c; }
+/* 右上角计数：订单总数常驻可见，0 也显示但压成灰的 */
+.center-act .ca-badge {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  min-width: 17px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: #e2844a;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 17px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.center-act .ca-badge.zero { background: #e6ebe1; color: #7d8a78; }
 /* 名单里「你自己」那张卡 */
 .friend-card.me { background: #f2f9ef; border-color: #c4e0b8; }
 .me-chip { color: #6b9c52; font-weight: 700; }
 /* 公告栏弹窗：过滤 / 排序栏在列表下面（弹窗底栏位），可换行 */
 .board-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+/* 村民总览弹窗：筛选在名单上方，给条与名单之间留一口气 */
+.villager-bar { margin-bottom: 9px; }
+/* 弹窗里的名单不要再套一层左右缩进（body 自己已经有内边距） */
+.modal-body .friend-list { padding: 0; }
 
 /* ---------- 订单页 ---------- */
 /* 行尾一列：奖励（金）/ 时限（灰）*/
@@ -816,6 +955,25 @@
 }
 .npc-id { flex: 1; min-width: 0; }
 .npc-name { font-size: 16px; font-weight: 700; }
+/* 名字旁边的在线 / 离线标识：和邻居卡片上的圆点同一套语义，
+   弹窗里空间够，补上文字更明确 */
+.npc-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 1px 7px 1px 5px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-weight: 700;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.npc-live.on { color: #4a8f2c; background: #eef7e9; }
+.npc-live.off { color: #8a978a; background: #eff1ed; }
+.npc-live .friend-dot { width: 5px; height: 5px; }
+/* 不在线的头像减饱和（和邻居卡片同一档灰度），仍是「减色」不是全灰 */
+.npc-avatar.off { filter: grayscale(.8); opacity: .85; }
 .npc-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 .npc-badge {
   font-size: 11px;
@@ -1915,11 +2073,16 @@
   gap: 8px;
   flex-shrink: 0;
 }
+/* 标题下面那句说明。**不能用负上边距**往标题上贴：
+   .modal-body 是 overflow:auto 的滚动容器，第一个子元素顶出去的那几像素
+   会被直接裁掉（2026-10-24 修）。要更紧就去调 .modal-head 的 margin-bottom。 */
 .modal-sub {
   font-size: 11.5px;
   color: var(--muted);
-  margin: -4px 0 11px;
+  margin: 0 0 11px;
 }
+/* 空行也不该白占一份间距 */
+.modal-sub:empty { display: none; }
 
 /* ---------- 邻居信息区：两列，长文案占满一行 ----------
    两列是手机上的妥协：四列时「🐕 柴犬 · 62% 在看家」这种文案
@@ -2071,13 +2234,20 @@
 /* ---------- 时报 ---------- */
 /* 时报用的是**和农场日志一模一样**的记录条目（ui/records.js），
    这里只给它一块白底面板：整页背景是浅绿的，条目直接铺上去会散。 */
+/* 公告栏弹窗：列表撑满，不再自带一层边框与左右缩进。
+   弹窗 body 本来就有 17px 内边距，列表再套「13px margin + 13px padding +
+   1px 边框」＝ 一行文字左右白扔 54px，长文案天天换行（2026-10-24）。
+   现在列表铺到 card 边距只剩 12px，同样一句话能少换一到两行。 */
 .news-list {
-  margin: 2px 13px 0;
-  padding: 2px 13px 6px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
 }
+/* 宽版弹窗：body 与底栏的左右内边距一起收到 12px，和列表对齐 */
+.modal-card.board-modal .modal-body { padding-left: 12px; padding-right: 12px; }
+.modal-card.board-modal .modal-foot { padding-left: 12px; padding-right: 12px; }
 /* 日期标题在条目里默认是吸顶的（日志浮窗里就这么用），
    但时报页的筛选条已经吸在 HUD 下面了 —— 两个东西抢同一个位置，
    标题会被压在筛选条底下。所以时报里让日期跟着内容滚。 */

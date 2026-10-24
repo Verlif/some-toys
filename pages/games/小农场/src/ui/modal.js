@@ -27,8 +27,9 @@ const stack = [];
  * 打开弹窗
  * @param {string} html 卡片内部 HTML
  * @param {(action: string, el: Element, event: Event) => void} [onAction]
+ * @param {string} [cardClass] 追加到 `.modal-card` 上的类名（宽版弹窗用，比如公告栏）
  */
-export function openModal(html, onAction) {
+export function openModal(html, onAction, cardClass = '') {
   if (!root) mountModal();
 
   // 已经开着一个：把现在这张整卡快照压栈，关掉新的这一层时原样还回去。
@@ -44,6 +45,8 @@ export function openModal(html, onAction) {
   }
 
   actionHandler = onAction || null;
+  // 每层弹窗的卡片类名都要重置，否则上一层的宽版 / 灰底会跟着漏下来
+  card.className = `modal-card${cardClass ? ` ${cardClass}` : ''}`;
   // handle 留在卡片上（拖动时它不能跟着内容滚走），内容包进可滚动的 body。
   // body 自己才是滚动容器，这样能在它身上做「边缘渐隐」而不会把卡片背景也淡掉。
   card.innerHTML = `<div class="sheet-handle"></div><div class="modal-body">${html}</div>`;
