@@ -45,6 +45,12 @@
   `bump` 累加 / `bumpMax` 只留峰值（打理王=全场最高角标）。送礼=产出售价总和。
   settled 冻结；bulkAdvance 不进榜。前三名递减、并列都发，金币 100/50/30。
   ⚠️ 结算 `persistNow(true)` 连 farm/bag/news 一起写。UI `ui/subpages/rank.js`。
+  **第 44 轮**：结算时玩家获奖要**同时写时报**（`addNews`，用**农场名**，句式与 NPC 对齐）——
+  早年只写农场日志，公告栏里只剩 NPC 的名字。展示名次用 `entry.rank`（并列第一都显示第 1 名），
+  奖励仍按名次顺序发（并列都发，各拿各那档）。
+  玩家名次随 `EVENTS.BOARD_AWARD` 发给 `ui/board-celebrate.js`：全屏庆祝卡，
+  **单张 ≤2s、点一下淡出即接下一张、多个名次按天数从旧到新排队播**；
+  该层 **z-index 195**（弹窗 130 之上、toast 200 之下，两者要同屏可见）。
 - **好感度**：−200~200，打理 +1、偷菜成功 0、被逮 `dogCaughtRelLoss(售价)=max(1,round(售价/10))`、
   送 `max(1,等级/2)`。**亲近档 ≥100**：NPC 优先打理 ≥100，`closeGiftChanceFor`（100→0.25，200→0.55）
   ×性格系数送礼；<100 `giftChanceFor` 封顶 0.5。概率第 36 轮整体上调约 1.5~2 倍。

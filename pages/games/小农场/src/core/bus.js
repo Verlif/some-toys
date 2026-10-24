@@ -45,6 +45,8 @@ export const EVENTS = {
   NOTIFY: 'ui:notify',
   /** 请求播放「被守护犬抓住」的全屏提示，payload 为 { breed, owner, fine } */
   DOG_CAUGHT: 'ui:dog-caught',
+  /** 每日榜单出榜，payload 为玩家拿到的名次清单（ui/board-celebrate.js 消费） */
+  BOARD_AWARD: 'ui:board-award',
   /** 请求切换主页面，payload 为页面名（farm / friends / news / shop） */
   NAVIGATE: 'ui:navigate',
   /** 每分钟一跳（挂在主轮询上）：在线标识、订单倒计时等时间驱动的刷新 */

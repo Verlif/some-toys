@@ -273,8 +273,10 @@ function grantReward(reward) {
 }
 
 /**
- * 结算一天：每张榜前三名发奖，玩家写农场日志，NPC 冠军上报一条时报。
- * @returns {{date: string, awards: object[], playerWon: boolean}} 本日发奖记录
+ * 结算一天：每张榜前三名发奖，玩家写农场日志与时报，NPC 冠军上报一条时报。
+ *
+ * @returns {{date: string, awards: object[], playerWon: boolean, playerAwards: object[]}}
+ *   本日发奖记录；playerAwards 是玩家拿到的名次（给庆祝动画用）
  */
 function settleDay(row, now = Date.now()) {
   // 打理王看的是「农场里最高的那一个加成」，期结束那一刻再量一次：
@@ -288,26 +290,37 @@ function settleDay(row, now = Date.now()) {
   }
 
   const awards = [];
-  let playerWon = false;
+  const playerAwards = [];
   for (const board of BOARDS) {
     rankOf(row, board.metric, 3).forEach((entry, i) => {
+      // 奖励按名次顺序发（并列都发，各拿各那档）；展示的名次用 entry.rank ——
+      // 并列第一的两个人都该显示「第 1 名」，不是 1、2
       const reward = board.rewards[i];
       if (entry.actor === PLAYER_ID) {
         grantReward(reward);
-        playerWon = true;
-        player.addLog(
-          '🏆',
-          `昨日「${board.name}」第 ${i + 1} 名（${board.format(entry.value)}），获得${rewardText(reward)}`,
-        );
+        const value = board.format(entry.value);
+        const prize = rewardText(reward);
+        player.addLog('🏆', `昨日「${board.name}」第 ${entry.rank} 名（${value}），获得${prize}`);
+        // 公告栏（时报）也要有玩家这一条 —— 早年只写农场日志，
+        // 公告栏里只剩 NPC 的名字，玩家自己获奖了却看不见
+        addNews(board.icon, `${state.farm.name} 拿了昨日「${board.name}」第 ${entry.rank} 名（${value}）`);
+        playerAwards.push({
+          date: row.date,
+          icon: board.icon,
+          board: board.name,
+          rank: entry.rank,
+          value,
+          reward: prize,
+        });
       } else if (i === 0) {
         // NPC 夺冠不发自产道具，上报一条时报让大家知道
         addNews(board.icon, `${entry.name} 拿了昨日「${board.name}」第一名（${board.format(entry.value)}）`);
       }
-      awards.push({ board: board.name, rank: i + 1, actor: entry.actor, name: entry.name });
+      awards.push({ board: board.name, rank: entry.rank, actor: entry.actor, name: entry.name });
     });
   }
   row.settled = true;
-  return { date: row.date, awards, playerWon };
+  return { date: row.date, awards, playerWon: playerAwards.length > 0, playerAwards };
 }
 
 /**
@@ -315,6 +328,9 @@ function settleDay(row, now = Date.now()) {
  *
  * 两个调用时机：启动时（补算之后）与在线时的每分钟 tick。
  * 下午 2 点那一刻玩家正好在线上 → 当场发奖并 toast；不在线则下次进游戏补结，同样提示。
+ *
+ * 玩家拿到的名次会发一个 BOARD_AWARD 事件，UI 层播全屏庆祝动画
+ * （离线积压了几天就按天数从旧到新逐张播）。
  *
  * @param {number} [now]
  * @returns {Array<{date: string, awards: object[], playerWon: boolean}>} 结算掉的每一天（通常只有一页）
@@ -351,8 +367,22 @@ export function checkRollover(now = Date.now()) {
   emit(EVENTS.FARM);
   emit(EVENTS.NEWS);
   emit(EVENTS.DAILY);
-  const last = results[results.length - 1];
-  notify(`🏆 ${last.date} 的每日榜单已出炉，去「更多 → 排行榜」看看`, 'gold');
+
+  // 玩家拿到的名次（按天数从旧到新，days 内按榜的次序）→ 庆祝动画
+  const playerAwards = results.flatMap((r) => r.playerAwards || []);
+  if (playerAwards.length) emit(EVENTS.BOARD_AWARD, playerAwards);
+
+  if (playerAwards.length) {
+    const brief = playerAwards.slice(0, 2).map((a) => `${a.board} 第${a.rank}名`).join(' · ');
+    notify(
+      `🏆 榜单已出炉 · 你拿了 ${playerAwards.length} 个名次（${brief}${playerAwards.length > 2 ? ' 等' : ''}）`,
+      'gold',
+    );
+  } else if (results.length > 1) {
+    notify(`🏆 积压 ${results.length} 天的榜单已出炉，去「更多 → 排行榜」看看`, 'gold');
+  } else {
+    notify('🏆 昨日的每日榜单已出炉，去「更多 → 排行榜」看看', 'gold');
+  }
   return results;
 }
 

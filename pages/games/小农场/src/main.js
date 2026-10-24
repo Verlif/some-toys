@@ -20,6 +20,7 @@ import { mountModal } from './ui/modal.js';
 import { mountInlineActions } from './ui/inline-actions.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
 import { mountDogCaught } from './ui/dog-caught.js';
+import { mountBoardCelebrate } from './ui/board-celebrate.js';
 import { flushOfflineGifts, mountGift } from './ui/gift.js';
 import { mountPeerGift } from './ui/peer-gift.js';
 import { mountVillage } from './ui/village-sheet.js';
@@ -67,6 +68,7 @@ async function boot() {
   mountInlineActions();
   mountSignCelebrate();
   mountDogCaught();
+  mountBoardCelebrate();
   mountGift();
   mountPeerGift();
   mountVillage();
