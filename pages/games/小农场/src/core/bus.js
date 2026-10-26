@@ -53,6 +53,16 @@ export const EVENTS = {
   NAVIGATE: 'ui:navigate',
   /** 每分钟一跳（挂在主轮询上）：在线标识、订单倒计时等时间驱动的刷新 */
   TICK: 'ui:tick',
+  /** 村庄建设变化：投入 / 祈福 / 升级（村中心与建设日志都靠它刷） */
+  VILLAGE: 'state:village',
+  /**
+   * 邻居「刚刚上线」。
+   *
+   * 必须**当场发**（见 social.js 的 enqueueVisit）：上线提示排在动作之前，
+   * 玩家才不会看到「他先收了菜，过一会儿才告诉你他来了」。
+   * payload 为 { name, avatar, text }
+   */
+  ARRIVAL: 'ui:arrival',
 };
 
 /**

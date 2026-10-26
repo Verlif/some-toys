@@ -17,6 +17,7 @@
 import { CROPS, SPECIAL_CROP_IDS } from './crops.js';
 import { ITEMS, ITEM_IDS } from './items.js';
 import { rollDogBreed } from './dogs.js';
+import { rollCrystalDrop } from './village.js';
 import { randInt } from '../core/utils.js';
 
 /* ---------- 藏宝图 ---------- */
@@ -387,7 +388,8 @@ export function describeReward(r) {
  * 这个函数会直接改 npc.coins，返回值只用于写日志。
  *
  * @param {object} npc
- * @returns {?{map: object, spent: number, gain: number, net: number}}
+ * @returns {?{map: object, spent: number, gain: number, net: number, crystal: ?number}}
+ *   crystal 是这一趟额外挖到的升级水晶档位（50% 概率，与玩家同一档规则）
  */
 export function rollNpcAdventure(npc) {
   const affordable = MAP_TIERS.filter(
@@ -402,5 +404,9 @@ export function rollNpcAdventure(npc) {
   const gain = Math.round(pool.totalValue * (0.35 + Math.random() * 0.45));
   npc.coins += gain;
 
-  return { map, spent: map.price, gain, net: gain - map.price };
+  // 村庄升级水晶：走完一张 N 级图有 50% 概率多带一个 N 级水晶回去。
+  // 和玩家完全同一条规则（data/village.js 的 rollCrystalDrop），
+  // 所以「谁在挖图」不影响村庄升级的速度
+  const crystal = rollCrystalDrop(map.tier);
+  return { map, spent: map.price, gain, net: gain - map.price, crystal };
 }

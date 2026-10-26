@@ -40,6 +40,9 @@ import {
   ACTIONS_PER_VISIT,
   BOOST_CAP,
   CARE_PLAYER_WEIGHT,
+  IDLE_AFTER_VISIT_MS,
+  IDLE_MS,
+  IDLE_SOCIAL_CHANCE,
   MAX_VISITS_PER_NPC,
   PERSONALITIES,
   PEST_YIELD_BONUS,
@@ -80,6 +83,31 @@ import {
 
 const HOUR = 3600_000;
 const DAY = 24 * HOUR;
+
+/* ---------- 互动频率 ---------- */
+
+/**
+ * 邻居之间 / 邻居对玩家「主动伸手」的频率倍数（第 47 轮用户要求翻倍）。
+ *
+ * 管的是四件事：**顺菜、串门帮忙、送礼、喂狗**。这四件都是「NPC 主动去找
+ * 别人」的行为，和自家的收获播种不是一个量级的问题 ——
+ * 调这一个函数就等于调了整镇的社交热度，不用去四张概率表里各改一遍。
+ *
+ * 口径是「掷两次、有一次算数」：
+ *
+ * ```
+ * p' = 1 - (1 - p)²
+ * ```
+ *
+ * 而不是 `p × 2` —— 翻倍会把 `STEAL_CHANCE.always`（0.95）和 `.often`（0.65）
+ * 一起顶到 0.99，两档偷菜倾向就没了区别。这个式子永远小于 1，
+ * 且原概率越高涨得越多（0.18 → 0.33、0.65 → 0.88、0.95 → 0.998），
+ * 档次关系原样保留，字面意思也确实是「多了一倍的机会」。
+ *
+ * @param {number} c 原始概率 0~1
+ * @returns {number} 翻倍后的概率
+ */
+const interactChance = (c) => 1 - (1 - c) ** 2;
 
 /** NPC 仓库总件数（有上限，超了收获时直接卖掉） */
 const bagCount = (bag) => Object.values(bag || {}).reduce((sum, n) => sum + n, 0);
@@ -182,6 +210,9 @@ function actHarvest(npc, ctx, at) {
     // 邻居捉过虫的地也有产量加成；土地倍率与玩家同一套
     const soilMul = SOILS[plot.soil]?.yieldMul || 1;
     let boosted = Math.floor(amount * (1 + (plot.boost || 0)) * soilMul);
+    // 村庄等级加成：全村每级 +2%。玩家与 32 位邻居共用同一条倍率，
+    // 由 social 的 simCtx 注入（模拟层不认识村庄状态）
+    boosted = Math.floor(boosted * (ctx?.villageYield || 1));
     // 成熟时还挂着「该浇水 / 该杀虫」的账：和玩家一样 −15% / −40%
     boosted = Math.floor(boosted * carePenalty(plot).mul);
     // 被顺走过几个就少收几个 —— 不做「减半」这种翻倍惩罚
@@ -242,7 +273,18 @@ function actPlant(npc, ctx, at) {
 
   // 已经在长的作物先占位，尽量让整座农场不重样
   const used = new Set(npc.plots.filter((p) => p.cropId).map((p) => p.cropId));
-  let bag = shuffled(pool.filter((id) => !used.has(id)));
+  // **看榜种地**（第 47 轮）：榜上有人收某样产出就优先种它。
+  // 267 种作物里随机种，仓库恰好压着订单要的那一味的概率低得可怜 ——
+  // 不这么排，「NPC 也会完成订单」就永远停在理论层面：
+  // 谁都接不了单，订单只能等过期退钱。
+  const demand = new Set(
+    (ctx?.orders?.() || [])
+      .filter((o) => o.ownerId !== npc.id)
+      .map((o) => o.itemId),
+  );
+  const asked = pool.filter((id) => demand.has(produceId(id)) && !used.has(id));
+  // 尾部先被 pop 出来 → 有人收的排最后
+  let bag = shuffled([...pool.filter((id) => !used.has(id) && !asked.includes(id)), ...asked]);
 
   const names = [];
   for (const plot of empties) {
@@ -313,13 +355,14 @@ function actTend(npc, ctx, at) {
  *
  * 门槛压得比较低（0.85 封顶）：狗饿着不只是「他家容易被偷」，
  * 玩家农场的狗同样会饿 —— 让邻居显得尽心些，玩家才有个参照。
+ * 第 47 轮起再乘 `interactChance`（×2），和串门、送礼一起翻倍。
  */
 function actFeedDog(npc, at) {
   const satiety = dogSatietyAt(npc.dog, at);
   if (satiety > 60) return null;
 
   const weights = PERSONALITIES[npc.personality].weights;
-  if (Math.random() >= Math.min(0.95, weights.tend * 0.40)) return null;
+  if (Math.random() >= interactChance(Math.min(0.95, weights.tend * 0.40))) return null;
   if (npc.coins < DOG_FOOD_PRICE) return null;
 
   npc.coins -= DOG_FOOD_PRICE;
@@ -359,7 +402,7 @@ function npcGuardChance(owner, at) {
  * **顺走不掉好感，被当场逮住才掉**（按售价折算，见 dogCaughtRelLoss）。
  */
 function actSteal(npc, ctx, at) {
-  const chance = STEAL_CHANCE[npc.steal] || 0;
+  const chance = interactChance(STEAL_CHANCE[npc.steal] || 0);
   if (!chance || Math.random() >= chance) return null;
   const { neighbours, farm } = ctx;
 
@@ -466,13 +509,14 @@ const careWanted = (plot, at) => Boolean(plot.cropId)
  * 概率与块数都是 2026-10-24 调过的：原来每次上线只可能碰 1 块地、
  * 命中率还只有 tend×0.22，32 个邻居分 33 座农场，玩家农场长期没人管，
  * 离线几天回来一片缺水生虫，高好感邻居像白交的一样。
+ * 第 47 轮起再乘 `interactChance`（×2）：整镇的串门热度按用户要求翻倍。
  */
 /** 一次串门最多照料几块地：2 块是「真的在帮」和「全托管」之间的线 */
 const CARE_MAX_PLOTS = 2;
 
 function actCare(npc, ctx, at) {
   const weights = PERSONALITIES[npc.personality].weights;
-  if (Math.random() >= Math.min(0.90, weights.tend * 0.30)) return null;
+  if (Math.random() >= interactChance(Math.min(0.90, weights.tend * 0.30))) return null;
 
   const targets = [];
   for (const other of ctx.neighbours) {
@@ -538,10 +582,13 @@ function actCare(npc, ctx, at) {
  * 送礼：只会送给**交情够好**的人。
  *
  * 两档交情两套概率：
- *   - **亲近档（好感 ≥100）**：`closeGiftChanceFor`（100 → 0.15，200 → 0.35）
+ *   - **亲近档（好感 ≥100）**：`closeGiftChanceFor`（100 → 0.25，200 → 0.55）
  *     再乘**性格系数** —— 热心的几乎逢门就带礼，爱占便宜的打骨子里抠。
  *     NPC 上线时先登门打理（见 actCare），顺手再送一份，是一条完整的「串门」；
  *   - **老门槛（60~99）**：维持原来的 giftChanceFor，性格不掺和。
+ *
+ * 第 47 轮起两档都过一遍 `interactChance`（×2）—— 送礼频率与串门、顺菜
+ * 一起翻倍（用户要求「NPC 之间的互动频率翻倍」）。
  *
  * 送给玩家的是真东西 —— 进背包、写日志，UI 还会弹一屏「收到赠礼」；
  * 送给别的邻居的只是人情（NPC 没有背包），两边各记一条动态。
@@ -553,15 +600,15 @@ function actGift(npc, ctx, at) {
     if (other === npc) continue;
     const rel = ctx.rel(npc.id, other.id);
     const chance = rel >= REL_CARE_PRIORITY
-      ? closeGiftChanceFor(rel) * factor
-      : giftChanceFor(rel);
+      ? interactChance(closeGiftChanceFor(rel) * factor)
+      : interactChance(giftChanceFor(rel));
     if (chance > 0) cands.push({ owner: other, rel, chance });
   }
   if (ctx.farm) {
     const rel = ctx.rel(npc.id, ctx.farm.id);
     const chance = rel >= REL_CARE_PRIORITY
-      ? closeGiftChanceFor(rel) * factor
-      : giftChanceFor(rel);
+      ? interactChance(closeGiftChanceFor(rel) * factor)
+      : interactChance(giftChanceFor(rel));
     if (chance > 0) cands.push({ owner: ctx.farm, rel, chance });
   }
   if (!cands.length) return null;
@@ -687,6 +734,33 @@ function actFill(npc, ctx, at) {
 }
 
 /**
+ * 村中心祈福（第 48 轮）。
+ *
+ * 「今天祈过没有」由 `village.prayCore` 判断 —— 这里是纯计算层，不认识存档，
+ * 所以通过 ctx.prayNpc 注入。一天只有第一次会成功，之后整趟上线再抽到也是
+ * 立刻返回 null（不会刷出空动态）。
+ *
+ * 中奖时写「抽到了什么」：那份奖励对邻居是折成金币的（NPC 没有能装种子和
+ * 道具的地方），文案里写出来只是让他显得也在参与村庄建设。
+ *
+ * @param {object} npc
+ * @param {object} ctx
+ * @param {number} at
+ */
+function actPray(npc, ctx, at) {
+  const res = ctx?.prayNpc?.(npc, at);
+  if (!res?.ok) return null;
+
+  if (res.reward) {
+    return {
+      emoji: '🙏',
+      text: `在村中心祈福，抽到了 ${res.reward.emoji}${res.reward.name} ×${res.reward.n}`,
+    };
+  }
+  return { emoji: '🙏', text: '在村中心求了个风调雨顺' };
+}
+
+/**
  * 买张藏宝图去寻宝：等级门槛、价格、奖励池都和玩家完全一致，
  * 只是 NPC 不在场，奖励按池子价值直接算法结算。
  *
@@ -703,12 +777,17 @@ function actAdventure(npc, farm, ctx, at) {
   // 冒险王榜：按藏宝图等级分榜，记这一趟带回的奖励价值
   ctx?.daily?.(npc.id, `adv${trip.map.tier}`, trip.gain, at);
 
+  // 村庄升级水晶：和玩家同一档规则（50% 额外掉一个）。进的是村庄库存，
+  // 所以走 ctx.addCrystal —— 模拟层不认存取，只认注入的函数
+  if (trip.crystal) ctx?.addCrystal?.(trip.crystal, npc, at);
+
   const net = trip.net >= 0 ? `赚了 ${formatCoins(trip.net)}` : `亏了 ${formatCoins(-trip.net)}`;
+  const crystalNote = trip.crystal ? `，还捡到一枚 ${trip.crystal} 级升级水晶` : '';
   // 赚回图价以上才算「大奖」，亏本的不配上时报
   if (trip.net >= trip.map.price) {
     farm?.news?.(at, '💰', `${npc.name} 寻宝挖到大奖，一张${trip.map.name}赚了 ${formatCoins(trip.net)} 💰`);
   }
-  return { emoji: '🗺️', text: `买了${trip.map.name}去寻宝，${net} 💰` };
+  return { emoji: '🗺️', text: `买了${trip.map.name}去寻宝，${net} 💰${crystalNote}` };
 }
 
 /* ============================================================
@@ -808,6 +887,17 @@ export const ACTIONS = {
     sweep: true,
     run: (npc, at, ctx) => actFill(npc, ctx, at),
   },
+  /**
+   * 村中心祈福（第 48 轮）。每人每天一次，由 village.prayCore 判断。
+   *
+   * 走 `sweep` 而不是 `main`：祈福是顺路的事，不该占性格权重名额；
+   * 一天只有第一次会成功，之后同一趟上线再抽到也是立刻返回 null。
+   */
+  pray: {
+    label: '祈福',
+    sweep: true,
+    run: (npc, at, ctx) => actPray(npc, ctx, at),
+  },
 };
 
 /**
@@ -850,6 +940,39 @@ export function planVisit(npc, at = Date.now(), ctx = null) {
 }
 
 /**
+ * 空闲时可能去做的「社交小事」。等概率抽一件，动作内部还有自己的概率门
+ * （顺菜 33% / 帮忙 ~90% / 送礼 25~55%），所以不是抽中就一定发生。
+ */
+const IDLE_SOCIAL = ['steal', 'care', 'gift', 'feed', 'adventure', 'order', 'fill', 'pray'];
+
+/**
+ * 在线期间「顺手做一件事」（第 48 轮）。
+ *
+ * 优先级刻意排成「自家 → 别人」：
+ *
+ *   ① 自家有熟透的 → 收
+ *   ② 自家有缺水 / 生虫的 → 打理
+ *   ③ 自家有空地 → 补种
+ *   ④ 都没事 → 掷一道 `IDLE_SOCIAL_CHANCE`，过了再从社交动作里抽一件
+ *
+ * 前三件是这一轮要解决的核心问题：在线窗口有 5~15 分钟，而早先只有
+ * 「上线那一趟」会碰自家地，之后作物熟了、地旱了都没人管 ——
+ * 玩家看到的是「邻居明明在线，自家地里一片狼藉」，非常出戏。
+ *
+ * @param {object} npc
+ * @param {number} at
+ * @param {?object} ctx
+ * @returns {?string} 动作 key；null = 这次什么都不做
+ */
+export function planIdle(npc, at, ctx = null) {
+  if (ACTIONS.harvest.can(npc, at, ctx)) return 'harvest';
+  if (ACTIONS.tend.can(npc, at, ctx)) return 'tend';
+  if (ACTIONS.plant.can(npc, at, ctx)) return 'plant';
+  if (Math.random() >= IDLE_SOCIAL_CHANCE) return null;
+  return IDLE_SOCIAL[randInt(0, IDLE_SOCIAL.length - 1)];
+}
+
+/**
  * 开始一次上线：把狗的饱腹度结算到这一刻，把地块补齐到等级对应的解锁数，
  * 并把游标推到下一次上线。
  *
@@ -870,6 +993,9 @@ export function beginVisit(npc, at) {
   // 在线窗口：按性格与身份 5~15 分钟。邻居页的绿点、偷菜双倍惩罚都看它 ——
   // 只有精细访问走这里，远期聚合不设，别让上古上线也「在线」
   npc.onlineUntil = at + onlineMs(npc);
+  // 在线期间的第一件「小事」排在哪（第 48 轮）：见下方的 planIdle。
+  // 先让过 IDLE_AFTER_VISIT_MS，把开头这一分半留给「上线这一趟」的演出
+  npc.idleAt = at + IDLE_AFTER_VISIT_MS + randInt(IDLE_MS[0], IDLE_MS[1]);
   npc.nextVisitAt = nextVisitAt(npc, at);
   return levelBefore;
 }

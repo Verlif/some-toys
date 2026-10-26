@@ -38,6 +38,7 @@ import {
 import { CROPS } from '../data/crops.js';
 import { SOILS } from '../data/soils.js';
 import { PRODUCE_PREFIX, produceId } from '../data/keys.js';
+import { CRYSTAL_TIERS, VILLAGE_LOG_CAP, VILLAGE_MAX_LEVEL } from '../data/village.js';
 import { PLAYER_ORDER_LIMIT } from '../data/orders.js';
 import {
   BREED_MIGRATION,
@@ -121,6 +122,27 @@ function createPlayerFarm() {
      * 时间戳存在档里，离线期间照样在走，回来就能收。
      */
     workshop: { level: 0, kinds: {}, jobs: [] },
+    /**
+     * 村庄建设（第 48 轮）：全村唯一一份，但存在 farm 行上 ——
+     * 单开一张表要改存档结构、读写路径与所有事务，而它每次变化都
+     * 跟着玩家农场一起落盘。
+     *   level     1~5
+     *   coins     本期已投入金币（升级时清零）
+     *   crystals  本期已投入水晶数（升级时清零）
+     *   pray      本期祈福总次数（玩家 + 全部邻居，升级时清零）
+     *   stock     { 1..4: n } 冒险挖到、还没投出去的水晶
+     *   prayDay   { 农场 id: dayKey } 今天谁祈过（只留今天）
+     *   logs      建设日志，7 天 / 160 条
+     */
+    village: {
+      level: 1,
+      coins: 0,
+      crystals: 0,
+      pray: 0,
+      stock: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      prayDay: {},
+      logs: [],
+    },
     /** 农场主的成长档案：签到 / 图鉴 / 称号 / 引导 */
     progress: {
       /**
@@ -218,6 +240,11 @@ function createNpc(def, now) {
     nextVisitAt: nextVisitAt(def, lastVisitAt),
     /** 在线窗口的截止时刻（ms），由 npc-sim 的 beginVisit 维护；0 = 不在线 */
     onlineUntil: 0,
+    /**
+     * 在线期间下一件「小事」排在哪（第 48 轮，见 npc-sim 的 planIdle）。
+     * 0 = 这个在线窗口已经没排了 / 不在线
+     */
+    idleAt: 0,
     /** NPC 自己的小仓库：收获时按性格留一部分，接订单 / 互通有无靠它 */
     bag: {},
     /** 张榜中的收购订单（同时最多 1 条），null = 没有 */
@@ -355,6 +382,43 @@ function normalizeNpcPlot(plot, index, level = 1) {
 }
 
 /** 玩家农场：缺什么补什么，多余的字段留着不动 */
+/**
+ * 村庄建设：把存档里的那一块洗干净。
+ *
+ * 老存档完全没有它 → 一个 1 级的新村庄，和刚开村一样。
+ * 三项进度都夹到合法值，水晶只认 1~4 档，日志裁到上限。
+ *
+ * 祈福标记**只留今天**：它唯一的用途是判断「今天祈过没有」，
+ * 昨天的没有任何意义，攒着会长成 33 × N 的表。
+ * @param {?object} raw
+ */
+function normalizeVillage(raw) {
+  const v = raw && typeof raw === 'object' ? raw : {};
+  const out = {
+    level: Math.min(VILLAGE_MAX_LEVEL, Math.max(1, safeNum(v.level, 1))),
+    coins: Math.max(0, safeNum(v.coins, 0)),
+    crystals: Math.max(0, safeNum(v.crystals, 0)),
+    pray: Math.max(0, safeNum(v.pray, 0)),
+    stock: {},
+    prayDay: {},
+    logs: [],
+  };
+  for (const tier of CRYSTAL_TIERS) out.stock[tier] = Math.max(0, safeNum(v.stock?.[tier], 0));
+
+  const today = dayKey(Date.now());
+  for (const [who, day] of Object.entries(v.prayDay || {})) {
+    if (typeof who === 'string' && day === today) out.prayDay[who] = day;
+  }
+
+  out.logs = (Array.isArray(v.logs) ? v.logs : [])
+    .map((entry) => (entry && Number.isFinite(entry.at)
+      ? { at: entry.at, emoji: String(entry.emoji || ''), text: String(entry.text || '') }
+      : null))
+    .filter(Boolean)
+    .slice(-VILLAGE_LOG_CAP);
+  return out;
+}
+
 function normalizePlayerFarm(row, save) {
   const base = createPlayerFarm();
   const progress = { ...base.progress, ...(row.progress || {}) };
@@ -441,6 +505,7 @@ function normalizePlayerFarm(row, save) {
     dog,
     dogHouse,
     workshop,
+    village: normalizeVillage(row.village),
     progress,
     plots: [],
     log: save.logs[PLAYER_ID] || [],
@@ -494,6 +559,9 @@ function normalizeNpc(row, def, save) {
     lastVisitAt: safeNum(row.lastVisitAt, fresh.lastVisitAt),
     nextVisitAt: safeNum(row.nextVisitAt, fresh.nextVisitAt),
     onlineUntil: safeNum(row.onlineUntil, 0),
+    // 在线空闲的下一个动作时刻：老档没有就给 0，世界时钟会在下一次
+    // 心跳里顺手补一个（见 world.js 的 runIdleActions）
+    idleAt: safeNum(row.idleAt, 0),
     bag: cleanNpcBag(row.bag),
     order: cleanOrder(row.order, def.id, def.id),
     dog: { ...fresh.dog, ...(row.dog || {}) },

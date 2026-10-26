@@ -24,15 +24,16 @@ import { produceId } from '../data/keys.js';
 import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, isNpcOnline, syncNpcPlots, trimLog } from '../data/friends.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
-import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain, tradeRelCost } from '../data/relation.js';
+import { REL_PER_CARE, SUMMON_REL_COST, dogCaughtRelLoss, giftRelGain, summonDelayRange, tradeRelCost } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
 import { bump, bumpMax, flushAwards } from './daily.js';
+import { addCrystal, prayNpc, villageYield } from './village.js';
 import { catchChance, DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
-import { fmtSaved, formatCoins, randInt } from '../core/utils.js';
+import { fmtDuration, fmtSaved, formatCoins, randInt } from '../core/utils.js';
 
 /* ---------- 邻居状态查询 ---------- */
 
@@ -172,6 +173,11 @@ function simCtx(farm = farmView()) {
     // 订单看板与摘单：npc-sim 是纯计算，不认 state（见 store/orders.js）
     orders: () => orderBoard(),
     removeOrder: (order) => removeOrder(order),
+    // 村庄（第 48 轮）：产量加成、挖到水晶、每日祈福。
+    // 同样是「注入」而不是让模拟层去 import store —— 它只认这些函数
+    villageYield: villageYield(),
+    addCrystal: (tier, who, at) => addCrystal(tier, who, at),
+    prayNpc: (npc, at) => prayNpc(npc, at),
   };
 }
 
@@ -294,8 +300,10 @@ async function runSettle(onProgress) {
   // 下次开机从这里接着算。落盘跟着其它写一起走（见 touchLastSeen）
   state.farm.progress.lastSeenAt = now;
 
-  // 没有新事情就别写库：在线心跳每 60 秒跑一次，每次都落盘太浪费
-  if (visits.length) await persistFriends(farm);
+  // 没有新事情就别写库：在线心跳每 60 秒跑一次，每次都落盘太浪费。
+  // `report.idles` 也算「有新事情」—— 在线邻居顺手做的那些小事
+  // （收自家地、串门、祈福）同样改了内存，不写就白做了
+  if (visits.length || report.idles) await persistFriends(farm);
   // 补算期间的榜单奖励、订单退款、出种子都是「安静结算」的（不落盘、不弹提示），
   // 这里统一写一次（farm 金币 / bag 道具 / news 时报）
   if (report.dirty || reportHadAwards(report)) await flushAwards();
@@ -388,11 +396,12 @@ function enqueueVisit(visit) {
   //    玩家看着提示说「交了一单」，仓库里却没有；
   // ② stolen / cared / caught 计数每步归零，一趟上线做了几件事也统计不出来。
   liveQueue.push({ ...visit, index: 0, ctx: simCtx() });
-  pendingArrivals.push({
-    name: visit.npc.name,
-    avatar: visit.npc.avatar,
-    text: '正在你的农场里转悠',
-  });
+
+  // 上线通知**必须当场发**（第 48 轮修）：
+  // 早先它被塞进 pendingArrivals，要等 60 秒后那次轮询才弹 toast，
+  // 而动作 3~7 秒后就开始演了 —— 于是玩家先看到「金链哥收了一茬菜」，
+  // 过一会儿才被告知「金链哥上线了」，催上线时尤其出戏。
+  emit(EVENTS.ARRIVAL, { name: visit.npc.name, avatar: visit.npc.avatar, text: '上线了' });
   scheduleLive();
 }
 
@@ -484,19 +493,13 @@ async function runLiveStep() {
  */
 let pendingOffline = { stolen: 0, cared: 0, caught: 0, count: 0 };
 
-/** 玩家在线期间上线的邻居，同样先存着，等 UI 层取走 */
-const pendingArrivals = [];
+/** 玩家在线期间上线的邻居不再攒在这里 —— 见 enqueueVisit 的 EVENTS.ARRIVAL */
 
 /** 取走「你不在时」的汇总（取过就没有了） */
 export function takeOfflineSummary() {
   const out = pendingOffline;
   pendingOffline = { stolen: 0, cared: 0, caught: 0, count: 0 };
   return out;
-}
-
-/** 取走「刚刚上线」的邻居列表（取过就没有了） */
-export function takeArrivals() {
-  return pendingArrivals.splice(0).slice();
 }
 
 /**
@@ -822,6 +825,85 @@ export async function feedFriendDog(friendId) {
   await commit({ farms: [friend], bag: state.bag, relations: state.relations });
   emit(EVENTS.FRIENDS);
   return true;
+}
+
+/* ---------- 催上线 ---------- */
+
+/**
+ * 已经排下的「催促」定时器：friendId → timer。
+ * 一位邻居同时只认一个，催第二次就覆盖（好感照扣，谁让你催得急）。
+ */
+const summonTimers = new Map();
+
+/**
+ * 催促一位邻居尽快上线。
+ *
+ * 花的是**好感**（`SUMMON_REL_COST`），换的是**他出现的时间**：
+ * 交情越好来得越快（挚交 1~30 秒，结怨 5~10 分钟，见 `summonDelayRange`）。
+ *
+ * 实现上只做一件事：把他的 `nextVisitAt` 提前到 `now + 随机延迟`，
+ * 然后挂一个定时器到点把世界往前推一次 —— 于是他会走**和平时完全一样**
+ * 的上线流程（`beginVisit` 更新在线窗口、`planVisit` 抽动作、在线演出一件件做）。
+ * 不新造一条「被催促的上线」通道，也不给任何数值加成：催来的这次和撞上的那次一样。
+ *
+ * 存档里只有 `nextVisitAt`，所以中途关掉页面也不会丢：下次开机世界时钟
+ * 从「上次离开」往前推，到点照样让他上线（只是那会儿玩家不在，算进离线补算）。
+ *
+ * @param {string} friendId
+ * @returns {Promise<{ok: boolean, wait?: number, reason?: string}>}
+ */
+export async function summonNpc(friendId) {
+  const friend = getFriend(friendId);
+  if (!friend || friend.net) return { ok: false, reason: '联机好友不在这个体系里' };
+
+  const now = Date.now();
+  if (isNpcOnline(friend, now)) {
+    notify(`${friend.name} 就在村里，不用催`);
+    return { ok: false, reason: 'online' };
+  }
+
+  const rel = getRelation(PLAYER_ID, friend.id);
+  const range = summonDelayRange(rel);
+  const delay = randInt(range.min, range.max);
+  // 原本就快上线了就别往后拖：催促只会让事情提前
+  const at = Math.min(friend.nextVisitAt || Infinity, now + delay);
+  const wait = Math.max(0, at - now);
+
+  friend.nextVisitAt = at;
+  adjustRelation(PLAYER_ID, friend.id, -SUMMON_REL_COST);
+  player.addLog('📣', `催了 ${friend.name} 一声，花掉 ${SUMMON_REL_COST} 点好感`);
+  logFriend(friend, now, '📣', `${state.farm.name} 捎了句话，让他早点回来看看`);
+
+  await commit({ farms: [friend], relations: state.relations });
+  emit(EVENTS.FRIENDS);
+  emit(EVENTS.RELATION);
+
+  scheduleSummon(friend, at);
+  notify(`📣 已经捎信给 ${friend.name}，他说 ${fmtDuration(wait)}内回来`, 'gold');
+  return { ok: true, wait };
+}
+
+/**
+ * 排一次「到点把世界往前推」。
+ *
+ * 为什么不靠每分钟那次心跳：好感高的邻居说好 1~30 秒到，
+ * 让玩家干等一分钟就完全不是「催促」了。定时器只负责**叫醒世界时钟**，
+ * 真正的上线仍然由 `advanceWorld` 按正常流程处理（含在线演出与 toast）。
+ *
+ * @param {object} friend
+ * @param {number} at 毫秒时间戳
+ */
+function scheduleSummon(friend, at) {
+  clearTimeout(summonTimers.get(friend.id));
+  // +300ms 缓冲：定时器可能比时间戳早一丁点触发，差这几百毫秒他就会被
+  // 判成「还没到点」，于是白等下一分钟
+  const delay = Math.max(0, at - Date.now()) + 300;
+  const timer = setTimeout(() => {
+    summonTimers.delete(friend.id);
+    // 走 pollOnline 而不是 settleWorld：前者会把「刚刚上线」排进演出队列
+    pollOnline().catch((error) => console.error('[social] 催促上线失败', error));
+  }, delay);
+  summonTimers.set(friend.id, timer);
 }
 
 /**

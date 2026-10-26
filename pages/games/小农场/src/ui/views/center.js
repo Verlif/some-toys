@@ -1,11 +1,17 @@
 /**
  * 村中心（底部中间的 tab，由原「时报」改造而来）。
  *
- * 页面只有两块：
+ * 页面四块：
+ *   - **🏘 村庄建设**（第 48 轮，最上面）：村庄等级、三项升级进度
+ *     （金币 / 水晶 / 祈福）、投入资源 / 每日祈福 / 建设日志三个入口。
+ *     升级是**自动的**：三项同时达标就当场升，不需要按「升级」按钮 ——
+ *     祈福每天只有一次，玩家不需要在某个瞬间守着点；
  *   - **村民总览卡**：在线人数 / 总人数（都含玩家自己）+ 在线头像行。
  *     点它是**弹窗**（全部名单 + 全部 / 在线 筛选），页面本身不再展开名单；
  *   - **两枚入口**：📢 公告栏（时报弹窗）、📋 订单（子页面）。
- *     订单按钮右上角常驻当前订单总数 —— 这是订单唯一入口（「更多」里已移除）。
+ *     订单按钮右上角常驻当前订单总数 —— 这是订单唯一入口（「更多」里已移除）；
+ *   - **🏆 排行榜卡**：两列 —— 左列 6 个榜单，右列昨日冠军
+ *     （并列第一折成「+N」）。点开是排行榜弹窗（`openRankModal`）。
  *
  * 「在线」是 NPC 的挂机窗口（见 data/friends.js 的 onlineMs）：总览计数、
  * 头像行、名单里的圆点与灰度都跟着它走 —— 分钟 TICK 与邻居上线事件都会刷，
@@ -20,11 +26,20 @@ import { myOrders, npcOrders } from '../../store/orders.js';
 import { recordItemsHTML } from '../records.js';
 import { friendCardHTML, refreshOnline } from './friends.js';
 import { openFriendModal } from '../friend-modal.js';
-import { openModal } from '../modal.js';
+import { closeModal, openModal } from '../modal.js';
 import { openSubpage } from '../subpage.js';
+import { openRankModal, yesterdayBoardSummary } from '../subpages/rank.js';
 import { showToast } from '../toast.js';
 import { completeGuide } from '../../store/codex.js';
-import { formatCoins } from '../../core/utils.js';
+import { formatCoins, dayKey } from '../../core/utils.js';
+import { invest, pray, villageLogs, villageSnapshot } from '../../store/village.js';
+import {
+  VILLAGE_NAME,
+  VILLAGE_YIELD_PER_LEVEL,
+  crystalEmoji,
+  crystalName,
+} from '../../data/village.js';
+import { notify } from '../../store/notify.js';
 
 /** 公告栏弹窗内的筛选档位与排序方向（true = 最新在前） */
 let boardFilter = 'all';
@@ -208,6 +223,224 @@ function openBoard() {
   }
 }
 
+/* ---------- 排行榜卡片 ---------- */
+
+/**
+ * 排行榜卡片：**两列**。
+ *
+ * 左列是 6 个榜单（图标 + 名字），右列是**昨日**那个榜的第一名；
+ * 并列第一时只露一位，剩下的折成「+N」。
+ * 整张卡是一个按钮 —— 点哪里都开排行榜弹窗（榜单本身那么多内容，
+ * 塞进村中心会把下面两块挤没）。
+ *
+ * 昨日冠军取的是 `latestSettled()` 那一期（每天 14:00 结算完才更新），
+ * 和排行榜弹窗里「昨日 · XX」那张卡是同一份数据。
+ */
+function rankCardHTML() {
+  const rows = yesterdayBoardSummary();
+
+  const names = rows.map((r) => `
+    <span class="cr-item">
+      <i class="cr-ico">${r.icon}</i>${r.label}
+    </span>`).join('');
+
+  const champs = rows.map((r) => {
+    if (!r.champ) return '<span class="cr-item empty">—</span>';
+    return `
+      <span class="cr-item champ">
+        <i class="cr-ava">${r.champ.avatar}</i>
+        <b>${escapeHtml(r.champ.name)}</b>
+        ${r.champ.me ? '<i class="cr-me">你</i>' : ''}
+        ${r.champ.more > 0 ? `<i class="cr-more">+${r.champ.more}</i>` : ''}
+      </span>`;
+  }).join('');
+
+  return `
+    <div class="center-rank" data-action="center-rank" role="button" tabindex="0">
+      <div class="cr-head">
+        <span class="cr-title">🏆 排行榜</span>
+        <span class="cr-sub">昨日冠军 · 点开看实时名次</span>
+        <span class="cr-go">›</span>
+      </div>
+      <div class="cr-grid">
+        <div class="cr-col">${names}</div>
+        <div class="cr-col">${champs}</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- 村庄建设 ---------- */
+
+/**
+ * 村庄里的数字一律用千分位，不用 `formatCoins`。
+ *
+ * `formatCoins` 是给 HUD 与日志用的紧凑写法（10,000 → 「1.0万」），
+ * 但这里是「进度 X / 门槛 Y」—— 两边必须同量级才读得懂，
+ * 「0 / 1.0万」这种混搭会让人一愣（2026-10-26 实测截图）。
+ */
+const num = (n) => Number(n || 0).toLocaleString('en-US');
+
+/**
+ * 村庄建设卡（村中心最上面那一块，第 48 轮）。
+ *
+ * 一张卡说清三件事：**村庄几级、还差什么、今天能做什么**。
+ * 三项门槛各一行（金币 / 水晶 / 祈福），共用一套进度条底色 ——
+ * 玩家一眼就能看出瓶颈在哪（通常永远是祈福：33 人一天一次，花钱买不到）。
+ *
+ * 满级之后进度区换成一句「已经满级」，但祈福与建设日志照旧可用：
+ * 满级不代表没有日常。
+ *
+ * @param {number} [now]
+ */
+function villageCardHTML(now = Date.now()) {
+  const snap = villageSnapshot(now);
+  const yieldPct = Math.round(snap.level * VILLAGE_YIELD_PER_LEVEL * 100);
+
+  const head = `
+    <div class="cv-head">
+      <span class="cv-name">🏘 ${VILLAGE_NAME}</span>
+      <span class="cv-lv">Lv.${snap.level}</span>
+      <span class="cv-yield">全村产量 +${yieldPct}%</span>
+    </div>`;
+
+  let body = '';
+  if (snap.max) {
+    body = '<div class="cv-done">🏆 村庄已经满级 —— 该有的都有了</div>';
+  } else {
+    const t = snap.tier;
+    const rows = [
+      ['💰', '金币', snap.coins, t.coins],
+      [crystalEmoji(t.crystal), '水晶', snap.crystals, t.crystals],
+      ['🙏', '祈福', snap.pray, t.prayers],
+    ];
+    const left = rows.filter(([, , have, need]) => have < need).length;
+
+    body = `
+      <div class="cv-go">升到 Lv.${snap.level + 1} 还差 ${left} 项</div>
+      <div class="cv-rows">
+        ${rows.map(([icon, label, have, need]) => {
+          const pct = Math.min(100, Math.round((have / Math.max(1, need)) * 100));
+          return `
+            <div class="cv-row${have >= need ? ' done' : ''}">
+              <span class="cv-k">${icon} ${label}</span>
+              <i class="cv-bar"><b style="width:${pct}%"></b></i>
+              <span class="cv-v">${num(have)}<em>/${num(need)}</em></span>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  const prayLabel = snap.prayedToday ? '今天已祈福' : '🙏 祈福';
+
+  return `
+    <div class="center-village" data-role="village-card">
+      ${head}
+      ${body}
+      <div class="cv-acts">
+        <button class="cv-btn" data-action="village-invest" ${snap.max ? 'disabled' : ''}>
+          🧱 投入资源
+        </button>
+        <button class="cv-btn pray" data-action="village-pray" ${snap.prayedToday ? 'disabled' : ''}>
+          ${prayLabel}
+        </button>
+        <button class="cv-btn ghost" data-action="village-log">📜 建设日志</button>
+      </div>
+    </div>`;
+}
+
+/** 上一次渲染村庄卡时的自然日：跨 0 点要把「今天已祈福」放出来 */
+let villageDay = '';
+
+/** 只重绘村庄卡（升级 / 祈福 / 投入之后），不重建整页 */
+function paintVillage() {
+  const root = byId('center');
+  const card = root?.querySelector('[data-role="village-card"]');
+  if (!card) return;
+  villageDay = dayKey(Date.now());
+  card.outerHTML = villageCardHTML();
+}
+
+/** 投入资源的弹窗：两个输入框，默认填「还差的量」与「手上有的」取小 */
+function openInvest() {
+  const snap = villageSnapshot();
+  if (snap.max) {
+    showToast('村庄已经满级了，没什么可投的');
+    return;
+  }
+  const t = snap.tier;
+  const coinMax = Math.min(Math.max(0, t.coins - snap.coins), state.farm.coins);
+  const crysMax = Math.min(Math.max(0, t.crystals - snap.crystals), snap.crystalStock);
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🧱 投入村庄建设</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">升到 Lv.${snap.level + 1} 要 ${num(t.coins)} 金币、${t.crystals} 枚${crystalName(t.crystal)}、${t.prayers} 次祈福</div>
+
+    <div class="cvi-list">
+      <div class="cvi-row">
+        <span class="cvi-k">💰 金币</span>
+        <input class="cvi-input" data-role="coins" type="number" inputmode="numeric"
+               min="0" max="${state.farm.coins}" step="100" value="${coinMax}">
+        <button class="cvi-max" data-action="village-fill" data-id="coins"
+                data-max="${state.farm.coins}">持 ${num(state.farm.coins)}</button>
+      </div>
+      <div class="cvi-row">
+        <span class="cvi-k">${crystalEmoji(t.crystal)} ${crystalName(t.crystal)}</span>
+        <input class="cvi-input" data-role="crystals" type="number" inputmode="numeric"
+               min="0" max="${snap.crystalStock}" step="1" value="${crysMax}">
+        <button class="cvi-max" data-action="village-fill" data-id="crystals"
+                data-max="${snap.crystalStock}">持 ${snap.crystalStock}</button>
+      </div>
+    </div>
+
+    <div class="modal-sub cvi-tip">投入的金币与水晶在升级那一刻一起清零，投多了也不会退还 —— 差多少投多少就好。水晶只能投当前等级要用的这一档。</div>
+
+    <div class="modal-foot">
+      <button class="btn primary cvi-ok" data-action="village-invest-ok">确认投入</button>
+    </div>
+  `, (action, el) => {
+    const card = el.closest('.modal-card');
+
+    if (action === 'village-fill') {
+      const input = card?.querySelector(`[data-role="${el.dataset.id}"]`);
+      if (input) input.value = el.dataset.max;
+      return;
+    }
+
+    if (action === 'village-invest-ok') {
+      const coins = Number(card?.querySelector('[data-role="coins"]')?.value || 0);
+      const crystals = Number(card?.querySelector('[data-role="crystals"]')?.value || 0);
+      invest({ coins, crystals }).then((res) => {
+        if (!res.ok) {
+          notify(res.reason || '投入失败');
+          return;
+        }
+        closeModal();
+        paintVillage();
+      });
+    }
+  }, 'village-modal');
+}
+
+/** 建设日志：近 7 天（与农场日志、时报同一口径） */
+function openVillageLog() {
+  const list = villageLogs();
+  openModal(`
+    <div class="modal-head">
+      <h3>📜 建设日志</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">最近 7 天的资源投入、祈福与产出</div>
+    <div class="news-list">
+      ${list.length
+        ? recordItemsHTML(list, { withDay: true })
+        : '<div class="empty-tip">📭<br>村里还很安静<br>去投点东西、祈个福吧</div>'}
+    </div>
+  `, null, 'board-modal');
+}
+
 /* ---------- 页面 ---------- */
 
 export function renderCenter() {
@@ -218,6 +451,7 @@ export function renderCenter() {
   const orders = orderCount(now);
 
   setHTML(root, `
+    ${villageCardHTML(now)}
     <div class="center-head">
       <div class="center-overview" data-action="center-villagers" role="button" tabindex="0">
         <div class="co-title">🏡 村民总览</div>
@@ -237,6 +471,7 @@ export function renderCenter() {
         <i class="ca-badge ${orders ? '' : 'zero'}" data-role="orders-n">${orders}</i>
       </button>
     </div>
+    ${rankCardHTML()}
   `);
 }
 
@@ -272,6 +507,9 @@ function refreshMarks() {
 
   // 名单里的圆点 / 灰度（弹窗开着的时候才有节点）：与邻居页共用一套
   refreshOnline();
+
+  // 跨过 0 点：把「今天已祈福」放出来（每分钟检查一次，成本只有一次字符串比较）
+  if (villageDay && villageDay !== dayKey(now)) paintVillage();
 }
 
 const CENTER_ACTIONS = {
@@ -285,7 +523,43 @@ const CENTER_ACTIONS = {
   'center-orders'() {
     openSubpage('orders');
   },
+  // 榜单卡片：整张卡可点，开排行榜弹窗（与子页面版同源渲染）
+  'center-rank'() {
+    openRankModal();
+  },
+  // ---- 村庄建设 ----
+  'village-invest'() {
+    openInvest();
+  },
+  'village-pray'() {
+    prayOnce();
+  },
+  'village-log'() {
+    openVillageLog();
+  },
 };
+
+/**
+ * 每日祈福。
+ *
+ * 奖励直接进背包（金币 / 种子 / 道具 / 产出），抽中时 village.pray 自己会
+ * 弹 toast 并发时报 —— 这里只负责挡住「今天已经祈过」的情况。
+ */
+function prayOnce() {
+  const snap = villageSnapshot();
+  if (snap.prayedToday) {
+    showToast('今天已经祈福过了，明天再来');
+    return;
+  }
+  pray().then((res) => {
+    if (!res.ok) {
+      notify(res.reason || '祈福失败');
+      return;
+    }
+    paintVillage();
+    if (!res.reward) showToast('🙏 祈福完毕，村里安宁');
+  });
+}
 
 /** 进入村中心：渲染（引导在公告栏弹窗里才结） */
 export function enterCenterPage() {
@@ -309,4 +583,6 @@ export function mountCenter() {
   // 邻居上线 / 下线、在线窗口走到头：实时刷总览与入口数字
   on(EVENTS.FRIENDS, refreshMarks);
   on(EVENTS.TICK, refreshMarks);
+  // 村庄：投入 / 祈福 / 升级（含邻居祈福把计数推上去）→ 只重绘那一张卡
+  on(EVENTS.VILLAGE, paintVillage);
 }

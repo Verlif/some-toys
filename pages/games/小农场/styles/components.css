@@ -711,6 +711,140 @@
 .friend-card.offline { background: #f0f2ee; }
 
 /* ---------- 村中心 ---------- */
+
+/* ---------- 村庄建设（村中心最上面那一块，第 48 轮） ---------- */
+/* 一张卡说清：几级、还差什么、今天能做什么。
+   三项门槛用同一套进度条 —— 谁卡着进度一眼就能看出来（通常是祈福）。 */
+.center-village {
+  margin: 13px 13px 0;
+  padding: 13px 14px 12px;
+  border: 1px solid #dbe6d2;
+  border-radius: 16px;
+  background: linear-gradient(165deg, #ffffff, #f7fbf3);
+  box-shadow: 0 2px 8px rgba(50, 90, 45, .06);
+}
+.cv-head { display: flex; align-items: center; gap: 8px; }
+.cv-name { font-size: 14px; font-weight: 800; color: #3c4a39; }
+.cv-lv {
+  padding: 1px 8px;
+  border: 1px solid #ead9ae;
+  border-radius: 99px;
+  background: linear-gradient(150deg, #fff8e8, #fdeec9);
+  color: #a0730f;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.cv-yield {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #6b9c52;
+  white-space: nowrap;
+}
+.cv-go { margin-top: 5px; font-size: 10.5px; color: var(--muted); }
+.cv-done {
+  margin-top: 9px;
+  padding: 9px 0;
+  border-radius: 10px;
+  background: #fffdf6;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a0730f;
+}
+
+.cv-rows { display: flex; flex-direction: column; gap: 7px; margin-top: 9px; }
+.cv-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+.cv-k { font-size: 11px; font-weight: 600; color: #5c6b57; white-space: nowrap; }
+.cv-bar {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+  background: #eef2e9;
+  overflow: hidden;
+}
+.cv-bar > b {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #8fc46f, #6aa84f);
+  transition: width .3s ease;
+}
+/* 达标的那一项转成金色：三行里有一行是金的，就知道不用再管它了 */
+.cv-row.done .cv-bar > b { background: linear-gradient(90deg, #f0c94b, #e0a92f); }
+.cv-v {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #40503c;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cv-v em { font-style: normal; font-weight: 600; color: var(--muted); }
+
+.cv-acts { display: flex; gap: 6px; margin-top: 11px; }
+.cv-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 4px;
+  border: 1px solid #dce9d4;
+  border-radius: 11px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: #40503c;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cv-btn.pray {
+  border-color: #ead9ae;
+  background: linear-gradient(160deg, #fff8e8, #fdeec9);
+  color: #a0730f;
+}
+.cv-btn.ghost { background: #f7faf4; color: #6c7a67; }
+.cv-btn:disabled { color: #b3bdb0; border-color: #e9ede5; background: #fbfdf9; cursor: default; }
+.cv-btn:active:not(:disabled) { transform: scale(.97); }
+
+/* 投入弹窗：左边名字、右边输入框、最右「持有 N」一按填满 */
+.cvi-list { display: flex; flex-direction: column; gap: 9px; margin: 2px 0; }
+.cvi-row { display: grid; grid-template-columns: 1fr 88px auto; align-items: center; gap: 8px; }
+.cvi-k {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #40503c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cvi-input {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #dce9d4;
+  border-radius: 9px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3c4a39;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cvi-max {
+  padding: 6px 8px;
+  border: 1px solid #dce9d4;
+  border-radius: 9px;
+  background: #f7faf4;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6c7a67;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cvi-tip { margin: 10px 0 0; line-height: 1.6; }
+
 /* 顶部：总览卡占满一行（点开弹窗看名单），下面并排两枚入口按钮。
    以前是「总览 + 右侧 78px 竖条按钮」，公告栏只能挤成一个窄条；
    2026-10-24 改成整行总览 + 两个半宽按钮，两个入口都有地方放字。 */
@@ -819,6 +953,90 @@
   font-variant-numeric: tabular-nums;
 }
 .center-act .ca-badge.zero { background: #e6ebe1; color: #7d8a78; }
+/* ---------- 村中心：排行榜卡（两列） ---------- */
+/* 左列榜单、右列昨日冠军；整张卡是一个按钮，点哪儿都开排行榜弹窗。
+   两列用同一个行高（22px）对齐 —— 左边六行名字、右边六个头像必须一条线 */
+.center-rank {
+  margin: 6px 13px 4px;
+  padding: 11px 13px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: border-color .16s ease;
+}
+.center-rank:hover { border-color: #c4e0b8; }
+.center-rank:active { transform: scale(.995); }
+.cr-head { display: flex; align-items: baseline; gap: 7px; }
+.cr-title { font-size: 12.5px; font-weight: 700; color: #3c4a39; }
+.cr-sub { font-size: 10.5px; color: var(--muted); }
+.cr-go { margin-left: auto; color: #b6c0b3; font-size: 15px; line-height: 1; }
+
+.cr-grid {
+  display: grid;
+  /* 左列只占榜单名字那么宽（最长的「送礼达人」也就 4 个字）：
+     早先给的是 0.9fr，名字和冠军之间会空出一大片，看着像两列没对上 */
+  grid-template-columns: auto 1fr;
+  column-gap: 18px;
+  margin-top: 8px;
+}
+.cr-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cr-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  min-width: 0;
+  font-size: 11.5px;
+  color: #4c5a49;
+}
+.cr-ico { font-size: 12px; line-height: 1; flex-shrink: 0; }
+.cr-item.champ { color: #3c4a39; font-weight: 600; }
+.cr-ava {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef7e9;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1;
+}
+.cr-item.champ b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+/* 并列第一：只露一位，其余折成 +N */
+.cr-more {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #f1f4ec;
+  color: #7d8a78;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+.cr-me {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #e9f4e2;
+  color: #5c9050;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+.cr-item.empty { color: #c3cdbe; }
+
+/* 排行榜弹窗：内容是子页面那套（hero / 榜卡 / 底栏 TAB），只是外面换了张壳。
+   body 的内边距归零，让 hero / 榜卡沿用它们自己的 13px 左右间距 ——
+   否则 17px body + 13px 卡片，两条边加起来能白扔掉一行字宽 */
+.rank-modal .modal-body { padding: 4px 0 0; }
+.rank-modal .modal-body.has-foot { padding-bottom: 4px; }
+/* 6 个大类 TAB 在 430px 里要挤一行：把芯片压窄一点，
+   否则「冒险王」会被推到横向滚动区外面（得滑一下才看得见） */
+.rank-modal .rank-tabs .filter-chip { padding: 4px 9px; font-size: 11px; }
+
 /* 名单里「你自己」那张卡 */
 .friend-card.me { background: #f2f9ef; border-color: #c4e0b8; }
 .me-chip { color: #6b9c52; font-weight: 700; }
@@ -1090,27 +1308,56 @@
 }
 .np-flag.guarded { border-color: #cbaee8; background: #f7f1ff; }
 
-/* 一键照料条：有道具时才有内容，空的时候整行收起来。
-   第 45 轮起挪到地块列表**上方**（原来钉在最底下，要滚过一整片地块才摸得到），
-   所以下边距比上边距大一点，和下面的控制台 / 地块拉开层次 */
-.npc-quick { display: flex; gap: 8px; margin: 12px 0 4px; }
-.npc-quick:empty { display: none; }
-.npc-quick .btn { flex: 1 1 0; min-width: 0; font-size: 11.5px; }
-.npc-quick .tool-count {
+/* 互动弹窗：送礼 / 交易 / 催促上线，一行一件事。
+   第 47 轮起主弹窗不再铺那两颗按钮 —— 三件事全收进这里，
+   每行右边写清代价（−20 好感 / 离线 / 在线），不靠 title 藏信息 */
+.ia-list { display: flex; flex-direction: column; gap: 8px; }
+.ia-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .14s ease;
+}
+.ia-row:active { background: #f5faf0; }
+.ia-ico {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #f1f7ec;
+  font-size: 18px;
+  line-height: 1;
+}
+.ia-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ia-body b { font-size: 13px; color: #3c4a39; }
+.ia-body i { font-size: 11px; font-style: normal; color: var(--muted); }
+/* 代价 / 状态标签：金色是「要花东西」，灰色是「现在还不行」 */
+.ia-badge {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: #fff3e0;
+  color: #b4741c;
   font-size: 10px;
   font-weight: 700;
-  color: #8a978a;
-  background: #f2f6ee;
-  border-radius: 99px;
-  padding: 1px 5px;
-  margin-left: 4px;
+  white-space: nowrap;
 }
+.ia-badge.off { background: #eef1ea; color: #9aa596; }
+.ia-go { flex-shrink: 0; color: #c3cdbe; font-size: 15px; line-height: 1; }
+/* 现在做不了（他不在家 / 他就在村里）：整行压淡，点了只给一句提示 */
+.ia-row.off { background: #fbfcfa; border-color: #edf1e9; }
+.ia-row.off .ia-body b { color: #8d998a; }
+.ia-row.off .ia-ico { background: #f4f6f1; filter: grayscale(.6); }
 
-.npc-foot {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
 .npc-tip {
   font-size: 11px;
   color: var(--muted);
@@ -3021,7 +3268,7 @@
 .npc-board-top {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .npc-board-title {
   font-size: 12px;
@@ -3034,7 +3281,30 @@
   color: #40503c;
   font-variant-numeric: tabular-nums;
 }
-.npc-board-top .npc-sec-tools { margin-left: auto; }
+/* 互动：这一行唯一的主按钮，钉在行尾。
+   34px 高、实心绿 —— 一眼能看出「这里能办事」，而不是又一颗小胶囊 */
+.npc-interact {
+  margin-left: auto;
+  flex-shrink: 0;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(150deg, #63a84e, #4a8b3a);
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(74, 139, 58, .28);
+  transition: transform .14s ease;
+}
+.npc-interact .ni-ico { font-size: 13px; line-height: 1; }
+.npc-interact:active { transform: scale(.95); }
 .npc-board-bot {
   display: flex;
   align-items: center;
@@ -3651,3 +3921,73 @@
   font-size: 11.5px;
   color: var(--muted);
 }
+
+/* 投入弹窗的确认按钮：撑满整行（.btn 本身是行内宽度）
+   放在 .modal-foot 里时习惯做法是包一层 flex，这里单按钮就直接吃满 */
+.cvi-ok {
+  display: block;
+  width: 100%;
+  padding: 11px 0;
+  font-size: 13px;
+}
+
+/* ============================================================
+   设置页：存档导出 / 导入（第 46 轮）
+   ============================================================ */
+
+.set-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  margin: 0 13px 14px;
+}
+.set-desc {
+  margin: 0 0 11px;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.set-card .btn { width: 100%; padding: 11px 0; font-size: 13px; }
+
+/* 拖拽区：虚线框，拖进来时整块亮起来。
+   移动端不触发拖拽也没关系，点一下同样能选文件 —— 两条路都留着 */
+.set-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 22px 12px;
+  margin-bottom: 11px;
+  border: 1.5px dashed #c9dcc0;
+  border-radius: 13px;
+  background: #f8fbf5;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .16s, background .16s, transform .16s;
+}
+.set-drop:hover { border-color: var(--green-l); background: #f3faf0; }
+.set-drop:active { transform: scale(.995); }
+.set-drop.over {
+  border-color: var(--green);
+  background: #ecf8e7;
+  transform: scale(1.01);
+}
+.set-drop-icon { font-size: 26px; line-height: 1; }
+.set-drop-text { font-size: 12.5px; font-weight: 700; color: #40503c; }
+.set-drop-hint { font-size: 10.5px; color: var(--muted); }
+
+/* 校验结果条：平时不占位，有话说才出现（hidden 由 paintStatus 控制） */
+.save-status {
+  margin: 0 0 11px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  font-weight: 600;
+  background: #f7faf4;
+  color: #40503c;
+  word-break: break-all;
+}
+.save-status.ok { background: #eef8e9; color: var(--green-d); }
+.save-status.bad { background: #fdeeec; color: var(--danger); }

@@ -17,7 +17,7 @@ import { CROPS, CROP_IDS } from '../data/crops.js';
 import { ITEMS } from '../data/items.js';
 import { SOILS } from '../data/soils.js';
 import { isItemKey, itemLabel, produceId } from '../data/keys.js';
-import { clampRelation, giftRelGain, tradeRelCost } from '../data/relation.js';
+import { SUMMON_REL_COST, clampRelation, giftRelGain, summonDelayRange, tradeRelCost } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
 import { PERSONALITIES } from '../data/friends.js';
 import { DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
@@ -327,12 +327,18 @@ function confirmFeedDog(friend, onDone) {
 }
 
 /**
- * 农场控制台：农场标题 + 一键照料 + 守护犬 + 日志入口。
+ * 农场控制台：土地数量 + 日志 + 一键照料 ｜ 守护犬 + 互动。
  *
  * 这几样原来散在三个地方（一键按钮挤在标题行尾、守护犬占信息格一整行、
  * 记录区钉在页面最底部），玩家要判断「现在该不该动手」得上下扫一遍。
  * 收成一整块之后高度只有两行，**跟着地块一起滚**（不做 sticky）——
  * 滚到哪儿它就退到哪儿，不会一直压在地块上。
+ *
+ * 第 47 轮按玩家要求重排：
+ *   - 📜 日志紧挨着「农场 N 块」（同一件事：看这座农场的底细）；
+ *   - 🚿🧴 一键照料跟在日志后面，仍然只有在道具在手时才出现；
+ *   - **💬 互动**独占行尾，做成一颗大的实心按钮 —— 送礼 / 交易 / 催促上线
+ *     全收进它打开的弹窗里，主弹窗不再铺两排按钮抢地块的视线。
  *
  * @param {object} friend
  * @param {number} now
@@ -342,15 +348,18 @@ function boardHTML(friend, now) {
     <div class="npc-board" data-role="board">
       <div class="npc-board-top">
         <span class="npc-board-title">🟫 农场 <b>${friend.plots.length}</b> 块</span>
+        <button class="npc-chip icon" data-action="open-friend-log" data-id="${friend.id}"
+          title="最近两天的农场日志">📜</button>
         <span class="npc-sec-tools">${secToolsHTML(friend, now)}</span>
+        <button class="npc-interact" data-action="open-interact" data-id="${friend.id}"
+          title="送礼 / 交易 / 催他上线">
+          <span class="ni-ico">💬</span>互动
+        </button>
       </div>
       <div class="npc-board-bot">
         ${dogLineHTML(friend, now)}
         <div class="npc-board-acts">
           ${feedChipHTML(friend, now)}
-          <button class="npc-chip" data-action="open-friend-log" data-id="${friend.id}">
-            📜 日志
-          </button>
         </div>
       </div>
     </div>`;
@@ -409,21 +418,154 @@ function secToolsHTML(friend, now) {
 }
 
 /**
- * 地块列表上方那两颗主动按钮：送礼 / 交易。
+ * 互动弹窗：送礼 / 交易 / 催促上线。
  *
- * 原来它们钉在弹窗最底部，要滚过一整片地块才摸得到 ——
- * 而这两件事恰恰是玩家进邻居农场最常想干的（第 45 轮挪到地块上方）。
+ * 第 47 轮从主弹窗里搬出来的三件事 —— 原先是主弹窗顶部并排的两颗按钮
+ * （送礼、交易），催上线根本没地方放。收进弹窗之后：
+ *   - 主弹窗只剩一张「农场控制台」和地块，视线不再被按钮抢；
+ *   - 三件事都能写清代价（交易花好感、催上线也花好感），而不是靠 title；
+ *   - 以后再加互动（借工具、请他帮忙收菜）只要往这张表里加一行。
  *
- * 交易只对 NPC 开：联机好友的仓库是对方浏览器的只读快照，
- * 本地扣不了他的货；NPC 离线时按钮灰着，点了会提示「不在家」。
+ * 每一行都是**自解释**的：图标 + 一句「这事是什么」，右边是代价或状态。
+ * 点一行就在这层之上再叠一层（挑礼物 / 挑要买的东西 / 确认催促），
+ * 关掉子层回到这里，不会把邻居农场整张弹窗顶掉。
+ *
+ * @param {object} friend
+ * @param {() => void} [onDone] 送完礼 / 交易完 / 催完，回头刷新下面那层邻居农场
  */
-const quickButtons = (friend, now = Date.now()) => (friend.net
-  ? `<button class="btn small" data-action="peer-gift-open" data-id="${friend.id}">🎁 送份礼</button>`
-  : `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>
-     <button class="btn small ghost" data-action="trade-open" data-id="${friend.id}"
-       ${isNpcOnline(friend, now) ? '' : 'disabled'}
-       title="${isNpcOnline(friend, now) ? '按原价买他仓库里的产出（花好感）' : '他不在家，等他上线'}">
-       💰 交易${isNpcOnline(friend, now) ? '' : '（离线）'}</button>`);
+function openInteract(friend, onDone = () => {}) {
+  const now = Date.now();
+  const remote = friend.net === true;
+  const online = isNpcOnline(friend, now);
+  const rel = remote ? 0 : getRelation(PLAYER_ID, friend.id);
+  const range = summonDelayRange(rel);
+
+  // 三行都写成字面量：`tools/check.mjs` 靠扫源码里的 data-action 字符串
+  // 校验「每个动作都有处理器」，用 ${action} 拼出来的它扫不到
+  const rows = remote ? `
+    <button class="ia-row" data-action="peer-gift-open" data-id="${friend.id}">
+      <span class="ia-ico">🎁</span>
+      <span class="ia-body"><b>送份礼</b><i>送出包裹 / 仓库里的东西，对方可以选择收下</i></span>
+      <span class="ia-go">›</span>
+    </button>` : `
+    <button class="ia-row" data-action="gift-open" data-id="${friend.id}">
+      <span class="ia-ico">🎁</span>
+      <span class="ia-body"><b>送份礼</b><i>送出仓库里的一样产出，按等级涨好感</i></span>
+      <span class="ia-go">›</span>
+    </button>
+    <button class="ia-row${online ? '' : ' off'}" data-action="trade-open" data-id="${friend.id}">
+      <span class="ia-ico">💰</span>
+      <span class="ia-body"><b>交易</b><i>${online
+        ? '按原价买他仓库里的产出（花好感）'
+        : '他不在家，等他上线再来'}</i></span>
+      ${online ? '' : '<span class="ia-badge off">离线</span>'}
+      <span class="ia-go">›</span>
+    </button>
+    <button class="ia-row${online ? ' off' : ''}" data-action="summon-ask" data-id="${friend.id}">
+      <span class="ia-ico">📣</span>
+      <span class="ia-body"><b>催促上线</b><i>${online
+        ? '他就在村里，不用催'
+        : `预计 ${fmtDuration(range.min)}~${fmtDuration(range.max)}后来`}</i></span>
+      ${online ? '<span class="ia-badge off">在线</span>' : `<span class="ia-badge">−${SUMMON_REL_COST} 好感</span>`}
+      <span class="ia-go">›</span>
+    </button>`;
+
+  openModal(`
+    <div class="modal-head">
+      <h3>💬 和 ${escapeHtml(friend.name)} 互动</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">
+      ${remote ? '联机好友 · 只能送礼' : `好感 ${rel >= 0 ? '+' : ''}${rel} · 交情越好，越愿意搭理你`}
+    </div>
+    <div class="ia-list" data-role="interact">${rows}</div>
+  `, (action) => {
+    if (action === 'peer-gift-open') {
+      openPeerGiftPicker(friend);
+      return;
+    }
+    if (action === 'gift-open') {
+      openGiftPicker(friend.id, onDone);
+      return;
+    }
+    if (action === 'trade-open') {
+      if (!isNpcOnline(getFriend(friend.id), Date.now())) {
+        notify(`${friend.name} 不在家，等他上线再谈买卖`);
+        return;
+      }
+      openTradePicker(friend.id, onDone);
+      return;
+    }
+    if (action === 'summon-ask') confirmSummon(friend, onDone);
+  }, 'interact-modal');
+}
+
+/**
+ * 「催促上线」的确认框。
+ *
+ * 花的是**好感**，所以必须先把账摆清楚再让人按：现在多少、扣完多少、
+ * 大概多久能到。确认后连收两层（确认 → 互动）回到邻居农场 ——
+ * 玩家接下来要做的是「等一会儿」，不该继续盯着一叠弹窗。
+ *
+ * @param {object} friend
+ * @param {() => void} [onDone] 催完回头刷新下面那层邻居农场（好感变了）
+ */
+function confirmSummon(friend, onDone = () => {}) {
+  const now = Date.now();
+  if (isNpcOnline(friend, now)) {
+    notify(`${friend.name} 就在村里，不用催`);
+    return;
+  }
+  const rel = getRelation(PLAYER_ID, friend.id);
+  const range = summonDelayRange(rel);
+  const best = summonDelayRange(200);
+  const worst = summonDelayRange(-200);
+  const after = clampRelation(rel - SUMMON_REL_COST);
+
+  openModal(`
+    <div class="modal-head">
+      <h3>📣 催促上线 · ${escapeHtml(friend.name)}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">捎句话过去，他会早点回来转一圈</div>
+
+    <div class="sd-hero">
+      <div class="sd-emoji">${friend.avatar}</div>
+      <div class="sd-id">
+        <div class="sd-name">${escapeHtml(friend.name)}</div>
+        <div class="sd-tags">
+          <span class="sd-lv">${escapeHtml(PERSONALITIES[friend.personality]?.name || '邻居')}</span>
+          <span class="sd-chip ${rel >= 0 ? 'gold' : ''}">好感 ${rel >= 0 ? '+' : ''}${rel}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sd-grid">
+      <div class="sd-cell"><span>花费好感</span><b class="rel-cost">−${SUMMON_REL_COST}</b></div>
+      <div class="sd-cell"><span>催完还剩</span><b>${after >= 0 ? '+' : ''}${after}</b></div>
+      <div class="sd-cell"><span>预计回来</span><b>${fmtDuration(range.min)} ~ ${fmtDuration(range.max)}</b></div>
+      <div class="sd-cell"><span>回来之后</span><b>照常干活</b></div>
+    </div>
+
+    <div class="sd-gain">
+      交情越好来得越快：<b>挚交</b>喊一声就到（${fmtDuration(best.min)}~${fmtDuration(best.max)}），
+      <b>结怨</b>得磨蹭半天（${fmtDuration(worst.min)}~${fmtDuration(worst.max)}）。
+    </div>
+
+    <div class="modal-foot">
+      <div class="rm-actions">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn" data-action="summon-ok">确认催促</button>
+      </div>
+    </div>
+  `, async (action) => {
+    if (action !== 'summon-ok') return;
+    closeModal();          // 先收确认层
+    closeModal();          // 再收互动层，回到邻居农场
+    await social.summonNpc(friend.id);
+    onDone();
+  });
+}
 
 /**
  * 送礼：先从仓库里挑一样农产品，再确认。
@@ -1074,9 +1216,6 @@ export function openFriendModal(friendId) {
     const tip = document.querySelector('#modal [data-role="tip"]');
     if (tip) tip.textContent = tipText(current, at);
 
-    const quick = document.querySelector('#modal [data-role="quick"]');
-    if (quick) quick.innerHTML = quickButtons(current, at);
-
     // 控制台整块重绘：狗粮槽、一键按钮的角标都跟着操作变
     const board = document.querySelector('#modal [data-role="board"]');
     if (board) board.outerHTML = boardHTML(current, at);
@@ -1136,7 +1275,6 @@ export function openFriendModal(friendId) {
 
     <div class="npc-stats" data-role="stats">${stats}</div>
 
-    <div class="npc-quick" data-role="quick">${quickButtons(friend, now)}</div>
     ${boardHTML(friend, now)}
     <div class="npc-plots">
       ${friend.plots.map((_, i) => plotCardHTML(friend, i, now)).join('')}
@@ -1168,8 +1306,12 @@ export function openFriendModal(friendId) {
       closeModal();
       return;
     }
-    // 联机好友只读，但看日志、送礼、喂狗粮是允许的
-    if (remote && !['crop-info', 'peer-gift-open', 'peer-feed-dog', 'open-friend-log'].includes(action)) return;
+    // 联机好友只读，但看日志、互动（只能送礼）、喂狗粮是允许的
+    if (remote && !['crop-info', 'open-interact', 'peer-gift-open', 'peer-feed-dog', 'open-friend-log'].includes(action)) return;
+    if (action === 'open-interact') {
+      openInteract(friend, () => refreshChrome(getFriend(friendId), Date.now()));
+      return;
+    }
     if (action === 'peer-gift-open') {
       openPeerGiftPicker(friend);
       return;

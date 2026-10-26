@@ -21,6 +21,8 @@ import { addDogBreed, ownedBreedIds } from './dogs.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
 import { bump } from './daily.js';
+import { addCrystal } from './village.js';
+import { crystalEmoji, crystalName, rollCrystalDrop } from '../data/village.js';
 
 /** 当前正在进行的冒险，null 表示没在冒险 */
 let run = null;
@@ -141,7 +143,17 @@ export async function finishRun() {
 
   const earned = run.earned.slice();
   const value = earned.reduce((sum, r) => sum + r.value, 0);
-  const summary = { tier: run.tier, earned, totalRewards: run.totalRewards, value };
+
+  // 村庄升级水晶：走完这一趟有 50% 概率额外带一个同档水晶回村。
+  // 它是**额外**掉的，不占奖励池里的格子 —— 池子那十几份是「选路选对了」的
+  // 回报，水晶是「这张图本身还产这个」，两件事分开算（data/village.js）
+  const crystal = rollCrystalDrop(run.tier);
+  if (crystal) {
+    addCrystal(crystal);
+    notify(`💎 山道尽头捡到一枚${crystalName(crystal)}，可以拿去建村了`, 'gold');
+  }
+
+  const summary = { tier: run.tier, earned, totalRewards: run.totalRewards, value, crystal };
 
   // 每日榜单「冒险王」：按藏宝图等级分榜，记这一趟带回的奖励总价值
   bump(PLAYER_ID, `adv${run.tier}`, value);

@@ -468,10 +468,12 @@ export function todayRank(metric, n = 5) {
 /* ---------- 落盘 ---------- */
 
 let persistTimer = 0;
+/** 导入存档后冻住写库，直到整页重载（见 suspendPersist） */
+let persistFrozen = false;
 
 /** 合并短时间内的连续记账，400ms 后一次性写库 */
 function schedulePersist() {
-  if (persistTimer) return;
+  if (persistFrozen || persistTimer) return;
   persistTimer = setTimeout(() => {
     persistTimer = 0;
     persistNow();
@@ -480,8 +482,25 @@ function schedulePersist() {
   }, 400);
 }
 
+/**
+ * 冻住排行榜的写库（导入存档前调用）。
+ *
+ * 导入是整份覆盖：库里的榜单换成了 zip 里那份，但内存里的 state 还是旧档。
+ * 这时只要还有一次排队的 persistNow 落地，就会把刚导进去的榜单又盖回旧值。
+ * 所以停掉排队的定时器，并让之后的 schedulePersist / persistNow 全部空转 ——
+ * 重载后各模块重新初始化，这个标志自然复位。
+ */
+export function suspendPersist() {
+  persistFrozen = true;
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = 0;
+  }
+}
+
 /** 立刻写库（结算与关页面前用） */
 function persistNow(rich = false) {
+  if (persistFrozen) return Promise.resolve();
   if (persistTimer) {
     clearTimeout(persistTimer);
     persistTimer = 0;

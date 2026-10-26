@@ -62,12 +62,19 @@ function lockedHTML() {
  *
  * 逐级晋升的规则写在 data/soils.js 的 `prev` 链上，这里只顺着链取下一格，
  * 不自己判断顺序 —— 以后插入新档位时不用改这里。
+ *
+ * ⚠️ **必须把 id 补进返回值**：`SOILS` 表是按 id 索引的，
+ * 每条记录里并没有 `id` 字段。早先直接返回 `SOILS[nextId]`，
+ * 升级弹窗里写 `next.id` 就永远是 `undefined`，
+ * 点「确认升级」→ `upgradeSoil(plotId, undefined)` → 查不到档位、静默 return false，
+ * 表现就是「按钮点了完全没反应」。
+ *
  * @param {object} plot
- * @returns {?object}
+ * @returns {?{id: string, name: string, cost: number, unlock: number}}
  */
 function nextSoilOf(plot) {
   const nextId = nextSoilId(plot.soil || 'normal');
-  return nextId ? SOILS[nextId] : null;
+  return nextId ? { ...SOILS[nextId], id: nextId } : null;
 }
 
 function emptyHTML(plot) {

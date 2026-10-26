@@ -174,3 +174,43 @@ const GIFT_PERSONALITY_FACTOR = {
  * @returns {number}
  */
 export const giftPersonalityFactor = (personality) => GIFT_PERSONALITY_FACTOR[personality] ?? 1;
+
+/* ---------- 催上线 ---------- */
+
+/**
+ * 「催促上线」要花多少好感。
+ *
+ * 交情是有限资源：催一次就像上门敲一次门，敲多了人家烦。
+ * 20 点按当前口径大约等于「送 8~10 份高阶产出」或「帮浇 20 块地」，
+ * 一次催促就该有分量，但也不至于高到没人用。
+ */
+export const SUMMON_REL_COST = 20;
+
+/**
+ * 催促之后，他多久才会出现（毫秒区间）。
+ *
+ * 交情决定响应速度，两端是用户定死的：
+ *   - 好感 **−200（结怨）**：5~10 分钟才肯露面，还得磨蹭一会儿；
+ *   - 好感 **+200（挚交）**：1~30 秒，几乎一喊就到。
+ *
+ * 中间不按线性插值，按**指数**插 —— 交情是「越往上越难得」的，
+ * 每多 100 点好感带来的提速应该越来越明显（0 分时约 17 秒~2 分钟，
+ * 而不是线性的 2.5 分钟~5 分钟：那等于谁都在磨洋工）。
+ *
+ * ```
+ * t  = (rel + 200) / 400         ∈ [0, 1]，200 → 1
+ * 下限 = 1000 × 300^(1-t)         t=1 → 1s     t=0 → 300s
+ * 上限 = 30000 × 20^(1-t)         t=1 → 30s    t=0 → 600s
+ * ```
+ *
+ * @param {number} rel −200 ~ 200
+ * @returns {{min: number, max: number}} 毫秒，已按秒取整
+ */
+export function summonDelayRange(rel) {
+  const t = clamp(((Number(rel) || 0) - REL_MIN) / (REL_MAX - REL_MIN), 0, 1);
+  const sec = (ms) => Math.max(1, Math.round(ms / 1000)) * 1000;
+  return {
+    min: sec(1000 * 300 ** (1 - t)),
+    max: sec(30000 * 20 ** (1 - t)),
+  };
+}

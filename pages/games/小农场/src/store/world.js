@@ -15,12 +15,14 @@
  * 这个模块只负责「什么时候轮到谁」，具体做什么交给 npc-sim 的 ACTIONS；
  * 好感和订单看板由调用方（social.js）注入 ctx —— 时钟不认识任何业务。
  */
-import { boardDayKey, dayKey } from '../core/utils.js';
+import { boardDayKey, dayKey, randInt } from '../core/utils.js';
 import { state } from './state.js';
+import { notify } from './notify.js';
 import { checkRollover } from './daily.js';
 import { expireOrders } from './orders.js';
 import { claimJobs } from './workshop.js';
-import { beginVisit, bulkAdvance, estimateVisits, planVisit, runVisit } from './npc-sim.js';
+import { beginVisit, bulkAdvance, estimateVisits, planIdle, planVisit, runStep, runVisit } from './npc-sim.js';
+import { IDLE_AFTER_VISIT_MS, IDLE_MS } from '../data/friends.js';
 import {
   FRAME_MS,
   REPORT_NOTES_PER_DAY,
@@ -57,6 +59,8 @@ export function createReport(from = 0, to = 0) {
     from,
     to,
     visits: 0,
+    /** 在线邻居顺手做的小事次数（不单独展示，只用来判断「有没有东西要落盘」） */
+    idles: 0,
     stolen: 0,
     cared: 0,
     caught: 0,
@@ -97,7 +101,6 @@ function note(day, emoji, text) {
   if (day.notes.length >= REPORT_NOTES_PER_DAY) return;
   day.notes.push({ emoji, text });
 }
-
 /** 按时间从旧到新取出来（UI 渲染直接用） */
 export function reportDays(report) {
   return Object.values(report.days).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -191,6 +194,10 @@ async function tick(prev, next, { ctx, deferFrom, onVisit, report }) {
     if (!due) break;
     runOne(due, next, { ctx, deferFrom, onVisit, report });
   }
+
+  // ①' 在线中的邻居顺手做点事（第 48 轮）：把 5~15 分钟的在线窗口填满，
+  //     自家地有活就优先自家 —— 否则玩家会看到「邻居在线，地里一片狼藉」
+  runIdleActions(prev, next, { ctx, deferFrom, report });
 
   // ② 订单到期：放在上线之后 —— 这一步里到期的单，邻居还有机会接。
   //    补算模式下不落盘（一天可能过期好几条，每条写一次库会把启动拖垮）
@@ -288,6 +295,91 @@ function record({ npc, at, results, delta, levelBefore, report }) {
   for (const entry of results) {
     if (entry?.gave) note(day, '📦', `${npc.name}：${entry.text}`);
   }
+}
+
+/* ---------- 在线空闲 ---------- */
+
+/**
+ * 这一段里「在线中」的邻居各做点小事。
+ *
+ * 为什么要单独一步：一趟上线只做 2~4 件经营的事（加顺路收尾约十几次尝试），
+ * 而在线窗口有 5~15 分钟 —— 早先那十几次尝试在一分钟内演完，剩下的十几分钟
+ * 他只是一颗亮着的绿点，自家地里熟透的没人收、旱了没人浇。
+ * 第 48 轮把这段填上：在线期间每 1~3 分钟做一件事（`IDLE_MS`）。
+ *
+ * 排程存在 `npc.idleAt` 上并跟着存档走，所以刷新页面不会重头再算一遍。
+ *
+ * @param {number} prev 本段起点
+ * @param {number} next 本段终点
+ */
+function runIdleActions(prev, next, { ctx, deferFrom, report }) {
+  for (const npc of state.friends) {
+    const until = npc.onlineUntil || 0;
+    if (!until || until <= prev) continue;
+
+    // 刚上线的那 90 秒留给「上线这一趟」的演出（玩家在线时它是一步一步演的）：
+    // 空闲动作要是一起插进来，就会把队列里的收获挤成空动作
+    const since = npc.lastVisitAt || 0;
+    const floor = since + IDLE_AFTER_VISIT_MS;
+
+    // 老存档 / 刚开始在线还没排：从本段起点往后掷一次
+    if (!npc.idleAt) npc.idleAt = Math.max(prev, floor) + randInt(IDLE_MS[0], IDLE_MS[1]);
+    else if (npc.idleAt < floor) npc.idleAt = floor + randInt(IDLE_MS[0], IDLE_MS[1]);
+
+    let guard = 0;
+    while (npc.idleAt && npc.idleAt <= next && npc.idleAt <= until && guard < 12) {
+      guard += 1;
+      idleOnce(npc, npc.idleAt, { ctx, deferFrom, report });
+      npc.idleAt += randInt(IDLE_MS[0], IDLE_MS[1]);
+    }
+    // 这个在线窗口排完了：清零，等下一次上线由 beginVisit 重排
+    if (npc.idleAt > until) npc.idleAt = 0;
+  }
+}
+
+/**
+ * 执行一件空闲小事，并把「动到玩家农场」的那部分记进时间轴。
+ *
+ * @returns {boolean} 这次有没有真的做成什么
+ */
+function idleOnce(npc, at, { ctx, deferFrom, report }) {
+  const kind = planIdle(npc, at, ctx);
+  if (!kind) return false;
+
+  const farm = ctx.farm;
+  const before = {
+    stolen: farm?.stolen ?? 0,
+    cared: farm?.cared ?? 0,
+    caught: farm?.caught ?? 0,
+  };
+
+  const entry = runStep(npc, at, kind, ctx);
+  if (!entry) return false;
+  report.idles += 1;
+
+  const delta = {
+    stolen: (farm?.stolen ?? 0) - before.stolen,
+    cared: (farm?.cared ?? 0) - before.cared,
+    caught: (farm?.caught ?? 0) - before.caught,
+  };
+  // 只有动到玩家农场的才进时间轴与汇总；他自家收了几棵不写进「你不在的几天」
+  if (delta.stolen || delta.cared || delta.caught) {
+    report.stolen += delta.stolen;
+    report.cared += delta.cared;
+    report.caught += delta.caught;
+    const day = dayBucket(report, at);
+    day.stolen += delta.stolen;
+    day.cared += delta.cared;
+    day.caught += delta.caught;
+    if (delta.stolen > 0) note(day, '🥷', `${npc.name} 从你农场顺走 ${delta.stolen} 个作物`);
+    if (delta.caught > 0) note(day, '🐕', `守护犬把 ${npc.name} 赶走了`);
+  }
+
+  // 玩家正看着这段时间（deferFrom 之后）：只有「动到他农场 / 送到他手上」才提示。
+  // 邻居自家收菜、自己喂狗不打扰 —— 否则挂机十分钟会被刷十几条
+  const meaty = delta.stolen || delta.cared || delta.caught || entry.gave;
+  if (meaty && at >= deferFrom) notify(`${npc.avatar} ${npc.name}：${entry.emoji} ${entry.text}`);
+  return true;
 }
 
 /* ---------- 本段有哪些跨天事务到期 ---------- */

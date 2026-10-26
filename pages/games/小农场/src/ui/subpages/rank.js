@@ -1,5 +1,5 @@
 /**
- * 每日排行榜子页面。
+ * 每日排行榜。
  *
  * 布局：底部 6 个大类 TAB 切换单榜；冒险王的档位分段条只在冒险王 TAB 下显示（顶部）。
  * 每张榜单卡片下方紧跟「本期实时排名」（含 NPC），bump 防抖后发 EVENTS.STATS，
@@ -8,6 +8,11 @@
  * 页面顺序（第 44 轮按玩家反馈调过）：**本期实时在上、昨日已发奖的在下**。
  * 玩家打开这一页多半是想知道自己现在第几，实时榜才是主信息；
  * 昨日榜留着是为了看成绩和名次奖励（卡片右上角的「奖励」按钮）。
+ *
+ * **从哪儿打开**（第 47 轮改了入口）：村中心那张两列的排行榜卡，
+ * 点开是**弹窗**（`openRankModal`）—— 不再注册成子页面。
+ * 内容和子页面版是同源渲染（`rankPage.render(body, ctx)`），
+ * 底栏 TAB 的挂载点由 `ctx.footEl` 指定，所以两处共用一套口径。
  *
  * 本页只读 store/daily.js，不发奖、不改数据。
  */
@@ -245,9 +250,11 @@ export const rankPage = {
       ${settled ? yesterdayHTML(settled.date, board) : ''}
     `;
 
-    // 底部 TAB 用子页面底栏固定；横滚位置接力
-    if (ctx?.setFoot) {
-      const footEl = document.getElementById('subpageFoot');
+    // 底部 TAB 用底栏固定；横滚位置接力。
+    // 子页面与村中心的弹窗共用这份渲染，所以底栏从 ctx 传进来
+    // （早先写死 `#subpageFoot`，弹窗里的 TAB 条就永远拿不到接力）
+    const footEl = ctx?.footEl || document.getElementById('subpageFoot');
+    if (ctx?.setFoot && footEl) {
       keepBarScroll(footEl, '.rank-tabs', () => {
         ctx.setFoot(tabsHTML());
       });
@@ -271,3 +278,80 @@ export const rankPage = {
     },
   },
 };
+
+/* ---------- 村中心：两列卡片 + 弹窗 ---------- */
+
+/** 某张 TAB 此刻对应的榜（冒险王要算上当前档位） */
+const boardForTab = (tabKey) => (
+  tabKey === 'adv'
+    ? BOARDS.find((b) => b.metric === `adv${advTier || defaultTier()}`)
+    : BOARDS.find((b) => b.metric === tabKey)
+) || BOARDS[0];
+
+/**
+ * 村中心「排行榜」卡片的两个数据列。
+ *
+ * 左列是 6 个榜单，右列是**昨日**那个榜的第一名 —— 并列第一只显示一位，
+ * 其余折成「+N」（用户要的「多个则显示 +几」）。
+ * 昨日还没开奖（新档 / 刚重置）时右列全员为空，界面写一个「—」。
+ *
+ * @returns {{key: string, label: string, icon: string,
+ *            champ: ?{avatar: string, name: string, more: number, me: boolean}}[]}
+ */
+export function yesterdayBoardSummary() {
+  const date = latestSettled()?.date || '';
+  return TABS.map((tab) => {
+    const board = boardForTab(tab.key);
+    // 取前 5 名再筛并列第一：三四个并列已经很少见，5 个足够覆盖
+    const top = date ? boardRank(date, board.metric, 5).filter((e) => e.rank === 1) : [];
+    const first = top[0];
+    return {
+      key: tab.key,
+      label: tab.label,
+      icon: board.icon,
+      champ: first
+        ? { avatar: first.avatar, name: first.name, more: top.length - 1, me: first.actor === PLAYER_ID }
+        : null,
+    };
+  });
+}
+
+/** 重绘弹窗里的榜（切 TAB / 切档位时只重画内容，不重建弹窗） */
+function paintRankModal() {
+  const card = document.querySelector('#modal .modal-card');
+  const body = card?.querySelector('[data-role="rank-body"]');
+  const foot = card?.querySelector('[data-role="rank-foot"]');
+  if (!body) return;
+  const at = body.scrollTop;
+  rankPage.render(body, {
+    footEl: foot,
+    setFoot: (html) => { if (foot) foot.innerHTML = html; },
+  });
+  body.scrollTop = at;
+}
+
+/**
+ * 从村中心打开的排行榜弹窗。
+ *
+ * 走标准四段式：标题 + 可滚动的榜单区 + 底栏的 6 个大类 TAB。
+ * 内容与子页面版**完全同源**（`rankPage.render`），所以两处不会长出
+ * 两套口径 —— 名次、区间文案、奖励说明都只有一份实现。
+ */
+export function openRankModal() {
+  openModal(`
+    <div class="modal-head">
+      <h3>🏆 排行榜</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="rank-modal-body" data-role="rank-body"></div>
+    <div class="modal-foot"><div class="rank-foot" data-role="rank-foot"></div></div>
+  `, (action, el) => {
+    const fn = rankPage.actions[action];
+    if (!fn) return;
+    fn(el);
+    // 切榜与切档位都要整块重画；看奖励只是叠一层，不动底下的内容
+    if (action === 'rank-tab' || action === 'rank-tier') paintRankModal();
+  }, 'rank-modal');
+
+  paintRankModal();
+}

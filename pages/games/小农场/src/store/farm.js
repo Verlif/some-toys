@@ -23,6 +23,7 @@ import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
 import { notify } from './notify.js';
 import { broadcastToast } from './peers.js';
 import { bump, bumpMax } from './daily.js';
+import { villageYield } from './village.js';
 
 /** 一次再生轮次的最短时长，防止高等级作物的 regrow 系数把时间压没 */
 const MIN_REGROW_MS = 30_000;
@@ -130,6 +131,9 @@ function rollYield(plot) {
   amount = Math.floor(amount * (1 + (plot.boost || 0)));
   // 增产剂：本轮产量加成
   amount = Math.floor(amount * (1 + (plot.yieldBonus || 0)));
+  // 村庄等级：全村每级 +2%（第 48 轮）。玩家与 32 位邻居共用同一条倍率 ——
+  // 村庄是大家的，好处也该是大家的
+  amount = Math.floor(amount * villageYield());
   // 成熟时还挂着「该浇水 / 该杀虫」的账：一次 −15%，两个都欠 −40%
   amount = Math.floor(amount * carePenalty(plot).mul);
   return Math.max(1, amount);

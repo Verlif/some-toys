@@ -91,6 +91,21 @@ export async function loadSave() {
   };
 }
 
+/** 导入存档后彻底封住写库（见 freezeWrites） */
+let writesFrozen = false;
+
+/**
+ * 冻住整个存储层：之后的 commit() 一律空转。
+ *
+ * 只在「导入存档成功、等着整页重载」这一小段用。理由：导入是整份覆盖，
+ * 但内存里的 state 还是旧档 —— 这时任何一个模块（排行榜的防抖记账、
+ * 心跳里的世界推进、藏进后台时的 flush）只要落一次盘，就会拿旧数据
+ * 把刚导进去的存档盖掉一部分。重载之后各模块重新初始化，标志自然复位。
+ */
+export function freezeWrites() {
+  writesFrozen = true;
+}
+
 /**
  * 提交一次改动。
  *
@@ -102,6 +117,7 @@ export async function loadSave() {
  * @param {Record<string, object>} [changes.dailyRows] 每日排行榜（全量覆盖，键是日期）
  */
 export function commit(changes = {}) {
+  if (writesFrozen) return Promise.resolve();
   const farms = changes.farms || [];
   const stores = [];
   if (farms.length) stores.push('farm', 'plot', 'log');

@@ -232,13 +232,51 @@ export async function enterFriendsPage() {
   }
 }
 
+/* ---------- 上线提醒 ---------- */
+
 /**
- * 在线期间的邻居上线提醒。
+ * 上线提示的合并缓冲。
  *
- * 玩家挂在游戏里不动，邻居也会按自己的节奏上线 —— 上线时弹一条提示，
- * 顺便把这次上线在玩家农场上做的事说出来（顺菜、被狗赶走）。
+ * 事件是**当场**发的（见 store/social.js 的 enqueueVisit）：动作 3~7 秒后
+ * 就开始演了，通知必须排在它前面 —— 早先通知要等 60 秒后那次轮询，
+ * 玩家先看到「金链哥收了一茬菜」，过一会儿才被告知「金链哥上线了」。
  *
- * @returns {Promise<number>} 本次上线的邻居数量
+ * 但同一刻可能有几位一起上线（补算跨过一个整点），所以用 400ms 的窗口
+ * 把它们合成一条，别一次弹五个 toast。
+ */
+let arrivalBuf = [];
+let arrivalTimer = 0;
+
+function flushArrivals() {
+  arrivalTimer = 0;
+  const list = arrivalBuf;
+  arrivalBuf = [];
+  if (!list.length) return;
+
+  if (list.length === 1) {
+    showToast(`${list[0].avatar} ${list[0].name} 上线了`, 'gold');
+    return;
+  }
+  const names = list.slice(0, 3).map((o) => o.name).join('、');
+  const more = list.length > 3 ? ` 等 ${list.length} 位` : '';
+  showToast(`👋 ${names}${more} 上线了`, 'gold');
+}
+
+/** 收到一位邻居上线的通知（订阅 EVENTS.ARRIVAL） */
+export function noteArrival(payload) {
+  if (!payload) return;
+  arrivalBuf.push(payload);
+  if (arrivalTimer) return;
+  arrivalTimer = setTimeout(flushArrivals, 400);
+}
+
+/**
+ * 在线期间的邻居上线提醒（每分钟的心跳里跑一次）。
+ *
+ * 上线 toast 已经由 `noteArrival` 当场发掉了，这里只负责推进世界、
+ * 必要时弹离线时间轴、重绘名单。
+ *
+ * @returns {Promise<number>} 这一轮排进演出队列的邻居数量
  */
 export async function checkOnlineVisits() {
   if (settling) return 0;
@@ -246,7 +284,6 @@ export async function checkOnlineVisits() {
 
   try {
     const result = await social.pollOnline();
-    const online = social.takeArrivals();
 
     // 切后台很久（手机锁屏、挂了一夜）再回来：世界其实已经暂停了一大段。
     // 和开机一样给一份时间轴，但只在玩家没开着别的弹窗时才弹
@@ -255,20 +292,9 @@ export async function checkOnlineVisits() {
       social.takeOfflineSummary();   // 时间轴讲过了，别再重复一句汇总
     }
 
-    if (!online.length) return 0;
-
-    if (online.length === 1) {
-      const a = online[0];
-      showToast(`${a.avatar} ${a.name} 上线了 · ${a.text}`, 'gold');
-    } else {
-      // 一次来了好几位：只报前几个名字
-      const names = online.slice(0, 3).map((o) => o.name).join('、');
-      const more = online.length > 3 ? ` 等 ${online.length} 位` : '';
-      showToast(`👋 ${names}${more} 上线了`, 'gold');
-    }
-
+    if (!result.deferred) return 0;
     renderFriends();
-    return online.length;
+    return result.deferred;
   } finally {
     settling = false;
   }
@@ -327,7 +353,9 @@ export function mountFriends() {
   });
 
   on(EVENTS.FRIENDS, renderFriends);
-  // 在线窗口（10~30 分钟）会自己走到头：每分钟只改圆点与灰度类，
+  // 上线通知：事件当场发的（见 store/social.js），这里合并 400ms 内的一批
+  on(EVENTS.ARRIVAL, noteArrival);
+  // 在线窗口（5~15 分钟）会自己走到头：每分钟只改圆点与灰度类，
   // 不重绘列表 —— 整列表重建会把玩家的滚动位置打回原型
   on(EVENTS.TICK, refreshOnline);
 }

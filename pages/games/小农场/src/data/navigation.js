@@ -13,11 +13,11 @@ export const MORE_MENU_ITEMS = [
   { key: 'dog',         icon: '🐕', label: '狗窝',   ready: true },
   { key: 'adventure',   icon: '🧭', label: '冒险',   ready: true, action: 'adventure' },
   { key: 'seedshop',    icon: '🌱', label: '种子制造间', ready: true },
-  { key: 'rank',        icon: '🏆', label: '排行榜',   ready: true },
   { key: 'manual',      icon: '📘', label: '手册',   ready: true },
+  { key: 'settings',    icon: '⚙️', label: '设置',   ready: true },
   { key: 'village',     icon: '🏘', label: '村镇',   ready: true, action: 'village' },
-  // 订单在村中心（📋 按钮带总数徽标），这里是唯一入口；子页面本身还在
-  // （SUBPAGE_TITLES / subpages 注册都没删，只是「更多」里不再重复一个入口）
+  // 订单与排行榜都在村中心（📋 按钮带总数徽标、🏆 卡片带昨日冠军），
+  // 这里是唯一入口；订单的子页面还在，排行榜则改成从村中心弹窗打开
 ];
 
 /** 子页面顶部标题 */
@@ -30,9 +30,9 @@ export const SUBPAGE_TITLES = {
   guide: '🏅 新手引导',
   dog: '🐕 狗窝',
   seedshop: '🌱 种子制造间',
-  rank: '🏆 每日排行榜',
   manual: '📘 游戏手册',
   orders: '📋 订单',
+  settings: '⚙️ 设置',
 };
 
 /** 尚未实现的功能点击时给出的提示 */
