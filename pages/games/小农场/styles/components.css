@@ -3991,3 +3991,56 @@
 }
 .save-status.ok { background: #eef8e9; color: var(--green-d); }
 .save-status.bad { background: #fdeeec; color: var(--danger); }
+
+/* ============================================================
+   新手礼包清单（ui/starter-gift.js）
+   ------------------------------------------------------------
+   第一次进游戏弹一次。一列五行：图标 + 名字 + ×N。
+   做成一列而不是 `.sd-grid` 那种两列格：360px 上两列会把
+   「洒水器 ×3」挤到换行，清单反而不好数。
+   ============================================================ */
+.sg-intro {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.sg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.sg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f7faf4;
+  border-radius: 11px;
+  padding: 7px 12px;
+}
+.sg-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #eef6e8;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.sg-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #40503c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sg-n {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--green-d);
+  font-variant-numeric: tabular-nums;
+}

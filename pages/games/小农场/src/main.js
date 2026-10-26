@@ -12,7 +12,7 @@
 import { openDatabase } from './core/db.js';
 import { on, EVENTS } from './core/bus.js';
 import { clockText } from './core/utils.js';
-import { initState } from './store/state.js';
+import { initState, takeStarterGift } from './store/state.js';
 import { autoSignIn, reconcileSignHistory } from './store/signin.js';
 import { settleDogDig } from './store/dogs.js';
 import { compensateLitSeeds } from './store/codex.js';
@@ -30,6 +30,7 @@ import { showOfflineReport, wantsReport } from './ui/offline-report.js';
 import { flushOfflineGifts, mountGift } from './ui/gift.js';
 import { mountPeerGift } from './ui/peer-gift.js';
 import { mountVillage } from './ui/village-sheet.js';
+import { showStarterGift } from './ui/starter-gift.js';
 import { mountHud, renderHud } from './ui/hud.js';
 import { mountSubpage, renderCurrent, syncCoins } from './ui/subpage.js';
 import { mountSheet } from './ui/sheet.js';
@@ -147,6 +148,11 @@ async function boot() {
 
   // 离线期间邻居送的礼：启动画面收起来之后再整屏补播
   flushOfflineGifts();
+
+  // 第一次进游戏：开局礼包在建号时就进仓库了（见 store/state.js），
+  // 这里只负责把「给了你什么」摊开给他看一次
+  const starter = takeStarterGift();
+  if (starter) showStarterGift(starter);
 
   // 每日榜单：先确认账期版本（旧版 0 点账期的行与新账期同键不同义，整表清一次），
   // 再补算跨越了几天、已经到期的期次 —— 必须在 settleWorld 之后，

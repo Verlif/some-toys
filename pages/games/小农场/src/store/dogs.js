@@ -47,6 +47,7 @@ import { dayIndex, dayKey } from '../core/utils.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
 import { completeGuide } from './codex.js';
+import { addAuto } from './automation.js';
 
 /** 玩家农场的看家狗槽 */
 const dog = () => state.farm.dog;
@@ -240,8 +241,12 @@ export async function upgradeKennel() {
 function grantReward(reward) {
   if (!reward) return;
   if (reward.kind === 'coin') player.addCoins(reward.n);
-  else if (reward.kind === 'item') inventory.add(reward.id, reward.n);
-  else if (reward.kind === 'produce') inventory.add(produceId(reward.id), reward.n);
+  else if (reward.kind === 'item') {
+    // 自动机器不占背包（第 51 轮）：狗挖到就往对应类别上叠一天
+    const auto = ITEMS[reward.id]?.auto;
+    if (auto) addAuto(auto, Date.now(), reward.n);
+    else inventory.add(reward.id, reward.n);
+  } else if (reward.kind === 'produce') inventory.add(produceId(reward.id), reward.n);
   else inventory.add(seedId(reward.id), reward.n);
 }
 

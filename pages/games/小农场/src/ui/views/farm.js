@@ -25,6 +25,7 @@ import { activeBreed, dogSatiety, guardChanceNow, kennelCapacity } from '../../s
 import { openCropModal, plotStatusHTML } from '../crop-detail.js';
 import { carePenalty } from '../../data/care.js';
 import { notify } from '../../store/notify.js';
+import { activeAutos, autoTimeText } from '../../store/automation.js';
 
 /** plotId → { el, key, bar, time } */
 const nodes = new Map();
@@ -300,6 +301,9 @@ export function renderFarm() {
   // （两列时普通高度太高了）。心跳每 500ms 会跑到，横竖屏切换当场生效。
   grid.classList.toggle('dense', unlocked > DENSE_THRESHOLD || window.innerWidth < 720);
   renderFarmTools();
+  // 自动机器时效条每次心跳都要刷：秒数在走，但它有自己的 key，
+  // 内容没变就不会碰 DOM（见 renderFarmAuto）
+  renderFarmAuto();
 }
 
 /**
@@ -390,6 +394,40 @@ function renderFarmTools() {
 
   actEl.hidden = !cells.length;
   actEl.innerHTML = cells.join('');
+}
+
+/**
+ * 自动机器的时效条（第 51 轮）。
+ *
+ * 单独一个容器、单独一条 key：秒数每秒都在变，和上面那条工具栏共用 key
+ * 会让三个按钮每秒重建一次（正按着的时候按钮会被换掉）。
+ * 这里没有按钮，只有几行字，重建的代价可以忽略。
+ */
+let autoKey = '';
+
+function renderFarmAuto() {
+  const el = byId('farmAuto');
+  if (!el) return;
+
+  const now = Date.now();
+  const autos = activeAutos(now);
+  const key = autos.map((a) => `${a.kind}:${Math.ceil(a.remain / 1000)}`).join('|');
+  if (key === autoKey) return;
+  autoKey = key;
+
+  if (!autos.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+
+  el.hidden = false;
+  el.innerHTML = autos.map((a) => `
+    <div class="auto-chip" title="${a.name} · 有效期内自动${a.label}，不给经验">
+      <span class="auto-ico">${a.icon}</span>
+      <span class="auto-label">${a.label}</span>
+      <b class="auto-time">${autoTimeText(a.remain)}</b>
+    </div>`).join('');
 }
 
 /** 取（或创建）某个地块的 DOM 节点 */

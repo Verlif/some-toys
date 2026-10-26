@@ -63,6 +63,14 @@ export const EVENTS = {
    * payload 为 { name, avatar, text }
    */
   ARRIVAL: 'ui:arrival',
+  /**
+   * 邻居「刚刚下线」：在线窗口（5~15 分钟）走到头了。
+   *
+   * 与 ARRIVAL 对称 —— 上线有提示，下线也该有一句，否则绿点无声无息地灭掉，
+   * 玩家会以为「他是不是还在，只是没动静」。补算期间不弹（玩家不在场）。
+   * payload 为 { name, avatar, text }
+   */
+  DEPARTURE: 'ui:departure',
 };
 
 /**

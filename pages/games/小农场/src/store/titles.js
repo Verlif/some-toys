@@ -17,10 +17,12 @@ import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { state } from './state.js';
 import { TITLES, titleById } from '../data/progression.js';
+import { ITEMS } from '../data/items.js';
 import { itemLabel } from '../data/keys.js';
 import { codexSummary, completeGuide } from './codex.js';
 import { add } from './inventory.js';
 import { notify } from './notify.js';
+import { addAuto } from './automation.js';
 
 /** 玩家已领取的称号集合 */
 function claimedMap() {
@@ -88,7 +90,13 @@ export async function claimTitle(id) {
   const items = title.items || {};
 
   claimed[id] = true;
-  for (const [itemId, n] of Object.entries(items)) add(itemId, n);
+  // 自动机器（第 51 轮）不占背包：称号奖励里的自动机器直接叠到有效期上，
+  // 否则背包里会多出一堆「autoSprinkler ×3」却永远用不掉
+  for (const [itemId, n] of Object.entries(items)) {
+    const auto = ITEMS[itemId]?.auto;
+    if (auto) addAuto(auto, Date.now(), n);
+    else add(itemId, n);
+  }
 
   // 还没佩戴过任何称号时，领到的第一个直接戴上
   if (!state.farm.progress.titles.equipped) state.farm.progress.titles.equipped = id;
@@ -99,7 +107,12 @@ export async function claimTitle(id) {
   emit(EVENTS.TITLES);
 
   const itemText = Object.entries(items)
-    .map(([itemId, n]) => `${itemLabel(itemId)} ×${n}`)
+    .map(([itemId, n]) => {
+      const auto = ITEMS[itemId]?.auto;
+      // 自动机器领的是「几天」，不是「几个」
+      if (auto) return `${itemLabel(itemId)} +${n}天`;
+      return `${itemLabel(itemId)} ×${n}`;
+    })
     .join('、');
   notify(`${title.emoji} 领到了称号「${title.name}」${itemText ? ' · ' + itemText : ''}`, 'gold');
   await completeGuide('title');

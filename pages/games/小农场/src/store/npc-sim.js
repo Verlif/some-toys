@@ -761,6 +761,29 @@ function actPray(npc, ctx, at) {
 }
 
 /**
+ * 往村庄建设里投一笔（第 49 轮）。
+ *
+ * 判断与记账全在 `village.contributeCore`（纯同步，注入成 ctx.contributeNpc），
+ * 这里只负责在顺路动作里叫它一次 —— 投多少、有没有得投，都由那边定。
+ *
+ * 没投成返回 null，不会刷出空动态；投成了写一句「往村建设投了 …」，
+ * 玩家在邻居动态里能看见「原来他也在出钱」。
+ *
+ * @param {object} npc
+ * @param {object} ctx
+ * @param {number} at
+ */
+function actContribute(npc, ctx, at) {
+  const res = ctx?.contributeNpc?.(npc, at);
+  if (!res) return null;
+
+  const parts = [];
+  if (res.coins) parts.push(`💰 ${res.coins} 金币`);
+  if (res.crystals) parts.push(`💠 升级水晶 ×${res.crystals}`);
+  return { emoji: '🚧', text: `往村建设投了 ${parts.join('、')}` };
+}
+
+/**
  * 买张藏宝图去寻宝：等级门槛、价格、奖励池都和玩家完全一致，
  * 只是 NPC 不在场，奖励按池子价值直接算法结算。
  *
@@ -898,6 +921,15 @@ export const ACTIONS = {
     sweep: true,
     run: (npc, at, ctx) => actPray(npc, ctx, at),
   },
+  /**
+   * 往村庄建设里投钱投水晶（第 49 轮）。同样走 `sweep`：
+   * 村民本来就在顺手帮村子，不该占性格权重名额；没得投就返回 null。
+   */
+  contribute: {
+    label: '投入村建',
+    sweep: true,
+    run: (npc, at, ctx) => actContribute(npc, ctx, at),
+  },
 };
 
 /**
@@ -943,7 +975,7 @@ export function planVisit(npc, at = Date.now(), ctx = null) {
  * 空闲时可能去做的「社交小事」。等概率抽一件，动作内部还有自己的概率门
  * （顺菜 33% / 帮忙 ~90% / 送礼 25~55%），所以不是抽中就一定发生。
  */
-const IDLE_SOCIAL = ['steal', 'care', 'gift', 'feed', 'adventure', 'order', 'fill', 'pray'];
+const IDLE_SOCIAL = ['steal', 'care', 'gift', 'feed', 'adventure', 'order', 'fill', 'pray', 'contribute'];
 
 /**
  * 在线期间「顺手做一件事」（第 48 轮）。

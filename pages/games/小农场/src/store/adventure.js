@@ -13,6 +13,7 @@ import { PLAYER_ID, state } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
 import { MAP_TIERS, buildRun, describeReward, mapTier } from '../data/adventure.js';
+import { ITEMS } from '../data/items.js';
 import { CROPS } from '../data/crops.js';
 import { broadcastToast } from './peers.js';
 import { mapId, produceId, seedId } from '../data/keys.js';
@@ -23,6 +24,7 @@ import { notify } from './notify.js';
 import { bump } from './daily.js';
 import { addCrystal } from './village.js';
 import { crystalEmoji, crystalName, rollCrystalDrop } from '../data/village.js';
+import { addAuto } from './automation.js';
 
 /** 当前正在进行的冒险，null 表示没在冒险 */
 let run = null;
@@ -53,8 +55,13 @@ export const stepsLeft = () => (run ? run.cards.length - run.index : 0);
 /** 把一份奖励真正发到玩家身上（内存操作） */
 function applyReward(reward) {
   if (reward.kind === 'coin') player.addCoins(reward.n);
-  else if (reward.kind === 'item') inventory.add(reward.id, reward.n);
-  else if (reward.kind === 'produce') inventory.add(produceId(reward.id), reward.n);
+  else if (reward.kind === 'item') {
+    // 自动机器（第 51 轮）不占背包：挖到一个就往对应类别上叠一天，
+    // 走 inventory.add 的话会变成背包里一个永远用不掉的计数
+    const auto = ITEMS[reward.id]?.auto;
+    if (auto) addAuto(auto, Date.now(), reward.n);
+    else inventory.add(reward.id, reward.n);
+  } else if (reward.kind === 'produce') inventory.add(produceId(reward.id), reward.n);
   else if (reward.kind === 'dog') addDogBreed(reward.id);
   else inventory.add(seedId(reward.id), reward.n);
 }

@@ -45,8 +45,14 @@ import { notify } from '../../store/notify.js';
 let boardFilter = 'all';
 let boardDesc = true;
 
-/** 村民总览弹窗的筛选：all = 全部（含离线），online = 只看在线的 */
-let villagerFilter = 'all';
+/**
+ * 村民总览弹窗的筛选：all = 全部（含离线），online = 只看在线的。
+ *
+ * 默认 `online`（第 51 轮）：玩家点开这个总览，想看的是「现在谁在」——
+ * 32 个村民全铺出来，一屏里大半是灰的，还得自己往下找绿点。
+ * 想翻名单（比如找人送礼）切「全部」即可，选择会记住。
+ */
+let villagerFilter = 'online';
 
 /* ---------- 数字 ---------- */
 
@@ -103,7 +109,12 @@ const meCardHTML = () => `
 /** 名单：你自己 + 按筛选取的邻居（卡片与邻居页同一套，离线自带灰度） */
 function villagerRowsHTML(filter = villagerFilter, now = Date.now()) {
   const list = state.friends.filter((f) => filter === 'all' || isNpcOnline(f, now));
-  return meCardHTML() + list.map((f) => friendCardHTML(f, now)).join('');
+  // 默认档是「在线」，而村里可能一个人都没上线 —— 得说句话，
+  // 否则弹窗里只剩「你自己」一张卡，看起来像加载失败
+  const empty = list.length || filter === 'all'
+    ? ''
+    : '<div class="empty-tip">🌙<br>这会儿没有邻居在线<br>切「全部」看看谁在家</div>';
+  return meCardHTML() + empty + list.map((f) => friendCardHTML(f, now)).join('');
 }
 
 /** 筛选芯片：全部 / 在线 */
@@ -331,14 +342,18 @@ function villageCardHTML(now = Date.now()) {
   }
 
   const prayLabel = snap.prayedToday ? '今天已祈福' : '🙏 祈福';
+  // 金币与水晶都满了（村民也会投，很容易先满）：这时「投入」点了也什么都投不进去，
+  // 按钮直接改成「资源已齐」并禁用 —— 剩下只等祈福的那几项
+  const resFull = !snap.max
+    && snap.coins >= snap.tier.coins && snap.crystals >= snap.tier.crystals;
 
   return `
     <div class="center-village" data-role="village-card">
       ${head}
       ${body}
       <div class="cv-acts">
-        <button class="cv-btn" data-action="village-invest" ${snap.max ? 'disabled' : ''}>
-          🧱 投入资源
+        <button class="cv-btn" data-action="village-invest" ${snap.max || resFull ? 'disabled' : ''}>
+          ${resFull ? '🚧 资源已齐' : '🚧 投入资源'}
         </button>
         <button class="cv-btn pray" data-action="village-pray" ${snap.prayedToday ? 'disabled' : ''}>
           ${prayLabel}
@@ -370,10 +385,15 @@ function openInvest() {
   const t = snap.tier;
   const coinMax = Math.min(Math.max(0, t.coins - snap.coins), state.farm.coins);
   const crysMax = Math.min(Math.max(0, t.crystals - snap.crystals), snap.crystalStock);
+  // 一项都投不进去（还差的部分村里已经有了 / 手上没有这一档水晶）：别开一个空弹窗
+  if (!coinMax && !crysMax) {
+    showToast('现在没什么可投的 —— 这部分村里已经有了，或者你手上还没有这一档水晶');
+    return;
+  }
 
   openModal(`
     <div class="modal-head">
-      <h3>🧱 投入村庄建设</h3>
+      <h3>🚧 投入村庄建设</h3>
       <button class="close" data-close>✕</button>
     </div>
     <div class="modal-sub">升到 Lv.${snap.level + 1} 要 ${num(t.coins)} 金币、${t.crystals} 枚${crystalName(t.crystal)}、${t.prayers} 次祈福</div>
@@ -382,20 +402,20 @@ function openInvest() {
       <div class="cvi-row">
         <span class="cvi-k">💰 金币</span>
         <input class="cvi-input" data-role="coins" type="number" inputmode="numeric"
-               min="0" max="${state.farm.coins}" step="100" value="${coinMax}">
+               min="0" max="${coinMax}" step="100" value="${coinMax}">
         <button class="cvi-max" data-action="village-fill" data-id="coins"
-                data-max="${state.farm.coins}">持 ${num(state.farm.coins)}</button>
+                data-max="${coinMax}">投 ${num(coinMax)}</button>
       </div>
       <div class="cvi-row">
         <span class="cvi-k">${crystalEmoji(t.crystal)} ${crystalName(t.crystal)}</span>
         <input class="cvi-input" data-role="crystals" type="number" inputmode="numeric"
-               min="0" max="${snap.crystalStock}" step="1" value="${crysMax}">
+               min="0" max="${crysMax}" step="1" value="${crysMax}">
         <button class="cvi-max" data-action="village-fill" data-id="crystals"
-                data-max="${snap.crystalStock}">持 ${snap.crystalStock}</button>
+                data-max="${crysMax}">投 ${crysMax}</button>
       </div>
     </div>
 
-    <div class="modal-sub cvi-tip">投入的金币与水晶在升级那一刻一起清零，投多了也不会退还 —— 差多少投多少就好。水晶只能投当前等级要用的这一档。</div>
+    <div class="modal-sub cvi-tip">投入的金币与水晶在升级那一刻一起清零，投多了也不会退还 —— 所以这里只让你投「还差的那部分」。水晶只能投当前等级要用的这一档；邻居也会往村里投，进度条可能一不留神就满了。</div>
 
     <div class="modal-foot">
       <button class="btn primary cvi-ok" data-action="village-invest-ok">确认投入</button>

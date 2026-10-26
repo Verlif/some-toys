@@ -420,6 +420,42 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 自动机器的时效条（第 51 轮）：只有买了机器才出现。
+   一行横排的胶囊，每个胶囊 = 图标 + 在干什么 + 还剩多久。
+   和上面的一键按钮区分开：这条不可点，只是读数，所以不用按钮皮。 */
+.farm-auto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 7px 10px;
+  border-top: 1px solid #eef3e9;
+  background: #fbfdf9;
+}
+.farm-auto[hidden] { display: none; }
+
+.auto-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 6px;
+  border: 1px solid #dbe9d1;
+  border-radius: 99px;
+  background: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #40503c;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.auto-chip .auto-ico { font-size: 12px; line-height: 1; }
+.auto-chip .auto-label { color: #7d8b78; }
+/* 时效用等宽数字：秒在跳，宽度不变才不会把整行推来推去 */
+.auto-chip .auto-time {
+  color: var(--green-d);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* 极窄屏（<330px）才让存量退场，只留「图标 + 名字 + 待办数」。
    门槛早先是 380px —— 360px 的常见安卓窄屏（和 375px 的 iPhone SE）
    正好命中，玩家看不到 ×N，还以为被「永久版不显示」的规则吃掉了

@@ -22,12 +22,13 @@ import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
 import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, isNpcOnline, syncNpcPlots, trimLog } from '../data/friends.js';
-import { needsPest, needsWater, serveCare } from '../data/care.js';
+import { careExp, needsPest, needsWater, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { REL_PER_CARE, SUMMON_REL_COST, dogCaughtRelLoss, giftRelGain, summonDelayRange, tradeRelCost } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
 import { bump, bumpMax, flushAwards } from './daily.js';
-import { addCrystal, prayNpc, villageYield } from './village.js';
+import { addCrystal, contributeCore, prayNpc, villageYield } from './village.js';
+import { announceAuto } from './automation.js';
 import { catchChance, DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
@@ -178,6 +179,8 @@ function simCtx(farm = farmView()) {
     villageYield: villageYield(),
     addCrystal: (tier, who, at) => addCrystal(tier, who, at),
     prayNpc: (npc, at) => prayNpc(npc, at),
+    // 村民也会往村建设里投钱投水晶（第 49 轮）—— 同样注入，模拟层不 import store
+    contributeNpc: (npc, at) => contributeCore(npc, at),
   };
 }
 
@@ -304,6 +307,13 @@ async function runSettle(onProgress) {
   // `report.idles` 也算「有新事情」—— 在线邻居顺手做的那些小事
   // （收自家地、串门、祈福）同样改了内存，不写就白做了
   if (visits.length || report.idles) await persistFriends(farm);
+
+  // 自动机器（第 51 轮）：整段累加完之后只播一次。
+  // 放在 flushAwards 之前 —— 它写的是农场日志，得跟着同一次提交落盘
+  if (report.auto && (report.auto.water || report.auto.pest || report.auto.harvest)) {
+    announceAuto(report.auto);
+  }
+
   // 补算期间的榜单奖励、订单退款、出种子都是「安静结算」的（不落盘、不弹提示），
   // 这里统一写一次（farm 金币 / bag 道具 / news 时报）
   if (report.dirty || reportHadAwards(report)) await flushAwards();
@@ -640,8 +650,8 @@ export async function waterNeighborPlot(friendId, index) {
   serveCare(target, 'water', now);
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE);
   bump(PLAYER_ID, 'care');
-  // 经验跟着被照料的作物走：作物几级就给几点，不随玩家等级膨胀
-  const exp = crop.lv;
+  // 经验跟着被照料的作物走：作物等级 ÷ 10（至少 1），不随玩家等级膨胀
+  const exp = careExp(crop.lv);
   player.addExpRaw(exp);
   logFriend(friend, now, '💧', `${state.farm.name} 来帮忙浇了水`);
 
@@ -679,7 +689,7 @@ export async function catchPestNeighborPlot(friendId, index) {
   serveCare(target, 'pest', now);
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE);
   bump(PLAYER_ID, 'care');
-  const exp = CROPS[target.cropId].lv;
+  const exp = careExp(CROPS[target.cropId].lv);
   player.addExpRaw(exp);
   logFriend(friend, now, '🐛', `${state.farm.name} 来帮忙捉了虫`);
 
@@ -695,7 +705,7 @@ export async function catchPestNeighborPlot(friendId, index) {
 
 /**
  * 一键帮邻居浇水：消耗 1 个洒水器，把他家所有缺水的地一次浇完。
- * 单块效果与手动浇水一致（按次重排下一次需求），经验按作物等级给；
+ * 单块效果与手动浇水一致（按次重排下一次需求），经验按作物等级折十给；
  * 好感度按「打理了几块地」记 —— 一块 +1。
  * @returns {Promise<boolean>}
  */
@@ -719,7 +729,7 @@ export async function waterAllNeighborPlots(friendId) {
   let exp = 0;
   for (const plot of targets) {
     serveCare(plot, 'water', now);
-    exp += CROPS[plot.cropId].lv;
+    exp += careExp(CROPS[plot.cropId].lv);
   }
   // 打理一块 +1：一次浇满一片，交情自然涨得快
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE * targets.length);
@@ -766,7 +776,7 @@ export async function catchPestAllNeighborPlots(friendId) {
   for (const plot of targets) {
     plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
     serveCare(plot, 'pest', now);
-    exp += CROPS[plot.cropId].lv;
+    exp += careExp(CROPS[plot.cropId].lv);
   }
   adjustRelation(PLAYER_ID, friend.id, REL_PER_CARE * targets.length);
   // 最友善榜按「打理了几块地」记，与好感同口径

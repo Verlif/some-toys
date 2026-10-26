@@ -1,23 +1,25 @@
 /**
  * 称号页：展示全部称号，达成条件后手动领取，领取后可以佩戴一个。
  *
- * 三类称号用 tab 分开（等级 26 / 图鉴 7 / 金币 5）：
+ * 三类称号用 tab 分开（等级 26 / 图鉴 26 / 金币 5）：
  *   等级称号  条件是农场等级
- *   图鉴称号  条件是点亮的图鉴数量
+ *   图鉴称号  条件是点亮的图鉴数量（**每 10 个一档，10 → 260**，第 51 轮）
  *   金币称号  条件是当前持有的金币
  *
- * 一次只渲染一个 tab —— 38 个卡片一屏放不下，混在一起排会让
+ * 一次只渲染一个 tab —— 57 个卡片一屏放不下，混在一起排会让
  * 「我现在能领什么」变得很难扫。tab 上带「已领 / 总数」和可领角标。
  *
  * 徽章的配色由 skin 决定（CSS 里定义了 10 套底色），
  * 越往后越「亮」，一眼能看出哪个更稀有。
  *
  * 奖励只有道具（第 20 轮起移除金币倍率）—— 化肥 / 增产剂 / 狗粮 /
- * 洒水器 / 特殊种子 / 藏宝图，按称号难度加重。
+ * 洒水器 / 自动机器 / 特殊种子 / 藏宝图，按称号难度加重。
+ * **每个称号至少一颗限定种子**（第 51 轮）；高级称号也会直接发自动机器几天。
  */
 import { claimTitle, equippedTitle, equipTitle, titleStates } from '../../store/titles.js';
 import { codexSummary } from '../../store/codex.js';
 import { itemLabel } from '../../data/keys.js';
+import { ITEMS } from '../../data/items.js';
 import { formatCoins } from '../../core/utils.js';
 
 /**
@@ -52,7 +54,11 @@ function needText(title) {
 /** 奖励的简短描述（只有道具，没有金币） */
 function rewardText(title) {
   return Object.entries(title.items || {})
-    .map(([id, n]) => `${itemLabel(id)} ×${n}`)
+    .map(([id, n]) => {
+      // 自动机器领的是「几天」，不是「几个」
+      if (ITEMS[id]?.auto) return `${itemLabel(id)} +${n}天`;
+      return `${itemLabel(id)} ×${n}`;
+    })
     .join(' · ');
 }
 

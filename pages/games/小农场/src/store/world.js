@@ -8,6 +8,7 @@
  *   ② 订单到期（赏金退还）
  *   ③ 每日榜单跨 14:00 结算（必须在当期的动作都记完之后）
  *   ④ 种子制造间收炉
+ *   ⑤ 自动机器干活（第 51 轮：浇水 / 捉虫 / 收获，不给经验）
  *
  * 步长按离线总跨度自适应（见 data/world.js 的 stepMsFor）：
  * 一周以内 1 分钟一步，之后每翻一倍时长步长翻倍。
@@ -18,10 +19,12 @@
 import { boardDayKey, dayKey, randInt } from '../core/utils.js';
 import { state } from './state.js';
 import { notify } from './notify.js';
+import { emit, EVENTS } from '../core/bus.js';
 import { checkRollover } from './daily.js';
 import { expireOrders } from './orders.js';
 import { claimJobs } from './workshop.js';
 import { beginVisit, bulkAdvance, estimateVisits, planIdle, planVisit, runStep, runVisit } from './npc-sim.js';
+import { runAutoStep } from './automation.js';
 import { IDLE_AFTER_VISIT_MS, IDLE_MS } from '../data/friends.js';
 import {
   FRAME_MS,
@@ -71,6 +74,13 @@ export function createReport(from = 0, to = 0) {
      * 这些都不在 farm / news 里，补算结束要额外落一次盘。
      */
     dirty: false,
+    /**
+     * 自动机器（第 51 轮）在这一整段里干过的活，跨 tick 累加。
+     *
+     * 累加而不是每步播报：一步最长一小时，离线补算可能走上百步，
+     * 每步弹一条「机器浇了 3 块地」会把玩家糊一脸。
+     */
+    auto: { water: 0, pest: 0, harvest: 0, savedMs: 0, gained: 0 },
     /** dayKey → { date, visits, stolen, cared, caught, levelUps, awards, notes } */
     days: {},
   };
@@ -188,6 +198,11 @@ function planDetailedStart(from, to, ctx, report) {
 
 /** 推进一段：先做完这段里到点的上线，再收尾本段到期的跨天事务 */
 async function tick(prev, next, { ctx, deferFrom, onVisit, report }) {
+  // ⓪ 下线：在线窗口在本段里走到头的邻居，先报一句再放新的人进来 —
+  //    放在上线之前，是因为「上一趟刚走、这一趟又来」时两个时刻都在本段内，
+  //    先跑上线会把 onlineUntil 改到新窗口上，那声「下线了」就永远发不出来
+  noteDepartures(prev, next, deferFrom);
+
   // ① 上线：按时刻先后一件件做（同一时刻按数组顺序）
   for (let guard = 0; guard < 500; guard += 1) {
     const due = nextDue(next);
@@ -223,6 +238,39 @@ async function tick(prev, next, { ctx, deferFrom, onVisit, report }) {
   if (hasCraftDue(prev, next)) {
     await claimJobs(next, { quiet: true });
     report.dirty = true;
+  }
+
+  // ⑤ 自动机器（第 51 轮）：这一段里该浇的水、该捉的虫、该收的菜，
+  //    交给机器按**历史时刻**做掉 —— 玩家离线那八小时里的活要在补算时干，
+  //    等他回来才动手的话，那八小时就白等了（成熟时间对不上）。
+  //    不落盘：产物在 bag 里，由调用方统一提交（见 social.js 的 report.dirty）
+  const auto = runAutoStep(prev, next);
+  if (auto.water || auto.pest || auto.harvest) {
+    report.auto.water += auto.water;
+    report.auto.pest += auto.pest;
+    report.auto.harvest += auto.harvest;
+    report.auto.savedMs += auto.savedMs;
+    report.auto.gained += auto.gained;
+    report.dirty = true;
+  }
+}
+
+/**
+ * 本段里在线窗口到点的邻居：发一条「下线了」。
+ *
+ * 只在玩家在场时提醒（`until >= deferFrom`）—— 离线补算跨过几十个下线时刻，
+ * 一次性弹一串「XX 下线了」毫无意义，玩家的绿点本来就是回来才刷的。
+ *
+ * @param {number} prev 本段起点
+ * @param {number} next 本段终点
+ * @param {number} deferFrom 从这个时刻起才是「玩家正看着」
+ */
+function noteDepartures(prev, next, deferFrom) {
+  for (const npc of state.friends) {
+    const until = npc.onlineUntil || 0;
+    if (!until || until <= prev || until > next) continue;
+    if (until < deferFrom) continue;
+    emit(EVENTS.DEPARTURE, { name: npc.name, avatar: npc.avatar, text: '下线了' });
   }
 }
 

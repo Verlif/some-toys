@@ -21,6 +21,9 @@
  * 三件工具都有**永久版**：价格高得多，但买断之后永远不消耗
  * （`permanent: true`）。判定统一走 store/tools.js —— 手上有永久版时
  * 消耗版一个都不扣，否则玩家背包里的东西会莫名其妙变少。
+ *
+ * `auto` 是**自动机器**（第 51 轮）：不进背包，买一个往对应类别上叠一天，
+ * 时间记在 `farm.progress.auto`，由世界时钟自动执行。
  */
 
 /** 一键浇水道具的 id */
@@ -36,6 +39,28 @@ export const HARVESTER_ID = 'harvester';
 export const SPRINKLER_PRO_ID = 'sprinklerPro';
 export const PESTICIDE_PRO_ID = 'pesticidePro';
 export const HARVESTER_PRO_ID = 'harvesterPro';
+
+/**
+ * 自动机器（第 51 轮）。
+ *
+ * 与上面那批「点一下」的道具不同，自动机器**不进背包**：
+ * 拿到一个就往对应类别上叠 24 小时，时间记在
+ * `farm.progress.auto[kind]`（见 store/automation.js）。
+ * 有效期内，世界时钟推进到「该浇水 / 该捉虫 / 该收了」的那一刻会自动做掉。
+ */
+export const AUTO_SPRINKLER_ID = 'autoSprinkler';
+export const AUTO_PEST_ID = 'autoPest';
+export const AUTO_HARVEST_ID = 'autoHarvest';
+
+/** 自动类别 → 道具 id（`items.js` 与 automation 共用这张表） */
+export const AUTO_KINDS = {
+  water: AUTO_SPRINKLER_ID,
+  pest: AUTO_PEST_ID,
+  harvest: AUTO_HARVEST_ID,
+};
+
+/** 一个自动机器叠加的有效时长 */
+export const AUTO_DAY_MS = 24 * 3600_000;
 
 /**
  * 动作种类 → 消耗版 / 永久版。
@@ -64,6 +89,20 @@ export const ITEMS = {
   [SPRINKLER_ID]: { name: '洒水器', emoji: '🚿', price: 200, desc: '一次性：给整座农场所有缺水的地浇水', fert: false, all: 'water' },
   [PESTICIDE_ID]: { name: '杀虫剂', emoji: '🧴', price: 200, desc: '一次性：给整座农场所有生虫的地捉虫', fert: false, all: 'pest' },
   [HARVESTER_ID]: { name: '采收机', emoji: '🚜', price: 200, desc: '一次性：把整座农场成熟的地一次收完', fert: false, all: 'harvest' },
+  // 自动机器：买一个叠一天，不占背包（见 store/automation.js）。
+  // 价格刻意定得比消耗版高一个量级 —— 它省的不是一次点击，是「一整天不用惦记」
+  [AUTO_SPRINKLER_ID]: {
+    name: '自动洒水器', emoji: '🚰', price: 2000, auto: 'water',
+    desc: '有效期 +1 天：期间缺水的地自动浇水（不给经验，照记日志）',
+  },
+  [AUTO_PEST_ID]: {
+    name: '自动捉虫机', emoji: '🪤', price: 2000, auto: 'pest',
+    desc: '有效期 +1 天：期间生虫的地自动捉虫（不给经验，照记日志）',
+  },
+  [AUTO_HARVEST_ID]: {
+    name: '自动收获机', emoji: '🛻', price: 1000, auto: 'harvest',
+    desc: '有效期 +1 天：期间成熟的地自动收掉（不给经验，照记日志）',
+  },
   // 永久版排在最后：前三个是「随手买一个应个急」，后面是「终于不用再买了」
   [SPRINKLER_PRO_ID]: {
     name: '洒水器 · 永久', emoji: '🚿', price: 50_000, permanent: true, all: 'water',

@@ -67,6 +67,7 @@ export function villageState() {
     v.stock[tier] = Math.max(0, Math.floor(v.stock[tier] || 0));
   }
   if (!v.prayDay || typeof v.prayDay !== 'object') v.prayDay = {};
+  if (!v.giveDay || typeof v.giveDay !== 'object') v.giveDay = {};
   if (!Array.isArray(v.logs)) v.logs = [];
   return v;
 }
@@ -193,9 +194,16 @@ export async function invest(input = {}, at = Date.now()) {
   const tier = villageTier(v.level);
   if (!tier) return { ok: false, reason: '村庄已经满级了' };
 
-  const coins = Math.max(0, Math.floor(Number(input.coins) || 0));
-  const crystals = Math.max(0, Math.floor(Number(input.crystals) || 0));
-  if (!coins && !crystals) return { ok: false, reason: '至少要投一点东西' };
+  // 只收「还差的那点」：多投的部分会在升级时被一起清零，等于白扔。
+  // 第 49 轮村民也会投入之后，这一道夹取变得必要 —— 进度条可能已经被
+  // 邻居推到 100%，玩家再往里塞 500 金币就是纯亏。
+  const needCoins = Math.max(0, tier.coins - v.coins);
+  const needCrystals = Math.max(0, tier.crystals - v.crystals);
+  const coins = Math.min(needCoins, Math.max(0, Math.floor(Number(input.coins) || 0)));
+  const crystals = Math.min(needCrystals, Math.max(0, Math.floor(Number(input.crystals) || 0)));
+  if (!coins && !crystals) {
+    return { ok: false, reason: needCoins || needCrystals ? '至少要投一点东西' : '这一档已经够了' };
+  }
 
   if (coins > state.farm.coins) return { ok: false, reason: '金币不够' };
   if (crystals > (v.stock[tier.crystal] || 0)) {
@@ -214,13 +222,13 @@ export async function invest(input = {}, at = Date.now()) {
   const parts = [];
   if (coins) parts.push(`💰 ${formatCoins(coins)} 金币`);
   if (crystals) parts.push(`${crystalEmoji(tier.crystal)} ${crystalName(tier.crystal)} ×${crystals}`);
-  note(at, '🧱', `${state.farm.name} 投入了 ${parts.join(' 与 ')}`);
+  note(at, '🚧', `${state.farm.name} 投入了 ${parts.join(' 与 ')}`);
 
   const leveled = checkUpgrade(at);
   await commit({ farms: [state.farm] });
   emit(EVENTS.VILLAGE);
   emit(EVENTS.PLAYER);
-  if (!leveled) notify(`🧱 已投入 ${parts.join('、')}`);
+  if (!leveled) notify(`🚧 已投入 ${parts.join('、')}`);
   return { ok: true, leveled };
 }
 
@@ -317,3 +325,134 @@ export async function pray(at = Date.now()) {
  * @param {number} at
  */
 export const prayNpc = (npc, at = Date.now()) => prayCore(npc.id, at, npc);
+
+/* ---------- 邻居投入 ---------- */
+
+/** 村民手头留的周转金：留够买种子、喂狗、买藏宝图的，不全捐出去 */
+export const NPC_KEEP_COINS = 1200;
+
+/** 闲钱里拿出多少投进村建设（基准值，实际按性格浮动，见 CONTRIB_STYLE） */
+export const NPC_GIVE_RATIO = 0.35;
+
+/** 一趟上线最多投多少金币：不封顶的话高等级村民一上来就把整档填满 */
+export const NPC_GIVE_CAP = 800;
+
+/**
+ * 性格 → 出钱出力时的态度（第 51 轮）。
+ *
+ * 早先所有人一个模子：闲钱的 35%、封顶 800。玩家看下来觉得
+ * 「这 32 个人像同一个人」，尤其热心肠的老好人跟爱占便宜的赵六
+ * 掏一样多，人物设定就白写了。
+ *
+ * 三档口径：
+ *   - `eager` 积极参与：ratio 更高、封顶更高，水晶也更舍得拿
+ *   - `normal` 按本分来：原值不动
+ *   - `half` 意思意思：意思一下就走，钱和水晶都少得多
+ *
+ * 数值上刻意让 `eager` 大约是 `half` 的四五倍 —— 差距要看得出来，
+ * 但不能让「意思意思」的那几位干脆不掏（那又变成「只有几个人在建村」）。
+ */
+const CONTRIB_STYLE = {
+  // 热心 / 勤勉 / 场面人：村里的事当自己的事
+  friendly: { tier: 'eager', ratio: 0.55, cap: 1400, crystal: 0.7 },
+  diligent: { tier: 'eager', ratio: 0.5, cap: 1200, crystal: 0.65 },
+  boss: { tier: 'eager', ratio: 0.5, cap: 1200, crystal: 0.6 },
+  // 爱钻研 / 精打细算：算得清楚，出得起也愿意出
+  scholar: { tier: 'normal', ratio: 0.4, cap: 900, crystal: 0.5 },
+  thrifty: { tier: 'normal', ratio: 0.35, cap: 800, crystal: 0.5 },
+  // 悠闲 / 生意人 / 爱占便宜：意思意思
+  leisurely: { tier: 'half', ratio: 0.18, cap: 300, crystal: 0.25 },
+  merchant: { tier: 'half', ratio: 0.15, cap: 260, crystal: 0.2 },
+  greedy: { tier: 'half', ratio: 0.1, cap: 180, crystal: 0.15 },
+};
+
+/** 默认档位（名单里出现新性格时用） */
+const CONTRIB_DEFAULT = { tier: 'normal', ratio: NPC_GIVE_RATIO, cap: NPC_GIVE_CAP, crystal: 0.5 };
+
+/** 这个邻居出钱出力的风格 */
+export function contribStyle(npc) {
+  return CONTRIB_STYLE[npc?.personality] || CONTRIB_DEFAULT;
+}
+
+/**
+ * 邻居往村建设里投一笔（第 49 轮）。
+ *
+ * 为什么要有：早先只有玩家能投，村庄就从「全村共建」变成了
+ * 「一个人凑 63 万金币 + 75 枚水晶」—— 玩家会觉得这村子只有自己在乎，
+ * 而 `docs` 里写的「每个村民都在出力」也落了空。
+ *
+ * 两条自我克制（不然 32 位村民会把每一档瞬间填满，玩家毫无参与感）：
+ *   - **留周转金**：`npc.coins - NPC_KEEP_COINS` 的若干成，单次封顶；
+ *     具体几成、封顶多少由性格决定（见 CONTRIB_STYLE，第 51 轮）；
+ *   - **水晶只投库存的一部分**：玩家自己挖到的那几枚还留得下来，
+ *     不会出现「刚捡到两枚，一回头被村民花光了」的憋屈。
+ *
+ * 需求为 0（这一项已经达标）时什么都不做 —— 所以每次升级后村民会
+ * 安静一阵，等下一档的门槛露出来才会再动，日志不会被同一个动作刷满。
+ *
+ * 不落盘：理由同 `prayNpc`（补算期间每条 commit 会把启动拖垮），
+ * 落盘交给调用方的 persistFriends / 在线演出那一步。
+ *
+ * @param {object} npc
+ * @param {number} [at]
+ * @returns {?{coins: number, crystals: number}} 投了多少；没投返回 null
+ */
+export function contributeCore(npc, at = Date.now()) {
+  const v = villageState();
+  const tier = villageTier(v.level);
+  if (!tier || !npc) return null;
+
+  // 一人一天只投一次：跟祈福同一个节奏。不限次数的话，离线补算的 16 小时里
+  // 32 位村民会各自投五六趟，第一档 10,000 金币在玩家进游戏之前就填满了，
+  // 这张卡片的「金币」一行永远一开始就是满的，共建感全无。
+  const day = dayKey(at);
+  if (v.giveDay[npc.id] === day) return null;
+
+  const needCoins = Math.max(0, tier.coins - v.coins);
+  const needCrystals = Math.max(0, tier.crystals - v.crystals);
+
+  // 性格决定掏多少（第 51 轮）：热心的多出，爱占便宜的意思一下
+  const style = contribStyle(npc);
+
+  let coins = 0;
+  if (needCoins > 0) {
+    const spare = Math.max(0, npc.coins - NPC_KEEP_COINS);
+    coins = Math.min(needCoins, style.cap, Math.floor(spare * style.ratio));
+  }
+  let crystals = 0;
+  if (needCrystals > 0) {
+    const have = v.stock[tier.crystal] || 0;
+    // 水晶按风格折算：`eager` 肯掏七成，`half` 只掏一两成。
+    // 仍然至少留 1 枚给玩家（`have >= 2` 才动手），不然刚捡到就没了
+    const share = Math.floor(have * style.crystal);
+    if (have >= 2 && share > 0) crystals = Math.min(needCrystals, share);
+  }
+  if (!coins && !crystals) return null;
+
+  if (coins) {
+    npc.coins -= coins;
+    v.coins += coins;
+  }
+  if (crystals) {
+    v.stock[tier.crystal] -= crystals;
+    v.crystals += crystals;
+  }
+
+  const parts = [];
+  if (coins) parts.push(`💰 ${formatCoins(coins)} 金币`);
+  if (crystals) parts.push(`${crystalEmoji(tier.crystal)} ${crystalName(tier.crystal)} ×${crystals}`);
+  // 「意思意思」的那几位，日志里把态度也写出来 —— 否则玩家只会觉得
+  // 「赵六怎么才投这么点」，看不出这是设定而不是 bug
+  const mood = style.tier === 'eager' ? '（很上心）' : style.tier === 'half' ? '（意思意思）' : '';
+  note(at, '🚧', `${npc.name} 投入了 ${parts.join(' 与 ')}${mood}`);
+
+  // 记账并只留今天（理由同 prayDay：留着历史会长成 33×N 的表）
+  for (const key of Object.keys(v.giveDay)) {
+    if (v.giveDay[key] !== day) delete v.giveDay[key];
+  }
+  v.giveDay[npc.id] = day;
+
+  checkUpgrade(at);
+  emit(EVENTS.VILLAGE);
+  return { coins, crystals };
+}

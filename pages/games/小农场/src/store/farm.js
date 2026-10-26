@@ -16,7 +16,7 @@ import { SOILS, nextSoilId } from '../data/soils.js';
 import { plotPrice } from '../data/plots.js';
 import { seedId, produceId } from '../data/keys.js';
 import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
-import { carePenalty, cornerBonusPct, farmMaxBonus, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
+import { careExp, carePenalty, cornerBonusPct, farmMaxBonus, needsPest, needsWater, scheduleCare, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { fmtSaved, randInt } from '../core/utils.js';
 import { completeGuide, recordHarvested, recordPlanted } from './codex.js';
@@ -24,6 +24,7 @@ import { notify } from './notify.js';
 import { broadcastToast } from './peers.js';
 import { bump, bumpMax } from './daily.js';
 import { villageYield } from './village.js';
+import { announceAuto, runAutoStep } from './automation.js';
 
 /** 一次再生轮次的最短时长，防止高等级作物的 regrow 系数把时间压没 */
 const MIN_REGROW_MS = 30_000;
@@ -196,7 +197,7 @@ function applyPlant(plot, cropId) {
  * 开启下一轮再生：把地块重置为「刚收获完」的状态并重算成熟时间。
  * @returns {boolean} 还有没有下一次收获
  */
-function beginRegrow(plot, crop, soil) {
+function beginRegrow(plot, crop, soil, at = Date.now()) {
   const done = (plot.harvested || 0) + 1;
   if (done >= crop.harvests) return false;
 
@@ -205,7 +206,7 @@ function beginRegrow(plot, crop, soil) {
     Math.floor(crop.grow * 1000 * soil.timeMul * crop.regrow),
   );
 
-  const now = Date.now();
+  const now = at;
   plot.harvested = done;
   plot.plantedAt = now;
   plot.total = regrowMs;
@@ -244,6 +245,26 @@ function clearPlot(plot) {
   });
 }
 
+/* ---------- 自动机器（第 51 轮） ---------- */
+
+/**
+ * 让自动机器把当前这一批活干掉（玩家在场时的即时版本）。
+ *
+ * 和世界时钟里的 `runAutoStep` 是同一套效果，区别只有「用哪个时刻」：
+ * 这里用现在。给 UI 的「机器已经在跑了，顺手清一下」用，
+ * 也让玩家买了机器之后不必等下一个心跳才看到它干活。
+ *
+ * @returns {Promise<boolean>} 有没有真的干活
+ */
+export async function runAutoNow() {
+  const done = runAutoStep(Date.now() - 1000, Date.now());
+  if (!done.water && !done.pest && !done.harvest) return false;
+  announceAuto(done);
+  await persist();
+  return true;
+}
+
+
 /* ---------- 动作 ---------- */
 
 /**
@@ -276,7 +297,7 @@ export async function plant(plotId, cropId) {
  *
  * 效果是把**当前生长阶段**所需的时间砍掉 10% ——
  * 也就是让作物在当前阶段里少等 10% 的时间。
- * 经验按作物等级给：照料 12 级的作物就给 12 点。
+ * 经验按作物等级折十给：照料 12 级的作物给 1 点，200 级的给 20 点（至少 1）。
  */
 export async function water(plotId) {
   const plot = getPlot(plotId);
@@ -290,17 +311,18 @@ export async function water(plotId) {
   const crop = CROPS[plot.cropId];
   const bounds = stageBounds(plot, crop, now);
   const saved = Math.max(0, Math.round((bounds.stageEnd - bounds.stageStart) * WATER_SPEEDUP));
+  const exp = careExp(crop.lv);
 
   plot.readyAt = Math.max(now, plot.readyAt - saved);
   serveCare(plot, 'water', now);
   bump(PLAYER_ID, 'work');
-  player.addExpRaw(crop.lv);
+  player.addExpRaw(exp);
   player.addLog('💧', `给 ${crop.name} 浇水，当前阶段 -${Math.round(WATER_SPEEDUP * 100)}%`);
 
   await persist();
   await completeGuide('water');
   notify(
-    `💧 浇水成功，当前阶段缩短 ${Math.round(WATER_SPEEDUP * 100)}%（约 ${fmtSaved(saved)}）　经验 +${crop.lv}`,
+    `💧 浇水成功，当前阶段缩短 ${Math.round(WATER_SPEEDUP * 100)}%（约 ${fmtSaved(saved)}）　经验 +${exp}`,
   );
   return true;
 }
@@ -308,7 +330,7 @@ export async function water(plotId) {
 /**
  * 捉虫：只有作物生虫时才能捉。
  * 每捉一次，这块地的产量增加 10%（有上限）。
- * 经验同样按作物等级给。
+ * 经验同样按作物等级折十给（至少 1）。
  */
 export async function catchPest(plotId) {
   const plot = getPlot(plotId);
@@ -321,23 +343,24 @@ export async function catchPest(plotId) {
 
   const crop = CROPS[plot.cropId];
   const before = plot.boost || 0;
+  const exp = careExp(crop.lv);
   plot.boost = Math.min(BOOST_CAP, before + PEST_YIELD_BONUS);
   serveCare(plot, 'pest', now);
   bump(PLAYER_ID, 'work');
-  player.addExpRaw(crop.lv);
+  player.addExpRaw(exp);
   player.addLog('🐛', `给 ${crop.name} 捉虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%`);
 
   await persist();
   await completeGuide('pest');
   const gain = Math.round((plot.boost - before) * 100);
-  notify(`🐛 捉虫成功，产量 +${gain}%（当前 +${Math.round(plot.boost * 100)}%）　经验 +${crop.lv}`);
+  notify(`🐛 捉虫成功，产量 +${gain}%（当前 +${Math.round(plot.boost * 100)}%）　经验 +${exp}`);
   return true;
 }
 
 /**
  * 一键浇灌：消耗 1 个洒水器（有永久版则不消耗），把所有缺水的地一次浇完。
  *
- * 单块效果与手动浇水完全一致（当前生长阶段 -10%，每块按作物等级给经验），
+ * 单块效果与手动浇水完全一致（当前生长阶段 -10%，每块按作物等级折十给经验），
  * 道具只负责省掉「一块一块点」这件事。
  *
  * @returns {Promise<boolean>}
@@ -364,7 +387,7 @@ export async function waterAll() {
     plot.readyAt = Math.max(now, plot.readyAt - saved);
     serveCare(plot, 'water', now);
     bump(PLAYER_ID, 'work');
-    exp += crop.lv;
+    exp += careExp(crop.lv);
   }
 
   player.addExpRaw(exp);
@@ -380,7 +403,7 @@ export async function waterAll() {
 
 /**
  * 一键杀虫：消耗 1 个杀虫剂（有永久版则不消耗），把所有生虫的地一次捉完。
- * 每块地产量 +10%，经验按作物等级给。
+ * 每捉一次，这块地产量 +10%，经验按作物等级折十给。
  * @returns {Promise<boolean>}
  */
 export async function catchPestAll() {
@@ -401,7 +424,7 @@ export async function catchPestAll() {
     plot.boost = Math.min(BOOST_CAP, (plot.boost || 0) + PEST_YIELD_BONUS);
     serveCare(plot, 'pest', now);
     bump(PLAYER_ID, 'work');
-    exp += CROPS[plot.cropId].lv;
+    exp += careExp(CROPS[plot.cropId].lv);
   }
 
   player.addExpRaw(exp);
@@ -502,10 +525,16 @@ const careNoteOf = (care) => (care.pct
  * 都调它，区别只在外面怎么汇报 —— 再写一份「批量版」迟早会跟单块版算得不一样。
  *
  * @param {object} plot
+ * @param {{gainExp?: boolean, credit?: boolean, at?: number}} [opts]
+ *   `gainExp: false` 与 `credit: false` 是给自动收获机用的（第 51 轮）：
+ *   机器替玩家收的菜照样进包、照样记图鉴，但不发经验、也不记「农事劳模」
+ *   的工时 —— 否则玩家挂机一天，榜单和经验榜会被一台 1000 块的机器刷穿。
+ *   `at` 是「收获发生在哪一刻」：补算历史时不能用 Date.now()，
+ *   否则再生轮的成熟时间会从玩家回来的那一刻重新起算，白等一整轮。
  * @returns {{crop: object, amount: number, exp: number, remaining: boolean,
  *            stolen: number, boost: number, care: {pct: number, dry: boolean, buggy: boolean}}}
  */
-function collectPlot(plot) {
+function collectPlot(plot, opts = {}) {
   const crop = CROPS[plot.cropId];
   const soil = SOILS[plot.soil];
 
@@ -524,15 +553,15 @@ function collectPlot(plot) {
   recordHarvested(plot.cropId, amount);
 
   // 经验只看「收到几个」：每份产出 = 作物等级 + 2，再乘土地的经验倍率
-  const exp = Math.round(expOf(crop.lv, amount) * soil.expMul);
-  player.addExpRaw(exp);
+  const exp = opts.gainExp === false ? 0 : Math.round(expOf(crop.lv, amount) * soil.expMul);
+  if (exp) player.addExpRaw(exp);
 
   // 收完之后地块会被重置，提示里要用的加成得先存下来
   const boost = plot.boost || 0;
   // 每日榜单：打理王 = 收获时带着的角标加成（重置前算）；农事劳模 = 收获一块地
   bumpMax(PLAYER_ID, 'manage', farmMaxBonus(state.farm.plots));
-  bump(PLAYER_ID, 'work');
-  const remaining = beginRegrow(plot, crop, soil);
+  if (opts.credit !== false) bump(PLAYER_ID, 'work');
+  const remaining = beginRegrow(plot, crop, soil, opts.at);
   if (!remaining) clearPlot(plot);
 
   return { crop, amount, exp, remaining, stolen, boost, care };

@@ -38,6 +38,7 @@ import {
 import { CROPS } from '../data/crops.js';
 import { SOILS } from '../data/soils.js';
 import { PRODUCE_PREFIX, produceId } from '../data/keys.js';
+import { starterPack } from '../data/starter.js';
 import { CRYSTAL_TIERS, VILLAGE_LOG_CAP, VILLAGE_MAX_LEVEL } from '../data/village.js';
 import { PLAYER_ORDER_LIMIT } from '../data/orders.js';
 import {
@@ -62,6 +63,25 @@ const HOUR = 3600_000;
 
 /** 地块上所有「时间戳」字段，读档时要逐个清洗成有限数 */
 const PLOT_TIMES = ['plantedAt', 'readyAt', 'total', 'waterNext', 'pestNext', 'stolenAt'];
+
+/**
+ * 新档开局礼包（建号时填一次）。
+ *
+ * 只活在内存里：它是「给 UI 弹一次窗」的凭据，弹过就清空 ——
+ * 存档里没有必要记「我领过礼包」，能进游戏就说明已经发过了。
+ * @type {?{cropId: string, entries: object[]}}
+ */
+let starterGift = null;
+
+/**
+ * 取走开局礼包的内容（弹窗用）；取过一次就没了。
+ * @returns {?{cropId: string, entries: object[]}}
+ */
+export function takeStarterGift() {
+  const gift = starterGift;
+  starterGift = null;
+  return gift;
+}
 
 /** @type {{farm: object, friends: object[], peers: object[], bag: Record<string, number>,
  *          relations: Record<string, number>, news: object[],
@@ -132,6 +152,7 @@ function createPlayerFarm() {
      *   pray      本期祈福总次数（玩家 + 全部邻居，升级时清零）
      *   stock     { 1..4: n } 冒险挖到、还没投出去的水晶
      *   prayDay   { 农场 id: dayKey } 今天谁祈过（只留今天）
+     *   giveDay   { 农场 id: dayKey } 今天谁投过钱（只留今天，第 49 轮）
      *   logs      建设日志，7 天 / 160 条
      */
     village: {
@@ -141,6 +162,7 @@ function createPlayerFarm() {
       pray: 0,
       stock: { 1: 0, 2: 0, 3: 0, 4: 0 },
       prayDay: {},
+      giveDay: {},
       logs: [],
     },
     /** 农场主的成长档案：签到 / 图鉴 / 称号 / 引导 */
@@ -165,6 +187,13 @@ function createPlayerFarm() {
       cropStats: {},
       /** 作物 id → true，做了标本才算点亮图鉴 */
       specimens: {},
+      /**
+       * 自动机器的到期时刻（第 51 轮）：`{ water, pest, harvest }` → 时间戳，0 = 没有。
+       *
+       * 记绝对时间戳而不是「还剩多久」—— 玩家离线那段时间机器照样在跑，
+       * 存剩余毫秒的话关一次页面就等于把它冻住了。
+       */
+      auto: { water: 0, pest: 0, harvest: 0 },
       titles: { claimed: {}, equipped: '' },
       guide: {},
     },
@@ -401,13 +430,18 @@ function normalizeVillage(raw) {
     pray: Math.max(0, safeNum(v.pray, 0)),
     stock: {},
     prayDay: {},
+    giveDay: {},
     logs: [],
   };
   for (const tier of CRYSTAL_TIERS) out.stock[tier] = Math.max(0, safeNum(v.stock?.[tier], 0));
 
+  // prayDay / giveDay 都只留今天那几个 key：留着历史只会长成 33×N 的表
   const today = dayKey(Date.now());
   for (const [who, day] of Object.entries(v.prayDay || {})) {
     if (typeof who === 'string' && day === today) out.prayDay[who] = day;
+  }
+  for (const [who, day] of Object.entries(v.giveDay || {})) {
+    if (typeof who === 'string' && day === today) out.giveDay[who] = day;
   }
 
   out.logs = (Array.isArray(v.logs) ? v.logs : [])
@@ -423,6 +457,13 @@ function normalizePlayerFarm(row, save) {
   const base = createPlayerFarm();
   const progress = { ...base.progress, ...(row.progress || {}) };
   progress.titles = { ...base.progress.titles, ...(progress.titles || {}) };
+  // 自动机器的到期时刻：旧档没有这个字段，补 0（= 没买过）；
+  // 坏值一律当 0，宁可少算一天，也别让一台「-Infinity 天后过期」的机器永远转下去
+  progress.auto = {
+    water: safeNum(progress.auto?.water, 0),
+    pest: safeNum(progress.auto?.pest, 0),
+    harvest: safeNum(progress.auto?.harvest, 0),
+  };
   // 签到历史：旧档没有这个字段，补空数组；有就裁到保留窗口内
   progress.signDays = Array.isArray(progress.signDays)
     ? progress.signDays.slice(-SIGN_KEEP_DAYS)
@@ -605,6 +646,8 @@ export async function initState() {
   }
 
   state.bag = save.bag;
+  // 第一次进游戏：6 颗当前等级的种子 + 三件省手道具 + 狗粮（见 data/starter.js）
+  if (!playerRow) starterGift = grantStarterPack(now);
   state.news = save.news;
   state.dailyRows = save.dailyRows || {};
 
@@ -631,6 +674,27 @@ export async function initState() {
   });
 
   return state;
+}
+
+/**
+ * 把开局礼包塞进仓库，并记进农场日志。
+ *
+ * 直接操作 `state.bag` 而不是走 `store/inventory.js` 的 `add()`：
+ * 那一步会顺手记「图鉴已收集」，而种子 / 道具本来就不该算收集，
+ * `noteProduce` 也会因为不认识这些 key 而白跑一趟。
+ *
+ * @param {number} now
+ * @returns {{cropId: string, entries: {id: string, n: number, emoji: string, name: string}[]}}
+ */
+function grantStarterPack(now) {
+  const pack = starterPack(state.farm.level);
+  for (const entry of pack.entries) {
+    state.bag[entry.id] = (state.bag[entry.id] || 0) + entry.n;
+  }
+  const text = pack.entries.map((e) => `${e.emoji}${e.name}×${e.n}`).join('、');
+  state.farm.log ??= [];
+  state.farm.log.unshift({ at: now, emoji: '🎁', text: `收到新手礼包：${text}`, by: '' });
+  return pack;
 }
 
 /**

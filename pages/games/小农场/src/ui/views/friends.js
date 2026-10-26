@@ -271,6 +271,38 @@ export function noteArrival(payload) {
 }
 
 /**
+ * 下线提醒：与上线同一套合并逻辑，只有配色不同。
+ *
+ * 用普通样式而不是金色 —— 金色在这是「好事发生了」，而一个人的离开
+ * 不该抢走玩家的注意力；数量与文案格式保持一致，一眼能认出是同一类消息。
+ */
+let departBuf = [];
+let departTimer = 0;
+
+function flushDepartures() {
+  departTimer = 0;
+  const list = departBuf;
+  departBuf = [];
+  if (!list.length) return;
+
+  if (list.length === 1) {
+    showToast(`💤 ${list[0].avatar} ${list[0].name} 下线了`);
+    return;
+  }
+  const names = list.slice(0, 3).map((o) => o.name).join('、');
+  const more = list.length > 3 ? ` 等 ${list.length} 位` : '';
+  showToast(`💤 ${names}${more} 下线了`);
+}
+
+/** 收到一位邻居下线的通知（订阅 EVENTS.DEPARTURE） */
+export function noteDeparture(payload) {
+  if (!payload) return;
+  departBuf.push(payload);
+  if (departTimer) return;
+  departTimer = setTimeout(flushDepartures, 400);
+}
+
+/**
  * 在线期间的邻居上线提醒（每分钟的心跳里跑一次）。
  *
  * 上线 toast 已经由 `noteArrival` 当场发掉了，这里只负责推进世界、
@@ -355,6 +387,8 @@ export function mountFriends() {
   on(EVENTS.FRIENDS, renderFriends);
   // 上线通知：事件当场发的（见 store/social.js），这里合并 400ms 内的一批
   on(EVENTS.ARRIVAL, noteArrival);
+  // 下线：在线窗口走到头时由世界时钟发（见 store/world.js），同样合并成一条
+  on(EVENTS.DEPARTURE, noteDeparture);
   // 在线窗口（5~15 分钟）会自己走到头：每分钟只改圆点与灰度类，
   // 不重绘列表 —— 整列表重建会把玩家的滚动位置打回原型
   on(EVENTS.TICK, refreshOnline);

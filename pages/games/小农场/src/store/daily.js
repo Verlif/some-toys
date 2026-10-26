@@ -29,7 +29,8 @@ import { boardDayKey, boardPeriodStart, formatCoins } from '../core/utils.js';
 import { farmMaxBonus } from '../data/care.js';
 import { MAP_TIERS } from '../data/adventure.js';
 import { mapId, itemLabel } from '../data/keys.js';
-import { SPRINKLER_ID, PESTICIDE_ID, HARVESTER_ID } from '../data/items.js';
+import { SPRINKLER_ID, PESTICIDE_ID, HARVESTER_ID, ITEMS } from '../data/items.js';
+import { addAuto } from './automation.js';
 
 /** 保留多少天的行：昨天要展示、再往前要容得下补算期间的翻日结算 */
 const KEEP_DAYS = 8;
@@ -269,7 +270,12 @@ export function rewardText(reward) {
 /** 把一份奖励发到玩家身上（金币 / 道具 / 藏宝图） */
 function grantReward(reward) {
   if (reward.coins) player.addCoins(reward.coins);
-  for (const [id, n] of Object.entries(reward.items || {})) inventory.add(id, n);
+  for (const [id, n] of Object.entries(reward.items || {})) {
+    // 自动机器不占背包（第 51 轮）：直接叠到有效期上
+    const auto = ITEMS[id]?.auto;
+    if (auto) addAuto(auto, Date.now(), n);
+    else inventory.add(id, n);
+  }
   for (const tier of reward.maps || []) inventory.add(mapId(tier), 1);
 }
 

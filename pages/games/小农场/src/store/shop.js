@@ -12,6 +12,9 @@ import { mapTier } from '../data/adventure.js';
 import { mapId, produceId, seedId } from '../data/keys.js';
 import { completeGuide } from './codex.js';
 import { notify } from './notify.js';
+import { addAuto, autoTimeText } from './automation.js';
+import { runAutoNow } from './farm.js';
+import { clockText } from '../core/utils.js';
 
 async function persist() {
   await commit({ farms: [state.farm], bag: state.bag });
@@ -70,6 +73,23 @@ export async function buyItem(itemId) {
   if (!player.spendCoins(item.price)) {
     notify('金币不足 😥');
     return false;
+  }
+
+  // 自动机器（第 51 轮）：不进背包，往对应类别上叠一天。
+  // 已经开着就在原到期时刻往后加，不会把剩下的时间清零重算
+  if (item.auto) {
+    const { until } = addAuto(item.auto, Date.now());
+    player.addLog(
+      '🛒',
+      `买入 ${item.name}，有效期延长到 ${clockText(until)}，-${item.price} 💰`,
+    );
+    await persist();
+    // 「买完当即生效」：不等下一次心跳，立刻把手上这一批活干一遍。
+    // 顺手让玩家看到机器真的动了，而不是买完什么都没发生
+    await runAutoNow();
+    await completeGuide('shop');
+    notify(`${item.emoji} ${item.name} 已启用：${autoTimeText(until - Date.now())}后到期`, 'gold');
+    return true;
   }
 
   inventory.add(itemId, 1);

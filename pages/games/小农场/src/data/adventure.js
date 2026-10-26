@@ -375,6 +375,8 @@ export function describeReward(r) {
   if (!r) return '';
   if (r.kind === 'coin') return `💰 ${r.n.toLocaleString()} 金币`;
   if (r.kind === 'dog') return `${r.emoji} ${r.name}（守护犬）`;
+  // 自动机器（第 51 轮）领的是「几天」，不是「几个」—— 挖到一件就是一天时长
+  if (r.kind === 'item' && ITEMS[r.id]?.auto) return `${r.emoji} ${r.name} +${r.n}天`;
   return `${r.emoji} ${r.name} ×${r.n}`;
 }
 
