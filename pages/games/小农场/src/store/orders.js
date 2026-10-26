@@ -136,11 +136,20 @@ export async function cancelOrder(orderId) {
 
 /**
  * 过期清扫：移除过期订单，托管赏金退还给下单方。
- * 挂在 settleWorld 上（进邻居页 / 每分钟轮询都会跑一次）。
+ *
+ * 两个调用点：
+ *   - 世界时钟推进的每一步（按 deadline 精确判断），带 `quiet`；
+ *   - 结算前后的一次兜底清扫。
+ *
+ * `quiet: true` 时不落盘也不发事件 —— 离线补算里可能连着过期几十条，
+ * 每条都写一次库会把启动拖成十几秒（headless 实测 18s → 0.4s）。
+ * 补算结束后由调用方统一 `flushAwards()` 落一次。
+ *
  * @param {number} [now]
+ * @param {{quiet?: boolean}} [options]
  * @returns {Promise<number>} 清了几条
  */
-export async function expireOrders(now = Date.now()) {
+export async function expireOrders(now = Date.now(), { quiet = false } = {}) {
   const expired = allOrders().filter((o) => o.deadline <= now);
   if (!expired.length) return 0;
   for (const order of expired) {
@@ -152,6 +161,8 @@ export async function expireOrders(now = Date.now()) {
     }
     removeOrder(order);
   }
+  if (quiet) return expired.length;
+
   await commit({ farms: [state.farm, ...state.friends] });
   emit(EVENTS.FRIENDS);
   emit(EVENTS.PLAYER);

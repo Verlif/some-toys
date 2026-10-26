@@ -11,8 +11,9 @@
  *      离线补算的邻居访问发生在过去某天，不能记到「今天」头上；
  *   2. **已结算的日子冻结**：下午 2 点发过奖的行不再接受迟到的动作，
  *      迟到的直播演出（跨 midnight 那一刻）也不会改写已发出的奖；
- *   3. **远期聚合不进榜**：bulkAdvance 没有 ctx，本来就调不到 bump，
- *      只有逐条模拟（最近 7 天）与实时演出记账 —— 模糊数据不跟精确数据同榜。
+ *   3. **只有逐条模拟进榜**：世界时钟跨过 14:00 就当场结算那一期，
+ *      所以离线补算的每一天都能上榜；只有「离线久到超预算」时那段
+ *      bulkAdvance 聚合不记账 —— 模糊数据不跟精确数据同榜。
  *
  * 发奖只给玩家：NPC 夺冠只上报一条时报（世界照常运转的感觉）。
  * 金币从严：主榜 100/50/30，冒险王各档多一张「免费藏宝图」—— 发的是道具不是钱。
@@ -30,7 +31,7 @@ import { MAP_TIERS } from '../data/adventure.js';
 import { mapId, itemLabel } from '../data/keys.js';
 import { SPRINKLER_ID, PESTICIDE_ID, HARVESTER_ID } from '../data/items.js';
 
-/** 保留多少天的行：昨天要展示、再往前要容得下 7 天精细模拟窗口的补算 */
+/** 保留多少天的行：昨天要展示、再往前要容得下补算期间的翻日结算 */
 const KEEP_DAYS = 8;
 
 /* ---------- 榜单定义 ---------- */
@@ -326,16 +327,20 @@ function settleDay(row, now = Date.now()) {
 /**
  * 跨天检查：把已经结束但还没结算的日子逐天结算掉。
  *
- * 两个调用时机：启动时（补算之后）与在线时的每分钟 tick。
- * 下午 2 点那一刻玩家正好在线上 → 当场发奖并 toast；不在线则下次进游戏补结，同样提示。
+ * 调用时机：**世界时钟**跨过 14:00 那一刻（启动补算与在线心跳都走同一条路），
+ * 以及页面隐藏前的兜底。下午 2 点玩家正好在线上 → 当场发奖并 toast；
+ * 不在线则下次进游戏补结，几个期次会按天数从旧到新逐张播庆祝。
  *
- * 玩家拿到的名次会发一个 BOARD_AWARD 事件，UI 层播全屏庆祝动画
- * （离线积压了几天就按天数从旧到新逐张播）。
+ * `quiet: true` 给世界时钟的补算用：**不落盘、不弹 toast**，
+ * 只把结算做掉（奖励照发、时报照写、庆祝事件照发）——
+ * 离线一个月会有 30 次翻日，每次都落盘 + toast 会把启动画面刷爆。
+ * 补算结束后调用方统一 `flushAwards()` 一次。
  *
  * @param {number} [now]
+ * @param {{quiet?: boolean}} [options]
  * @returns {Array<{date: string, awards: object[], playerWon: boolean}>} 结算掉的每一天（通常只有一页）
  */
-export function checkRollover(now = Date.now()) {
+export function checkRollover(now = Date.now(), { quiet = false } = {}) {
   const today = boardDayKey(now);
   // 兜底：设备时钟被往前调过时可能结算出「未来」的行，把这类行解锁，
   // 让它们等到真正到期再结算（正常时间线上这个循环不会命中）。
@@ -360,17 +365,22 @@ export function checkRollover(now = Date.now()) {
     if (dayIndex(key) < floor) delete state.dailyRows[key];
   }
 
-  // 结算发了奖（金币 / 道具 / 日志 / 时报），这些都在另外几张表里，必须一起落盘
-  persistNow(true);
-  emit(EVENTS.PLAYER);
-  emit(EVENTS.INVENTORY);
-  emit(EVENTS.FARM);
-  emit(EVENTS.NEWS);
-  emit(EVENTS.DAILY);
+  // 结算发了奖（金币 / 道具 / 日志 / 时报），这些都在另外几张表里，必须一起落盘。
+  // 补算模式交给调用方最后统一落一次（见 flushAwards），别每个翻日都写库
+  if (!quiet) {
+    persistNow(true);
+    emit(EVENTS.PLAYER);
+    emit(EVENTS.INVENTORY);
+    emit(EVENTS.FARM);
+    emit(EVENTS.NEWS);
+    emit(EVENTS.DAILY);
+  }
 
   // 玩家拿到的名次（按天数从旧到新，days 内按榜的次序）→ 庆祝动画
   const playerAwards = results.flatMap((r) => r.playerAwards || []);
   if (playerAwards.length) emit(EVENTS.BOARD_AWARD, playerAwards);
+
+  if (quiet) return results;
 
   if (playerAwards.length) {
     const brief = playerAwards.slice(0, 2).map((a) => `${a.board} 第${a.rank}名`).join(' · ');
@@ -489,4 +499,15 @@ function persistNow(rich = false) {
 /** 把还在排队的那次记账立刻写掉（页面隐藏 / 结算前调用） */
 export function flushDaily() {
   return persistNow();
+}
+
+/**
+ * 把补算期间的奖励一次性落盘。
+ *
+ * 世界时钟跨天时用 `checkRollover(now, { quiet: true })` 结算 ——
+ * 它只改内存、不写库；补算结束（或在线心跳结束）后由调用方在这里写一次，
+ * 连带 farm（金币/日志）、bag（道具）、news（时报）一起提交。
+ */
+export function flushAwards() {
+  return persistNow(true);
 }

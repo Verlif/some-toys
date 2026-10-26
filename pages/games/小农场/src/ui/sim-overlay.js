@@ -1,10 +1,13 @@
 /**
  * 结算等待画面。
  *
- * 进入邻居页时，离线期间发生的成长需要被补算一遍。这件事是分帧做的，
- * 所以用这张卡把它包起来：告诉玩家「邻居们正在farm」，而不是让页面突然卡住。
+ * 世界时钟要一段一段把「你不在的这段时间」走完，这件事是分帧做的，
+ * 所以用这张卡把它包起来：告诉玩家正补算到哪一刻，而不是让页面突然卡住。
+ *
+ * 进度按**时间比例**算，不按会话数 —— 会话数是掷出来的，做不得准。
  */
 import { byId } from '../core/dom.js';
+import { clockText } from '../core/utils.js';
 
 const MIN_DISPLAY_MS = 650;
 
@@ -16,7 +19,7 @@ let shownAt = 0;
 
 /**
  * 打开等待画面
- * @returns {{update: (done: number, total: number) => void, close: () => Promise<void>}}
+ * @returns {{update: (progress: {at: number, percent: number}) => void, close: () => Promise<void>}}
  */
 export function showSimOverlay() {
   root = root || byId('simOverlay');
@@ -28,12 +31,12 @@ export function showSimOverlay() {
   detail = root.querySelector('.sim-detail');
 
   return {
-    update(done, total) {
-      const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 100;
+    update(progress) {
+      const pct = Math.max(0, Math.min(100, progress?.percent ?? 100));
       bar.style.width = `${pct}%`;
       label.textContent = pct >= 100 ? '结算完成' : `${pct}%`;
-      detail.textContent = total > 0
-        ? `正在推演 ${total} 次上线活动…`
+      detail.textContent = progress?.at
+        ? `正在补算到 ${clockText(progress.at)}…`
         : '邻居们最近很清闲，一切安好';
     },
 

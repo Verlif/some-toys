@@ -253,13 +253,6 @@ export function onlineMs(npc) {
 /** 这位邻居现在是否在线（onlineUntil 是 ms 时间戳，缺省 0 = 不在线） */
 export const isNpcOnline = (npc, now = Date.now()) => now < (npc.onlineUntil || 0);
 
-/**
- * 精细模拟的时间窗口：只有这段时间内的上线会被逐条执行并写进动态日志，
- * 更久远的部分用聚合公式一次性结算，否则离线几个月会把浏览器卡死。
- */
-export const DETAILED_WINDOW_DAYS = 7;
-export const DETAILED_WINDOW = DETAILED_WINDOW_DAYS * DAY;
-
 /** 单个 NPC 单次结算的会话数上限（兜底，正常远达不到） */
 export const MAX_VISITS_PER_NPC = 4000;
 

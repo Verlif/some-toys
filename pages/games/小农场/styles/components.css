@@ -3530,3 +3530,124 @@
   font-family: inherit;
 }
 .rank-hero.empty .rank-hero-count b { color: var(--gold); }
+
+/* ---------- 离线时间轴（你不在的 N 天） ---------- */
+/* 世界时钟补算完之后弹的一层流水账：离开超过 2 小时才出现。
+   结构走弹窗四段式，卡片挂 .offline-modal 把左右内边距收窄一点 ——
+   这里的信息密度比商品详情高，多留一点给正文。 */
+.offline-modal .modal-body { padding: 4px 16px 14px; }
+
+.or-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  padding: 4px 0 12px;
+}
+.or-ico {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(150deg, #eef3ff, #e2e9fb);
+  font-size: 21px;
+  line-height: 1;
+}
+.or-id { flex: 1; min-width: 0; }
+.or-title { font-size: 16px; font-weight: 700; }
+.or-head .modal-sub { margin: 2px 0 0; }
+
+/* 四个总账格子：来访 / 被顺走 / 被照料 / 狗拦下 */
+.or-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+.or-stat {
+  padding: 8px 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfdf9;
+  text-align: center;
+}
+.or-stat-v {
+  font-size: 14px;
+  font-weight: 800;
+  color: #3c4a39;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.or-stat-k {
+  margin-top: 1px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* 按天分组：日期 + 当天账目 + 几条有料的事 */
+.or-days { margin-top: 12px; }
+.or-day { padding: 9px 0; border-top: 1px dashed var(--line); }
+.or-day:first-child { border-top: none; padding-top: 2px; }
+.or-day-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.or-day-head b { font-size: 12.5px; color: #3c4a39; }
+.or-day-head span { font-size: 10.5px; color: var(--muted); }
+
+.or-notes {
+  margin: 5px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.or-notes li {
+  display: flex;
+  gap: 6px;
+  padding: 1px 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #4c5a49;
+}
+.or-notes li span { flex-shrink: 0; }
+
+.or-awards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.or-awards span {
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: linear-gradient(150deg, #fff8e8, #fdeec9);
+  border: 1px solid #ead9ae;
+  color: #a0730f;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.or-older {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--line);
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* 360px 以下四格挤：缩字号而不是换行，账目必须一眼看全 */
+@media (max-width: 359px) {
+  .or-stat-v { font-size: 12.5px; }
+  .or-stat-k { font-size: 9.5px; }
+}
+
+/* 离线期间什么都没发生时的占位（08-10 月那几天全是空的也要有个交代） */
+.or-quiet {
+  padding: 18px 0 6px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--muted);
+}

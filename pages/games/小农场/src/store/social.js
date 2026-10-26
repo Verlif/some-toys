@@ -2,8 +2,8 @@
  * 社交领域：邻居农场（拜访 / 偷菜 / 帮忙照料）与在线演出。
  *
  * 邻居的成长不在这个文件里算，而是交给 npc-sim.js；
- * 这里负责三件事：
- *   1. **结算**：把邻居从上次结算点推进到现在（分帧，离线久了也不卡）；
+ * 世界怎么随时间往前走交给世界时钟 world.js。这里负责三件事：
+ *   1. **结算**：把世界从「上次离开」推进到现在（世界时钟，分帧不卡）；
  *   2. **演出**：玩家在线时，邻居的动作不再瞬间完成，而是隔几秒做一件；
  *   3. **互动**：玩家自己的偷菜与帮忙照料。
  *
@@ -15,7 +15,8 @@ import { emit, EVENTS } from '../core/bus.js';
 import { PLAYER_ID, state, getFriend } from './state.js';
 import * as player from './player.js';
 import * as inventory from './inventory.js';
-import { estimateWork, planVisit, runStep, simulateNpcUntil } from './npc-sim.js';
+import { runStep } from './npc-sim.js';
+import { advanceWorld, createReport } from './world.js';
 import { expireOrders, orderBoard, removeOrder } from './orders.js';
 import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
@@ -25,7 +26,7 @@ import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain, tradeRelCost } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
-import { bump, bumpMax } from './daily.js';
+import { bump, bumpMax, flushAwards } from './daily.js';
 import { catchChance, DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
@@ -177,36 +178,65 @@ function simCtx(farm = farmView()) {
 /** 本次在线会话的起点：早于它的上线都属于「你不在的时候」 */
 let sessionStart = Date.now();
 
+/** 世界时钟已经推到了哪一刻：在线心跳每次从它往前推一分钟 */
+let worldCursor = sessionStart;
+
 /** 正在进行的结算（同一时刻只会有一次） */
 let settlePromise = null;
+
+/** 老存档没有「上次在线」字段时的兜底：往前找这么久 */
+const LAST_SEEN_FALLBACK = 8 * 3600_000;
 
 /** 标记本次在线会话的起点（打开游戏时调用一次） */
 export function markSessionStart(now = Date.now()) {
   sessionStart = now;
+  worldCursor = Math.min(worldCursor, now);
+}
+
+/**
+ * 时间轴的起点：**上次离开的那一刻**。
+ *
+ * 优先读存档里的 `progress.lastSeenAt`（每次结算与页面隐藏时写）；
+ * 老存档没这个字段时退回「所有邻居里最早的那个待办上线」——
+ * 那正是世界停摆的位置，再兜一层 8 小时。
+ *
+ * @param {number} [now]
+ * @returns {number}
+ */
+function lastSeen(now = Date.now()) {
+  const saved = state.farm?.progress?.lastSeenAt || 0;
+  let earliest = Infinity;
+  for (const npc of state.friends) {
+    const at = npc.nextVisitAt || 0;
+    if (at && at < earliest) earliest = at;
+  }
+  const guess = Number.isFinite(earliest) ? earliest : now - LAST_SEEN_FALLBACK;
+  // 设备时钟往回拨过时别把循环推到未来
+  return Math.min(saved > 0 ? Math.min(saved, guess) : guess, now);
 }
 
 /** 当前是否正在结算 */
 export const isSettling = () => Boolean(settlePromise);
 
 /**
- * 还有多少会话要补算。UI 层用它决定要不要显示等待画面。
- * @returns {number}
+ * 距离上次离开过去了多久。UI 层用它决定要不要显示等待画面 / 离线报告。
+ * @returns {number} 毫秒
  */
-export function pendingWork() {
-  return estimateWork(state.friends, Date.now());
+export function pendingSpan(now = Date.now()) {
+  return Math.max(0, now - lastSeen(now));
 }
 
 /**
- * 把所有邻居从上次结算点推进到「现在」。
+ * 把世界从「上次离开」推进到「现在」。
  *
- * 分帧执行（每帧 12ms），离线很久也不会把主线程卡死。
- * 同一时刻只会有一次结算在进行，重复调用会拿到同一个结果。
+ * 走的是世界时钟：一段一段往前推，每段把到点的上线、订单、翻日、收炉做完。
+ * 分帧执行（每帧 12ms），离线很久也不会把主线程卡死；同一时刻只会有一份。
  *
- * 本次会话之后才到点的上线**不在这里执行**，只把游标推过去，
+ * 本次会话开始之后才到点的上线**不在这里执行**，只把游标推过去，
  * 交给下面的在线演出一步步做（见 runLiveStep）。
  *
- * @param {(done: number, total: number) => void} [onProgress]
- * @returns {Promise<{total: number, visits: object[], deferred: object[], summary: object}>}
+ * @param {(progress: {at: number, from: number, to: number, percent: number}) => void} [onProgress]
+ * @returns {Promise<{span: number, visits: object[], deferred: object[], report: object, summary: object}>}
  */
 export function settleWorld(onProgress) {
   if (settlePromise) return settlePromise;
@@ -216,47 +246,85 @@ export function settleWorld(onProgress) {
 
 /** 真正干活的结算 */
 async function runSettle(onProgress) {
-  const npcs = state.friends;
   const now = Date.now();
-  // 过期订单先清掉（赏金退还），再补算上线 —— 别让 NPC 接过期的单
-  await expireOrders(now);
-  const total = estimateWork(npcs, now);
+  const from = Math.min(worldCursor, lastSeen(now));
+
+  // 起点之前就到期的订单先清掉（赏金退还）：世界从这一刻重新开始转，
+  // 别让邻居去接一张早就作废的单。循环内的过期由时钟按 deadline 处理
+  await expireOrders(from);
+
   const farm = farmView();
   const ctx = simCtx(farm);
   const visits = [];
   const deferred = [];
 
-  const collect = (npc) => (visit) => {
-    if (visit.deferred) {
-      deferred.push({ npc, at: visit.at, levelBefore: visit.levelBefore, steps: planVisit(npc) });
-    } else {
-      visits.push({ npc, ...visit });
-    }
-  };
+  // 报告起点：**上次真的还在**的那一刻。
+  // 新档的「上次在线」就是建号时间，而开局那批邻居的 nextVisitAt 排在十几小时前 ——
+  // 那些上线要模拟（世界本来就是那么摆着的），但不该让玩家一进游戏就看到
+  // 一份「你不在的 16 小时」
+  const seenAt = state.farm?.progress?.lastSeenAt || 0;
+  const reportFrom = seenAt > 0 ? Math.max(seenAt, from) : from;
+  const report = createReport(reportFrom, now);
+  const span = Math.max(1, now - reportFrom);
 
-  let index = 0;
-  let done = 0;
-  while (index < npcs.length) {
-    const until = performance.now() + 12;
-    while (index < npcs.length && performance.now() < until) {
-      const npc = npcs[index];
-      done += simulateNpcUntil(npc, ctx, now, collect(npc), sessionStart);
-      index += 1;
-    }
-    onProgress?.(done, total);
-    // 让出一帧，页面才不会卡住
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-  }
+  // 只有「刚刚这一分钟」到点的上线才值得演给玩家看。
+  // 页面藏了半小时再切回来（浏览器把定时器节流了），这段时间的事已经过去了，
+  // 直接算完 —— 否则会把十几趟上线排成一条三分钟的演出队列。
+  const deferFrom = now - from <= 2 * 60_000 ? sessionStart : Infinity;
 
-  // 没有新事情就别写库：轮询是定时跑的，每次都落盘太浪费
+  await advanceWorld({
+    from,
+    to: now,
+    ctx,
+    deferFrom,
+    report,
+    onVisit: (visit) => {
+      if (visit.deferred) deferred.push(visit);
+      else visits.push(visit);
+    },
+    onProgress: (at) => onProgress?.({
+      at,
+      from,
+      to: now,
+      percent: Math.min(100, Math.round(((at - from) / span) * 100)),
+    }),
+  });
+
+  worldCursor = now;
+  // 下次开机从这里接着算。落盘跟着其它写一起走（见 touchLastSeen）
+  state.farm.progress.lastSeenAt = now;
+
+  // 没有新事情就别写库：在线心跳每 60 秒跑一次，每次都落盘太浪费
   if (visits.length) await persistFriends(farm);
+  // 补算期间的榜单奖励、订单退款、出种子都是「安静结算」的（不落盘、不弹提示），
+  // 这里统一写一次（farm 金币 / bag 道具 / news 时报）
+  if (report.dirty || reportHadAwards(report)) await flushAwards();
 
   return {
-    total,
+    span,
     visits,
     deferred,
+    report,
     summary: { stolen: farm.stolen, cared: farm.cared, caught: farm.caught },
   };
+}
+
+/** 这次推进里有没有发过榜奖金（有就得把 farm / bag / news 一起落盘） */
+function reportHadAwards(report) {
+  return Object.values(report.days).some((day) => day.awards.length > 0);
+}
+
+/**
+ * 页面藏进后台 / 关掉之前，把「我刚才还在」记下来。
+ *
+ * 不写这个字段的话，下次开机只能靠「最早的待办上线」猜世界停在哪，
+ * 玩家离开三天也可能从五天前开始补算（多跑一段无用的循环）。
+ *
+ * @param {number} [now]
+ */
+export async function touchLastSeen(now = Date.now()) {
+  state.farm.progress.lastSeenAt = now;
+  await commit({ farms: [state.farm] }).catch(() => {});
 }
 
 /**
@@ -439,10 +507,11 @@ export function takeArrivals() {
  *
  * 提示由 UI 层发出（见 ui/views/friends.js），这里只负责把结果算出来。
  *
- * @param {(done: number, total: number) => void} [onProgress] 启动画面用它画进度
+ * @param {(progress: {at: number, from: number, to: number, percent: number}) => void} [onProgress]
+ *   启动画面用它画进度（按时间比例，不是按会话数）
  */
 export async function pollOnline(onProgress) {
-  const { visits, deferred, summary } = await settleWorld(onProgress);
+  const { span, visits, deferred, summary, report } = await settleWorld(onProgress);
 
   pendingOffline.count += visits.length;
   pendingOffline.stolen += summary.stolen;
@@ -450,6 +519,8 @@ export async function pollOnline(onProgress) {
   pendingOffline.caught += summary.caught;
 
   for (const visit of deferred) enqueueVisit(visit);
+  // 时间轴交给调用方：启动流程要用它决定弹不弹「你不在的 N 天」
+  return { span, report, visits: visits.length, deferred: deferred.length };
 }
 
 /* ---------- 玩家与邻居互动 ---------- */

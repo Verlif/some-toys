@@ -2,13 +2,16 @@
  * 组合根：负责启动顺序与跨模块的订阅接线。
  *
  * 启动流程：
- *   打开数据库 → 读档 → 挂载各 UI 模块 → 首帧渲染 → 补算邻居近况 → 启动心跳
+ *   打开数据库 → 读档 → 挂载各 UI 模块 → 首帧渲染 → 世界时钟补算 → 启动心跳
  *
- * 前两步和最后的补算都要花时间，所以整个流程用启动画面裹起来，
- * 并把当前在做的事写在画面上（「正在连接到农场」/「正在进入农场」）。
+ * 补算这一步（第 46 轮起）走**世界时钟**：从存档里的「上次在线」逐段推进到现在，
+ * 邻居上线、订单到期、榜单翻日、收炉都按时间顺序发生，离线一个月回来
+ * 看到的是真的过程，不再是聚合公式抹出来的结果。这一步要花时间，
+ * 所以整个流程用启动画面裹起来，并把「补算到哪一刻」写在画面上。
  */
 import { openDatabase } from './core/db.js';
 import { on, EVENTS } from './core/bus.js';
+import { clockText } from './core/utils.js';
 import { initState } from './store/state.js';
 import { autoSignIn, reconcileSignHistory } from './store/signin.js';
 import { settleDogDig } from './store/dogs.js';
@@ -22,7 +25,8 @@ import { mountInlineActions } from './ui/inline-actions.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
 import { mountCodexCelebrate } from './ui/codex-celebrate.js';
 import { mountDogCaught } from './ui/dog-caught.js';
-import { mountBoardCelebrate } from './ui/board-celebrate.js';
+import { mountBoardCelebrate, celebratePending } from './ui/board-celebrate.js';
+import { showOfflineReport, wantsReport } from './ui/offline-report.js';
 import { flushOfflineGifts, mountGift } from './ui/gift.js';
 import { mountPeerGift } from './ui/peer-gift.js';
 import { mountVillage } from './ui/village-sheet.js';
@@ -36,7 +40,7 @@ import { mountFarm, renderFarm } from './ui/views/farm.js';
 import { mountShop, renderShop } from './ui/views/shop.js';
 import { mountFriends, renderFriends, checkOnlineVisits } from './ui/views/friends.js';
 import { mountCenter, renderCenter } from './ui/views/center.js';
-import { markSessionStart, pollOnline } from './store/social.js';
+import { markSessionStart, pollOnline, takeOfflineSummary, touchLastSeen } from './store/social.js';
 import { checkRollover, flushDaily, migrateBoardRows } from './store/daily.js';
 import { initPeers, joinVillage, villageConfig } from './store/peers.js';
 import { initPeerGift } from './store/peer-gift.js';
@@ -104,17 +108,22 @@ async function boot() {
   on(EVENTS.DAILY, renderCurrent);
   on(EVENTS.STATS, renderCurrent);
 
-  /* ④ 补算玩家不在时邻居做的事。离线久了会分很多帧，所以带进度 */
+  /* ④ 世界时钟：从「上次在线」逐段推进到现在，邻居们干的每一件事都在这时发生 */
   bootStage('正在进入农场', '看看邻居们干了什么…', 44);
   markSessionStart();
-  await pollOnline((done, total) => {
-    // total 只是估算（上线间隔带随机），所以夹住比例，别让进度条冲过头
-    const ratio = total > 0 ? Math.min(1, done / total) : 1;
-    bootProgress(
-      44 + Math.round(ratio * 50),
-      total > 0 ? '邻居们正在打理农场…' : '邻居们最近很清闲',
-    );
-  });
+  let settleResult = null;
+  try {
+    settleResult = await pollOnline((progress) => {
+      if (!progress) return;
+      // 按时间比例画进度：会话数是掷出来的，做不得准
+      bootProgress(
+        44 + Math.round((progress.percent / 100) * 50),
+        `正在补算到 ${clockText(progress.at)}…`,
+      );
+    });
+  } catch (error) {
+    console.error(error);
+  }
 
   await bootDone();
 
@@ -195,11 +204,10 @@ async function boot() {
 
   // 邻居的成长在玩家在线时持续推进：他们上线时弹一条提示，
   // 之后每做一件事（顺菜、照料）都隔几秒才发生，见 store/social.js。
-  // 同一个轮次上还挂着三件「跨天」的事：
-  //   - 每日排行榜：0 点那一刻正好在线上，分钟级发现翻日就当场结算并发 toast；
-  //   - 自动签到：翻日也自动把今天的签到领了（已签过则什么都不做），
-  //     庆祝画面照播，与开机时那次一致；
-  //   - 守护犬挖宝：翻日把「昨天」的挖宝掷了（离线补掷在启动时做）。
+  // 这个轮次本身就是世界时钟的「在线一档」—— 每 60 秒把世界往前推一分钟，
+  // 离线补算与在线推进走的是同一个 advanceWorld，只是步长与是否演出不同。
+  // 跨天的事（榜单、签到、挖宝）在时钟里已经按时间点处理过，
+  // 这里再调一次是兜底：万一页面错过了一整段（比如被完全冻结）。
   setInterval(() => {
     if (document.hidden) return;
     checkOnlineVisits();
@@ -213,8 +221,10 @@ async function boot() {
   // 从后台切回来时立刻补一次渲染，避免看到过期的倒计时
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      // 记账是防抖落盘的，藏进后台前把排队的那次写掉
+      // 记账是防抖落盘的，藏进后台前把排队的那次写掉；
+      // 同时记下「我刚才还在」，下次开机才知道世界该从哪一刻接着转
       flushDaily();
+      touchLastSeen().catch(() => {});
       return;
     }
     renderFarm();
@@ -232,6 +242,28 @@ async function boot() {
     await autoSignIn();
   } catch (error) {
     console.error(error);
+  }
+
+  // 离线时间轴：离开超过 2 小时才弹（见 data/world.js 的 REPORT_MIN_SPAN）。
+  // 等出榜庆祝播完再弹 —— 两个全屏层叠在一起谁也看不清。
+  if (settleResult && wantsReport(settleResult)) {
+    await waitBoardCelebrate();
+    showOfflineReport(settleResult.report);
+    // 时间轴已经把「被顺走 / 被照料 / 狗拦下」讲全了，
+    // 别再让邻居页那句「你不在时：…」重复一次
+    takeOfflineSummary();
+  }
+}
+
+/**
+ * 等出榜庆祝队列播空（最多等 20 秒）。
+ *
+ * 离线补算可能连着结算好几天的榜，名次卡片是一张一张播的；
+ * 离线时间轴叠在它上面会互相盖住。
+ */
+async function waitBoardCelebrate() {
+  for (let i = 0; i < 40 && celebratePending() > 0; i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 }
 

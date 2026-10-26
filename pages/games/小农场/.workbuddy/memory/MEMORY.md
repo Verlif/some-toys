@@ -1,293 +1,176 @@
 # 项目长期约定 · 西米的农场
 
 纯前端（原生 ESM、零构建、`node server.mjs`），存档 IndexedDB（`sun_farm_v2`），无后端。
-游戏正式更名《西米的农场》（原名「阳光牧场 · 文字版」），但 DB_NAME/localStorage key/APP_NAME 保持 sun_farm* 不变（存档兼容）。
+游戏正式更名《西米的农场》，但 DB_NAME/localStorage key/APP_NAME 保持 sun_farm* 不变（存档兼容）。
 局域网联机走 WebRTC P2P（`vendor/webconnect.js`）。267 作物（165 常规 + 102 限定）/ 40 块地 / 8 档土地 / 32 位邻居。
 
 ## 工程约定
 
 - 分层 `ui → store → core`，`data` 谁都能读。store 唯一改状态、**禁 DOM 符号**，提示走 `notify()`。
-- **不做测试**，只跑 `npm run check`，验证脚本用完即删。中文注释 + JSDoc，主动清死代码。
-- 作物/土地/经验/称号由 `tools/gen-data.mjs` 产出，**不手改** `data/{crops,soils,progression}.js`。
+- **不做测试**，只跑 `npm run check`（语法/import/id/CSS 变量/data-action/数据一致性），验证脚本用完即删。
+- 中文注释 + JSDoc，主动清死代码。作物/土地/经验/称号由 `tools/gen-data.mjs` 产出，**不手改** `data/{crops,soils,progression}.js`。
 - 多表写入同一事务 `commit({ farms, bag, news, relations, dailyRows })`（**动了才带**）。
 
 ## 存档
 
 `state = { farm, friends[32], bag, relations, news[], dailyRows }`，玩家与邻居同形状。
 七表：`farm` / `plot`([farmId,id]) / `log`([farmId,seq]) / `news` / `relation`([a,b]) / `inventory` / `daily`(date)。
-⚠️ 复合主键每段必须有值。日志条目 `{at, emoji, text, by}`：`by`=邻居农场 id（NPC→玩家操作才传）。
-新字段在 `normalizePlot/normalizeNpc/normalizePlayerFarm` 里补。
+⚠️ 复合主键每段必须有值。日志 `{at, emoji, text, by}`：`by`=邻居 id（NPC→玩家操作才传）。
+新字段在 `normalizePlot/normalizeNpc/normalizePlayerFarm` 里补。`writeFarm` 存整行（除 plots/log），progress 随行落盘。
 
 ## 数值
 
-- **六种原型** `arch`：速生/丰产/精品/慢生/多茬/常规。售价公式不变，速生每小时最高（用户要严格公式）。
+- **六种原型** `arch`：速生/丰产/精品/慢生/多茬/常规。经验 `expForLevel(n)=100n(n+1)`；
+  售价 `整轮收益=(种子价×1.2+等级×10)×(1+0.05×整轮小时)`。
 - **地块**：`plot.usable` 落库，开局 6 块，第 N 块 `(已拥有-6)×1000+500`。升级不给地。
-- 经验 `expForLevel(n)=100n(n+1)`；售价 `整轮收益=(种子价×1.2+等级×10)×(1+0.05×整轮小时)`。
-- **三件省手道具**（洒水器/杀虫剂/采收机）各 200 金币，各有永久版。先查永久再查消耗。
-  **永久采收机第 44 轮从 100,000 降到 20,000**（另两件永久版仍 50,000）——
-  一键收获是玩家最先想要的那件，原价等于只卖给大后期。
-- **种子制造间**（`farm.workshop = {level, kinds, jobs}`）：Lv.5+2000 解锁。份数 `max(1, round(一轮平均产出/2))`，
-  工本费 `round(种子价/4)`（第 43 轮由 ÷2 再减半）。升级看**造过的种类数**。
-  第 43 轮起**限定作物也能造**（`craftables/craft` 不再挡 `crop.special`，
-  `state.js` 的 `workshop.kinds` 规范化也放开 special）。
-  **第 44 轮改成排队制造**：`jobs` 一炉 `{id, cropId, need, fee, startAt, doneAt}`，
-  时间 `craftMs(crop)=max(1,lv)×10s`（`CRAFT_MS_PER_LEVEL=10_000`），**栏位数 = 等级**（`slotCount`）。
-  `craft()` 扣料扣钱后**只入队**（返回 job / 栏位满返回 null），`claimJobs()` 到点才加种子 + `kinds++`。
-  `scheduleClaim()` 按最早 `doneAt` 挂 setTimeout 自动收；`main.js` 启动调 `resumeCraftTimers()` 接回。
-  ⚠️ 时间戳落库，**离线照样走**；读档时 jobs 清洗（认不得的 cropId / `doneAt<=startAt` 丢掉，上限 10 条）。
+- **三件省手道具**（洒水器/杀虫剂/采收机）各 200 金币，各有永久版，先查永久再查消耗。
+  **永久采收机 20,000**（另两件永久版 50,000）—— 一键收获玩家最先想要。
+- **种子制造间**（`farm.workshop = {level, kinds, jobs}`）：Lv.5+2000 解锁，份数 `max(1, round(一轮平均产出/2))`，
+  工本费 `round(种子价/4)`，升级看**造过的种类数**，限定作物也能造。
+  第 44 轮起**排队制造**：`jobs` 一炉 `{id,cropId,need,fee,startAt,doneAt}`，`craftMs=max(1,lv)×10s`，
+  **栏位数 = 等级**；`craft()` 只入队，`claimJobs()` 到点才加种子 + `kinds++`（`scheduleClaim` 挂 setTimeout）。
+  ⚠️ 时间戳落库，离线照样走；读档清洗 jobs（认不得的 cropId / `doneAt<=startAt` 丢掉，上限 10）。
 - **照料**：`下次 = now + [次数×1h, (次数×2+1)h]`，不排进成熟前 15 分钟。欠水 −15%、欠虫 −40%。
-- **每日排行榜**（`store/daily.js`）：`state.dailyRows` 一期一行，表 `daily` 留 8 天。11 张榜。
-  **每天下午 2 点结算**（`boardDayKey(ts)=dayKey(ts-14h)`，14:00 切日；签到仍用 `dayKey` 0 点切）。
-  ⚠️ **行的 date = 账期开始那天**，一期 = 该日 14:00 → 次日 14:00，次日 14:00 开奖
-  （所以上午的活算进「昨天」那一期，这是 14 点切日的必然结果）。界面上必须用
-  `boardPeriodText(date)` 把区间写出来，只写「昨日 · 10-22」会被当成自然日。
-  旧 0 点账期留下的行与新账期**同键不同义** → 启动时 `migrateBoardRows()` 比对
-  `progress.boardVersion`（`BOARD_VERSION=3`），**只丢掉 `start` 对不上的行**。
-  ⚠️ 每行都存 `start`（账期起点 ms，`boardPeriodStart(date)`）：`rowOf` 记账时 start 不对
-  就重开一行、`currentRow()` 读的时候直接当空行、`checkRollover` 也不结算这类行 ——
-  三道闸门保证「本期一定从 14:00 起算」，存档里躺着旧行也不会串味。
-  打理王 `manage` 是**当前值不是累计**：实时榜 = `farmMaxBonus(自己农场)`（不靠收获事件，
-  地里挂着高加成没收获也上榜），与记账峰值取较大；结算时对**期结束后 2 小时内**的那一期
-  再量一次（久远补算不追溯，农场早不是当时模样）。
-  `bump` 累加 / `bumpMax` 只留峰值（打理王=全场最高角标）。送礼=产出售价总和。
-  settled 冻结；bulkAdvance 不进榜。前三名递减、并列都发，金币 100/50/30。
-  ⚠️ 结算 `persistNow(true)` 连 farm/bag/news 一起写。UI `ui/subpages/rank.js`。
-  **第 44 轮**：结算时玩家获奖要**同时写时报**（`addNews`，用**农场名**，句式与 NPC 对齐）——
-  早年只写农场日志，公告栏里只剩 NPC 的名字。展示名次用 `entry.rank`（并列第一都显示第 1 名），
-  奖励仍按名次顺序发（并列都发，各拿各那档）。
-  玩家名次随 `EVENTS.BOARD_AWARD` 发给 `ui/board-celebrate.js`：全屏庆祝卡，
-  **单张 ≤2s、点一下淡出即接下一张、多个名次按天数从旧到新排队播**；
-  该层 **z-index 195**（弹窗 130 之上、toast 200 之下，两者要同屏可见）。
-  **第 44 轮页面顺序调换**：`rankPage.render` 先 `todayHTML`（实时在上）后 `yesterdayHTML`（昨日在下），
-  hero 文案同步改成讲「本期」；昨日榜卡片 head 加 `.rank-reward-btn`（`data-action="rank-reward"`），
-  弹窗用 `rewardText(reward)`（第 44 轮由模块私有改为 **export**）列前三名奖励 —— 与真正发奖文案同源。
-- **好感度**：−200~200，打理 +1、偷菜成功 0、被逮 `dogCaughtRelLoss(售价)=max(1,round(售价/10))`、
-  送 `max(1,等级/2)`。**亲近档 ≥100**：NPC 优先打理 ≥100，`closeGiftChanceFor`（100→0.25，200→0.55）
-  ×性格系数送礼；<100 `giftChanceFor` 封顶 0.5。概率第 36 轮整体上调约 1.5~2 倍。
-- **土地逐级晋升**：`nextSoilId`，`upgradeSoil` 拦跳级。效果：yieldMul/timeMul/expMul 三处生效。
-- **仓库卖出**：`.qty` 步进器，默认全量。列表图鉴标记 `.codex-mark` **只在点亮时渲染**（第 32 轮）。
+- **好感度**：−200~200，打理 +1、偷菜成功 0、被逮 `max(1,round(售价/10))`、送 `max(1,等级/2)`。
+  亲近档 ≥100：NPC 优先打理，`closeGiftChanceFor`（100→0.25，200→0.55）×性格系数；<100 封顶 0.5。
+- **土地逐级晋升** `nextSoilId`，`upgradeSoil` 拦跳级；yieldMul/timeMul/expMul 三处生效。
+- **仓库卖出**：`.qty` 步进器默认全量；`.codex-mark` **只在点亮时渲染**。
+
+## 世界时钟（第 46 轮，核心）
+
+**唯一驱动是时间**：`store/world.js` 的 `advanceWorld({from,to,ctx,deferFrom,onVisit,onProgress,report})`
+从「上次离开」逐段推到「现在」，每段按顺序：到点上线（按 `nextVisitAt` 升序）→ 订单过期 →
+跨 14:00 结算榜单（`checkRollover(now,{quiet:true})`）→ 制造间收炉。离线与在线**同一条路径**。
+
+- 步长自适应：`stepMsFor(span)`，≤7 天 1 分钟，之后每翻倍时长步长翻倍，封顶 60 分钟。
+  动作时刻用**真实时间戳**不用步点（粗步长不会把上午的活记成下午）。
+- `VISIT_BUDGET=30_000`：超预算把**最早那段**交给 `bulkAdvance` 聚合，最近那段仍逐分钟走，
+  时间轴标「更早的部分按汇总补算」。30 天约 6000 次上线，正常永远碰不到。
+- ⚠️ **补算期间所有跨表动作必须 quiet**（`expireOrders` / `claimJobs` / `checkRollover`），
+  改内存不写库，结束统一 `flushAwards()`。早年每条订单过期 commit 一次 → 365 天要 18 秒，改完 0.4 秒。
+- 起点 `from = min(worldCursor, lastSeen())`；`lastSeen()` 读 `progress.lastSeenAt`，
+  老档没有就退回「最早的待办上线」，兜底 8 小时。
+- **报告起点 ≠ 模拟起点**：报告从 `lastSeenAt` 算（新档就是建号时刻，不会误弹「你不在的 16 小时」），
+  模拟仍要覆盖那批排在十几小时前的开局上线。
+- `deferFrom`：只有「刚刚这一分钟」到点的上线才演给玩家（`deferFrom = sessionStart`）；
+  间隔 >2 分钟（页面被冻结）说明事已过去，直接算完。
+- 在线心跳 `main.js` 每 60 秒 `checkOnlineVisits()` = 时钟推一分钟；页面隐藏时 `touchLastSeen()`。
+- 离线时间轴 `ui/offline-report.js`：**>2 小时才弹**（`REPORT_MIN_SPAN`），四个总账格子 + 按天
+  （自然日，0 点切）列表，每天最多 6 条事件、最多展开最近 10 天。要等 `celebratePending()` 清零再弹。
+  不足一天按小时说（「你不在的 3 小时」），天数按 elapsed 算不按桶数。
+
+### NPC 行动框架（注册表）
+
+`npc-sim.js` 的 `ACTIONS`：`{ label, main, sweep, can, run }`。
+`main` = 占性格权重名额（`PERSONALITIES.weights` 同名键）；`sweep` = 每趟顺路再试一次；
+`can` **只过滤 main 候选池**（必须便宜、无副作用）；`run(npc, at, ctx)` 返回 `{emoji,text,...}|null`。
+
+- 加新行为 = 往表里加一条，不动 planVisit / runStep / 演出队列。
+- ⚠️ `sweep` 的动作**不能写 `can`**：can 在规划时算，而收获途中才腾出空地，补种得看那之后。
+- ⚠️ `harvest` / `tend` 必须同时挂 `main` 和 `sweep`，否则没抽到那趟就整趟不管自家地。
 
 ## UI 硬约束
 
-- **四个主页面 tab**：农场 / 邻居 / **村中心 🏡**（第 42 轮由「📰 时报」改造，
-  `views/center.js`）/ 商店。⚠️ 村中心 🏡 ≠ 村镇 🏘（联机浮窗，进村才出现），图标刻意区分。
-  村中心 = 总览卡（在线/总人数**含玩家**；第 44 轮起占满一行，**点击弹窗看名单**，
-  弹窗里「全部 / 在线」筛选）+ 下方并排两枚按钮：📢 公告栏、📋 订单
-  （订单徽标常驻总数，**订单唯一入口**，「更多」里已删）。
-  公告栏是时报弹窗，**过滤/排序栏在列表下面**（modal-foot 位）；TICK+FRIENDS 实时刷
-  计数/头像行/圆点，不重建名单。老 `views/news.js` 已删。
-
-- **农场页顶部操作条**（第 37 轮）：`.farm-bar` 一张白卡放 `#page-farm` 首位、**流内跟着土地列表滚**，
-  上排守护犬+日志方块、下排三格一键（图标/名字/橙色待办数/存量）。**不要再往底部堆 fixed 浮层**，
-  `--farm-tools-h` 已删；`data-action` 必须写字面量（check.mjs 扫不到模板拼接的名字）。
-  **存量只标消耗版 `×N`，永久版不显示数字**（第 38 轮；悬停提示补「永久版，不消耗」，
-  邻居农场 🚿/🧴 标题栏同一规则）。`.fa-stock` 只在 **<330px** 才隐藏（第 40 轮从 380px 降的，
-  360px 安卓 / 375px iPhone SE 要能看见 ×N）。
-- **土地列表顺序**（第 39 轮）：`已解锁地块 → 荒地卡（未解锁只画第一张，🔓价格按钮）
-  → .plot-fold 汇总行永远垫底`。开垦后新建的荒地卡节点会 append 到汇总行**后面**，
-  `renderFarm` 末尾必须 `grid.appendChild(foldNode.el)` 把汇总行挪回末尾（移动已有节点）。
-- **toast**：背景 .75 透明度（深色 `rgba(34,48,31,.75)`、金色渐变两色标同 alpha），
-  文字保持纯白 —— 用背景 alpha 不用 `opacity` 属性，别把字一起淡掉（第 39 轮）。
-- 浮层统一：上滑进场、下拉关闭（`drag-close.js`）。**拖拽三条铁律**：①move 先查 tracking ②鼠标事件只在按下期间挂 ③Touch+preventDefault。
-- **弹窗四段式**：handle/head/body/foot。别用 sticky 代替 foot。支持叠层。
-  `.modal-sub` **不许负上边距**（body 是 overflow 容器，顶出去会被裁）；
-  `openModal(html, fn, cardClass)` 第三参挂整卡类名（每次打开重置）。
-- 地块 `.plot-main`+`.plot-side`(34px)；`.plot-side` ≤4 按钮。锁定地块 `.plot-lock` 空占位盒(47/38px)。
-- **土地底纹** `soilbg-<id>` 用 `::before` 叠渐变，**不能改 `background`**，只声明 `--soil-tint`（135deg，alpha .52~.66）。
-- **横滚芯片条接力** `ui/scroll-keep.js` 的 `keepBarScroll(root, sel, render)`：friends/news/shop 三处。
+- **四个主页面 tab**：农场 / 邻居 / **村中心 🏡**（`views/center.js`）/ 商店。
+  ⚠️ 村中心 🏡 ≠ 村镇 🏘（联机浮窗，进村才出现）。
+  村中心 = 总览卡（在线/总人数**含玩家**，占满一行、**点击弹窗看名单**，弹窗「全部/在线」筛选）
+  + 下方并排两枚按钮：📢 公告栏（时报弹窗，过滤/排序栏在列表下面）、📋 订单（**唯一入口**）。
+- **农场页顶部操作条**：`.farm-bar` 一张白卡放 `#page-farm` 首位、**流内跟着土地列表滚**，
+  上排守护犬（整格可点 → 狗窝）+ 日志方块、下排三格一键（图标/名字/橙色待办数/存量）。
+  **不要再往底部堆 fixed 浮层**；`data-action` 必须写字面量（check.mjs 扫不到模板拼接的名字）。
+  存量只标消耗版 `×N`，永久版不显示数字；`.fa-stock` 只在 **<330px** 隐藏。
+- **土地列表顺序**：已解锁地块 → 荒地卡（未解锁只画第一张，🔓价格）→ `.plot-fold` 汇总行垫底。
+  开垦后新建卡会 append 到汇总行后面，`renderFarm` 末尾必须把汇总行挪回末尾。
+- **toast**：背景 .75 alpha（`rgba(34,48,31,.75)`），文字纯白 —— 用背景 alpha 不用 `opacity`。
+- 浮层统一上滑进场、下拉关闭（`drag-close.js`）。**拖拽三条铁律**：①move 先查 tracking ②鼠标事件只在按下期间挂 ③Touch+preventDefault。
+- **弹窗四段式**：handle/head/body/foot。别用 sticky 代替 foot（body 底部 18px 渐隐会削掉）。
+  支持叠层，动作只派栈顶。`.modal-sub` **不许负上边距**（body 是 overflow，顶出去会被裁）。
+  `openModal(html, fn, cardClass)` 第三参挂整卡类名（每次打开重置，快照栈也存/还原 className）。
+- 地块 `.plot-main` + `.plot-side`(34px，≤4 按钮)；锁定地块 `.plot-lock` 空占位盒(47/38px)。
+- **土地底纹** `soilbg-<id>` 用 `::before` 叠渐变，**不能改 `background`**，只声明 `--soil-tint`。
+- **地块两圈动效**：限定作物 = `<i class="plot-aura">` 的 `conic-gradient` 旋转金边（`@property --plot-spin`）；
+  缺水/生虫（红）/成熟（橙）在同层 `::after` 做 `scale(1→1.06)` 外扩环。`.plot` 自己的伪元素被底纹与压边占着，**不能动**。
+- **横滚芯片条接力** `ui/scroll-keep.js` 的 `keepBarScroll`：friends/news/shop。
 - **图鉴**：卡片只有图标+名称；三档筛选；点得开 = `unlocked||collected`；收集≠点亮。
-  **双重进度条**（第 34 轮）：两条重叠同基线，下层绿=已收集(10px)，上层金=已点亮(5px)。
-  **点亮动画（第 44 轮）**：点「🧪 制作标本」后**先 `closeModal()` 再播庆祝层**
-  `ui/codex-celebrate.js`（订阅 `EVENTS.SPECIMEN`，payload `{cropId,name,emoji,seed,lit,total,litPercent}`，
-  由 `codex.js makeSpecimen` 在 emit INVENTORY 之后发出）；失败才把详情弹回来。
-  骨架照抄 `sign-celebrate.js`，样式 `.codex-celebrate/.cc-*`（z-index 210，keyframes ccPop/ccRing/ccOut）。
-- **邻居页**筛选与排序两条独立状态；筛选只认点击（滑动手势已删）。
-- **记录只有一种长相** `recordItemsHTML`；行内标签 `inlineTagsHTML`（人名+作物名一次正则）。
-- **作物详情只有一个弹窗** `openCropModal`；**邻居农场弹窗只有一个** `openFriendModal`。
-  ⚠️ 邻居弹窗结构：头部 → 数据卡 2×2（等级/身家/地块/好感）→ **农场控制台 `.npc-board`**
-  （两行：农场 N 块 + 🚿🧴 ｜ 🐕 粮槽进度条 + 🦴 + 📜）→ 地块 → 🎁 送礼 + 提示。
-  控制台是**普通文档流，故意不做 sticky**（跟着地块一起滚）。日志**不再常驻**，
-  `📜` 走 `openFriendLog()` 开叠层（`.npc-log.tall`）。
-  **🦴 添狗粮**（第 38 轮）：走 `confirmFeedDog` 确认叠层 —— 消耗玩家自己包裹 1 份狗粮
-  （sd-grid 写狗粮槽 before→after / 包裹现有 / 剩余，NPC 另标好感 +1），
-  确认才 `closeModal()` 回弹窗再扣粮；NPC 与联机好友（`feedPeerDog`）同一套。
-- **农场日志双 tab**：「我的操作」= `!entry.by`，「邻居动向」= `entry.by`。tab 在面板底部。
-- **称号页**：`.title-card > :last-child` 固定 28px 高并居中（佩戴中/佩戴/领取/未达成四种结局
-  必须等高，否则点佩戴整行跳）；`.title-hero-badge` 钉 62×62（第 40 轮）。
-- **送礼三层**：清单→确认框→发送。赠礼层 `ui/gift.js` 不做 opacity 动画。
+  双重进度条（下层绿=已收集 10px，上层金=已点亮 5px）。点亮后不再显示「制作标本」。
+  点亮动画：先 `closeModal()` 再播 `ui/codex-celebrate.js`（订阅 `EVENTS.SPECIMEN`，z-index 210）。
+- **邻居页**筛选与排序两条独立状态；筛选只认点击。
+- **记录只有一种长相** `recordItemsHTML`；行内标签 `inlineTagsHTML`。
+- **作物详情只有一个弹窗** `openCropModal`；**邻居农场弹窗只有一个** `openFriendModal`：
+  头部 → 数据卡 2×2 → `.npc-quick`（送礼/交易）→ **控制台 `.npc-board`**（两行：农场 N 块 + 🚿🧴 ｜
+  狗粮槽 + 🦴 + 📜）→ 地块 → 提示。控制台普通文档流**故意不 sticky**；日志走 `openFriendLog()` 叠层。
+  🦴 添狗粮走 `confirmFeedDog` 确认叠层；NPC 与联机好友同一套。
+- **农场日志双 tab**：「我的操作」= `!entry.by`，「邻居动向」= `entry.by`。
+- **称号页** `.title-card > :last-child` 固定 28px 高居中（四种结局等高）。
+- **送礼三层**：清单→确认框→发送；赠礼层不做 opacity 动画。
 
 ## 守护犬
 
 10 档（比熊 20%→龙犬 80%），只有一只能上岗。`catchChance(rate,sat,max)=rate×(0.5+0.5×sat/max)`。
-被抓住按 `crop.sell×5` 罚款 + 掉好感 `max(1,round(售价/10))`。
+被抓住按 `crop.sell×5` 罚款 + 掉好感 `max(1,round(售价/10))`；偷在线 NPC 双倍惩罚。
 ⚠️ 饱腹度是「基准值 + 基准时刻 `dog.at`」两件套，`dogSatietyAt()` **只认 `at`**。
-写存量时必须 `dog.satiety = 新值; dog.at = now;` 成对写，只写 satiety 会把
-「从上次结算到现在」的衰减重算一遍，喂了等于没喂（NPC/联机喂狗粮踩过，
-当时错写成了不存在的 `fedAt`）。满槽（≥ 容量-1）要拒收并退回狗粮，别白花一份。
-⚠️ 第 43 轮起槽容量随**狗窝等级**变（`farm.dogHouse.level` 0~5，容量 `100+30×级`），
-`dogSatietyAt` / `catchChance` 都加了 `max` 形参（默认 100，邻居与联机狗不变），
-玩家侧必须传 `kennelCapacity()`；界面上存量是**点数 `45/100`**不是百分比。
+写存量必须 `dog.satiety = 新值; dog.at = now;` 成对写（曾错写成不存在的 `fedAt`，喂了等于没喂）。
+满槽（≥ 容量-1）拒收并退狗粮。第 43 轮起槽容量随**狗窝等级**（`100+30×级`），玩家侧必须传 `kennelCapacity()`；
+界面上是**点数 `45/100`** 不是百分比。
 
-- **狗窝升级**（第 43 轮）：只花金币，费用 2000/5000/10000/15000/25000（0→5 级），
-  每级 +30 容量。升级前必须 `settleSatiety(now)`，否则衰减会按旧基准重算。
-- **每日挖宝**（第 43 轮）：**有狗上岗 且 槽里有粮**时每天 30% 掷一次，
-  按品阶对应藏宝图档位（`ceil(品阶/2)`：1-2→一级…9-10→五级）从该档奖励池抽一份
-  （`rollDogDigReward`，不传 opts.dog）。**只掷已过完的天**，`farm.dogHouse.digDay`
-  记账，离线补掷 ≤7 天。⚠️ 掷完无论中没中都要推进 digDay 并落盘（否则每次启动白掷）；
-  新档 digDay 初始化成**昨天**（否则漏第一天）。挂启动 + 分钟 tick。
-- **狗粮两种**：`dogFood` +45（50 金币）、`dogFoodPro` +100（100 金币），
-  点数存在 `ITEMS[id].food`，`feedDog(itemId)` 按道具取。
-
+- **狗窝升级**：只花金币 2000/5000/10000/15000/25000，每级 +30 容量；升级前必须 `settleSatiety(now)`。
+- **每日挖宝**：有狗上岗且槽里有粮时每天 30% 掷一次，按品阶取藏宝图档位（`ceil(品阶/2)`）。
+  只掷已过完的天，`farm.dogHouse.digDay` 记账，离线补掷 ≤7 天；掷完无论中没中都推进并落盘。
+- **狗粮两种**：`dogFood` +45（50 金币）、`dogFoodPro` +100（100 金币），点数在 `ITEMS[id].food`。
 
 ## 邻居与世界
 
 - 邻居同用 `unlockedPlotCount`；偷菜 `stealable()` 要 `!plot.guarded`。
-- NPC 模拟纯计算，`simCtx()` 注入 rel/receiveGift/daily，npc-sim 不 import store。
-- **NPC 概率**（第 36 轮上调约 1.5~2 倍，第 40 轮再调照料）：喂狗 `min(0.95, tend×0.40)`、
-  串门打理 `min(0.90, tend×0.30)`、偷菜 `{rare:0.18, often:0.65, always:0.95}`、冒险 0.20、
-  发订单 0.3（生意人 ×1.6 / 场面人 ×1.4）。
-  **actCare 每次上限 2 块地**（`CARE_MAX_PLOTS`）且缺水生虫一起处理；挑农场时玩家农场用
-  `CARE_PLAYER_WEIGHT=3`（care 专用，偷菜的 `PLAYER_FARM_WEIGHT=2` 不动）。
-  ⚠️ 远期 `bulkAdvance(npc, until, ctx)` 会把玩家农场过期的照料需求聚合结掉并 `cared+=n`
-  （32 个 NPC 各跑一次，天然幂等）；落盘靠「bulkAdvance 后必有详细访问」触发 persistFriends。
-  **帮邻居浇水与自家同款**：`waterNeighborPlot` / 联机主机侧都 `readyAt −= stageBounds×10%`
-  （第 40 轮补，原来只剩好感经验；联机回执带 readyAt，访客就地齐快照）。
-- **在线窗口**（第 41 轮）：`beginVisit` 写 `npc.onlineUntil = at + onlineMs(npc)`，
-  时长 = 性格表 + 身份关键词微调 ±浮动，`data/friends.js` 的 `ONLINE_MINUTES` / `onlineMs` / `isNpcOnline`。
-  bulkAdvance 不设。
-  **第 44 轮整体砍半：5~15 分钟**（原 10~30；`ONLINE_MINUTES` 全表减半、`ONLINE_PROFESSION_BONUS`
-  改成 +2 / −2 / −1、`onlineMs` 夹取改 `Math.min(15, Math.max(5, ...))`、浮动 `randInt(-1,1)`）——
-  玩家在线时绿点挂太久，串门像没完没了。
-  **NPC 升级经验 ×2（第 44 轮）**：`npc-sim.js` 的 `gainExp` 用 `expForLevel(level) * NPC_EXP_MULT`
-  （`NPC_EXP_MULT = 2`），只放大阈值不动 `expForLevel` 本身（玩家侧还在用）。
-  下游：邻居页绿点/灰度头像（`.friend-dot` + `grayscale(.55)`，TICK 只改 class 不重绘）；
-  **偷在线 NPC 被狗抓住双倍惩罚**（罚款与 `dogCaughtRelLoss` ×2，social.steal）；
-  邻居列表排序加「上线」档（在线优先 + onlineUntil 降序）；**不在线 = 弹窗与列表卡片
-  都浅灰**（`.npc-offline` / `.friend-card.offline`，modal.js 快照栈要存/还原
-  card.className，否则关子层会串灰）。
-- **订单系统**（第 41 轮，`data/orders.js` + `store/orders.js` + `subpages/orders.js`）：
-  订单 = `{id, ownerId, itemId, qty, reward, createdAt, deadline}`，**只认产出**。
-  NPC 单挂 `npc.order`（同时 1 条）、玩家单挂 `state.farm.orders`（上限 5 条）——
-  都落在农场行上**零改表**。统一 1.2 倍（`ORDER_MULT`），赏金创建即托管、过期/撤销退还。
-  **需求池 = 1 级 ~（NPC 自有等级 + `ORDER_LEVEL_FLOAT=5`）随机抽，不看玩家等级**
-  （第 42 轮改，原来是取两者较低等级）。
-  npc-sim 新步骤 `order`（发单，掏不出钱不发）与 `fill`（接单，每次上线 1 条，
-  优先玩家单，完成双方好感 +5，回执带 farms 一起落盘）——
-  ⚠️ **STEPS 表注册 + planVisit 尾巴，两边都要加**。
-  NPC 仓库 `npc.bag`：`actHarvest` 按 `KEEP_RATIO`（性格）保留入库，`NPC_BAG_CAP=60` 封顶。
-  过期清扫 `expireOrders` 挂在 settleWorld 开头。「更多」里 📋 订单（替换掉的牧场/设置已删，
-  placeholder.js 已删）。
-  **列表行标「够不够」（第 44 轮）**：`npcRowHTML` 里按 `count(order.itemId)` 与 `order.qty`
-  渲染 `.order-have.ok`（`✅ 够交（N）`）/ `.order-have.lack`（`还差 N 个（owned/qty）`）——
-  原来只有点进详情才知道自己够不够，得挨个点开。
-
-- **上线间隔砍半（第 45 轮）**：`data/friends.js` 的 `NPCS` 32 位全部对折 ——
-  interval 型 `min/max` 各除以 2（`[8,16]` → `[4,8]`，最短 `[1,4]`），fixed 型把 `hours`
-  里的钟点**翻倍**（`[6,18]` → `[0,6,12,18]`），`DEFAULT_INTERVAL` 从 `{8,16}` 改 `{4,8}`。
-  `expectedGapMs()` 顺着这两个值算，离线估时自动对齐。
-  ⚠️ **`normalizeNpc` 的 `schedule` 改成只认名单**（`schedule: def.schedule`，原来是
-  `row.schedule || def.schedule`）—— 否则老档里的旧区间永远盖住新值，砍半对老玩家完全无效。
-  性格/职业/节奏/偷菜倾向属于「这个人是谁」（策划调数值的地方），等级/身家/地块/游标才吃存档。
-  注意这与第 44 轮的「在线时长 `onlineMs` 砍半」是**两件不同的事**：一个管「多久来一趟」，
-  一个管「来了待多久」。
-
-- **交易：跟邻居按原价买产出（第 45 轮）**：`store/social.js` 末尾三个导出
-  `tradeStock(friend)` / `tradeQuote(friendId, cropId, qty)`（纯函数报价）/
-  `buyFromFriend()`（真正扣钱扣货扣好感）。价格 = **原价 `crop.sell`**，
-  好感消耗 = `tradeRelCost(lv, qty) = max(1, round(lv × qty / 2))`（`data/relation.js`）。
-  **邻居必须在线**（`isNpcOnline`）才能交易 —— `quickButtons` 里按钮 disabled + 文案
-  「💰 交易（离线）」，`openTradePicker` / `tradeQuote` 各再挡一次。
-  钱进 `friend.coins`（他才有钱买种子）。UI 是送礼那套三层的镜像
-  （`openTradePicker` → `confirmTrade`，`.rel-cost` 暖红标好感代价），
-  `paint()` 只重算不落账。联机好友没有交易入口（对方仓库是只读快照）。
-
-- **送礼 / 交易按钮挪到地块列表上方（第 45 轮）**：`openFriendModal` 的模板顺序改成
-  数据卡 → `.npc-quick` → `.npc-board` → `.npc-plots` → `.npc-tip`；
-  `.npc-quick` 的 margin 改成 `12px 0 4px`（上小下大）。原来钉在弹窗最底部，
-  要滚过一整片地块才摸得到。
-
-- **空地升级按钮（第 45 轮）**：`ui/views/farm.js` 的 `emptyHTML` 在「播种」下面多一颗
-  `data-action="soil-upgrade"`（顶档地不渲染），弹窗 `openSoilUpgradeModal` 展示
-  `当前档 → 下一档` + 六格属性（产量/时间/经验/价格/当前金币/永久保持），
-  `delta()` 只在真变化时画箭头。真正校验仍在 `farm.upgradeSoil()`（逐级晋升/等级/扣钱）。
-  `PLOT_ACTIONS` 必须加 `'soil-upgrade'`（check.mjs 靠这个对象认 data-action）。
-
-- **图鉴点亮后不再显示「制作标本」（第 45 轮）**：`openDetailModal` 的 `actions` 条件
-  改成 `!entry?.specimen && stat.owned >= SPECIMEN_COST` —— 原来只看够不够 50 份，
-  已点亮的还会摆一颗按钮，做了没奖励、白亏 50 份产出。
-
-- **NPC 上线行为（第 44 轮修的两个 bug）**：
-  ① `planVisit` 的尾巴原先是 `['replant','feed','steal','care','gift','adventure','order','fill']`，
-  **漏了 `harvest` 与 `tend`** —— `want` 只抽 2~4 个动作，算下来约 40% 的上线整趟既不收自家
-  作物也不打理。现在尾巴是 `['harvest','tend','replant',...]`（没事可做时两个 act 自己返回 null）。
-  ② 在线演出 `runLiveStep` 原先**每一步都新建 `simCtx()`**，farmView 的 `bagDirty` 与
-  stolen/cared/caught 计数跨步丢失（NPC 交给玩家的产出不落盘），收尾也不调 `syncNpcPlots`
-  （升级后新地块不补）。现在 `enqueueVisit` 时建一份 `ctx` 挂到 visit 上整趟共用，
-  commit 条件带 `ctx.farm.bagDirty` 并重置它，收尾先 `syncNpcPlots(npc, visit.at)` 再落盘。
+- NPC 模拟纯计算，`simCtx()` 注入 rel/receiveGift/daily/orders，npc-sim 不 import store。
+- **NPC 概率**：喂狗 `min(0.95, tend×0.40)`、串门打理 `min(0.90, tend×0.30)`、
+  偷菜 `{rare:0.18, often:0.65, always:0.95}`、冒险 0.20、发订单 0.3（生意人 ×1.6 / 场面人 ×1.4）。
+  `actCare` 每次上限 2 块地（缺水生虫一起处理）；玩家农场 care 权重 3、偷菜权重 2。
+- **帮邻居浇水与自家同款**：`readyAt −= stageBounds×10%`（联机回执带 readyAt）。
+- **在线窗口**：`beginVisit` 写 `npc.onlineUntil = at + onlineMs(npc)`，5~15 分钟（`ONLINE_MINUTES` 全表砍半）。
+  下游：邻居页绿点/灰度头像、偷在线 NPC 双倍惩罚、排序「上线」档、不在线弹窗与卡片浅灰。
+- **NPC 升级经验 ×2**（`NPC_EXP_MULT`，只放大阈值不动 `expForLevel`）。
+- **订单**（`data/orders.js` + `store/orders.js` + `subpages/orders.js`）：`{id,ownerId,itemId,qty,reward,createdAt,deadline}`，
+  只认产出，1.2 倍赏金创建即托管。NPC 单挂 `npc.order`（同时 1 条），玩家单挂 `state.farm.orders`（上限 5）。
+  需求池 = 1 级 ~（NPC 自有等级 + 5）。npc-sim 步骤 `order` / `fill`（每次上线 1 条，完成双方好感 +5）。
+  ⚠️ **STEPS→ACTIONS 注册表 + planVisit 的 sweep，两边都要加**。NPC 仓库 `npc.bag`（`KEEP_RATIO`，上限 60）。
+- **交易**：`tradeStock/tradeQuote/buyFromFriend`，原价 `crop.sell`，好感消耗 `max(1, round(lv×qty/2))`，
+  邻居必须在线才能交易（UI 与 store 各挡一次）。联机好友没有交易入口。
+- **上线间隔**已砍半（`[8,16]`→`[4,8]`，fixed 钟点翻倍）。`normalizeNpc` 的 `schedule` **只认名单**，
+  否则老档旧区间永远盖住新值。
 
 ## 村镇联机
 
 - 一个村镇=一个房间，配置 localStorage。四层：link→protocol→peers→village UI。
-- **真人 ≠ NPC**：`state.peers` 只在内存。两个硬前提：https/localhost + 两端能上外网。
+- **真人 ≠ NPC**：`state.peers` 只在内存。硬前提：https/localhost + 两端能上外网。
 - **真人农场可动手**：`peer-actions.js` 的 act/act:res/act:pay，主人权威。
-- **入口**：底部 tab「村镇」进村后才出现。浮窗 `village-sheet.js` 用**通用 `.sheet-panel`**（第 34 轮），
-  挂 `dragToClose`，与「更多」「农场日志」同一套下拉关闭手势。
+- **入口**：底部中间「村镇」按钮进村后才出现，浮窗 `village-sheet.js` 用通用 `.sheet-panel` + `dragToClose`。
 - **玩家送礼**：`peer-gift.js` 三段握手，送方先扣货，收方 ack 才入包。
 - 安全：丢 >48KB 报文、`cleanText()` 按码点截断、`isItemKey` 用 `hasOwnProperty`。
-- **诊断**（浮窗顶部 `.village-status`）：已连接·N人在线·连接号 / 正在连接 / 没连上（可点重连）/
-  对方版本不一致。`peers.linkDiag()` + `reconnectVillage()`；版本不一致记在 `versionMismatch`
-  （toast 8s 节流 + emit FRIENDS 让浮窗常驻显示）。
-  ⚠️ 样式类挂容器上，`statusView()` 只返回文字 —— 别在容器里再套一层 `.village-status`。
+- **诊断** `.village-status`：已连接·N人在线 / 正在连接 / 没连上（可点重连）/ 版本不一致。
+  ⚠️ 类挂容器上，`statusView()` 只返回文字。
 
 ## 其它
 
-- 时报 7 天/80 条；**农场日志与邻居动态纯 7 天、不设条数上限**（`data/friends.js` 的
-  `trimLog`；第 40 轮改，早先是两个 tab 共用 60 条 + 邻居 log 10 条，会被自家操作挤光）。
-- 称号 38 个分三类 tab；引导 17 项；签到不发经验，历史 90 天。
-- **签到连签判定必须按自然日**（第 43 轮修）：`streakBroken()` 用
-  `dayIndex(now) - dayIndex(lastSign) > 1`（`core/utils.js` 的 `dayIndex` 接受时间戳或
-  'YYYY-M-D' 键）。⚠️ 早先拿 24 小时门槛，昨晚 23 点签的今早看就被判「已中断」——
-  顶部连签显示与下方日历各说各话。日历读 `signDays`（历史），所以日历一直是对的。
-  **第 44 轮彻底统一：`signDays` 是唯一数据源**。新增 `streakOf(now)`（用 Set 从今天/昨天往前数连续天数），
-  `currentStreak()` / `leftInCycle()` / `todayStreakDay()` / `streakBroken()` 全部改用它，
-  `signStreak` 降级成缓存（`signIn` 里写成 `streakOf(now)`）。老档由 `reconcileSignHistory()`
-  按 `lastSign` 往前补出 `signDays`（上限 90 天，幂等，`main.js` 启动调用）。
-  ⚠️ 早先顶部读计数器 `signStreak`、日历读历史 `signDays`，两套各算各的才对不上。
-- **图鉴点亮奖 1 颗同种种子**（第 43 轮）：`codex.js CODEX_SEED_REWARD=1`，
-  `makeSpecimen` 点亮时发；老档由 `compensateLitSeeds()` 按 `progress.codexSeeds` 标记一次性补发
-  （`main.js` 启动调用）。
-- **限定作物 102 种铺到 Lv2-200**（第 43 轮，`tools/gen-data.mjs` 的 `SPECIAL_CATALOG`）：
-  五档藏宝图种子上限 20/60/120/160/200（用户自己改的 MAP_TIERS）。⚠️ 生成器会拦**重名**与
-  **emoji 超 8 次**，加限定作物时要先查名与 emoji。**播种限定种子的地块挂 `.plot.special`**，
-  第 44 轮起金边是 `<i class="plot-aura">` 上的 `conic-gradient` **旋转**边（`@property --plot-spin`）；
-  缺水/生虫（红）/ 成熟待收（橙）在同层的 `::after` 做 `scale(1→1.06)` 外扩环。
-  `.plot` 自己的 `::before/::after` 被底纹与压边占着，**不能动**。
-- **游戏手册**（`subpages/manual.js`）：「更多→📘 手册」，float:left 图标网格（25% 宽），
-  点图标弹 `openModal` 详情（平铺 `.manual-list`）。13 个分类（第 41 轮加「订单」）。
-- **自动签到**（第 34 轮）：开机自动签 + **跨 0 点在线也签**（挂在分钟 tick 的日期检查上），照播庆祝画面。
-- **日历空位按「当月 1 号」周几算**。
-- **PWA**（第 35 轮）：manifest.json + sw.js + icons/（全 PNG，源图 `sims-farm.png`）。
-  图标按用途各裁一版：favicon-32（主体 90%）、icon-192/512（82%）、
-  icon-maskable-512（70% + `#f4f8f0` 底，安卓圆形安全区）、apple-touch-icon-180（铺底，iOS 不吃透明）。
-  **先裁正方形再缩**（源图主体只占 45%×70%，整缩会变成贴纸）。改图标要同步
-  manifest / index.html 两个 link / sw.js 的 CORE，并升 `VERSION`。
-  ⚠️ sw.js 是**网络优先**（页面导航 + `/src` `/styles` `/vendor` 有网取新、断网回退缓存），
-  图标/manifest 才走缓存优先。**别改回 cache-first** —— v1 那样改完代码刷新永远看不到
-  （SW 拦截后压根不走网络）。`updateViaCache:'none'` + 注册后 `reg.update()`；
-  activate 里发现「非当前版本缓存」就让受控页面 `client.navigate()` 重载一次
-  （旧页面跑的是旧代码，claim 换不掉），首次安装不刷。开发排查用 `?nosw` 注销并清缓存。
-  iOS 走 `navigator.storage.persist()` + 添加到主屏提示（toast 一次，localStorage 记已提示）。
-- **排行榜底部 TAB**（第 35 轮改版）：6 大类 TAB 放 `setFoot`（横滚 keepBarScroll），
-  冒险王档位只在冒险 TAB 下显示；每榜下方挂「今日实时排名」（`todayRank`），
-  `EVENTS.STATS`（bump 防抖发）触发 renderCurrent 刷新。
-- **给别人狗添粮**：`social.feedFriendDog`（NPC）/ `peer-actions.feedPeerDog`（联机），
-  好感 +1 且计 `bump('care')`；按钮在 friend-modal 守护犬行内联。
-- **iPhone 售卖底栏**：`.sell-total` 改 flex 基线对齐 + 整数字号 12px + `.sell-total-note`
-  独占一行（flex-basis:100%）—— iOS 上 12.5px 小数字号 + 中英混排基线易错乱。
+- 时报 7 天/80 条；**农场日志与邻居动态纯 7 天、不设条数上限**（`trimLog`）。
+- **签到**：`signDays` 是唯一数据源，`streakOf(now)` 现算；`signStreak` 只是缓存。
+  `reconcileSignHistory()` 启动补历史；连签按自然日判定。自动签到挂开机 + 跨 0 点。
+- **排行榜**：11 张榜，**每天 14:00 结算**（`boardDayKey=dayKey(ts-14h)`），行 `date` = 账期开始日、
+  行内带 `start`（三道闸门保证本期从 14:00 起算，`BOARD_VERSION=3`）。
+  打理王是**当前值不是累计**：实时 = `farmMaxBonus(自己农场)`，与记账峰值取大。
+  `bump` 累加 / `bumpMax` 只留峰值；settled 冻结；前三名递减、并列都发（100/50/30）。
+  玩家获奖同时写时报；名次用 `entry.rank`；庆祝层 z-index 195（弹窗 130 上、toast 200 下）。
+  页面顺序：实时榜在上、昨日榜在下；`rewardText()` 与发奖文案同源。
+  ⚠️ 埋点矩阵见 `docs/06-领域层.md`，加互动逻辑时逐格对照。
+- **游戏手册**（`subpages/manual.js`）：「更多→📘 手册」，float 图标网格，点开弹详情。
+- **PWA**：manifest + sw.js（**网络优先**，图标/manifest 才缓存优先，别改回 cache-first）。
+  图标全 PNG，源图 `sims-farm.png`，四种用途各裁一版；改图标要同步 manifest / index.html / sw.js 的 CORE 并升 `VERSION`。
+  `updateViaCache:'none'` + `reg.update()`；activate 发现旧缓存让页面重载一次；开发用 `?nosw`。
+- **给别人狗添粮**：`social.feedFriendDog`（NPC）/ `peer-actions.feedPeerDog`（联机），好感 +1 且 `bump('care')`。
+- **iPhone 售卖底栏**：`.sell-total` 基线对齐 + `.sell-total-note` 独占一行。
 
 ## 护栏与踩坑
 
 `npm run check` 盲区：删/搬函数后必须 `grep -rn` 搜全调用点。
-e2e：等 `body[data-page]`；`.sign-celebrate` 吞点击；子页面在 `#subpageBody`。
-造数据：`page.evaluate` 里 `await import('/src/store/xxx.js')` 与页面共用模块实例。
 ⚠️ news.js/shop.js 模板字面量有 `` `}` `` 闭合序列，Edit 匹配易失败 —— 字节级确认后再改。
+⚠️ 每步都 `commit` 会把补算拖成十几秒（IndexedDB 事务）—— 循环里一律 quiet，最后写一次。
+⚠️ `requestAnimationFrame` 在 headless 里慢，但 `setTimeout(0)` 更慢（被夹到 4ms）；真正要治的是 commit 次数。

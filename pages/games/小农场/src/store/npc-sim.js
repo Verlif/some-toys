@@ -3,20 +3,19 @@
  *
  * 核心模型：每个 NPC 有一个「下次上线时间」（固定钟点或随机间隔，
  * 见 data/friends.js 的 nextVisitAt），上线一次先做 2~4 件经营上的事，
- * 再按各自的偷菜倾向顺一手、按性格决定要不要帮玩家照料一块地。
+ * 再顺路试一遍收尾动作（收获、打理、补种、喂狗、顺菜、帮忙、送礼、订单）。
  *
  * 一次上线被拆成「动作序列」：
- *   planVisit()  规划要做哪几个动作（纯数据）
+ *   planVisit()  规划要做哪几个动作（纯数据，见下方 ACTIONS 注册表）
  *   beginVisit() 把游标推到下一次上线、结算狗的饱腹度
  *   runStep()    执行其中一个动作，返回一条动态
  *
- * 离线结算把序列一口气执行完；玩家在线时由 social.js 每隔几秒执行一步，
- * 所以邻居的动作是「看得见一件一件发生」的，不是瞬间完成。
+ * 谁来驱动这套序列：**世界时钟**（store/world.js）。它从上次离开逐段
+ * 推进到现在，每段把到点的上线按先后做完；玩家在线时同一套时钟每分钟
+ * 走一步，只是把到点的上线交给 social.js 一步一步演出来。
  *
- * 结算分两段，避免「离线一年回来」卡死：
- *   - 远期（超过 7 天）：聚合公式一次性推进等级与财富，不记日志，
- *     只把玩家农场上过期的照料需求一并结掉（邻居们这些天帮忙打理过了）；
- *   - 近期（7 天内）：逐条执行上线会话，行为写进双方日志。
+ * 只有离线特别久（上线次数超预算）时，最早那一段才退回 bulkAdvance
+ * 的一次性汇总 —— 那是兜底，不是常规路径。
  *
  * 这个模块是纯计算，不碰存储也不碰 DOM：
  * 它只负责把农场对象从旧状态推到新状态，由调用方决定何时落盘。
@@ -41,7 +40,6 @@ import {
   ACTIONS_PER_VISIT,
   BOOST_CAP,
   CARE_PLAYER_WEIGHT,
-  DETAILED_WINDOW,
   MAX_VISITS_PER_NPC,
   PERSONALITIES,
   PEST_YIELD_BONUS,
@@ -82,9 +80,6 @@ import {
 
 const HOUR = 3600_000;
 const DAY = 24 * HOUR;
-
-/** 一次上线对玩家农场的影响（给「你不在时」的汇总用） */
-const noDelta = () => ({ stolen: 0, cared: 0, caught: 0 });
 
 /** NPC 仓库总件数（有上限，超了收获时直接卖掉） */
 const bagCount = (bag) => Object.values(bag || {}).reduce((sum, n) => sum + n, 0);
@@ -720,69 +715,138 @@ function actAdventure(npc, farm, ctx, at) {
    一次上线会话
    ============================================================ */
 
+/* ============================================================
+   动作注册表
+   ============================================================ */
+
 /**
- * 每种动作的签名统一成 (npc, at, ctx)：
- * ctx = { neighbours, farm, rel, relAdjust, receiveGift, orders, removeOrder }，
- * 动作内部自己挑需要的部分 —— 模拟层始终不认识 store，好感度与订单看板都是「传进来的」。
+ * 邻居会做的每一件事都在这里注册一条。
+ *
+ * **加新行为只需要往这张表里加一条**，不用再动 planVisit / runStep /
+ * 在线演出队列 —— 第 46 轮重构的目的就是让「以后还会有更多行动」
+ * 变成一次数据改动，而不是一次框架改动。
+ *
+ * 字段：
+ *   label  中文名，只用于排查与文档
+ *   main   占了性格权重的名额时，填 PERSONALITIES.weights 里的同名键
+ *   sweep  每趟上线顺路再试一次（不受名额限制）—— 收获 / 打理这类
+ *          「有活就得干」的事必须挂上，否则这次没抽到就整趟不管自家地
+ *   can    可选，**只用来过滤 main 的候选池**，必须便宜且无副作用：
+ *          抽到却做不成等于白扔一次名额（2026-10-26 之前的 planVisit
+ *          固定塞 14 个动作、一半返回 null，一小时几百趟下来很浪费）
+ *   run    (npc, at, ctx) => {emoji, text, ...} | null。ctx 由 social 注入：
+ *          { neighbours, farm, rel, relAdjust, receiveGift, daily, dailyMax,
+ *            orders, removeOrder } —— 模拟层始终不认识 store
+ *
+ * ⚠️ `sweep` 的动作**不能写 can**：can 在规划那一刻算，而收获会在
+ * 执行途中腾出空地，补种必须等那之后再看有没有地可种，所以交给 run 自己判断。
  */
-const STEPS = {
-  harvest: (npc, at, ctx) => actHarvest(npc, ctx, at),
-  plant: (npc, at, ctx) => actPlant(npc, ctx, at),
-  tend: (npc, at, ctx) => actTend(npc, ctx, at),
+export const ACTIONS = {
+  harvest: {
+    label: '收获',
+    main: 'harvest',
+    sweep: true,
+    can: (npc, at) => npc.plots.some((p) => p.cropId && p.readyAt <= at),
+    run: (npc, at, ctx) => actHarvest(npc, ctx, at),
+  },
+  plant: {
+    label: '播种',
+    main: 'plant',
+    can: (npc) => npc.plots.some((p) => !p.cropId),
+    run: (npc, at, ctx) => actPlant(npc, ctx, at),
+  },
+  tend: {
+    label: '打理',
+    main: 'tend',
+    sweep: true,
+    can: (npc, at) => npc.plots.some((p) => p.cropId
+      && (needsWater(p, at) || needsPest(p, at))),
+    run: (npc, at, ctx) => actTend(npc, ctx, at),
+  },
   /** 收尾补种：有空地才种，不让邻居的农场长期荒着 */
-  replant: (npc, at, ctx) => (npc.plots.some((p) => !p.cropId) ? actPlant(npc, ctx, at) : null),
-  feed: (npc, at) => actFeedDog(npc, at),
-  steal: (npc, at, ctx) => actSteal(npc, ctx, at),
+  replant: {
+    label: '补种',
+    sweep: true,
+    run: (npc, at, ctx) => (npc.plots.some((p) => !p.cropId) ? actPlant(npc, ctx, at) : null),
+  },
+  feed: {
+    label: '喂狗',
+    sweep: true,
+    run: (npc, at) => actFeedDog(npc, at),
+  },
+  steal: {
+    label: '顺菜',
+    sweep: true,
+    run: (npc, at, ctx) => actSteal(npc, ctx, at),
+  },
   /** 帮别人照料一块地（玩家或别的邻居，≥100 的亲近档优先） */
-  care: (npc, at, ctx) => actCare(npc, ctx, at),
+  care: {
+    label: '串门帮忙',
+    sweep: true,
+    run: (npc, at, ctx) => actCare(npc, ctx, at),
+  },
   /** 给交情够好的人送一份产出（≥100 走性格加权的新概率） */
-  gift: (npc, at, ctx) => actGift(npc, ctx, at),
-  adventure: (npc, at, ctx) => actAdventure(npc, ctx.farm, ctx, at),
+  gift: {
+    label: '送礼',
+    sweep: true,
+    run: (npc, at, ctx) => actGift(npc, ctx, at),
+  },
+  adventure: {
+    label: '冒险',
+    sweep: true,
+    run: (npc, at, ctx) => actAdventure(npc, ctx.farm, ctx, at),
+  },
   /** 张榜收购产出（手里没有进行中订单时才掷，赏金托管） */
-  order: (npc, at, ctx) => actOrder(npc, ctx, at),
+  order: {
+    label: '发订单',
+    sweep: true,
+    run: (npc, at, ctx) => actOrder(npc, ctx, at),
+  },
   /** 从看板接一条交得起的订单交货（每次上线最多 1 条） */
-  fill: (npc, at, ctx) => actFill(npc, ctx, at),
+  fill: {
+    label: '接订单',
+    sweep: true,
+    run: (npc, at, ctx) => actFill(npc, ctx, at),
+  },
 };
 
 /**
  * 规划一次上线要做的动作序列。
  *
- * 纯数据、不产生任何副作用 —— 离线结算顺序执行完，
- * 玩家在线时则交给 social.js 每隔几秒执行一步。
+ * 纯数据、不产生任何副作用 —— 离线由世界时钟顺序执行完，
+ * 玩家在线时交给 social.js 每隔几秒执行一步。
+ *
  * @param {object} npc
+ * @param {number} [at] 上线时刻（can 判断「此刻能不能做」用它）
+ * @param {?object} [ctx]
  * @returns {string[]} 动作 key 序列
  */
-export function planVisit(npc) {
+export function planVisit(npc, at = Date.now(), ctx = null) {
   const weights = PERSONALITIES[npc.personality].weights;
-  const want = randInt(ACTIONS_PER_VISIT[0], ACTIONS_PER_VISIT[1]);
   const steps = [];
-  const seen = new Set();
 
-  for (let i = 0; i < want; i += 1) {
-    let action = weightedPick(weights);
-    // 避免一次上线里重复做同一件事
-    let guard = 0;
-    while (seen.has(action) && guard < 4) {
-      action = weightedPick(weights);
-      guard += 1;
-    }
-    seen.add(action);
-    steps.push(action);
+  // ① 性格名额：只在**此刻真做得了**的动作里加权抽，抽到就能做成
+  let bag = Object.entries(ACTIONS)
+    .filter(([, action]) => action.main && (weights[action.main] || 0) > 0)
+    .filter(([, action]) => !action.can || action.can(npc, at, ctx));
+  const want = randInt(ACTIONS_PER_VISIT[0], ACTIONS_PER_VISIT[1]);
+
+  while (steps.length < want && bag.length) {
+    const key = weightedPick(Object.fromEntries(
+      bag.map(([key, action]) => [key, weights[action.main] || 0]),
+    ));
+    steps.push(key);
+    bag = bag.filter(([k]) => k !== key);
   }
 
-  // 顺菜、串门帮忙、送礼、订单不受性格权重的名额限制 —— 上线再忙也可能做一件。
-  //
-  // **收获与打理也必须在收尾里**（第 44 轮修）：早先收尾只有
-  // replant / feed / steal / care / gift / adventure / order / fill，
-  // 于是「这次上线的 2~4 件事」如果没抽到 harvest / tend，
-  // 这一趟就既不收自己的地也不打理自己的地 —— 玩家看到的是
-  // 「邻居上线了，转一圈什么都没干，我的地也没人管」（2026-10-26 用户反馈）。
-  // 这两个动作在没事可做时会自己返回 null，放进收尾不会刷出空动态。
-  return [
-    ...steps,
-    'harvest', 'tend', 'replant', 'feed',
-    'steal', 'care', 'gift', 'adventure', 'order', 'fill',
-  ];
+  // ② 顺路动作：收获、打理、补种、喂狗、顺菜、帮忙、送礼、冒险、订单 ——
+  // 上线再忙也可能顺手做一件，各自在 run 里判断能不能做。
+  // 已经在名额里抽到的不重复塞（旧版会塞两遍，第二遍必然空跑）。
+  for (const [key, action] of Object.entries(ACTIONS)) {
+    if (!action.sweep || steps.includes(key)) continue;
+    steps.push(key);
+  }
+  return steps;
 }
 
 /**
@@ -819,19 +883,31 @@ export function beginVisit(npc, at) {
  * @returns {?{emoji: string, text: string}} 一条动态，没做成则为 null
  */
 export function runStep(npc, at, kind, ctx) {
-  const entry = STEPS[kind]?.(npc, at, ctx) ?? null;
+  const action = ACTIONS[kind];
+  const entry = action?.run(npc, at, ctx) ?? null;
   if (entry) log(npc, at, entry.emoji, entry.text);
   return entry;
 }
 
 /**
- * 离线结算用：一口气跑完一整趟上线。
- * @returns {number} 这次上线之前的等级
+ * 一口气跑完一整趟上线（离线 / 世界时钟用）。
+ *
+ * 在线演出是「一步一个 setTimeout」，两条路径共用同一份 ACTIONS 与
+ * 同一个 beginVisit，所以离线补算的结果与玩家盯着看出来的结果是一致的。
+ *
+ * @param {object} npc
+ * @param {object} ctx
+ * @param {number} at
+ * @returns {{levelBefore: number, results: object[]}} 上线前的等级与这趟做成的动作
  */
-function runVisit(npc, ctx, at) {
+export function runVisit(npc, ctx, at) {
   const levelBefore = beginVisit(npc, at);
+  const results = [];
 
-  for (const kind of planVisit(npc)) runStep(npc, at, kind, ctx);
+  for (const kind of planVisit(npc, at, ctx)) {
+    const entry = runStep(npc, at, kind, ctx);
+    if (entry) results.push(entry);
+  }
 
   // 这次上线可能连升几级：地块解锁数跟着等级走，当场补上
   syncNpcPlots(npc, at);
@@ -840,7 +916,30 @@ function runVisit(npc, ctx, at) {
   if (npc.level > levelBefore) {
     ctx.farm?.news?.(at, '🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`);
   }
-  return levelBefore;
+  return { levelBefore, results };
+}
+
+/**
+ * 这批邻居在 [from, to] 里大约要上线多少次。
+ *
+ * 世界时钟用它决定「逐条执行能不能扛住」：正常一个月以内永远够用，
+ * 只有离线特别久时才需要把最早的一段交给聚合公式。
+ *
+ * 只是估算（间隔型的上线时间是掷出来的），调用方别把它当准确值展示。
+ *
+ * @param {object[]} npcs
+ * @param {number} from
+ * @param {number} to
+ * @returns {number}
+ */
+export function estimateVisits(npcs, from, to) {
+  let total = 0;
+  for (const npc of npcs) {
+    const start = Math.max(npc.nextVisitAt || to, from);
+    if (start > to) continue;
+    total += Math.min(MAX_VISITS_PER_NPC, 1 + Math.round((to - start) / expectedGapMs(npc)));
+  }
+  return total;
 }
 
 /* ============================================================
@@ -848,17 +947,21 @@ function runVisit(npc, ctx, at) {
    ============================================================ */
 
 /**
- * 把 NPC 从当前时间直接推进到 until，不逐条执行会话。
- * 用于超过精细模拟窗口的长离线，只能得到「总量」而非「过程」。
+ * 把 NPC 直接推进到 until，不逐条执行会话 —— **只给世界时钟的降级路径用**。
+ *
+ * 正常离线（一个月以内）永远走逐条模拟；只有上线次数超过预算
+ * （data/world.js 的 VISIT_BUDGET，差不多要离线半年以上）时，
+ * 才把最早的那一段按这个公式抹平：等级、金币、地块照常推进，
+ * 只是没有逐条过程，也记不上排行榜。时间轴上会如实标一句「更早的部分按汇总」。
  *
  * @param {object} npc
  * @param {number} until
- * @param {?object} [ctx] 模拟上下文。远期窗口里没人逐次模拟，但邻居们
+ * @param {?object} [ctx] 模拟上下文。这一段里没人逐次模拟，但邻居们
  *   （尤其高好感的）这些天也没闲着 —— 顺手把玩家农场上过期的照料需求
  *   一并结掉，当作他们帮忙打理过了。32 个邻居各跑一次，第一个结掉后
  *   后面的看到的已是「无需照料」，天然幂等。
  */
-function bulkAdvance(npc, until, ctx) {
+export function bulkAdvance(npc, until, ctx) {
   const span = Math.max(HOUR, until - (npc.lastVisitAt || until - HOUR));
   const visits = Math.max(1, Math.round(span / expectedGapMs(npc)));
 
@@ -944,77 +1047,3 @@ function bulkAdvance(npc, until, ctx) {
    对外入口
    ============================================================ */
 
-/**
- * 这批 NPC 要结算多少个会话，用来给等待画面算进度。
- *
- * 只是估算（间隔型的上线时间是掷出来的），所以调用方要么夹住百分比，
- * 要么别把「已完成 / 总数」直接摆给玩家看。
- * `+1` 是因为 `from` 那一刻本身就是一次要执行的上线。
- */
-export function estimateWork(npcs, now) {
-  const boundary = now - DETAILED_WINDOW;
-  let detailed = 0;
-  for (const npc of npcs) {
-    const from = Math.max(npc.nextVisitAt || now, boundary);
-    if (from > now) continue;
-    detailed += Math.min(MAX_VISITS_PER_NPC, 1 + Math.round((now - from) / expectedGapMs(npc)));
-  }
-  return detailed;
-}
-
-/**
- * 把一位邻居推进到 now，逐条执行他这期间的每一次上线。
- *
- * @param {object} npc
- * @param {{neighbours: object[], farm: ?object, rel: Function, relAdjust: Function,
- *          receiveGift?: Function}} ctx 模拟上下文（含好感度读写，由 social 注入）
- * @param {number} now
- * @param {?object} [farm] 玩家农场视图
- * @param {(visit: {at: number, entries: object[], delta: object,
- *                  levelBefore: number, deferred: boolean}) => void} [onVisit]
- *   每次上线的回调。`deferred: true` 表示这次上线「到点了但不在这里执行」——
- *   调用方要给玩家演出，见 social.js。
- * @param {number} [deferFrom] 从这个时刻起的上线都留给调用方演出
- * @returns {number} 精细模拟的会话数
- */
-export function simulateNpcUntil(npc, ctx, now, onVisit = null, deferFrom = Infinity) {
-  const boundary = now - DETAILED_WINDOW;
-  let detailed = 0;
-  let guard = 0;
-
-  while ((npc.nextVisitAt || 0) <= now && guard < MAX_VISITS_PER_NPC) {
-    guard += 1;
-    if (npc.nextVisitAt < boundary) {
-      bulkAdvance(npc, boundary, ctx);
-      continue;
-    }
-
-    const at = npc.nextVisitAt;
-    if (at >= deferFrom) {
-      // 玩家正看着：游标先推进（防止下一轮重复触发），动作留给调用方演
-      const levelBefore = beginVisit(npc, at);
-      onVisit?.({ at, entries: [], delta: noDelta(), levelBefore, deferred: true });
-      break;
-    }
-
-    // 记下这次上线前的动态列表，之后用「对象引用」认出新写的那些
-    const before = npc.log.slice();
-    const farm = ctx.farm;
-    const beforeCounts = { stolen: farm?.stolen ?? 0, cared: farm?.cared ?? 0, caught: farm?.caught ?? 0 };
-    const levelBefore = runVisit(npc, ctx, at);
-
-    onVisit?.({
-      at,
-      entries: npc.log.filter((entry) => !before.includes(entry)),
-      delta: {
-        stolen: (farm?.stolen ?? 0) - beforeCounts.stolen,
-        cared: (farm?.cared ?? 0) - beforeCounts.cared,
-        caught: (farm?.caught ?? 0) - beforeCounts.caught,
-      },
-      levelBefore,
-      deferred: false,
-    });
-    detailed += 1;
-  }
-  return detailed;
-}

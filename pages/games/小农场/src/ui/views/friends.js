@@ -18,6 +18,7 @@ import { isNpcOnline } from '../../data/friends.js';
 import { recordItemsHTML } from '../records.js';
 import { openFriendModal } from '../friend-modal.js';
 import { showSimOverlay } from '../sim-overlay.js';
+import { showOfflineReport, wantsReport } from '../offline-report.js';
 import { showToast } from '../toast.js';
 import { keepBarScroll } from '../scroll-keep.js';
 
@@ -209,10 +210,10 @@ export async function enterFriendsPage() {
 
   try {
     // 还有积压没算（比如刚从后台切回来）就显示等待画面
-    const work = social.pendingWork();
-    const overlay = work > 0 ? showSimOverlay() : null;
+    const span = social.pendingSpan();
+    const overlay = span > 60_000 ? showSimOverlay() : null;
 
-    await social.settleWorld((done, total) => overlay?.update(done, total));
+    await social.settleWorld((progress) => overlay?.update(progress));
     if (overlay) await overlay.close();
 
     // 离线期间的事：合并成一条提示，逐条弹的话离线久了会连弹十几条
@@ -244,8 +245,16 @@ export async function checkOnlineVisits() {
   settling = true;
 
   try {
-    await social.pollOnline();
+    const result = await social.pollOnline();
     const online = social.takeArrivals();
+
+    // 切后台很久（手机锁屏、挂了一夜）再回来：世界其实已经暂停了一大段。
+    // 和开机一样给一份时间轴，但只在玩家没开着别的弹窗时才弹
+    if (wantsReport(result) && !byId('modal')?.classList.contains('show')) {
+      showOfflineReport(result.report);
+      social.takeOfflineSummary();   // 时间轴讲过了，别再重复一句汇总
+    }
+
     if (!online.length) return 0;
 
     if (online.length === 1) {

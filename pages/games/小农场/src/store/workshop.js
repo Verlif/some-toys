@@ -252,9 +252,11 @@ export async function craft(cropId) {
  * 所以不可能出现「收了两次」或「任务还在、种子又没到」。
  *
  * @param {number} [now]
+ * @param {{quiet?: boolean}} [options] quiet 给世界时钟的离线补算用：
+ *   不落盘、不发事件、不弹提示，补算结束由调用方统一写一次
  * @returns {Promise<number>} 收到的种子总数（没有可收的为 0）
  */
-export async function claimJobs(now = Date.now()) {
+export async function claimJobs(now = Date.now(), { quiet = false } = {}) {
   const list = jobs();
   const done = list.filter((job) => job.doneAt <= now);
   if (!done.length) return 0;
@@ -272,6 +274,11 @@ export async function claimJobs(now = Date.now()) {
     kinds[job.cropId] = (kinds[job.cropId] || 0) + 1;
     total += got;
     player.addLog('⚒️', `${crop.emoji}${crop.name}出种子 ×${got}`);
+  }
+
+  if (quiet) {
+    scheduleClaim();
+    return total;
   }
 
   await commit({ farms: [state.farm], bag: state.bag });

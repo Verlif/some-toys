@@ -93,6 +93,34 @@ export function dayKey(ts = Date.now()) {
 }
 
 /**
+ * 时钟文案 `10/24 14:32` —— 补算进度、离线时间轴上的时刻戳。
+ * @param {number} ts
+ * @returns {string}
+ */
+export function clockText(ts) {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getMonth() + 1}/${d.getDate()} ${hh}:${mm}`;
+}
+
+/** 星期几的中文简称，离线时间轴的日期标题用 */
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+/**
+ * 日期标题 `10月24日 周五` —— 接受日期键（YYYY-M-D）或时间戳。
+ * @param {string|number} key
+ * @returns {string}
+ */
+export function dayText(key) {
+  const [y, m, d] = typeof key === 'string'
+    ? key.split('-').map(Number)
+    : [new Date(key).getFullYear(), new Date(key).getMonth() + 1, new Date(key).getDate()];
+  if (!y || !m || !d) return String(key);
+  return `${m}月${d}日 ${WEEKDAYS[new Date(y, m - 1, d).getDay()]}`;
+}
+
+/**
  * 本地日期序号（0 点切日）：同一天相等，相差几天直接相减。
  *
  * dayKey 是字符串，算「隔了几天」得先拆年月日；比较跨度用这个。

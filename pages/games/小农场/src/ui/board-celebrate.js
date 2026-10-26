@@ -101,3 +101,12 @@ export function mountBoardCelebrate() {
     if (awards) showBoardCelebrate(awards);
   });
 }
+
+/**
+ * 还有几张没播完。
+ *
+ * 离线补算会连着抛出好几天的名次，这时别同时弹离线时间轴 ——
+ * 两个全屏层叠在一起谁也看不清。启动流程会等队列空了再弹报告。
+ * @returns {number}
+ */
+export const celebratePending = () => queue.length + (layer ? 1 : 0);
