@@ -74,7 +74,7 @@ export const ITEMS = {
     desc: '买断：一键杀虫不再消耗道具（自家 / 邻居家通用）',
   },
   [HARVESTER_PRO_ID]: {
-    name: '采收机 · 永久', emoji: '🚜', price: 100_000, permanent: true, all: 'harvest',
+    name: '采收机 · 永久', emoji: '🚜', price: 20_000, permanent: true, all: 'harvest',
     desc: '买断：一键收获不再消耗道具',
   },
 };

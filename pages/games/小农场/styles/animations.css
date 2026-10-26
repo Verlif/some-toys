@@ -55,6 +55,19 @@
 @keyframes bcOut {
   to { opacity: 0; }
 }
+/* 图鉴点亮庆祝卡：弹出 → 金圈扩散 → 淡出（同一套节奏，配色偏金绿） */
+@keyframes ccPop {
+  from { opacity: 0; transform: translateY(16px) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ccRing {
+  from { opacity: .85; transform: scale(.45); }
+  to   { opacity: 0; transform: scale(2); }
+}
+@keyframes ccOut {
+  to { opacity: 0; }
+}
+
 /* 冒险卡片入场：从略小浮上来 */
 @keyframes advIn {
   from { opacity: 0; transform: translateY(10px) scale(.96); }

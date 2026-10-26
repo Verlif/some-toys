@@ -10,15 +10,17 @@
 import { openDatabase } from './core/db.js';
 import { on, EVENTS } from './core/bus.js';
 import { initState } from './store/state.js';
-import { autoSignIn } from './store/signin.js';
+import { autoSignIn, reconcileSignHistory } from './store/signin.js';
 import { settleDogDig } from './store/dogs.js';
 import { compensateLitSeeds } from './store/codex.js';
+import { resumeCraftTimers } from './store/workshop.js';
 
 import { bootDone, bootFail, bootProgress, bootStage } from './ui/boot.js';
 import { mountToast } from './ui/toast.js';
 import { mountModal } from './ui/modal.js';
 import { mountInlineActions } from './ui/inline-actions.js';
 import { mountSignCelebrate } from './ui/sign-celebrate.js';
+import { mountCodexCelebrate } from './ui/codex-celebrate.js';
 import { mountDogCaught } from './ui/dog-caught.js';
 import { mountBoardCelebrate } from './ui/board-celebrate.js';
 import { flushOfflineGifts, mountGift } from './ui/gift.js';
@@ -67,6 +69,7 @@ async function boot() {
   mountModal();
   mountInlineActions();
   mountSignCelebrate();
+  mountCodexCelebrate();
   mountDogCaught();
   mountBoardCelebrate();
   mountGift();
@@ -156,6 +159,21 @@ async function boot() {
   // 图鉴点亮奖种子是第 43 轮新增的：老档已点亮的图鉴在这里一次性补发
   try {
     await compensateLitSeeds();
+  } catch (error) {
+    console.error(error);
+  }
+
+  // 老档的连续签到天数只存了个计数器、没有逐日记录（signDays 是后加的）：
+  // 先按计数器把历史补齐，之后连签一律从历史现算，顶部与日历不会再对不上
+  try {
+    await reconcileSignHistory();
+  } catch (error) {
+    console.error(error);
+  }
+
+  // 种子制造间：离线期间做好的那几炉在这里收掉，剩下的接着排队等
+  try {
+    resumeCraftTimers();
   } catch (error) {
     console.error(error);
   }

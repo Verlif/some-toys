@@ -3,8 +3,14 @@
  *
  * 字段说明：
  *   lastSign   上次签到的时间戳
- *   signStreak 当前连续签到天数，断签归 1
+ *   signDays   签到历史（每天的日期键），**连续签到天数由它现算**
+ *   signStreak 上面算出来的结果的缓存，只为了少走一遍历史；写档时对齐
  *   signTotal  累计签到总天数（不清零，用于展示生涯统计）
+ *
+ * ⚠️ 连续天数只认 signDays 一套数据。早先顶部读 signStreak、下面日历读
+ * signDays，两套各算各的 —— 老存档里 signStreak 是历代累加的、signDays 只有
+ * 90 天留存，于是「上面说连续 40 天、日历上却到处是空」这种对不上的情况
+ * （2026-10-26 用户反馈）。现在一律从历史现算，日历与顶部不可能再分叉。
  *
  * 每天固定发：普通化肥（缩短 30 分钟）×1 + 一颗随机商店种子 + 少量金币。
  * 连续签到的 7 天循环体现在金币倍数上；每周六额外开一个盲盒。
@@ -20,6 +26,18 @@ import { MAP_TIERS, buildRewardPool } from '../data/adventure.js';
 import { produceId, seedId } from '../data/keys.js';
 import { dayIndex, dayKey, isSameDay, randInt } from '../core/utils.js';
 import { completeGuide } from './codex.js';
+
+/** 某一天 0 点的时间戳（按本地时区，和 dayKey 同一套切日规则） */
+function dayStart(ts) {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/** 往前 / 往后挪 n 个自然日（跨月、跨年、夏令时都交给 Date 处理） */
+function shiftDay(ts, delta) {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta).getTime();
+}
 
 /** 补齐后来新增的字段 */
 export function ensureSignFields() {
@@ -45,32 +63,104 @@ export function signedOn(ts) {
 }
 
 /**
- * 连续签到是否已中断（昨天没签，且不是今天）
+ * 当前连续签到天数 —— **由签到历史现算**，日历、顶部、HUD 共用这一个数。
+ *
+ * 口径：
+ *   - 今天签过 → 从今天往前数连着有几天
+ *   - 今天还没签 → 从昨天往前数（今天还能续上，不算断）
+ *   - 昨天也没签 → 0（已中断）
+ *
+ * 历史只留 SIGN_KEEP_DAYS 天，所以连签上限就是这么多，够 7 天循环用了。
+ * @param {number} [now]
+ * @returns {number}
+ */
+export function streakOf(now = Date.now()) {
+  ensureSignFields();
+  const days = new Set(state.farm.progress.signDays || []);
+  if (!days.size) return 0;
+
+  let cursor = dayStart(now);
+  if (!days.has(dayKey(cursor))) {
+    cursor = shiftDay(cursor, -1);
+    if (!days.has(dayKey(cursor))) return 0;
+  }
+
+  let n = 0;
+  while (days.has(dayKey(cursor))) {
+    n += 1;
+    cursor = shiftDay(cursor, -1);
+  }
+  return n;
+}
+
+/**
+ * 连续签到是否已中断（昨天没签，且今天也没签）
  *
  * ⚠️ 必须按**自然日**算，不能拿 24 小时门槛：昨晚 23 点签的、今早 0 点看
  * 只隔了 1 小时却被判「已中断」，而签到记录（日历）明明连着 ——
- * 顶部的连签显示和下方的日历各说各话（2026-10-24 用户反馈的 bug）。
- * 昨天签过就不算断：今天的签到还能续上。
+ * 顶部显示和下面的日历各说各话（2026-10-24 用户反馈的 bug）。
  * @returns {boolean}
  */
 export function streakBroken(now = Date.now()) {
-  const { lastSign, signStreak } = state.farm.progress;
-  if (!lastSign || signStreak === 0) return false;
-  return dayIndex(now) - dayIndex(lastSign) > 1;
+  ensureSignFields();
+  if (!state.farm.progress.signTotal) return false;
+  if (signedToday(now)) return false;
+  return streakOf(now) === 0;
 }
 
 /** 今天是本轮的第几天（1 起算） */
 export function todayStreakDay(now = Date.now()) {
-  const { signStreak } = state.farm.progress;
-  if (signedToday(now)) return (signStreak - 1) % CYCLE_DAYS + 1;
-  return streakBroken(now) ? 1 : signStreak % CYCLE_DAYS + 1;
+  const streak = streakOf(now);
+  if (signedToday(now)) return (streak - 1) % CYCLE_DAYS + 1;
+  return streak % CYCLE_DAYS + 1;
 }
 
-/** 当前连续签到的天数 */
-export const currentStreak = () => state.farm.progress.signStreak;
+/** 当前连续签到的天数（与日历同一套数据） */
+export const currentStreak = (now = Date.now()) => streakOf(now);
 
 /** 距离本轮结束还差几天 */
-export const leftInCycle = () => daysLeftInCycle(state.farm.progress.signStreak);
+export const leftInCycle = (now = Date.now()) => daysLeftInCycle(streakOf(now));
+
+/**
+ * 把老存档里「只有计数器、没有逐日记录」的连签补成历史。
+ *
+ * 更早的版本没有 signDays（日历是后加的），那些档里 signStreak 可能是 30，
+ * 但历史一天都没有 —— 直接改成从历史现算会把玩家的连签清零。
+ * 这里按 lastSign 往前补出 signStreak 声称的那些天，让两套数据先对齐，
+ * 之后全部从历史现算就一致了。幂等，已对齐就什么都不做。
+ *
+ * @returns {Promise<boolean>} 是否真的补了历史（补了就写档）
+ */
+export async function reconcileSignHistory() {
+  ensureSignFields();
+  const p = state.farm.progress;
+  if (!p.lastSign) return false;
+
+  const days = p.signDays;
+  const known = new Set(days);
+  const want = Math.min(Math.max(p.signStreak, 1), SIGN_KEEP_DAYS);
+
+  let filled = false;
+  let cursor = dayStart(p.lastSign);
+  for (let i = 0; i < want; i += 1) {
+    const key = dayKey(cursor);
+    if (!known.has(key)) {
+      days.push(key);
+      known.add(key);
+      filled = true;
+    }
+    cursor = shiftDay(cursor, -1);
+  }
+  if (!filled) return false;
+
+  days.sort((a, b) => dayIndex(a) - dayIndex(b));
+  if (days.length > SIGN_KEEP_DAYS) days.splice(0, days.length - SIGN_KEEP_DAYS);
+
+  // 计数器也顺手对齐一次，免得读档时又对不上
+  p.signStreak = streakOf();
+  await commit({ farms: [state.farm] });
+  return true;
+}
 
 /** 今天是不是大奖日（周六） */
 export const isBigDayToday = (now = Date.now()) => isBigDay(now);
@@ -162,15 +252,16 @@ export async function signIn(now = Date.now()) {
   ensureSignFields();
   if (signedToday(now)) return null;
 
-  // 昨天签过就续上，否则从第 1 天重新开始
-  state.farm.progress.signStreak = streakBroken(now) ? 1 : state.farm.progress.signStreak + 1;
+  // 先落历史，再按历史算连签：只有这一套数据，日历与顶部不会分叉
+  const days = state.farm.progress.signDays;
+  const today = dayKey(now);
+  if (!days.includes(today)) {
+    days.push(today);
+    if (days.length > SIGN_KEEP_DAYS) days.splice(0, days.length - SIGN_KEEP_DAYS);
+  }
   state.farm.progress.lastSign = now;
   state.farm.progress.signTotal += 1;
-
-  // 签到历史：记下这一天，日历上才能看出「哪天签过、哪天断了」
-  const days = state.farm.progress.signDays;
-  days.push(dayKey(now));
-  if (days.length > SIGN_KEEP_DAYS) days.splice(0, days.length - SIGN_KEEP_DAYS);
+  state.farm.progress.signStreak = streakOf(now);
 
   const day = todayStreakDay(now);
   const reward = todayReward(now);

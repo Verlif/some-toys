@@ -17,7 +17,7 @@ import { CROPS, CROP_IDS } from '../data/crops.js';
 import { ITEMS } from '../data/items.js';
 import { SOILS } from '../data/soils.js';
 import { isItemKey, itemLabel, produceId } from '../data/keys.js';
-import { clampRelation, giftRelGain } from '../data/relation.js';
+import { clampRelation, giftRelGain, tradeRelCost } from '../data/relation.js';
 import { getRelation, relationBadge } from '../store/relation.js';
 import { PERSONALITIES } from '../data/friends.js';
 import { DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
@@ -408,10 +408,22 @@ function secToolsHTML(friend, now) {
   ].join('');
 }
 
-/** 底部只剩送礼：这是唯一能主动拉近关系的操作 */
-const quickButtons = (friend) => (friend.net
+/**
+ * 地块列表上方那两颗主动按钮：送礼 / 交易。
+ *
+ * 原来它们钉在弹窗最底部，要滚过一整片地块才摸得到 ——
+ * 而这两件事恰恰是玩家进邻居农场最常想干的（第 45 轮挪到地块上方）。
+ *
+ * 交易只对 NPC 开：联机好友的仓库是对方浏览器的只读快照，
+ * 本地扣不了他的货；NPC 离线时按钮灰着，点了会提示「不在家」。
+ */
+const quickButtons = (friend, now = Date.now()) => (friend.net
   ? `<button class="btn small" data-action="peer-gift-open" data-id="${friend.id}">🎁 送份礼</button>`
-  : `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>`);
+  : `<button class="btn small" data-action="gift-open" data-id="${friend.id}">🎁 送份礼</button>
+     <button class="btn small ghost" data-action="trade-open" data-id="${friend.id}"
+       ${isNpcOnline(friend, now) ? '' : 'disabled'}
+       title="${isNpcOnline(friend, now) ? '按原价买他仓库里的产出（花好感）' : '他不在家，等他上线'}">
+       💰 交易${isNpcOnline(friend, now) ? '' : '（离线）'}</button>`);
 
 /**
  * 送礼：先从仓库里挑一样农产品，再确认。
@@ -568,6 +580,181 @@ function confirmGift(friendId, cropId, onDone) {
     // 到头了就把对应那颗按钮灰掉，别让玩家反复点一个没反应的按钮
     card.querySelector('[data-action="gift-qty-minus"]').disabled = qty <= 1;
     card.querySelector('[data-action="gift-qty-plus"]').disabled = qty >= have;
+  }
+
+  paint();
+}
+
+/* ---------- 跟邻居买产出 ---------- */
+
+/**
+ * 交易：先从邻居仓库里挑一样，再确认份数。
+ *
+ * 和送礼正好反向：送礼挑的是**自己的**仓库，交易挑的是**他的**仓库。
+ * 价格按原价（`crop.sell`）算，不是收购价 —— 邻居不是二道贩子，
+ * 玩家来这儿图的是「现在就要这种货」，贵一点也认。
+ *
+ * 好感按 `产出等级 × 份数 / 2` 扣（用户定的口径），所以每一行都把
+ * 「一份要花多少好感」写出来，玩家自己掂量买几份。
+ *
+ * 只有 NPC 能交易；他不在家时整张清单都不给开。
+ *
+ * @param {string} friendId
+ * @param {Function} [onDone] 买完之后刷新外层弹窗（好感 / 仓库 / 记录都变了）
+ */
+function openTradePicker(friendId, onDone) {
+  const friend = getFriend(friendId);
+  if (!friend) return;
+
+  const now = Date.now();
+  if (friend.net !== true && !isNpcOnline(friend, now)) {
+    notify(`${friend.name} 不在家，等他上线再来`);
+    return;
+  }
+
+  const stock = social.tradeStock(friend);
+  const rel = relationBadge(getRelation(PLAYER_ID, friend.id));
+
+  const rows = stock.map(({ cropId, crop, have }) => `
+      <div class="shop-item">
+        <div class="si-emoji">${crop.emoji}</div>
+        <div class="si-body">
+          <div class="si-name">${escapeHtml(crop.name)}<span class="si-own">· 他有 ${have}</span></div>
+          <div class="si-meta">
+            Lv.${crop.lv} · 原价 💰${crop.sell} · 每份花
+            <b class="rel-cost">−${tradeRelCost(crop.lv, 1)}</b> 好感
+          </div>
+        </div>
+        <button class="btn small ghost" data-action="trade-ask" data-id="${cropId}">买这个</button>
+      </div>`).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <h3>💰 交易 · ${escapeHtml(friend.name)}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">
+      按<b>原价</b>买他仓库里的产出，钱进他的口袋 ·
+      现在的好感：<b class="rel-${rel.key}">${rel.label} ${rel.text}</b>
+    </div>
+    ${stock.length
+      ? `<div class="list">${rows}</div>
+         <p class="map-tip">买一批要花 <b>产出等级 × 份数 ÷ 2</b> 点好感，好感不够就做不成这笔买卖。</p>`
+      : `<div class="empty-tip">🧺<br>他仓库里现在没有可卖的产出<br>等他收一轮再来</div>`}
+  `, (action, el) => {
+    // 清单只负责挑，真买要再过一道确认（下面是第三层）
+    if (action === 'trade-ask') confirmTrade(friendId, el.dataset.id, onDone);
+  });
+}
+
+/**
+ * 交易的确认框。
+ *
+ * 三件事要摆清楚：买几份、总共多少金币、好感会从哪一档掉到哪一档。
+ * 好感是本作里最贵的资源（送礼一次也就涨几点），所以它必须和金币
+ * 一样醒目地摆在格子里，而不是缩在提示文案里。
+ *
+ * @param {string} friendId
+ * @param {string} cropId
+ * @param {Function} [onDone]
+ */
+function confirmTrade(friendId, cropId, onDone) {
+  const friend = getFriend(friendId);
+  const crop = CROPS[cropId];
+  if (!friend || !crop) return;
+
+  const have = friend.bag?.[produceId(cropId)] || 0;
+  if (have <= 0) {
+    notify(`${friend.name} 家里没有${crop.name}了`);
+    return;
+  }
+
+  const cur = getRelation(PLAYER_ID, friendId);
+  const coins = state.farm.coins;
+  let qty = 1;
+
+  /** 关系胶囊：`亲近 +92 → 平常 +80` */
+  const relHTML = (after) => {
+    const before = relationBadge(cur);
+    const next = relationBadge(clampRelation(after));
+    return `<span class="rel-tag rel-${before.key}">${before.label} ${before.text}</span>
+      → <span class="rel-tag rel-${next.key}">${next.label} ${next.text}</span>`;
+  };
+
+  openModal(`
+    <div class="modal-head">
+      <h3>💰 买入前确认</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+
+    <div class="sd-hero">
+      <div class="sd-emoji">${crop.emoji}</div>
+      <div class="sd-id">
+        <div class="sd-name">${escapeHtml(crop.name)}</div>
+        <div class="sd-tags"><span class="sd-lv">Lv.${crop.lv}</span>
+          <span class="sd-chip">原价 💰${crop.sell}</span></div>
+      </div>
+    </div>
+
+    <div class="sd-grid">
+      <div class="sd-cell"><span>卖给</span><b>${escapeHtml(friend.name)}</b></div>
+      <div class="sd-cell"><span>他还有</span><b>${have} 份</b></div>
+      <div class="sd-cell"><span>总价</span><b data-role="coins">💰 ${crop.sell}</b></div>
+      <div class="sd-cell"><span>好感消耗</span><b class="rel-cost" data-role="cost">−${tradeRelCost(crop.lv, 1)}</b></div>
+      <div class="sd-cell wide"><span>关系</span><b data-role="rel">${relHTML(cur - tradeRelCost(crop.lv, 1))}</b></div>
+    </div>
+
+    <div class="sd-gain">钱会进他的口袋，好感花掉就涨不回来 —— 送礼才涨好感</div>
+
+    <div class="modal-foot">
+      <div class="gift-confirm">
+        <div class="qty">
+          <button class="qty-btn" data-action="trade-qty-minus" aria-label="减少数量">−</button>
+          <span class="qty-num" data-role="qty">1</span>
+          <button class="qty-btn" data-action="trade-qty-plus" aria-label="增加数量">+</button>
+        </div>
+        ${have > 1 ? '<button class="gift-max" data-action="trade-qty-max">全买</button>' : ''}
+        <div class="gift-confirm-btns">
+          <button class="btn ghost" data-close>再想想</button>
+          <button class="btn" data-action="trade-buy" data-id="${cropId}" data-role="send">确认买入</button>
+        </div>
+      </div>
+    </div>
+  `, async (action) => {
+    if (action === 'trade-qty-plus' || action === 'trade-qty-minus' || action === 'trade-qty-max') {
+      if (action === 'trade-qty-max') qty = have;
+      else qty = Math.min(have, Math.max(1, qty + (action === 'trade-qty-plus' ? 1 : -1)));
+      paint();
+      return;
+    }
+    if (action !== 'trade-buy') return;
+    const result = await social.buyFromFriend(friendId, cropId, qty);
+    if (!result.ok) {
+      notify(result.reason || '买不成');
+      return;
+    }
+    // 关掉确认框与这份清单，两级一起收，回到邻居农场
+    closeModal();
+    closeModal();
+    onDone?.();
+  });
+
+  /** 把当前份数刷到界面上（不改任何状态） */
+  function paint() {
+    const card = document.querySelector('#modal .modal-card');
+    if (!card) return;
+    const total = crop.sell * qty;
+    const cost = tradeRelCost(crop.lv, qty);
+    const affordable = coins >= total && cur >= cost;
+    card.querySelector('[data-role="qty"]').textContent = qty;
+    card.querySelector('[data-role="coins"]').textContent = `💰 ${total}`;
+    card.querySelector('[data-role="cost"]').textContent = `−${cost}`;
+    card.querySelector('[data-role="rel"]').innerHTML = relHTML(cur - cost);
+    card.querySelector('[data-role="send"]').textContent = `确认买入 ${qty} 份`;
+    // 钱或好感有一头不够就把按钮灰掉 —— 让玩家当场看见卡在哪
+    card.querySelector('[data-role="send"]').disabled = !affordable;
+    card.querySelector('[data-action="trade-qty-minus"]').disabled = qty <= 1;
+    card.querySelector('[data-action="trade-qty-plus"]').disabled = qty >= have;
   }
 
   paint();
@@ -888,7 +1075,7 @@ export function openFriendModal(friendId) {
     if (tip) tip.textContent = tipText(current, at);
 
     const quick = document.querySelector('#modal [data-role="quick"]');
-    if (quick) quick.innerHTML = quickButtons(current);
+    if (quick) quick.innerHTML = quickButtons(current, at);
 
     // 控制台整块重绘：狗粮槽、一键按钮的角标都跟着操作变
     const board = document.querySelector('#modal [data-role="board"]');
@@ -949,11 +1136,11 @@ export function openFriendModal(friendId) {
 
     <div class="npc-stats" data-role="stats">${stats}</div>
 
+    <div class="npc-quick" data-role="quick">${quickButtons(friend, now)}</div>
     ${boardHTML(friend, now)}
     <div class="npc-plots">
       ${friend.plots.map((_, i) => plotCardHTML(friend, i, now)).join('')}
     </div>
-    <div class="npc-quick" data-role="quick">${quickButtons(friend)}</div>
 
     <p class="npc-tip" data-role="tip">${tipText(friend, now)}</p>
   `, async (action, el) => {
@@ -1000,6 +1187,12 @@ export function openFriendModal(friendId) {
     }
     if (action === 'gift-open') {
       openGiftPicker(friendId, () => refreshChrome(getFriend(friendId), Date.now()));
+      return;
+    }
+    // 交易只在邻居在线时可开：tradeQuote 也会再挡一次，
+    // 这里先挡是为了不让玩家打开一份注定买不成的清单
+    if (action === 'trade-open') {
+      openTradePicker(friendId, () => refreshChrome(getFriend(friendId), Date.now()));
       return;
     }
     if (action === 'crop-info') {

@@ -20,10 +20,10 @@ import { expireOrders, orderBoard, removeOrder } from './orders.js';
 import { completeGuide } from './codex.js';
 import { CROPS } from '../data/crops.js';
 import { produceId } from '../data/keys.js';
-import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, isNpcOnline, trimLog } from '../data/friends.js';
+import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, isNpcOnline, syncNpcPlots, trimLog } from '../data/friends.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
-import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain } from '../data/relation.js';
+import { REL_PER_CARE, dogCaughtRelLoss, giftRelGain, tradeRelCost } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
 import { bump, bumpMax } from './daily.js';
 import { catchChance, DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
@@ -315,7 +315,11 @@ const LIVE_SKIP_MS = 260;
 
 /** 把一次「到点了」的上线排进演出队列（游标已在结算里推进过） */
 function enqueueVisit(visit) {
-  liveQueue.push({ ...visit, index: 0 });
+  // 整趟上线共用一份 farmView / ctx：早先每一步都新建一次，导致
+  // ① bagDirty 跨步丢失 —— NPC 交货进玩家背包的产出没跟着落盘，
+  //    玩家看着提示说「交了一单」，仓库里却没有；
+  // ② stolen / cared / caught 计数每步归零，一趟上线做了几件事也统计不出来。
+  liveQueue.push({ ...visit, index: 0, ctx: simCtx() });
   pendingArrivals.push({
     name: visit.npc.name,
     avatar: visit.npc.avatar,
@@ -348,9 +352,11 @@ async function runLiveStep() {
   const npc = visit.npc;
   const kind = visit.steps[visit.index];
   visit.index += 1;
+  // 整趟上线共用同一份 ctx（见 enqueueVisit）：玩家农场的计数与 bagDirty 跨步累加
+  const ctx = visit.ctx ?? (visit.ctx = simCtx());
 
   try {
-    const entry = runStep(npc, visit.at, kind, simCtx());
+    const entry = runStep(npc, visit.at, kind, ctx);
     if (entry) {
       spoke = true;
       // 接单可能动了别的 NPC 的农场与玩家的包：涉及的农场一并落盘
@@ -359,10 +365,13 @@ async function runLiveStep() {
         .filter((f) => f && f !== npc);
       await commit({
         farms: [state.farm, npc, ...extra],
-        ...(entry.gave ? { bag: state.bag } : {}),
+        // bagDirty 是「这趟上线动过玩家背包」的唯一信号：
+        // NPC 交货 / 送礼都落在 inventory.add 上，不把 bag 一起写就会白丢
+        ...(entry.gave || ctx.farm?.bagDirty ? { bag: state.bag } : {}),
         news: state.news,
         relations: state.relations,
       });
+      if (ctx.farm?.bagDirty) ctx.farm.bagDirty = false;
       emit(EVENTS.FARM);
       emit(EVENTS.FRIENDS);
       emit(EVENTS.PLAYER);
@@ -370,14 +379,26 @@ async function runLiveStep() {
       notify(`${npc.avatar} ${npc.name}：${entry.emoji} ${entry.text}`);
     }
   } catch (error) {
-    console.error(error);
+    // 单个动作抛错不该让整趟上线静默缩水：记下是哪个动作、哪位邻居
+    console.error(`[social] ${npc?.id} 的 ${kind} 动作失败`, error);
   }
 
   if (visit.index >= visit.steps.length) {
     liveQueue.shift();
+    // 一趟上线里可能连升几级：地块数跟着等级走，收尾时补上 ——
+    // 离线路径的 runVisit 一直有这一步，在线路径早先漏了，
+    // 结果邻居升级后新地块要等下次上线才出现（农场看着「没长」）
+    syncNpcPlots(npc, visit.at);
+    const bagDirty = Boolean(ctx.farm?.bagDirty);
     if (npc.level > visit.levelBefore) {
       addNews('🎉', `${npc.name} 的农场升到了 Lv.${npc.level}`, { at: visit.at });
-      await commit({ farms: [npc], news: state.news }).catch(() => {});
+    }
+    if (npc.level > visit.levelBefore || bagDirty) {
+      await commit({
+        farms: [npc],
+        ...(bagDirty ? { bag: state.bag } : {}),
+        news: state.news,
+      }).catch(() => {});
       emit(EVENTS.NEWS);
     }
   }
@@ -777,4 +798,126 @@ export async function sendGift(friendId, cropId, n = 1) {
     'gold',
   );
   return { ok: true, qty, gain, relation };
+}
+
+/* ---------- 跟邻居买产出 ---------- */
+
+/**
+ * 邻居仓库里现在有什么、各有多少。
+ *
+ * 只认产出（`crop_` 前缀且 CROPS 里有），仓库里别的脏数据不往界面上带。
+ * 按等级从高到低排：玩家来交易多半是想补某种高阶作物，
+ * 从低到高排等于让他一路划到底。
+ *
+ * @param {object} friend
+ * @returns {Array<{cropId: string, itemId: string, crop: object, have: number}>}
+ */
+export function tradeStock(friend) {
+  if (!friend?.bag) return [];
+  return Object.entries(friend.bag)
+    .filter(([itemId, n]) => itemId.startsWith('crop_') && n > 0 && CROPS[itemId.slice('crop_'.length)])
+    .map(([itemId, n]) => {
+      const cropId = itemId.slice('crop_'.length);
+      return { cropId, itemId, crop: CROPS[cropId], have: n };
+    })
+    .sort((a, b) => b.crop.lv - a.crop.lv);
+}
+
+/**
+ * 一次交易的报价：花多少钱、掉多少好感、能不能做。
+ *
+ * 拆成纯函数是为了让界面在玩家拨份数时实时重算，
+ * 而不用每动一下就真的去扣一次（扣钱与扣好感只在 buyFromFriend 里做）。
+ *
+ * 三条门槛：
+ *   - 邻居**必须在线** —— 人不在家，仓库的门是锁着的（第 45 轮玩家要求）；
+ *   - 仓库里得有那么多；
+ *   - 好感要够付这笔账，付完不能掉到负数。
+ *
+ * @param {string} friendId
+ * @param {string} cropId
+ * @param {number} [qty]
+ * @returns {{ok: boolean, reason?: string, crop?: object, have?: number, qty?: number,
+ *   coins?: number, relCost?: number, relation?: number, offline?: boolean}}
+ */
+export function tradeQuote(friendId, cropId, qty = 1) {
+  const friend = getFriend(friendId);
+  const crop = CROPS[cropId];
+  if (!friend || !crop) return { ok: false, reason: '没有这件东西' };
+
+  const now = Date.now();
+  if (friend.net !== true && !isNpcOnline(friend, now)) {
+    return { ok: false, offline: true, reason: `${friend.name} 不在家，等他上线再来` };
+  }
+
+  const have = friend.bag?.[produceId(cropId)] || 0;
+  const want = Math.max(1, Math.floor(qty) || 1);
+  const coins = crop.sell * want;
+  const relCost = tradeRelCost(crop.lv, want);
+  const relation = getRelation(PLAYER_ID, friend.id);
+
+  if (have <= 0) return { ok: false, reason: `${friend.name} 家里没有${crop.name}了` };
+  if (want > have) return { ok: false, reason: `他只剩 ${have} 份${crop.name}` };
+  if (state.farm.coins < coins) return { ok: false, reason: `金币不够，需要 ${formatCoins(coins)}` };
+  if (relation < relCost) {
+    return { ok: false, reason: `好感不够：这笔要 ${relCost} 点，你只有 ${relation}` };
+  }
+
+  return { ok: true, crop, have, qty: want, coins, relCost, relation };
+}
+
+/**
+ * 从邻居仓库里按**原价**买一批产出。
+ *
+ * 钱进邻居口袋（他才有钱买种子继续种），货进玩家仓库，
+ * 好感按 `产出等级 × 份数 / 2` 扣掉 —— 这是用户定的口径：
+ * 交易不是白拿，交情也是要花的。
+ *
+ * 校验全部走 tradeQuote()，这里只在真正动手前再查一次，
+ * 免得玩家在弹窗里拨份数的时候仓库被别处改掉了。
+ *
+ * @param {string} friendId
+ * @param {string} cropId
+ * @param {number} [qty]
+ * @returns {Promise<{ok: boolean, reason?: string, qty?: number, coins?: number,
+ *   relCost?: number, relation?: number}>}
+ */
+export async function buyFromFriend(friendId, cropId, qty = 1) {
+  const friend = getFriend(friendId);
+  const quote = tradeQuote(friendId, cropId, qty);
+  if (!quote.ok) {
+    notify(quote.reason || '这笔交易做不了');
+    return quote;
+  }
+
+  const { crop } = quote;
+  const n = quote.qty;
+  const itemId = produceId(cropId);
+  const now = Date.now();
+
+  if (!player.spendCoins(quote.coins)) return { ok: false, reason: '金币不足' };
+  friend.bag[itemId] -= n;
+  if (friend.bag[itemId] <= 0) delete friend.bag[itemId];
+  friend.coins = (friend.coins || 0) + quote.coins;
+
+  inventory.add(itemId, n);
+  const relation = adjustRelation(PLAYER_ID, friend.id, -quote.relCost);
+  // 「送出的礼物」与「买来的货」都算这一栏的流水，榜单口径保持一致
+  bump(PLAYER_ID, 'gift', quote.coins, now);
+
+  const times = n > 1 ? ` ×${n}` : '';
+  logFriend(friend, now, '💰', `${state.farm.name} 买走了 ${crop.emoji}${crop.name}${times}，收 ${formatCoins(quote.coins)} 金币`);
+  player.addLog('💰', `从 ${friend.name} 家买了 ${crop.emoji}${crop.name}${times}（${formatCoins(quote.coins)} 金币，好感 −${quote.relCost}）`, now);
+
+  await commit({ farms: [state.farm, friend], bag: state.bag, relations: state.relations });
+  emit(EVENTS.FRIENDS);
+  emit(EVENTS.INVENTORY);
+  emit(EVENTS.PLAYER);
+  emit(EVENTS.RELATION);
+
+  notify(
+    `💰 从 ${friend.name} 家买到 ${crop.emoji}${crop.name}${times}（好感 −${quote.relCost}，现在 ${relation}）`,
+    'gold',
+  );
+  return { ok: true, qty: n, coins: quote.coins, relCost: quote.relCost, relation };
 }

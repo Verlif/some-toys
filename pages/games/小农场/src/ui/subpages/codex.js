@@ -96,7 +96,9 @@ function openDetailModal(cropId) {
     ? `🧭 藏宝图限定 · ${mapSources(crop) || '暂无可挖档位'}`
     : `🛒 商店购买 · 种子 💰 ${crop.seed}`;
 
-  const actions = stat.owned >= SPECIMEN_COST
+  // 已经点亮过就不再给「制作标本」的入口：再做一份没有奖励，
+  // 还会白白吃掉 50 份产出（第 45 轮玩家反馈）
+  const actions = !entry?.specimen && stat.owned >= SPECIMEN_COST
     ? `<div class="modal-foot">
         <div class="sd-buybar">
           <button class="btn sd-buy" data-action="specimen-make" data-id="${cropId}">
@@ -116,7 +118,11 @@ function openDetailModal(cropId) {
     actions,
     onAction: async (action, el) => {
       if (action !== 'specimen-make') return;
-      if (await makeSpecimen(el.dataset.id)) closeModal();
+      const cropId = el.dataset.id;
+      // 先关弹窗再播庆祝：庆祝层盖在整屏上，弹窗留在后面会显得「没关掉」。
+      // 万一制作失败（仓库刚够又被别处扣掉），把详情弹回来，别让玩家对着空屏发呆。
+      closeModal();
+      if (!(await makeSpecimen(cropId))) openDetailModal(cropId);
     },
   });
 }

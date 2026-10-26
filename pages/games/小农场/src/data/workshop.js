@@ -118,3 +118,34 @@ export function rollSeeds(level) {
   if (roll < p1 + p2) return 2;
   return 3;
 }
+
+/* ---------- 制造时间与栏位（第 44 轮新增） ---------- */
+
+/**
+ * 制造一个种子要等多久：**种子等级 × 10 秒**。
+ *
+ * 低等级作物十秒就能出一炉，高等级的要等上二十分钟 ——
+ * 时间成了和产出、工本费并列的第三种投入，「趁下线前挂一炉」也就有了意义。
+ * 制造是排队的，玩家离线期间照样在走（时间戳存在存档里，见 store/workshop.js）。
+ */
+export const CRAFT_MS_PER_LEVEL = 10_000;
+
+/**
+ * 某个作物造一次要多久（毫秒）
+ * @param {{lv:number}} crop
+ * @returns {number}
+ */
+export function craftMs(crop) {
+  const lv = Math.max(1, Math.round(crop?.lv || 1));
+  return lv * CRAFT_MS_PER_LEVEL;
+}
+
+/**
+ * 制造栏位数：**每升一级 +1**（Lv.1 一个，Lv.10 十个）。
+ *
+ * 栏位是并行的炉子数：一炉在烧的时候还能不能再开一炉。
+ * 没解锁（Lv.0）时是 0 —— 一炉都开不了，正好和「制造间没开张」对上。
+ * @param {number} level 制造间等级
+ * @returns {number}
+ */
+export const slotCount = (level) => Math.max(0, Math.round(level || 0));

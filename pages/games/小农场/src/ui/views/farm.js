@@ -14,16 +14,17 @@ import { count } from '../../store/inventory.js';
 import { CROPS, CROP_ARCHS, CROP_IDS, KIND_LABELS, totalCycleExp, totalCycleSeconds } from '../../data/crops.js';
 import { FERTILIZER_IDS, ITEMS } from '../../data/items.js';
 import { toolUses } from '../../store/tools.js';
-import { SOILS } from '../../data/soils.js';
+import { SOILS, nextSoilId } from '../../data/soils.js';
 import { seedId } from '../../data/keys.js';
 import { stageEmoji, stageName, stageOf } from '../../data/stages.js';
-import { fmtDuration } from '../../core/utils.js';
+import { fmtDuration, formatCoins } from '../../core/utils.js';
 import { stackClass, yieldClass } from '../meta-tags.js';
 import { closeModal, openModal } from '../modal.js';
 import { openSubpage } from '../subpage.js';
 import { activeBreed, dogSatiety, guardChanceNow, kennelCapacity } from '../../store/dogs.js';
 import { openCropModal, plotStatusHTML } from '../crop-detail.js';
 import { carePenalty } from '../../data/care.js';
+import { notify } from '../../store/notify.js';
 
 /** plotId → { el, key, bar, time } */
 const nodes = new Map();
@@ -56,8 +57,28 @@ function lockedHTML() {
     </div>`;
 }
 
+/**
+ * 这块地能升到的下一档（顶档返回 null）。
+ *
+ * 逐级晋升的规则写在 data/soils.js 的 `prev` 链上，这里只顺着链取下一格，
+ * 不自己判断顺序 —— 以后插入新档位时不用改这里。
+ * @param {object} plot
+ * @returns {?object}
+ */
+function nextSoilOf(plot) {
+  const nextId = nextSoilId(plot.soil || 'normal');
+  return nextId ? SOILS[nextId] : null;
+}
+
 function emptyHTML(plot) {
   const soil = SOILS[plot.soil];
+  const next = nextSoilOf(plot);
+  // 顶档地（神话）没有「升级」可点，别摆一颗永远灰着的按钮。
+  // 升级入口就放在空地上：地里种着东西时本来也升不了
+  const upgrade = next
+    ? `<button class="btn small ghost" data-action="soil-upgrade" data-id="${plot.id}"
+        title="升级为${next.name}（💰 ${formatCoins(next.cost)}）">升级</button>`
+    : '';
   return `
     <div class="plot-main">
       <div class="plot-emoji empty">🌱</div>
@@ -66,6 +87,7 @@ function emptyHTML(plot) {
     </div>
     <div class="plot-side">
       <button class="btn small" data-action="plant" data-id="${plot.id}">播种</button>
+      ${upgrade}
     </div>`;
 }
 
@@ -557,6 +579,83 @@ function openFertModal(plotId) {
   });
 }
 
+/**
+ * 空地升级：确认框。
+ *
+ * 商店的「土地」面板也能升，但玩家真正站在一块空地上时才会想「这块地是不是该换了」——
+ * 所以把入口直接放在地块上，弹窗里把这一档的属性、价格、解锁等级一次摆清。
+ *
+ * 只做展示与确认，真正的校验与扣钱走 `farm.upgradeSoil()`：
+ * 逐级晋升、等级门槛、金币够不够都在那里判，这里重复判一遍只会出现两套口径。
+ *
+ * @param {number} plotId
+ */
+function openSoilUpgradeModal(plotId) {
+  const plot = state.farm.plots.find((p) => p.id === plotId);
+  if (!plot) return;
+
+  const cur = SOILS[plot.soil] || SOILS.normal;
+  const next = nextSoilOf(plot);
+  if (!next) {
+    notify(`地块 ${plotId + 1} 已经是最高档土地了`);
+    return;
+  }
+
+  const locked = state.farm.level < next.unlock;
+  const poor = state.farm.coins < next.cost;
+  const cell = (k, v) => `<div class="sd-cell"><span>${k}</span><b>${v}</b></div>`;
+  // 只在真的变化时写出来，三行都是 ×1.00 反而看不出重点
+  const delta = (label, from, to, suffix = '') => {
+    const text = from === to ? `×${to}${suffix}` : `×${from} → ×${to}${suffix}`;
+    return cell(label, text);
+  };
+
+  openModal(`
+    <div class="modal-head">
+      <h3>🟫 升级土地 · 地块 ${plotId + 1}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+
+    <div class="sd-hero">
+      <div class="sd-emoji">${next.emoji}</div>
+      <div class="sd-id">
+        <div class="sd-name">${cur.name} → ${next.name}</div>
+        <div class="sd-tags">
+          <span class="sd-lv">${next.tag}</span>
+          ${locked ? `<span class="sd-chip">需 Lv.${next.unlock}</span>` : '<span class="sd-chip gold">等级已够</span>'}
+        </div>
+      </div>
+    </div>
+
+    <div class="sd-grid">
+      ${delta('产量', cur.yieldMul, next.yieldMul)}
+      ${delta('成熟时间', cur.timeMul, next.timeMul)}
+      ${delta('经验', cur.expMul, next.expMul)}
+      ${cell('升级价格', `💰 ${formatCoins(next.cost)}`)}
+      ${cell('当前金币', `${formatCoins(state.farm.coins)} 💰`)}
+      ${cell('升级后', '土地永久保持')}
+    </div>
+
+    <div class="sd-gain">土地要一级一级升，每块地只升一次；升级后地块属性<b>永久生效</b></div>
+    ${locked
+      ? `<div class="sd-lock">农场升到 Lv.${next.unlock} 才能升这一档</div>`
+      : poor ? '<div class="sd-lock">金币不足，先去卖点农货</div>' : ''}
+
+    <div class="modal-foot">
+      <div class="rm-actions">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn" data-action="soil-upgrade-ok" data-id="${plot.id}"
+          ${locked || poor ? 'disabled' : ''}>确认升级</button>
+      </div>
+    </div>
+  `, async (action, el) => {
+    if (action !== 'soil-upgrade-ok') return;
+    // 先收确认层回到农场，再动手 —— 和播种 / 铲除同一个次序
+    closeModal();
+    await farm.upgradeSoil(Number(el.dataset.id), next.id);
+  });
+}
+
 /* ---------- 挂载 ---------- */
 
 /**
@@ -651,6 +750,7 @@ const PLOT_ACTIONS = {
   fert: (id) => openFertModal(id),
   harvest: (id) => farm.harvest(id),
   remove: (id) => confirmRemove(id),
+  'soil-upgrade': (id) => openSoilUpgradeModal(id),
   'unlock-plot': () => farm.unlockPlot(),
 };
 

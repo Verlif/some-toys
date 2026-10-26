@@ -5,7 +5,10 @@
  * 每张榜单卡片下方紧跟「本期实时排名」（含 NPC），bump 防抖后发 EVENTS.STATS，
  * main.js 挂 renderCurrent 自动刷新。
  *
- * 展示**昨日**那一期（统计昨日 14:00 → 今日 14:00，今天下午 2 点开奖）；
+ * 页面顺序（第 44 轮按玩家反馈调过）：**本期实时在上、昨日已发奖的在下**。
+ * 玩家打开这一页多半是想知道自己现在第几，实时榜才是主信息；
+ * 昨日榜留着是为了看成绩和名次奖励（卡片右上角的「奖励」按钮）。
+ *
  * 本页只读 store/daily.js，不发奖、不改数据。
  */
 import { escapeHtml } from '../../core/dom.js';
@@ -15,12 +18,14 @@ import {
   boardRank,
   latestSettled,
   playerStanding,
+  rewardText,
   todayRank,
   todayValue,
 } from '../../store/daily.js';
 import { boardCountdown, boardDayKey, boardPeriodText } from '../../core/utils.js';
 import { MAP_TIERS } from '../../data/adventure.js';
 import { keepBarScroll } from '../scroll-keep.js';
+import { openModal } from '../modal.js';
 
 /* ---------- 倒计时：每 30 秒刷新「距出榜结算」 ---------- */
 let countdownTimer = 0;
@@ -84,7 +89,7 @@ function rowHTML(entry, board, extraClass = '') {
     </div>`;
 }
 
-/** 上期榜单卡 */
+/** 上期榜单卡（已发奖的那一期） */
 function yesterdayHTML(date, board) {
   const top = boardRank(date, board.metric, 3);
   const inTop = top.some((e) => e.actor === PLAYER_ID);
@@ -109,6 +114,8 @@ function yesterdayHTML(date, board) {
           <div class="rank-name">昨日 · ${board.name}</div>
           <div class="rank-desc">${board.desc} · 统计 ${boardPeriodText(date)}</div>
         </div>
+        <button class="rank-reward-btn" data-action="rank-reward"
+                data-key="${board.metric}">奖励</button>
       </div>
       <div class="rank-rows">
         ${top.length
@@ -117,6 +124,44 @@ function yesterdayHTML(date, board) {
         ${meRow}
       </div>
     </div>`;
+}
+
+/**
+ * 名次奖励弹窗：这一榜前三名各拿什么。
+ *
+ * 奖励是「并列都发」的 —— 两个人并列第 1，两个人都拿第 1 名那份，
+ * 所以这里按名次列，不按人头列。文案复用 store/daily.js 的 rewardText，
+ * 保证与真正发奖时写进农场日志/时报的那句话完全一致。
+ */
+function openRewardModal(metric) {
+  const board = BOARDS.find((b) => b.metric === metric) || currentBoard();
+  const rows = (board.rewards || []).map((reward, i) => `
+    <div class="rank-prize">
+      <span class="rank-prize-medal">${medal(i + 1)}</span>
+      <span class="rank-prize-text">${escapeHtml(rewardText(reward)) || '—'}</span>
+    </div>`).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <h3>${board.icon} ${escapeHtml(board.name)} · 名次奖励</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+
+    <div class="rank-prize-list">
+      ${rows || '<div class="rank-empty">这一榜没有设置奖励</div>'}
+    </div>
+
+    <div class="rank-prize-note">
+      每期按 <b>${escapeHtml(board.desc)}</b> 排名，前三名各拿一份；
+      并列同一名次的都发。奖励在每天下午 2 点结算时直接进背包，不用手动领。
+    </div>
+
+    <div class="modal-foot">
+      <div class="rm-actions">
+        <button class="btn ghost" data-close>知道了</button>
+      </div>
+    </div>
+  `);
 }
 
 /** 本期实时排名卡（含 NPC，随 bump 实时刷新） */
@@ -167,20 +212,22 @@ function tabsHTML() {
             data-action="rank-tab" data-key="${t.key}">${t.label}</button>`).join('')}</div>`;
 }
 
-/** 当前 TAB 对应的 hero 文案 */
+/**
+ * 顶部 hero：本期这一盘什么时候出榜。
+ *
+ * 第 44 轮把实时榜挪到上面之后，hero 也跟着改成讲「本期」——
+ * 原来这里写「昨日榜单 · 日期」，现在昨日榜在页面下半部分，
+ * 顶部再说昨日会让人以为下面那张是实时的。
+ */
 function heroHTML() {
   const settled = latestSettled();
-  return settled
-    ? `<div class="rank-hero">
-         <div class="rank-hero-date">📅 昨日榜单 · ${settled.date}</div>
-         <div class="rank-hero-sub">统计 ${boardPeriodText(settled.date)} · 每天下午 2 点开奖，前三名有奖，并列都发</div>
-         <div class="rank-hero-count">⏳ 本期距出榜 <b data-role="countdown">${boardCountdown().text}</b></div>
-       </div>`
-    : `<div class="rank-hero empty">
-         <div class="rank-hero-date">🏆 榜单准备中</div>
-         <div class="rank-hero-sub">第一期榜单在下午 2 点后出，先努力表现吧</div>
-         <div class="rank-hero-count">⏳ 本期距出榜 <b data-role="countdown">${boardCountdown().text}</b></div>
-       </div>`;
+  const period = boardPeriodText(boardDayKey());
+  return `
+    <div class="rank-hero">
+      <div class="rank-hero-date">⏳ 本期实时榜 · ${period}</div>
+      <div class="rank-hero-sub">每天下午 2 点开奖，前三名有奖，并列都发${settled ? ` · 昨日（${settled.date}）成绩在下面` : ''}</div>
+      <div class="rank-hero-count">距出榜 <b data-role="countdown">${boardCountdown().text}</b></div>
+    </div>`;
 }
 
 export const rankPage = {
@@ -194,8 +241,8 @@ export const rankPage = {
     body.innerHTML = `
       ${heroHTML()}
       ${isAdv ? tiersHTML() : ''}
-      ${settled ? yesterdayHTML(settled.date, board) : ''}
       ${todayHTML(board)}
+      ${settled ? yesterdayHTML(settled.date, board) : ''}
     `;
 
     // 底部 TAB 用子页面底栏固定；横滚位置接力
@@ -217,6 +264,10 @@ export const rankPage = {
     /** 切换冒险王的档位 */
     'rank-tier'(el) {
       advTier = Number(el.dataset.tier) || advTier || defaultTier();
+    },
+    /** 看这一榜的名次奖励（昨日榜卡片右上角的「奖励」） */
+    'rank-reward'(el) {
+      openRewardModal(el.dataset.key || currentMetric());
     },
   },
 };

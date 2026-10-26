@@ -135,12 +135,18 @@ function log(npc, at, emoji, text) {
  *
  * 起始等级按 1~36 加权随机（低等级更多），之后完全按正常模拟走 ——
  * 玩家离线很久回来，会发现邻居真的在长大，而不是卡在某个数字上。
+ *
+ * 第 44 轮：**升级所需经验按常规的 2 倍算**（`NPC_EXP_MULT`）——
+ * 邻居升级比玩家还快，玩家一觉醒来发现隔壁全比自己高，节奏不对。
+ * 这里只放大阈值，不动 `expForLevel`（玩家自己还在用它）。
  */
+const NPC_EXP_MULT = 2;
+
 function gainExp(npc, amount) {
   if (!Number.isFinite(amount) || amount <= 0) return;
   npc.exp += amount;
-  while (npc.level < MAX_LEVEL && npc.exp >= expForLevel(npc.level)) {
-    npc.exp -= expForLevel(npc.level);
+  while (npc.level < MAX_LEVEL && npc.exp >= expForLevel(npc.level) * NPC_EXP_MULT) {
+    npc.exp -= expForLevel(npc.level) * NPC_EXP_MULT;
     npc.level += 1;
   }
   if (npc.level >= MAX_LEVEL) npc.exp = 0;
@@ -764,8 +770,19 @@ export function planVisit(npc) {
     steps.push(action);
   }
 
-  // 顺菜、串门帮忙、送礼、订单不受性格权重的名额限制 —— 上线再忙也可能做一件
-  return [...steps, 'replant', 'feed', 'steal', 'care', 'gift', 'adventure', 'order', 'fill'];
+  // 顺菜、串门帮忙、送礼、订单不受性格权重的名额限制 —— 上线再忙也可能做一件。
+  //
+  // **收获与打理也必须在收尾里**（第 44 轮修）：早先收尾只有
+  // replant / feed / steal / care / gift / adventure / order / fill，
+  // 于是「这次上线的 2~4 件事」如果没抽到 harvest / tend，
+  // 这一趟就既不收自己的地也不打理自己的地 —— 玩家看到的是
+  // 「邻居上线了，转一圈什么都没干，我的地也没人管」（2026-10-26 用户反馈）。
+  // 这两个动作在没事可做时会自己返回 null，放进收尾不会刷出空动态。
+  return [
+    ...steps,
+    'harvest', 'tend', 'replant', 'feed',
+    'steal', 'care', 'gift', 'adventure', 'order', 'fill',
+  ];
 }
 
 /**
@@ -786,7 +803,7 @@ export function beginVisit(npc, at) {
   // 地块数量和玩家一样按等级解锁：升了级就该有新地（直接种上，和初始生成一致）
   syncNpcPlots(npc, at);
   npc.lastVisitAt = at;
-  // 在线窗口：按性格与身份 10~30 分钟。邻居页的绿点、偷菜双倍惩罚都看它 ——
+  // 在线窗口：按性格与身份 5~15 分钟。邻居页的绿点、偷菜双倍惩罚都看它 ——
   // 只有精细访问走这里，远期聚合不设，别让上古上线也「在线」
   npc.onlineUntil = at + onlineMs(npc);
   npc.nextVisitAt = nextVisitAt(npc, at);

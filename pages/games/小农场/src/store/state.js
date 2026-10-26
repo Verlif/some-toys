@@ -116,8 +116,11 @@ function createPlayerFarm() {
     /**
      * 种子制造间：level 0 = 还没开张。
      * kinds 是「作物 id → 造过几次」，**升级只看它有几个 key**（造过多少种）
+     * jobs 是排队中的制造任务（第 44 轮新增）：
+     *   [{ id, cropId, need, fee, startAt, doneAt }]
+     * 时间戳存在档里，离线期间照样在走，回来就能收。
      */
-    workshop: { level: 0, kinds: {} },
+    workshop: { level: 0, kinds: {}, jobs: [] },
     /** 农场主的成长档案：签到 / 图鉴 / 称号 / 引导 */
     progress: {
       /** 上次签到时间；两个 sign 字段是连续天数与累计天数 */
@@ -395,6 +398,26 @@ function normalizePlayerFarm(row, save) {
     // 第 43 轮起限定作物也能制造，kinds 不再按 special 过滤
     if (CROPS[id]) workshop.kinds[id] = Math.max(1, safeNum(times, 1));
   }
+  // 排队中的制造任务：只留认得出来的作物 + 有效时间戳。
+  // 时间是绝对时间戳，所以读档时「已经做好」的那些原样留着，进页面即可领
+  workshop.jobs = (Array.isArray(row.workshop?.jobs) ? row.workshop.jobs : [])
+    .map((job, i) => {
+      const cropId = job?.cropId;
+      if (!CROPS[cropId]) return null;
+      const startAt = safeNum(job.startAt, 0);
+      const doneAt = safeNum(job.doneAt, 0);
+      if (!startAt || !doneAt || doneAt <= startAt) return null;
+      return {
+        id: String(job.id || `j${i}-${startAt}`),
+        cropId,
+        need: Math.max(1, safeNum(job.need, 1)),
+        fee: Math.max(0, safeNum(job.fee, 0)),
+        startAt,
+        doneAt,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, WORKSHOP_MAX_LEVEL);
 
   const farm = {
     id: PLAYER_ID,
@@ -450,7 +473,10 @@ function normalizeNpc(row, def, save) {
     avatar: row.avatar || def.avatar,
     personality: PERSONALITIES[row.personality] ? row.personality : def.personality,
     profession: row.profession || def.profession,
-    schedule: row.schedule || def.schedule,
+    // 上线节奏**只认名单**，不吃存档：名单是策划调数值的地方，
+    // 早先写成 `row.schedule || def.schedule`，结果老档里的旧区间永远盖住新值 ——
+    // 第 45 轮把间隔砍半之后，老玩家一点变化都感觉不到
+    schedule: def.schedule,
     steal: STEAL_CHANCE[row.steal] === undefined ? def.steal : row.steal,
     level: safeNum(row.level, fresh.level),
     exp: safeNum(row.exp, 0),

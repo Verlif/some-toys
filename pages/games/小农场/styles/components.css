@@ -841,6 +841,10 @@
 }
 .order-reward { font-size: 12px; font-weight: 700; color: #a0730f; }
 .order-left { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 仓库够不够交这一单：够是绿、不够是橙，直接跟在需求后面 */
+.order-have { font-variant-numeric: tabular-nums; font-weight: 600; }
+.order-have.ok { color: #4c8a3f; }
+.order-have.lack { color: #b4703a; }
 /* 发布弹窗底栏：数量步进器 + 赏金 + 发布 */
 .order-publish-foot {
   display: flex;
@@ -1086,8 +1090,10 @@
 }
 .np-flag.guarded { border-color: #cbaee8; background: #f7f1ff; }
 
-/* 一键照料条：有道具时才有内容，空的时候整行收起来 */
-.npc-quick { display: flex; gap: 8px; margin: 10px 0 2px; }
+/* 一键照料条：有道具时才有内容，空的时候整行收起来。
+   第 45 轮起挪到地块列表**上方**（原来钉在最底下，要滚过一整片地块才摸得到），
+   所以下边距比上边距大一点，和下面的控制台 / 地块拉开层次 */
+.npc-quick { display: flex; gap: 8px; margin: 12px 0 4px; }
 .npc-quick:empty { display: none; }
 .npc-quick .btn { flex: 1 1 0; min-width: 0; font-size: 11.5px; }
 .npc-quick .tool-count {
@@ -1382,6 +1388,81 @@
 .bc-reward b { font-size: 13px; color: #7a5a12; line-height: 1.5; }
 .bc-date { margin-top: 10px; font-size: 10.5px; color: #b0a179; }
 .bc-more { margin-top: 4px; font-size: 10.5px; color: #b0a179; }
+
+/* ---------- 图鉴点亮庆祝 ---------- */
+/* z-index 与签到庆祝同档（210），都高于 #modal(130)、低于 #boot(250) */
+.codex-celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: 0 24px;
+  background: rgba(28, 40, 26, .32);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+  animation: fade .2s ease;
+}
+.codex-celebrate.out { animation: ccOut .32s ease forwards; }
+
+.cc-card {
+  position: relative;
+  width: min(78vw, 300px);
+  padding: 28px 20px 20px;
+  background: linear-gradient(180deg, #fdfff5, #f2f9e2);
+  border: 1px solid #dcebc4;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(70, 110, 40, .26);
+  animation: ccPop .45s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+/* 金圈从图标后面扩散出去，一次性播完 */
+.cc-ring {
+  position: absolute;
+  left: 50%;
+  top: 52px;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  border: 2px solid rgba(240, 169, 46, .6);
+  border-radius: 50%;
+  animation: ccRing .9s ease-out .12s both;
+  pointer-events: none;
+}
+.cc-emoji {
+  font-size: 44px;
+  line-height: 1;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.cc-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #4f7a26;
+  margin-top: 10px;
+  letter-spacing: 1px;
+}
+.cc-sub { font-size: 11.5px; color: #8fa06a; font-weight: 600; margin-top: 4px; }
+
+.cc-rewards {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+.cc-reward {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  background: #fff;
+  border: 1px solid #e4efcf;
+  border-radius: 13px;
+  padding: 9px 6px;
+}
+.cc-reward span { font-size: 14px; }
+.cc-reward b { font-size: 19px; color: #4f8a1f; font-variant-numeric: tabular-nums; }
+.cc-reward small { font-size: 10px; color: #8fa06a; }
 
 /* ---------- 新手引导 ---------- */
 .guide-progress {
@@ -2743,6 +2824,79 @@
   color: var(--muted);
 }
 
+/* 制造栏位数：单独一行挂在状态卡里，不然「能同时烧几炉」根本没人会发现 */
+.ws-slots {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ws-slots b { color: var(--green-d); }
+
+/* ---------- 制造队列 ---------- */
+/* 一炉一行：左边作物图标，右边名字 + 进度条。
+   进度条用宽度表示「已经烧掉多少」，到点整条变绿写「可以收了」——
+   队列是异步的，玩家需要一个能一眼看出「还差多久」的东西。 */
+.ws-queue {
+  margin: 10px 17px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ws-queue-empty {
+  padding: 14px 0;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.ws-job {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  background: #fbfcf8;
+  border: 1px solid #e8ecdf;
+}
+.ws-job.done {
+  background: #f2f9ec;
+  border-color: #d6e9c6;
+}
+.ws-job-emoji { font-size: 22px; line-height: 1; flex: none; }
+.ws-job-body { flex: 1; min-width: 0; }
+.ws-job-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #40503c;
+}
+.ws-job-time {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ws-job.done .ws-job-time { color: var(--green-d); }
+.ws-job-bar {
+  margin-top: 6px;
+  height: 5px;
+  border-radius: 99px;
+  background: #eaeee3;
+  overflow: hidden;
+}
+.ws-job-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #b7dd97, var(--green-d));
+  transition: width .4s ease;
+}
+.ws-queue .btn { align-self: flex-start; }
+
 /* ---------- 好感度 ---------- */
 /* 一对农场一个值（-200 ~ 200）。分六档配色，标签与数值一起显示：
    光看数字没有「关系」的感觉，光看标签又不知道差多少。 */
@@ -2768,6 +2922,8 @@
 .rel-bad { background: #fbe7e4; color: #b3453a; }
 /* 送礼清单里那句「送他会涨 +N」 */
 .rel-gain { color: #2f7d4f; }
+/* 交易清单里那句「每份花 −N 好感」：好感是花掉，用暖红提示代价 */
+.rel-cost { color: #b4703a; }
 
 /* ---------- 收到赠礼（整屏） ---------- */
 /* 离线攒下的礼物上线时补播：压暗整屏，中间一枚大图标 + 一句谁送的。
@@ -3182,8 +3338,68 @@
   border-bottom: 1px dashed var(--line);
 }
 .rank-icon { font-size: 21px; }
+.rank-head-text { flex: 1; min-width: 0; }
 .rank-name { font-size: 13.5px; font-weight: 700; color: #40503c; }
 .rank-desc { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+/* 「奖励」按钮：卡片右上角，看这一榜前三名各拿什么。
+   做成小药丸而不是纯文字，是因为它在一张以文字为主的卡里太容易被忽略，
+   而奖励恰恰是玩家翻昨日榜的理由之一。 */
+.rank-reward-btn {
+  flex: none;
+  padding: 4px 11px;
+  border-radius: 99px;
+  border: 1px solid #e7d7a8;
+  background: linear-gradient(180deg, #fffdf2, #fdf4d8);
+  color: #9a7a22;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.rank-reward-btn:active { transform: scale(.95); }
+.rank-reward-btn:hover { box-shadow: 0 2px 8px rgba(160, 130, 40, .18); }
+
+/* 名次奖励弹窗 */
+.rank-prize-list {
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rank-prize {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: #fbfaf4;
+  border: 1px solid #eee6cf;
+}
+.rank-prize-medal {
+  flex: none;
+  width: 26px;
+  text-align: center;
+  font-size: 16px;
+}
+.rank-prize-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #40503c;
+  line-height: 1.6;
+}
+.rank-prize-note {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  background: #f7f9f2;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.rank-prize-note b { color: #40503c; }
 
 .rank-rows { padding: 4px 0; }
 .rank-row {

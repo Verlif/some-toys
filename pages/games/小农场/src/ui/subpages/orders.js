@@ -46,12 +46,18 @@ let lastCount = orderCount();
 /** NPC 发来的收购订单：头像 + 名称 / 需求 / 时限 / 奖励 */
 function npcRowHTML(order, now) {
   const npc = state.friends.find((f) => f.id === order.ownerId);
+  // 仓库里够不够交这一单：直接标在列表上，省得挨个点开才知道差几个
+  const owned = count(order.itemId);
+  const enough = owned >= order.qty;
+  const have = enough
+    ? `<span class="order-have ok">✅ 够交（${owned}）</span>`
+    : `<span class="order-have lack">还差 ${order.qty - owned} 个（${owned}/${order.qty}）</span>`;
   return `
     <div class="shop-item" data-action="order-detail" data-id="${order.id}" role="button" tabindex="0">
       <div class="si-emoji">${npc?.avatar || '🧑‍🌾'}</div>
       <div class="si-body">
         <div class="si-name">${escapeHtml(npc?.name || '邻居')}</div>
-        <div class="si-meta">${itemLabel(order.itemId)} ×${order.qty}</div>
+        <div class="si-meta">${itemLabel(order.itemId)} ×${order.qty}　${have}</div>
       </div>
       <div class="order-side">
         <span class="order-reward">💰 ${order.reward}</span>

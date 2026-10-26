@@ -63,6 +63,19 @@ export const dogCaughtRelLoss = (sell) => Math.max(1, Math.round(sell / CAUGHT_S
 export const giftRelGain = (lv) => Math.max(1, Math.round(lv * GIFT_REL_RATIO));
 
 /**
+ * 跟邻居买一批产出，要花多少好感。
+ *
+ * 口径是用户定的：**产出等级 × 份数 / 2**，至少 1。
+ * 与送礼（加好感）正好反向 —— 送礼是人情，交易是麻烦人家，
+ * 高阶作物更金贵，一次买得多也就更耗交情。
+ *
+ * @param {number} lv 产出等级
+ * @param {number} [qty] 份数
+ */
+export const tradeRelCost = (lv, qty = 1) =>
+  Math.max(1, Math.round((Number(lv) || 1) * Math.max(1, Math.floor(qty) || 1) * 0.5));
+
+/**
  * 好感分档：界面上的标签文字与配色。
  * @param {number} v
  * @returns {{key: string, label: string}}

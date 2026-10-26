@@ -57,6 +57,13 @@ function cycleHTML() {
     return `<div class="cycle-dot ${cls}">${n}</div>`;
   }).join('');
 
+  // 连签天数由签到历史现算（store/signin.js 的 streakOf），与下方日历同一套数据
+  const streakText = broken
+    ? '已中断 · 从第 1 天重新开始'
+    : streak > 0
+      ? `已连续 ${streak} 天`
+      : '还没开始 · 今天签就是第 1 天';
+
   const reward = todayReward();
   const items = Object.entries(reward.items)
     .map(([id, n]) => `${ITEMS[id]?.name || id} ×${n}`)
@@ -66,7 +73,7 @@ function cycleHTML() {
     <div class="cycle">
       <div class="cycle-head">
         <span class="cycle-title">连续签到</span>
-        <span class="cycle-streak">${broken ? '已中断 · 从第 1 天重新开始' : `已连续 ${streak} 天`}</span>
+        <span class="cycle-streak">${streakText}</span>
       </div>
       <div class="cycle-dots">${dots}</div>
       <div class="cycle-foot">

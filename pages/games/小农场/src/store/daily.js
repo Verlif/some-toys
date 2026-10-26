@@ -257,7 +257,7 @@ function rankOf(row, metric, n = 3) {
 }
 
 /** 奖励文案：💰100、🚿洒水器×5、🗺️三级藏宝图 */
-function rewardText(reward) {
+export function rewardText(reward) {
   const parts = [];
   if (reward.coins) parts.push(`💰${formatCoins(reward.coins)}`);
   for (const [id, n] of Object.entries(reward.items || {})) parts.push(`${itemLabel(id)}×${n}`);

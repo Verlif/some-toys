@@ -24,10 +24,17 @@
 - **地块**：`plot.usable` 落库，开局 6 块，第 N 块 `(已拥有-6)×1000+500`。升级不给地。
 - 经验 `expForLevel(n)=100n(n+1)`；售价 `整轮收益=(种子价×1.2+等级×10)×(1+0.05×整轮小时)`。
 - **三件省手道具**（洒水器/杀虫剂/采收机）各 200 金币，各有永久版。先查永久再查消耗。
-- **种子制造间**（`farm.workshop`）：Lv.5+2000 解锁。份数 `max(1, round(一轮平均产出/2))`，
+  **永久采收机第 44 轮从 100,000 降到 20,000**（另两件永久版仍 50,000）——
+  一键收获是玩家最先想要的那件，原价等于只卖给大后期。
+- **种子制造间**（`farm.workshop = {level, kinds, jobs}`）：Lv.5+2000 解锁。份数 `max(1, round(一轮平均产出/2))`，
   工本费 `round(种子价/4)`（第 43 轮由 ÷2 再减半）。升级看**造过的种类数**。
   第 43 轮起**限定作物也能造**（`craftables/craft` 不再挡 `crop.special`，
   `state.js` 的 `workshop.kinds` 规范化也放开 special）。
+  **第 44 轮改成排队制造**：`jobs` 一炉 `{id, cropId, need, fee, startAt, doneAt}`，
+  时间 `craftMs(crop)=max(1,lv)×10s`（`CRAFT_MS_PER_LEVEL=10_000`），**栏位数 = 等级**（`slotCount`）。
+  `craft()` 扣料扣钱后**只入队**（返回 job / 栏位满返回 null），`claimJobs()` 到点才加种子 + `kinds++`。
+  `scheduleClaim()` 按最早 `doneAt` 挂 setTimeout 自动收；`main.js` 启动调 `resumeCraftTimers()` 接回。
+  ⚠️ 时间戳落库，**离线照样走**；读档时 jobs 清洗（认不得的 cropId / `doneAt<=startAt` 丢掉，上限 10 条）。
 - **照料**：`下次 = now + [次数×1h, (次数×2+1)h]`，不排进成熟前 15 分钟。欠水 −15%、欠虫 −40%。
 - **每日排行榜**（`store/daily.js`）：`state.dailyRows` 一期一行，表 `daily` 留 8 天。11 张榜。
   **每天下午 2 点结算**（`boardDayKey(ts)=dayKey(ts-14h)`，14:00 切日；签到仍用 `dayKey` 0 点切）。
@@ -51,6 +58,9 @@
   玩家名次随 `EVENTS.BOARD_AWARD` 发给 `ui/board-celebrate.js`：全屏庆祝卡，
   **单张 ≤2s、点一下淡出即接下一张、多个名次按天数从旧到新排队播**；
   该层 **z-index 195**（弹窗 130 之上、toast 200 之下，两者要同屏可见）。
+  **第 44 轮页面顺序调换**：`rankPage.render` 先 `todayHTML`（实时在上）后 `yesterdayHTML`（昨日在下），
+  hero 文案同步改成讲「本期」；昨日榜卡片 head 加 `.rank-reward-btn`（`data-action="rank-reward"`），
+  弹窗用 `rewardText(reward)`（第 44 轮由模块私有改为 **export**）列前三名奖励 —— 与真正发奖文案同源。
 - **好感度**：−200~200，打理 +1、偷菜成功 0、被逮 `dogCaughtRelLoss(售价)=max(1,round(售价/10))`、
   送 `max(1,等级/2)`。**亲近档 ≥100**：NPC 优先打理 ≥100，`closeGiftChanceFor`（100→0.25，200→0.55）
   ×性格系数送礼；<100 `giftChanceFor` 封顶 0.5。概率第 36 轮整体上调约 1.5~2 倍。
@@ -87,6 +97,10 @@
 - **横滚芯片条接力** `ui/scroll-keep.js` 的 `keepBarScroll(root, sel, render)`：friends/news/shop 三处。
 - **图鉴**：卡片只有图标+名称；三档筛选；点得开 = `unlocked||collected`；收集≠点亮。
   **双重进度条**（第 34 轮）：两条重叠同基线，下层绿=已收集(10px)，上层金=已点亮(5px)。
+  **点亮动画（第 44 轮）**：点「🧪 制作标本」后**先 `closeModal()` 再播庆祝层**
+  `ui/codex-celebrate.js`（订阅 `EVENTS.SPECIMEN`，payload `{cropId,name,emoji,seed,lit,total,litPercent}`，
+  由 `codex.js makeSpecimen` 在 emit INVENTORY 之后发出）；失败才把详情弹回来。
+  骨架照抄 `sign-celebrate.js`，样式 `.codex-celebrate/.cc-*`（z-index 210，keyframes ccPop/ccRing/ccOut）。
 - **邻居页**筛选与排序两条独立状态；筛选只认点击（滑动手势已删）。
 - **记录只有一种长相** `recordItemsHTML`；行内标签 `inlineTagsHTML`（人名+作物名一次正则）。
 - **作物详情只有一个弹窗** `openCropModal`；**邻居农场弹窗只有一个** `openFriendModal`。
@@ -139,8 +153,13 @@
   **帮邻居浇水与自家同款**：`waterNeighborPlot` / 联机主机侧都 `readyAt −= stageBounds×10%`
   （第 40 轮补，原来只剩好感经验；联机回执带 readyAt，访客就地齐快照）。
 - **在线窗口**（第 41 轮）：`beginVisit` 写 `npc.onlineUntil = at + onlineMs(npc)`，
-  时长 = 性格表（10~30 分钟）+ 身份关键词微调（退休 +4 / 司机主播 −3 / 师生 −2）±2 浮动，
-  `data/friends.js` 的 `ONLINE_MINUTES` / `onlineMs` / `isNpcOnline`。bulkAdvance 不设。
+  时长 = 性格表 + 身份关键词微调 ±浮动，`data/friends.js` 的 `ONLINE_MINUTES` / `onlineMs` / `isNpcOnline`。
+  bulkAdvance 不设。
+  **第 44 轮整体砍半：5~15 分钟**（原 10~30；`ONLINE_MINUTES` 全表减半、`ONLINE_PROFESSION_BONUS`
+  改成 +2 / −2 / −1、`onlineMs` 夹取改 `Math.min(15, Math.max(5, ...))`、浮动 `randInt(-1,1)`）——
+  玩家在线时绿点挂太久，串门像没完没了。
+  **NPC 升级经验 ×2（第 44 轮）**：`npc-sim.js` 的 `gainExp` 用 `expForLevel(level) * NPC_EXP_MULT`
+  （`NPC_EXP_MULT = 2`），只放大阈值不动 `expForLevel` 本身（玩家侧还在用）。
   下游：邻居页绿点/灰度头像（`.friend-dot` + `grayscale(.55)`，TICK 只改 class 不重绘）；
   **偷在线 NPC 被狗抓住双倍惩罚**（罚款与 `dogCaughtRelLoss` ×2，social.steal）；
   邻居列表排序加「上线」档（在线优先 + onlineUntil 降序）；**不在线 = 弹窗与列表卡片
@@ -158,6 +177,53 @@
   NPC 仓库 `npc.bag`：`actHarvest` 按 `KEEP_RATIO`（性格）保留入库，`NPC_BAG_CAP=60` 封顶。
   过期清扫 `expireOrders` 挂在 settleWorld 开头。「更多」里 📋 订单（替换掉的牧场/设置已删，
   placeholder.js 已删）。
+  **列表行标「够不够」（第 44 轮）**：`npcRowHTML` 里按 `count(order.itemId)` 与 `order.qty`
+  渲染 `.order-have.ok`（`✅ 够交（N）`）/ `.order-have.lack`（`还差 N 个（owned/qty）`）——
+  原来只有点进详情才知道自己够不够，得挨个点开。
+
+- **上线间隔砍半（第 45 轮）**：`data/friends.js` 的 `NPCS` 32 位全部对折 ——
+  interval 型 `min/max` 各除以 2（`[8,16]` → `[4,8]`，最短 `[1,4]`），fixed 型把 `hours`
+  里的钟点**翻倍**（`[6,18]` → `[0,6,12,18]`），`DEFAULT_INTERVAL` 从 `{8,16}` 改 `{4,8}`。
+  `expectedGapMs()` 顺着这两个值算，离线估时自动对齐。
+  ⚠️ **`normalizeNpc` 的 `schedule` 改成只认名单**（`schedule: def.schedule`，原来是
+  `row.schedule || def.schedule`）—— 否则老档里的旧区间永远盖住新值，砍半对老玩家完全无效。
+  性格/职业/节奏/偷菜倾向属于「这个人是谁」（策划调数值的地方），等级/身家/地块/游标才吃存档。
+  注意这与第 44 轮的「在线时长 `onlineMs` 砍半」是**两件不同的事**：一个管「多久来一趟」，
+  一个管「来了待多久」。
+
+- **交易：跟邻居按原价买产出（第 45 轮）**：`store/social.js` 末尾三个导出
+  `tradeStock(friend)` / `tradeQuote(friendId, cropId, qty)`（纯函数报价）/
+  `buyFromFriend()`（真正扣钱扣货扣好感）。价格 = **原价 `crop.sell`**，
+  好感消耗 = `tradeRelCost(lv, qty) = max(1, round(lv × qty / 2))`（`data/relation.js`）。
+  **邻居必须在线**（`isNpcOnline`）才能交易 —— `quickButtons` 里按钮 disabled + 文案
+  「💰 交易（离线）」，`openTradePicker` / `tradeQuote` 各再挡一次。
+  钱进 `friend.coins`（他才有钱买种子）。UI 是送礼那套三层的镜像
+  （`openTradePicker` → `confirmTrade`，`.rel-cost` 暖红标好感代价），
+  `paint()` 只重算不落账。联机好友没有交易入口（对方仓库是只读快照）。
+
+- **送礼 / 交易按钮挪到地块列表上方（第 45 轮）**：`openFriendModal` 的模板顺序改成
+  数据卡 → `.npc-quick` → `.npc-board` → `.npc-plots` → `.npc-tip`；
+  `.npc-quick` 的 margin 改成 `12px 0 4px`（上小下大）。原来钉在弹窗最底部，
+  要滚过一整片地块才摸得到。
+
+- **空地升级按钮（第 45 轮）**：`ui/views/farm.js` 的 `emptyHTML` 在「播种」下面多一颗
+  `data-action="soil-upgrade"`（顶档地不渲染），弹窗 `openSoilUpgradeModal` 展示
+  `当前档 → 下一档` + 六格属性（产量/时间/经验/价格/当前金币/永久保持），
+  `delta()` 只在真变化时画箭头。真正校验仍在 `farm.upgradeSoil()`（逐级晋升/等级/扣钱）。
+  `PLOT_ACTIONS` 必须加 `'soil-upgrade'`（check.mjs 靠这个对象认 data-action）。
+
+- **图鉴点亮后不再显示「制作标本」（第 45 轮）**：`openDetailModal` 的 `actions` 条件
+  改成 `!entry?.specimen && stat.owned >= SPECIMEN_COST` —— 原来只看够不够 50 份，
+  已点亮的还会摆一颗按钮，做了没奖励、白亏 50 份产出。
+
+- **NPC 上线行为（第 44 轮修的两个 bug）**：
+  ① `planVisit` 的尾巴原先是 `['replant','feed','steal','care','gift','adventure','order','fill']`，
+  **漏了 `harvest` 与 `tend`** —— `want` 只抽 2~4 个动作，算下来约 40% 的上线整趟既不收自家
+  作物也不打理。现在尾巴是 `['harvest','tend','replant',...]`（没事可做时两个 act 自己返回 null）。
+  ② 在线演出 `runLiveStep` 原先**每一步都新建 `simCtx()`**，farmView 的 `bagDirty` 与
+  stolen/cared/caught 计数跨步丢失（NPC 交给玩家的产出不落盘），收尾也不调 `syncNpcPlots`
+  （升级后新地块不补）。现在 `enqueueVisit` 时建一份 `ctx` 挂到 visit 上整趟共用，
+  commit 条件带 `ctx.farm.bagDirty` 并重置它，收尾先 `syncNpcPlots(npc, visit.at)` 再落盘。
 
 ## 村镇联机
 
@@ -182,6 +248,11 @@
   `dayIndex(now) - dayIndex(lastSign) > 1`（`core/utils.js` 的 `dayIndex` 接受时间戳或
   'YYYY-M-D' 键）。⚠️ 早先拿 24 小时门槛，昨晚 23 点签的今早看就被判「已中断」——
   顶部连签显示与下方日历各说各话。日历读 `signDays`（历史），所以日历一直是对的。
+  **第 44 轮彻底统一：`signDays` 是唯一数据源**。新增 `streakOf(now)`（用 Set 从今天/昨天往前数连续天数），
+  `currentStreak()` / `leftInCycle()` / `todayStreakDay()` / `streakBroken()` 全部改用它，
+  `signStreak` 降级成缓存（`signIn` 里写成 `streakOf(now)`）。老档由 `reconcileSignHistory()`
+  按 `lastSign` 往前补出 `signDays`（上限 90 天，幂等，`main.js` 启动调用）。
+  ⚠️ 早先顶部读计数器 `signStreak`、日历读历史 `signDays`，两套各算各的才对不上。
 - **图鉴点亮奖 1 颗同种种子**（第 43 轮）：`codex.js CODEX_SEED_REWARD=1`，
   `makeSpecimen` 点亮时发；老档由 `compensateLitSeeds()` 按 `progress.codexSeeds` 标记一次性补发
   （`main.js` 启动调用）。

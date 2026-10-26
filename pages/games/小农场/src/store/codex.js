@@ -155,6 +155,18 @@ export async function makeSpecimen(cropId) {
   emit(EVENTS.CODEX);
   emit(EVENTS.INVENTORY);
 
+  // 点亮是图鉴里最值得庆祝的一下：广播出去让 ui/codex-celebrate.js 播动画
+  const summary = codexSummary();
+  emit(EVENTS.SPECIMEN, {
+    cropId,
+    name: crop.name,
+    emoji: crop.emoji,
+    seed: CODEX_SEED_REWARD,
+    lit: summary.lit,
+    total: summary.total,
+    litPercent: summary.litPercent,
+  });
+
   await completeGuide('specimen');
   notify(`${crop.emoji} 做好了${crop.name}的标本，图鉴已点亮 · 奖励 ${crop.name}种子 ×${CODEX_SEED_REWARD}`, 'gold');
   return true;

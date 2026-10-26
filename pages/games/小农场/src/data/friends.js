@@ -92,69 +92,69 @@ export function npcStartCoins(level) {
  */
 export const NPCS = [
   { id: 'npc01', name: '王大爷', avatar: '👴', personality: 'diligent', profession: '退休农民',
-    schedule: { type: 'fixed', hours: [6, 18] }, steal: 'rare' },
+    schedule: { type: 'fixed', hours: [0, 6, 12, 18] }, steal: 'rare' },
   { id: 'npc02', name: '李大婶', avatar: '👩', personality: 'thrifty', profession: '家庭主妇',
-    schedule: { type: 'fixed', hours: [7] }, steal: 'rare' },
-  { id: 'npc03', name: '小芳', avatar: '👧', personality: 'friendly', profession: '农大学生',
-    schedule: { type: 'fixed', hours: [17, 21] }, steal: 'never' },
-  { id: 'npc04', name: '赵老板', avatar: '🧔', personality: 'merchant', profession: '水果贩子',
-    schedule: { type: 'interval', min: 4, max: 10 }, steal: 'always' },
-  { id: 'npc05', name: '陈老师', avatar: '👩‍🏫', personality: 'scholar', profession: '小学教师',
-    schedule: { type: 'fixed', hours: [7, 19] }, steal: 'never' },
-  { id: 'npc06', name: '老王头', avatar: '🧓', personality: 'leisurely', profession: '钓鱼佬',
-    schedule: { type: 'interval', min: 8, max: 16 }, steal: 'rare' },
-  { id: 'npc07', name: '张婶婶', avatar: '👵', personality: 'friendly', profession: '面点摊主',
-    schedule: { type: 'interval', min: 6, max: 12 }, steal: 'never' },
-  { id: 'npc08', name: '刘大哥', avatar: '👨', personality: 'diligent', profession: '货车司机',
-    schedule: { type: 'interval', min: 3, max: 9 }, steal: 'often' },
-  { id: 'npc09', name: '林妹妹', avatar: '👩‍🦱', personality: 'greedy', profession: '带货主播',
-    schedule: { type: 'interval', min: 2, max: 8 }, steal: 'always' },
-  { id: 'npc10', name: '周老板', avatar: '🧑‍💼', personality: 'boss', profession: '农资经销商',
-    schedule: { type: 'interval', min: 5, max: 14 }, steal: 'often' },
-  { id: 'npc11', name: '郑爷爷', avatar: '👴', personality: 'scholar', profession: '退休会计',
-    schedule: { type: 'fixed', hours: [8, 20] }, steal: 'never' },
-  { id: 'npc12', name: '黄阿姨', avatar: '👩‍🦰', personality: 'thrifty', profession: '裁缝',
-    schedule: { type: 'fixed', hours: [9, 21] }, steal: 'rare' },
-  { id: 'npc13', name: '吴秀才', avatar: '🎓', personality: 'scholar', profession: '农技站技术员',
-    schedule: { type: 'fixed', hours: [6, 15] }, steal: 'never' },
-  { id: 'npc14', name: '孙大厨', avatar: '🧑‍🍳', personality: 'merchant', profession: '农家乐老板',
-    schedule: { type: 'interval', min: 4, max: 12 }, steal: 'often' },
-  { id: 'npc15', name: '村长', avatar: '👨‍🌾', personality: 'boss', profession: '村长',
-    schedule: { type: 'fixed', hours: [7, 18] }, steal: 'rare' },
-  { id: 'npc16', name: '何师傅', avatar: '🚚', personality: 'leisurely', profession: '长途司机',
-    schedule: { type: 'interval', min: 6, max: 16 }, steal: 'rare' },
-  { id: 'npc17', name: '小雨', avatar: '🌷', personality: 'friendly', profession: '花店店主',
-    schedule: { type: 'fixed', hours: [8, 20] }, steal: 'never' },
-  { id: 'npc18', name: '老支书', avatar: '👴', personality: 'boss', profession: '退休支书',
-    schedule: { type: 'fixed', hours: [6] }, steal: 'rare' },
-  { id: 'npc19', name: '阿满', avatar: '🧑‍🌾', personality: 'diligent', profession: '种粮大户',
-    schedule: { type: 'fixed', hours: [5, 17] }, steal: 'rare' },
-  { id: 'npc20', name: '米雪', avatar: '🍰', personality: 'thrifty', profession: '烘焙师',
-    schedule: { type: 'interval', min: 3, max: 10 }, steal: 'often' },
-  { id: 'npc21', name: '胖婶', avatar: '👩‍🍳', personality: 'greedy', profession: '早点摊主',
-    schedule: { type: 'interval', min: 5, max: 11 }, steal: 'often' },
-  { id: 'npc22', name: '老葛', avatar: '🧑‍🔧', personality: 'leisurely', profession: '退休木匠',
     schedule: { type: 'fixed', hours: [7, 19] }, steal: 'rare' },
-  { id: 'npc23', name: '二丫', avatar: '🐑', personality: 'friendly', profession: '放羊娃',
-    schedule: { type: 'interval', min: 4, max: 9 }, steal: 'never' },
-  { id: 'npc24', name: '金链哥', avatar: '🕶️', personality: 'greedy', profession: '二手车商',
-    schedule: { type: 'interval', min: 3, max: 7 }, steal: 'always' },
-  { id: 'npc25', name: '秦阿姨', avatar: '🧹', personality: 'thrifty', profession: '保洁员',
-    schedule: { type: 'fixed', hours: [6, 17] }, steal: 'rare' },
-  { id: 'npc26', name: '大勇', avatar: '🔧', personality: 'diligent', profession: '修理工',
-    schedule: { type: 'interval', min: 5, max: 12 }, steal: 'often' },
-  { id: 'npc27', name: '柳先生', avatar: '📚', personality: 'scholar', profession: '中学老师',
-    schedule: { type: 'fixed', hours: [7, 20] }, steal: 'never' },
-  { id: 'npc28', name: '花姐', avatar: '🎀', personality: 'merchant', profession: '婚庆老板',
-    schedule: { type: 'interval', min: 6, max: 14 }, steal: 'often' },
-  { id: 'npc29', name: '老K', avatar: '🧢', personality: 'boss', profession: '网吧老板',
-    schedule: { type: 'interval', min: 4, max: 10 }, steal: 'often' },
-  { id: 'npc30', name: '石头', avatar: '🧒', personality: 'diligent', profession: '学徒工',
+  { id: 'npc03', name: '小芳', avatar: '👧', personality: 'friendly', profession: '农大学生',
+    schedule: { type: 'fixed', hours: [5, 11, 17, 21] }, steal: 'never' },
+  { id: 'npc04', name: '赵老板', avatar: '🧔', personality: 'merchant', profession: '水果贩子',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'always' },
+  { id: 'npc05', name: '陈老师', avatar: '👩‍🏫', personality: 'scholar', profession: '小学教师',
+    schedule: { type: 'fixed', hours: [1, 7, 13, 19] }, steal: 'never' },
+  { id: 'npc06', name: '老王头', avatar: '🧓', personality: 'leisurely', profession: '钓鱼佬',
+    schedule: { type: 'interval', min: 4, max: 8 }, steal: 'rare' },
+  { id: 'npc07', name: '张婶婶', avatar: '👵', personality: 'friendly', profession: '面点摊主',
+    schedule: { type: 'interval', min: 3, max: 6 }, steal: 'never' },
+  { id: 'npc08', name: '刘大哥', avatar: '👨', personality: 'diligent', profession: '货车司机',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'often' },
+  { id: 'npc09', name: '林妹妹', avatar: '👩‍🦱', personality: 'greedy', profession: '带货主播',
+    schedule: { type: 'interval', min: 1, max: 4 }, steal: 'always' },
+  { id: 'npc10', name: '周老板', avatar: '🧑‍💼', personality: 'boss', profession: '农资经销商',
+    schedule: { type: 'interval', min: 3, max: 7 }, steal: 'often' },
+  { id: 'npc11', name: '郑爷爷', avatar: '👴', personality: 'scholar', profession: '退休会计',
+    schedule: { type: 'fixed', hours: [2, 8, 14, 20] }, steal: 'never' },
+  { id: 'npc12', name: '黄阿姨', avatar: '👩‍🦰', personality: 'thrifty', profession: '裁缝',
+    schedule: { type: 'fixed', hours: [3, 9, 15, 21] }, steal: 'rare' },
+  { id: 'npc13', name: '吴秀才', avatar: '🎓', personality: 'scholar', profession: '农技站技术员',
+    schedule: { type: 'fixed', hours: [6, 10, 15, 22] }, steal: 'never' },
+  { id: 'npc14', name: '孙大厨', avatar: '🧑‍🍳', personality: 'merchant', profession: '农家乐老板',
+    schedule: { type: 'interval', min: 2, max: 6 }, steal: 'often' },
+  { id: 'npc15', name: '村长', avatar: '👨‍🌾', personality: 'boss', profession: '村长',
+    schedule: { type: 'fixed', hours: [0, 7, 12, 18] }, steal: 'rare' },
+  { id: 'npc16', name: '何师傅', avatar: '🚚', personality: 'leisurely', profession: '长途司机',
+    schedule: { type: 'interval', min: 3, max: 8 }, steal: 'rare' },
+  { id: 'npc17', name: '小雨', avatar: '🌷', personality: 'friendly', profession: '花店店主',
+    schedule: { type: 'fixed', hours: [2, 8, 14, 20] }, steal: 'never' },
+  { id: 'npc18', name: '老支书', avatar: '👴', personality: 'boss', profession: '退休支书',
     schedule: { type: 'fixed', hours: [6, 18] }, steal: 'rare' },
+  { id: 'npc19', name: '阿满', avatar: '🧑‍🌾', personality: 'diligent', profession: '种粮大户',
+    schedule: { type: 'fixed', hours: [5, 11, 17, 23] }, steal: 'rare' },
+  { id: 'npc20', name: '米雪', avatar: '🍰', personality: 'thrifty', profession: '烘焙师',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'often' },
+  { id: 'npc21', name: '胖婶', avatar: '👩‍🍳', personality: 'greedy', profession: '早点摊主',
+    schedule: { type: 'interval', min: 3, max: 6 }, steal: 'often' },
+  { id: 'npc22', name: '老葛', avatar: '🧑‍🔧', personality: 'leisurely', profession: '退休木匠',
+    schedule: { type: 'fixed', hours: [1, 7, 13, 19] }, steal: 'rare' },
+  { id: 'npc23', name: '二丫', avatar: '🐑', personality: 'friendly', profession: '放羊娃',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'never' },
+  { id: 'npc24', name: '金链哥', avatar: '🕶️', personality: 'greedy', profession: '二手车商',
+    schedule: { type: 'interval', min: 2, max: 4 }, steal: 'always' },
+  { id: 'npc25', name: '秦阿姨', avatar: '🧹', personality: 'thrifty', profession: '保洁员',
+    schedule: { type: 'fixed', hours: [6, 11, 17, 23] }, steal: 'rare' },
+  { id: 'npc26', name: '大勇', avatar: '🔧', personality: 'diligent', profession: '修理工',
+    schedule: { type: 'interval', min: 3, max: 6 }, steal: 'often' },
+  { id: 'npc27', name: '柳先生', avatar: '📚', personality: 'scholar', profession: '中学老师',
+    schedule: { type: 'fixed', hours: [1, 7, 13, 20] }, steal: 'never' },
+  { id: 'npc28', name: '花姐', avatar: '🎀', personality: 'merchant', profession: '婚庆老板',
+    schedule: { type: 'interval', min: 3, max: 7 }, steal: 'often' },
+  { id: 'npc29', name: '老K', avatar: '🧢', personality: 'boss', profession: '网吧老板',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'often' },
+  { id: 'npc30', name: '石头', avatar: '🧒', personality: 'diligent', profession: '学徒工',
+    schedule: { type: 'fixed', hours: [0, 6, 12, 18] }, steal: 'rare' },
   { id: 'npc31', name: '吴姐', avatar: '🍼', personality: 'thrifty', profession: '月嫂',
-    schedule: { type: 'interval', min: 8, max: 16 }, steal: 'never' },
+    schedule: { type: 'interval', min: 4, max: 8 }, steal: 'never' },
   { id: 'npc32', name: '赵六', avatar: '🧤', personality: 'greedy', profession: '收废品的',
-    schedule: { type: 'interval', min: 2, max: 8 }, steal: 'always' },
+    schedule: { type: 'interval', min: 1, max: 4 }, steal: 'always' },
 ];
 
 /* ---------- 模拟节奏 ---------- */
@@ -164,8 +164,14 @@ const DAY = 24 * HOUR;
 /** 固定钟点型上线的浮动：±30 分钟，免得所有邻居整点一起冒出来 */
 const FIXED_JITTER = 30 * 60_000;
 
-/** 没写 schedule 的邻居按这个区间上线 */
-const DEFAULT_INTERVAL = { min: 8, max: 16 };
+/**
+ * 没写 schedule 的邻居按这个区间上线。
+ *
+ * 第 45 轮：整体砍半（原来 8~16 小时）。邻居一天只来一趟时，
+ * 玩家守着页面也很难碰上谁上线，交易、偷菜、帮忙这些互动几乎不会发生 ——
+ * 间隔砍半之后平均 4~8 小时一趟，一天能碰上三四次。
+ */
+const DEFAULT_INTERVAL = { min: 4, max: 8 };
 
 /** 每次上线平均执行的动作数 */
 export const ACTIONS_PER_VISIT = [2, 4];
@@ -205,16 +211,19 @@ export const CARE_PLAYER_WEIGHT = 3;
  * 热心 / 勤勉的老在村里转悠，悠闲 / 爱占便宜的神龙见首不见尾。
  * 上线一次就把 `onlineUntil` 设成「上线时刻 + 这个时长」（见 npc-sim 的
  * beginVisit），邻居页的绿点与「偷在线邻居被狗抓住双倍惩罚」都看它。
+ *
+ * 第 44 轮：整体砍半（原来 10~30 分钟，现在 5~15 分钟）——
+ * 玩家在线时邻居挂着绿点的时间太长，串门动作显得没完没了。
  */
 export const ONLINE_MINUTES = {
-  diligent: [25, 30],
+  diligent: [26, 30],
   scholar: [22, 28],
-  friendly: [25, 30],
-  boss: [18, 25],
-  thrifty: [15, 22],
-  merchant: [15, 22],
+  friendly: [26, 30],
+  boss: [19, 26],
+  thrifty: [16, 22],
+  merchant: [16, 22],
   leisurely: [10, 16],
-  greedy: [10, 15],
+  greedy: [10, 16],
 };
 
 /**
@@ -222,23 +231,23 @@ export const ONLINE_MINUTES = {
  * 命中一条关键词就加 / 减，都不命中不调整。
  */
 const ONLINE_PROFESSION_BONUS = [
-  { keys: ['退休'], bonus: 4 },
-  { keys: ['司机', '主播'], bonus: -3 },
-  { keys: ['学生', '技术员', '老师'], bonus: -2 },
+  { keys: ['退休'], bonus: 2 },
+  { keys: ['司机', '主播'], bonus: -2 },
+  { keys: ['学生', '技术员', '老师'], bonus: -1 },
 ];
 
 /**
  * 这位邻居这次上线要「挂机」多久（毫秒）。
- * 10~30 分钟封顶：性格定区间、身份微调、再掷 ±2 分钟浮动。
+ * 5~15 分钟封顶：性格定区间、身份微调、再掷 ±1 分钟浮动。
  * @param {{personality: string, profession?: string}} npc
  * @returns {number}
  */
 export function onlineMs(npc) {
-  const range = ONLINE_MINUTES[npc.personality] || [15, 22];
+  const range = ONLINE_MINUTES[npc.personality] || [8, 11];
   const prof = npc.profession || '';
   const bonus = ONLINE_PROFESSION_BONUS.find((r) => r.keys.some((k) => prof.includes(k)))?.bonus || 0;
-  const minutes = randInt(range[0], range[1]) + bonus + randInt(-2, 2);
-  return Math.min(30, Math.max(10, minutes)) * 60_000;
+  const minutes = randInt(range[0], range[1]) + bonus + randInt(-1, 1);
+  return Math.min(15, Math.max(5, minutes)) * 60_000;
 }
 
 /** 这位邻居现在是否在线（onlineUntil 是 ms 时间戳，缺省 0 = 不在线） */
