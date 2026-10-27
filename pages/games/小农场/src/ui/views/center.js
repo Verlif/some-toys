@@ -206,7 +206,7 @@ function openBoard() {
       <h3>📢 公告栏</h3>
       <button class="close" data-close>✕</button>
     </div>
-    <div class="modal-sub">村镇日报 · 只保留最近 7 天的大新闻</div>
+    <div class="modal-sub">村镇日报 · 只保留最近 30 天的大新闻</div>
 
     <div class="news-list" data-role="board-list">${boardListHTML()}</div>
 

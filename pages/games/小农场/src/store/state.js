@@ -331,11 +331,18 @@ function cleanOrder(raw, ownerId, id) {
   };
 }
 
-/** NPC 仓库清洗：只认产出 key，正数才留 */
+/**
+ * NPC 仓库清洗：只认产出 key，正数才留。
+ *
+ * 第 52 轮起也留 `seed_` 开头的 key —— 村庄升级会往每个邻居的仓库里放一颗
+ * 荣耀种子（「发给全村所有人」），读档时把它洗掉就等于只发给了玩家。
+ */
 function cleanNpcBag(raw) {
   const bag = {};
   for (const [id, n] of Object.entries(raw || {})) {
-    if (!id.startsWith(PRODUCE_PREFIX) || !CROPS[id.slice(PRODUCE_PREFIX.length)]) continue;
+    const isProduce = id.startsWith(PRODUCE_PREFIX) && CROPS[id.slice(PRODUCE_PREFIX.length)];
+    const isSeed = id.startsWith('seed_') && CROPS[id.slice('seed_'.length)];
+    if (!isProduce && !isSeed) continue;
     bag[id] = Math.max(0, Math.floor(Number(n) || 0));
   }
   return bag;

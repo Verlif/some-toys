@@ -414,10 +414,18 @@ function cycleRevenue(level, seed, hours) {
 
 /**
  * 产量区间。基础 10~16 个起，再按作物形态加成。
+ *
+ * 第 52 轮：整体 ×1.2 —— 玩家要求「产出数量上调、产出售价下调 0.2 倍」。
+ * 注意这里**只动产量**：售价是由「整轮收入守恒」倒推出来的（见 cycleRevenue），
+ * 产量抬 20% 之后 sell 会自动掉到原来的 1/1.2，整轮收入一分不变。
+ * 换句话说，这一改只改变「仓库里堆多少、每份卖多少钱」的手感，
+ * 不动经济曲线 —— 所有既有校验（收入倍率、每小时金币、限定溢价）继续成立。
  */
+const YIELD_SCALE = 1.2;
+
 function yieldRange(level, form) {
-  const baseMin = 10 + Math.floor(level / 25);
-  const baseMax = baseMin + 6 + Math.floor(level / 40);
+  const baseMin = (10 + Math.floor(level / 25)) * YIELD_SCALE;
+  const baseMax = (10 + Math.floor(level / 25) + 6 + Math.floor(level / 40)) * YIELD_SCALE;
   const mul = FORM_YIELD[form] ?? 1;
   const min = Math.max(10, Math.round(baseMin * mul));
   const max = Math.max(min + 3, Math.round(baseMax * mul));
@@ -760,6 +768,75 @@ const specialCrops = SPECIAL_CATALOG.map(([name, emoji, form, level], index) => 
 });
 
 /**
+ * 村庄荣耀种子（第 52 轮）。
+ *
+ * 需求：村庄每升一阶，给**全村所有人**发一颗唯一的限定种子。
+ * 这类种子的性格与藏宝图限定**刻意相反**：
+ *
+ *   - **5 茬**（藏宝图限定最多 5 茬，但低级只有 2~4）；
+ *   - **成熟时间长**（约同级常规作物的 2.5 倍）；
+ *   - **产出多**（产量再乘 2.2）；
+ *   - **单价低**（整轮收入只是同级常规的 1.5 倍，摊到五茬的大产量上，
+ *     每份的价钱明显比同级低 —— 「论堆卖」而不是「论颗卖」）。
+ *
+ * `honor: 2/3/4/5` 是它对应「升到第几级村庄」，`store/village.js` 按这个字段发奖。
+ * 它们同样带 `special: true`（商店不卖、邻居不种、制造间不能造），
+ * 但生成器会把它们从 `SPECIAL_CROP_IDS` 里摘掉 —— 藏宝图挖不到荣耀种子。
+ */
+const HONOR_CATALOG = [
+  ['西米村荣耀', '🌾', 'grain', 20, 2],
+  ['西米村荣光', '🌟', 'fruit', 45, 3],
+  ['西米村荣辉', '💫', 'flower', 80, 4],
+  ['西米村荣典', '👑', 'tree', 130, 5],
+];
+
+/** 荣耀种子的茬数与再生系数：固定 5 茬、每茬等一半时间 */
+const HONOR_HARVESTS = 5;
+const HONOR_REGROW = 0.5;
+/** 成熟时间相对同级常规作物的倍数 */
+const HONOR_GROW_MULT = 2.5;
+/** 成熟时间上限：3.6 天（全局硬上限是 4 天，留一点余量给取整） */
+const HONOR_GROW_CAP = 3.6 * 86400;
+/** 产量相对同级同形态作物的倍数 */
+const HONOR_YIELD_MULT = 3.0;
+/** 整轮收入相对同级常规作物的倍数（长得多、收得多，收入只多一点） */
+const HONOR_PREMIUM = 1.5;
+
+const honorCrops = HONOR_CATALOG.map(([name, emoji, form, level, honor]) => {
+  const kind = kindOf(form);
+  const base = yieldRange(level, form);
+  const yld = [
+    Math.max(3, Math.round(base[0] * HONOR_YIELD_MULT)),
+    Math.max(5, Math.round(base[1] * HONOR_YIELD_MULT)),
+  ];
+  // 名义种子价：荣耀种子不卖，这个数字只用于图鉴与估值
+  const seed = Math.round(seedPrice(level) * 2);
+  const grow = Math.min(HONOR_GROW_CAP, Math.round(growSeconds(level, 'plain', kind) * HONOR_GROW_MULT));
+  const revenue = normalIncomeAt(level) * HONOR_PREMIUM;
+  const sell = Math.max(1, Math.round(revenue / (((yld[0] + yld[1]) / 2) * HONOR_HARVESTS)));
+
+  return {
+    name,
+    emoji,
+    form,
+    kind,
+    slow: false,
+    special: true,
+    honor,
+    stages: STAGE_PATHS[form],
+    lv: level,
+    seed,
+    sell,
+    grow,
+    regrow: HONOR_REGROW,
+    harvests: HONOR_HARVESTS,
+    yield: yld,
+    arch: 'multi',
+    multi: true,
+  };
+});
+
+/**
  * 每个称号补一颗限定种子（第 51 轮）。
  *
  * 需求：**每个称号至少给一枚限定种子，称号越难，种子等级越高。**
@@ -813,7 +890,7 @@ const problems = [];
 const check = (cond, msg) => { if (!cond) problems.push(msg); };
 
 /** 普通作物 + 限定作物：emoji、重名这类检查要覆盖全部 */
-const allCrops = [...crops, ...specialCrops];
+const allCrops = [...crops, ...specialCrops, ...honorCrops];
 
 check(crops.length >= 140, `作物数量 ${crops.length} < 140`);
 check(specialCrops.length >= 30, `限定作物只有 ${specialCrops.length} 种，至少要有 30 种`);
@@ -894,6 +971,38 @@ for (const c of specialCrops) {
   const tol = Math.max(target * 0.2, avgYld * c.harvests * 1.5);
   check(Math.abs(cycleIncome(c) - target) <= tol,
     `${c.name} 的整轮收益 ${cycleIncome(c)} 偏离目标 ${Math.round(target)} 超过容差`);
+}
+
+// 村庄荣耀种子（第 52 轮）：4 种，对应升到 Lv2~5 的村庄，各一种、不重复。
+check(honorCrops.length === 4, `荣耀种子应有 4 种，实际 ${honorCrops.length} 种`);
+check(new Set(honorCrops.map((c) => c.honor)).size === 4, '荣耀种子的村庄等级重复');
+check(honorCrops.every((c) => c.harvests === HONOR_HARVESTS), `荣耀种子必须都是 ${HONOR_HARVESTS} 茬`);
+for (const c of honorCrops) {
+  // 「产出多、单价低」这两句要能验：产量是同级的 2 倍以上，单价明显低于同级
+  // 「产出多」的基线取**同级同形态**：花类天生比粮食少一个档，
+  // 拿荣耀花去跟同级麦子比产量，比的是形态而不是荣耀。
+  const sameForm = crops.filter((x) => x.lv === c.lv && x.form === c.form);
+  const sameLevel = crops.filter((x) => x.lv === c.lv);
+  const yieldBase = sameForm.length ? sameForm : sameLevel;
+  const normalYld = yieldBase.length
+    ? yieldBase.reduce((s, x) => s + (x.yield[0] + x.yield[1]) / 2, 0) / yieldBase.length
+    : null;
+  const avgYld = (c.yield[0] + c.yield[1]) / 2;
+  if (normalYld) {
+    check(avgYld >= normalYld * 1.8,
+      `${c.name} 的单茬产量 ${Math.round(avgYld)} 没有比同级同形态常规作物（${Math.round(normalYld)}）多出 1.8 倍`);
+  }
+  const normalSell = sameLevel.length
+    ? sameLevel.reduce((s, x) => s + x.sell, 0) / sameLevel.length
+    : null;
+  if (normalSell) {
+    check(c.sell <= normalSell * 1.2,
+      `${c.name} 的单价 ${c.sell} 不低于同级常规作物（${Math.round(normalSell)}）—— 荣耀种子应当论堆卖`);
+  }
+  // 整轮收入只比同级常规多一点：不能变成印钞机
+  const income = cycleIncome(c);
+  const target = normalIncomeAt(c.lv) * HONOR_PREMIUM;
+  check(income <= target * 1.35, `${c.name} 的整轮收入 ${Math.round(income)} 超出目标 ${Math.round(target)} 太多`);
 }
 
 // 同一形态内，产量与等级应当单调（产量由形态决定，形态之间不比较）
@@ -1035,12 +1144,13 @@ fs.writeFileSync(
  * harvests  可收获总次数，1 表示一次性作物
  * yield     单次产量区间
  * special   为 true 时商店不卖，只能从藏宝图挖到
+ * honor     为数字时是「村庄荣耀种子」：升到该级村庄时全村发放（第 52 轮）
  * multi     为 true 时是「多茬」作物：一次种下能收好几茬，是经验流的选择
  */
 export const CROPS = {
 ${allCrops.map((c) => `  ${JSON.stringify(c.name)}: {
     name: ${JSON.stringify(c.name)}, emoji: '${c.emoji}', form: '${c.form}',
-    kind: '${c.kind}', arch: '${c.arch}', slow: ${c.slow},${c.special ? ' special: true,' : ''}${c.multi ? ' multi: true,' : ''}
+    kind: '${c.kind}', arch: '${c.arch}', slow: ${c.slow},${c.special ? ' special: true,' : ''}${c.honor ? ' honor: ' + c.honor + ',' : ''}${c.multi ? ' multi: true,' : ''}
     stages: ${JSON.stringify(c.stages).replace(/"/g, "'")},
     lv: ${c.lv}, seed: ${c.seed}, sell: ${c.sell},
     grow: ${c.grow}, regrow: ${c.regrow}, harvests: ${c.harvests},
@@ -1051,8 +1161,16 @@ ${allCrops.map((c) => `  ${JSON.stringify(c.name)}: {
 /** 按解锁顺序排列的作物 id 列表，商店与选择弹窗按此顺序渲染 */
 export const CROP_IDS = Object.keys(CROPS);
 
-/** 限定作物：商店不卖，只能从藏宝图里挖到 */
-export const SPECIAL_CROP_IDS = CROP_IDS.filter((id) => CROPS[id].special);
+/**
+ * 限定作物：商店不卖，只能从藏宝图里挖到。
+ *
+ * 第 52 轮起把**村庄荣耀种子**排除在外 —— 它们也是 special，
+ * 但只从村庄升级发放，不能混进藏宝图奖池（否则荣耀就不荣耀了）。
+ */
+export const SPECIAL_CROP_IDS = CROP_IDS.filter((id) => CROPS[id].special && !CROPS[id].honor);
+
+/** 村庄荣耀种子：升到第 N 级村庄时全村发放（第 52 轮） */
+export const HONOR_CROP_IDS = CROP_IDS.filter((id) => CROPS[id].honor);
 
 /** 作物原型的中文名与一句话说明（商店、作物弹窗的标签读它） */
 export const CROP_ARCHS = {

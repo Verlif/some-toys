@@ -28,6 +28,7 @@ const cropChipHTML = (text, extra = '') => `<span class="sd-chip ${extra}">${tex
 /** 限定的种子只能挖，这句话在没传 foot 的地方当默认脚注 */
 const DEFAULT_FOOT = {
   special: '限定作物 · 种子只能从藏宝图里挖到',
+  honor: '村庄荣耀作物 · 村子升阶时全村发放，藏宝图挖不到',
   shop: '种子在商店常年有售',
 };
 
@@ -59,7 +60,7 @@ export function openCropModal(cropId, {
   const exp = totalCycleExp(crop, amount);
   const income = cycleIncome(crop);
   const perHour = cycle > 0 ? Math.round(income / (cycle / 3600)) : 0;
-  const note = foot ?? (crop.special ? DEFAULT_FOOT.special : DEFAULT_FOOT.shop);
+  const note = foot ?? (crop.honor ? DEFAULT_FOOT.honor : crop.special ? DEFAULT_FOOT.special : DEFAULT_FOOT.shop);
 
   openModal(`
     <div class="modal-head">
@@ -75,7 +76,7 @@ export function openCropModal(cropId, {
           <span class="seed-row-kind kind-${crop.kind}">${KIND_LABELS[crop.kind]?.label || ''}</span>
           ${crop.arch && crop.arch !== 'normal'
             ? `<span class="seed-row-kind kind-${crop.arch}">${CROP_ARCHS[crop.arch].label}</span>` : ''}
-          ${crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : ''}
+          ${crop.honor ? '<span class="seed-row-kind kind-special">荣耀</span>' : crop.special ? '<span class="seed-row-kind kind-special">限定</span>' : ''}
           <span class="sd-lv">Lv.${crop.lv}</span>
         </div>
       </div>

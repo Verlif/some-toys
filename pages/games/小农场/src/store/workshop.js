@@ -100,14 +100,17 @@ export function upgradeState() {
  * 金币不够的**仍然列出来**（`coinsOk: false`），只是按钮灰掉：
  * 玩家得看得见「差 12 金币」，而不是整行凭空消失。
  *
- * 第 43 轮起**限定作物也能造**（同样的份数与工本费逻辑）——
- * 挖宝挖多了的限定产出终于有变现以外的出路。
+ * 第 43 轮起限定作物也能造 —— 但第 52 轮又收回了：
+ * 限定种子的唯一来源应该是藏宝图与村庄荣耀，制造间一开这个口子，
+ * 「限定」就变成了「只要产量够就能量产」，藏宝图的价值被架空。
  */
 export function craftables() {
   const out = [];
   for (const id of CROP_IDS) {
     const crop = CROPS[id];
     if (!crop) continue;
+    // 限定作物不能制种（第 52 轮）
+    if (crop.special) continue;
     const need = produceCost(crop);
     const have = inventory.count(produceId(id));
     if (have < need) continue;
@@ -197,7 +200,11 @@ export async function craft(cropId) {
 
   const crop = CROPS[cropId];
   if (!crop) return null;
-  // 第 43 轮起限定作物也能制造（产出从藏宝图来，这里只负责复刻成种子）
+  // 限定作物不能制种（第 52 轮）：限定的来源只有藏宝图与村庄荣耀
+  if (crop.special) {
+    notify('限定作物不能制种 —— 只能去藏宝图或等村子升阶时领');
+    return null;
+  }
 
   const list = jobs();
   const slots = craftSlots();

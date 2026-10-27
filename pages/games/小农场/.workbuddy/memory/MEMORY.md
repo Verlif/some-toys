@@ -1,8 +1,8 @@
 # 项目长期约定 · 西米的农场
 
 纯前端原生 ESM、零构建，`node server.mjs`（默认 5173），IndexedDB `sun_farm_v2`，无后端。
-DB_NAME / localStorage key / APP_NAME 保持 `sun_farm*`（存档兼容）。267 作物（165 常规 + 102 限定）/
-40 块地 / 8 档土地 / 32 邻居 / 11 张榜。细则看 `docs/01~14`。
+DB_NAME / localStorage key / APP_NAME 保持 `sun_farm*`（存档兼容）。271 作物（165 常规 + 102 限定 +
+4 村庄荣耀）/ 40 块地 / 8 档土地 / 32 邻居 / 11 张榜。细则看 `docs/01~14`。
 
 ## 工程
 
@@ -57,6 +57,12 @@ DB_NAME / localStorage key / APP_NAME 保持 `sun_farm*`（存档兼容）。267
 - 地块 `plot.usable` 落库，开局 6 块，第 N 块 `(已拥有-6)×1000+500`，升级不给地。
 - 三件省手道具各 200（永久版：采收机 20,000、另两 50,000）；制造间 Lv.5+2000 解锁，排队 `jobs`，
   `craftMs=max(1,lv)×10s`，栏位 = 等级，`craft()` 只入队、`claimJobs()` 到点收；⚠️ 时间戳落库离线照走。
+  ⚠️ **限定作物不能制种**（第 52 轮收回第 43 轮的放开）：`craftables()` 与 `craft()` 都挡 `crop.special`。
+- **产量 ×1.2 / 售价 ÷1.2**（第 52 轮）：只改 `tools/gen-data.mjs` 的 `YIELD_SCALE=1.2` 乘进 `yieldRange`，
+  `sell` 由 `cycleRevenue` 守恒倒推自动 ÷1.2，整轮收入不变（既有校验全部继续通过）。
+- **村庄荣耀作物**（第 52 轮，4 种）：`HONOR_CATALOG` 在生成器里，5 茬、慢长（上限 `HONOR_GROW_CAP=3.6 天`）、
+  产量 ≥1.8 倍同形态常规、单价压到 1.2 倍内、整轮收入 1.5 倍。`honor: 2~5` 字段；
+  `SPECIAL_CROP_IDS` 排掉 honor（藏宝图挖不到），另有 `HONOR_CROP_IDS`。
 - 好感 −200~200：打理 +1、偷成功 0、被逮 `max(1,round(售价/10))`、送礼 `max(1,round(等级/2))`、
   交易 `max(1,round(等级×份数/2))`、催上线 −20；亲近 ≥100 优先打理 + `closeGiftChanceFor`。
 - 土地逐级晋升 `nextSoilId`；⚠️ `SOILS` 按 id 索引且条目**无 `id` 字段**，取出来要自己补。
@@ -104,6 +110,10 @@ DB_NAME / localStorage key / APP_NAME 保持 `sun_farm*`（存档兼容）。267
   （`（很上心）` / `（意思意思）`）—— 否则玩家只会觉得「赵六怎么才投这么点」，
   看不出这是设定而不是 bug。
 - ⚠️ 村庄的「投入」图标用 **🚧** 不用 🧱：U+1F9F1 是 Emoji 11，老字体（含无头 Chrome）直接渲染成方框。
+- **升阶发荣耀种子**（第 52 轮）：`checkUpgrade` 每升一级调 `grantHonorSeeds(v.level, at)`，
+  按 `HONOR_CROP_IDS.find((id) => CROPS[id].honor === level)` 取，4 颗对应升到 Lv2~Lv5。
+  玩家 `add(seedId, 1)`、邻居各自 `npc.bag[seedId] += 1`（需求是「发给所有人」）。
+  ⚠️ `state.js` 的 `cleanNpcBag()` 必须放行 `seed_` 前缀，否则读档把邻居那颗洗掉＝只发了玩家。
 
 ## 排行榜
 
@@ -165,6 +175,9 @@ settled 冻结；前三名递减、并列都发；玩家获奖同时写时报，
 - 邻居弹窗：头部 → 2×2 数据卡 → `.npc-board`（农场 N 块 + 📜 + 🚿🧴 + 行尾 `💬 互动`；次行狗粮 + 🦴）
   → 地块 → 提示。控制台**故意不 sticky**；日志走叠层。互动弹窗收送礼 / 交易 / 催上线。
 - 图鉴双进度条（收集 ≠ 点亮）；点亮先 `closeModal()` 再播 `codex-celebrate`。
+  ⚠️ `store/codex.js` 同时用 `produceId` 与 `seedId`，**import 少了 `seedId` 会让
+  `makeSpecimen` 抛 ReferenceError** —— 症状是「点了不刷新 / 刷新回退 / 弹窗不关」三连，
+  看起来像没持久化，其实是没走到 `commit()`（第 52 轮踩过）。
 - 记录只有 `recordItemsHTML` + `inlineTagsHTML`；农场日志双 tab 按 `entry.by` 分。
 - 设置页 `<input type="file">` 必须挂 `document.body`；拖拽要挡 `document` 默认行为但先判
   `#subpage.show [data-role="save-drop"]`；`dragleave` 要判 `relatedTarget`。
@@ -177,7 +190,8 @@ settled 冻结；前三名递减、并列都发；玩家获奖同时写时报，
 
 ## 其它
 
-- 时报 7 天 / 80 条；农场日志与邻居动态纯 7 天、**不设条数上限**（`trimLog`）。
+- 时报 **30 天 / 240 条**（第 52 轮从 7 天 / 80 条放宽：玩家反馈「上周谁偷了我的瓜」翻不到）；
+  农场日志与邻居动态纯 7 天、**不设条数上限**（`trimLog`）。
 - 签到 `signDays` 唯一数据源、`streakOf(now)` 现算；改玩法记得同步游戏手册 `subpages/manual.js`
   （手册里的数值最容易漂）。
 - PWA `sw.js` 网络优先（只有图标/manifest 缓存优先）；改图标同步 manifest / index.html / VERSION；

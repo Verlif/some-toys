@@ -34,10 +34,10 @@ export const VILLAGE_NAME = '西米村';
  */
 export const VILLAGE_TIERS = [
   null,
-  { coins: 10_000, crystal: 1, crystals: 5, prayers: 60 },
-  { coins: 36_000, crystal: 2, crystals: 12, prayers: 200 },
-  { coins: 130_000, crystal: 3, crystals: 22, prayers: 470 },
-  { coins: 460_000, crystal: 4, crystals: 36, prayers: 770 },
+  { coins: 20_000, crystal: 1, crystals: 20, prayers: 120 },
+  { coins: 72_000, crystal: 2, crystals: 48, prayers: 400 },
+  { coins: 260_000, crystal: 3, crystals: 88, prayers: 940 },
+  { coins: 920_000, crystal: 4, crystals: 144, prayers: 1540 },
 ];
 
 /**
@@ -50,13 +50,13 @@ export const villageTier = (level) => VILLAGE_TIERS[level] || null;
 /* ---------- 等级回报 ---------- */
 
 /**
- * 全村产量加成：**每级 +2%**。
+ * 全村产量加成：**每级 +4%**。
  *
  * 玩家自己与 32 位邻居的收获都吃这一档（`store/farm.js` 的 rollYield 与
  * `npc-sim.js` 的 actHarvest 各乘一次）—— 村庄是大家的，好处也该是大家的。
- * 1 级就有 2%，5 级 10%：升级的正反馈立刻能在收成上看见。
+ * 1 级就有 4%，5 级 20%：升级的正反馈立刻能在收成上看见。
  */
-export const VILLAGE_YIELD_PER_LEVEL = 0.02;
+export const VILLAGE_YIELD_PER_LEVEL = 0.04;
 
 /**
  * 产量倍率。

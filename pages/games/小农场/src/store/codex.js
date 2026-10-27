@@ -19,7 +19,7 @@ import { state } from './state.js';
 import { CROP_IDS, CROPS } from '../data/crops.js';
 import { MAX_LEVEL } from '../data/progression.js';
 import { GUIDES, guideRewardText } from '../data/guide.js';
-import { produceId } from '../data/keys.js';
+import { produceId, seedId } from '../data/keys.js';
 import { add, count, take } from './inventory.js';
 import { isCollected } from './collected.js';
 import { addCoins, addExpRaw } from './player.js';

@@ -49,6 +49,19 @@ function mapSources(crop) {
 }
 
 /**
+ * 这种作物从哪来（图鉴卡片底部的一行小字）。
+ *
+ * 第 52 轮加了村庄荣耀种子：它们也是 special（商店不卖），
+ * 但来源是「村子升到第 N 级时全村发放」，不是藏宝图 —— 说错了玩家会去白挖图。
+ */
+function sourceText(crop) {
+  if (crop.honor) return `🏅 村庄升到 Lv.${crop.honor} 时全村发放`;
+  if (!crop.special) return '';
+  const maps = mapSources(crop);
+  return `🧭 藏宝图限定 · ${maps || '暂无可挖档位'}`;
+}
+
+/**
  * 一张图鉴卡片：只有图标与名字。
  * @param {object} entry codexEntries() 的一项
  */
@@ -91,10 +104,12 @@ function openDetailModal(cropId) {
     : entry.specimen ? '已收集 · 已点亮' : '已收集 · 未点亮';
   const markHint = entry?.collected && !entry.specimen ? '　做一份标本就点亮' : '';
 
-  // 来源：商店买 vs 藏宝图挖
-  const source = crop.special
-    ? `🧭 藏宝图限定 · ${mapSources(crop) || '暂无可挖档位'}`
-    : `🛒 商店购买 · 种子 💰 ${crop.seed}`;
+  // 来源：商店买 vs 藏宝图挖 vs 村庄荣耀发放
+  const source = crop.honor
+    ? `🏅 村庄荣耀 · 升到 Lv.${crop.honor} 时全村发放`
+    : crop.special
+      ? `🧭 藏宝图限定 · ${mapSources(crop) || '暂无可挖档位'}`
+      : `🛒 商店购买 · 种子 💰 ${crop.seed}`;
 
   // 已经点亮过就不再给「制作标本」的入口：再做一份没有奖励，
   // 还会白白吃掉 50 份产出（第 45 轮玩家反馈）

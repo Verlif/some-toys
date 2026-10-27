@@ -26,6 +26,7 @@ import { addNews } from './news.js';
 import * as player from './player.js';
 import { add } from './inventory.js';
 import { buildRewardPool } from '../data/adventure.js';
+import { CROPS, HONOR_CROP_IDS } from '../data/crops.js';
 import { produceId, seedId } from '../data/keys.js';
 import {
   CRYSTAL_TIERS,
@@ -147,6 +148,36 @@ export function addCrystal(tier, who = null, at = Date.now()) {
 /* ---------- 升级 ---------- */
 
 /**
+ * 村庄升到某一级时，全村发一颗「荣耀种子」（第 52 轮）。
+ *
+ * 需求：村庄升级时给**所有人**都发唯一的【西米村荣耀】限定种子。
+ * 玩家进背包（能种、能看图鉴），邻居进自己的仓库 —— 他们不种限定作物
+ * （`cropsNearLevel` 会把 special 全滤掉），这颗种子对他们是「村里发的纪念品」，
+ * 但既然是「发给所有人」，就不能只发玩家一个人。
+ *
+ * @param {number} level 升到的村庄等级（2~5）
+ * @param {number} at
+ * @returns {?{name: string, emoji: string, cropId: string}} 发了哪种，没有则 null
+ */
+function grantHonorSeeds(level, at) {
+  const cropId = HONOR_CROP_IDS.find((id) => CROPS[id].honor === level);
+  if (!cropId) return null;
+  const crop = CROPS[cropId];
+
+  add(seedId(cropId), 1);
+  for (const npc of state.friends) {
+    if (!npc?.bag) continue;
+    const key = seedId(cropId);
+    npc.bag[key] = (npc.bag[key] || 0) + 1;
+  }
+
+  player.addLog('🏅', `村子升到 Lv.${level}，全村都领到了「${crop.name}」种子`, at);
+  note(at, crop.emoji, `全村发放「${crop.name}」种子 —— 5 茬、长得慢、一次收一大包`);
+  addNews(crop.emoji, `村子升到 Lv.${level}，全村都领到了「${crop.name}」种子`, { at });
+  notify(`🏅 村子升到 Lv.${level}！全村都领到了 ${crop.emoji}${crop.name} 种子`, 'gold');
+  return { name: crop.name, emoji: crop.emoji, cropId };
+}
+/**
  * 三项都够了就升级，一次可能连升（正常不会，但别写死只升一级）。
  *
  * @param {number} at
@@ -170,6 +201,9 @@ function checkUpgrade(at) {
     note(at, '🏘️', `村庄升到了 Lv.${v.level}，全村产量加成 +${Math.round(v.level * VILLAGE_YIELD_PER_LEVEL * 100)}%`);
     addNews('🏘️', `${VILLAGE_NAME}升到了 Lv.${v.level}，全村作物产量 +${Math.round(v.level * VILLAGE_YIELD_PER_LEVEL * 100)}%`, { at });
     notify(`🏘️ 村庄升到 Lv.${v.level}！全村产量 +${Math.round(v.level * VILLAGE_YIELD_PER_LEVEL * 100)}%`, 'gold');
+
+    // 每升一级发一颗荣耀种子（连升几级就发几颗，各不重复）
+    grantHonorSeeds(v.level, at);
   }
 
   if (leveled) emit(EVENTS.VILLAGE);

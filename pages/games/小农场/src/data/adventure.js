@@ -95,6 +95,13 @@ const POOL_VALUE_RATIO = 3;
  */
 const REWARD_CARD_RATIO = 0.3;
 
+/**
+ * 限定种子「再来一种」的概率（第 52 轮）。
+ *
+ * 每张图保底 1 种限定种子，另有这个概率再补 1 种，期望约 1.22 种。
+ */
+const EXTRA_SPECIAL_CHANCE = 0.22;
+
 /** 邻居每次上线去买藏宝图的概率 */
 export const NPC_ADVENTURE_CHANCE = 0.20;
 
@@ -185,8 +192,10 @@ function rollKind() {
  */
 function shopSeedsWithin(cap) {
   const all = Object.keys(CROPS).filter((id) => !CROPS[id].special && CROPS[id].lv <= cap);
-  // 只挖「这一档里比较值钱」的种子，否则奖励全是最低级的小麦，很没成就感
-  const strong = all.filter((id) => CROPS[id].lv >= cap * 0.45);
+  // 只挖「这一档里还算值钱」的种子，否则奖励全是最低级的小麦，很没成就感。
+  // 第 52 轮：下限从 0.45 放宽到 0.25 —— 玩家反馈挖来挖去都是那几样，
+  // 常规种子的可选范围一下子宽了一倍多，每次开图的期待感也更足。
+  const strong = all.filter((id) => CROPS[id].lv >= cap * 0.25);
   return strong.length ? strong : all;
 }
 
@@ -212,12 +221,15 @@ export function buildRewardPool(tier, opts = {}) {
   const map = mapTier(tier);
   if (!map) return { map: null, rewards: [], totalValue: 0 };
 
-  // 3 种限定种子：等级不超过这张图的种子上限，
-  // 并且尽量挑「这一档里偏高级」的，否则 4 万金币的图挖出一颗 Lv5 的糖霜萝卜太掉价
+  // 限定种子：第 52 轮从「固定 3 种」降到「至少 1 种」。
+  // 原因是三张限定种子把每张图的奖励栏位占掉大半，玩家开十张图能攒一仓库限定，
+  // 反而让「限定」两个字不值钱了。现在保底 1 种，另有 22% 概率再补 1 种，
+  // 期望值约 1.22 种；省下来的栏位都还给常规种子与道具。
   const allSpecial = SPECIAL_CROP_IDS.filter((id) => CROPS[id].lv <= map.seedCap);
   const strongSpecial = allSpecial.filter((id) => CROPS[id].lv > map.seedCap - 20);
   const specialPool = strongSpecial.length >= 3 ? strongSpecial : allSpecial;
-  const specials = shuffled(specialPool).slice(0, 3).map((id) => {
+  const specialCount = Math.random() < EXTRA_SPECIAL_CHANCE ? 2 : 1;
+  const specials = shuffled(specialPool).slice(0, specialCount).map((id) => {
     const crop = CROPS[id];
     return reward('special', {
       id,

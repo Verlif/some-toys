@@ -2791,7 +2791,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
   gap: 8px;
-  padding: 0 13px;
+  /* 第 52 轮：上边距 0 → 12px。紧贴筛选条时第一行卡片像被「切掉」了头顶 */
+  padding: 12px 13px 6px;
   margin-bottom: 6px;
 }
 .title-card {
