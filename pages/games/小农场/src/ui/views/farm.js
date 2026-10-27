@@ -24,6 +24,7 @@ import { openSubpage } from '../subpage.js';
 import { activeBreed, dogSatiety, guardChanceNow, kennelCapacity } from '../../store/dogs.js';
 import { openCropModal, plotStatusHTML } from '../crop-detail.js';
 import { carePenalty } from '../../data/care.js';
+import { pileHTML } from '../../data/yield-pile.js';
 import { notify } from '../../store/notify.js';
 import { activeAutos, autoTimeText } from '../../store/automation.js';
 
@@ -178,11 +179,18 @@ function ripeHTML(plot) {
   const careLine = care.pct
     ? `<div class="plot-sub warn-text">照料不周 · −${care.pct}%</div>`
     : '';
+  // 一张图说明不了「熟了一堆」：按产量摞起来，被偷走就少一张（见 data/yield-pile.js）
+  const pile = pileHTML(crop.emoji, remain, plot.id);
+  const art = pile
+    ? `<div class="plot-art tappable" data-action="crop-info" data-id="${plot.id}"
+        title="查看作物详情">${pile}</div>`
+    // 全被偷光（remain = 0）时没有图可摞，退回单张小图，别让地块空着
+    : `<div class="plot-emoji tappable" data-action="crop-info" data-id="${plot.id}"
+        title="查看作物详情">${crop.emoji}</div>`;
   return `
     ${boostHTML(plot)}
     <div class="plot-main">
-      <div class="plot-emoji tappable" data-action="crop-info" data-id="${plot.id}"
-        title="查看作物详情">${crop.emoji}</div>
+      ${art}
       <div class="plot-name">${crop.name} · 成熟</div>
       ${yieldLine}
       ${careLine}
@@ -453,9 +461,9 @@ function updateNode(node, plot, status, key) {
     }
 
     const warn = status !== 'locked' && farm.hasIssue(plot);
-    // 播种了限定种子的地描一道金边：限定作物是挖宝专属，值得一眼认出来。
-    // 用 box-shadow 内阴影画（见 components.css），不占布局 ——
-    // 换成 border 会把每张卡撑高一像素，整列参差
+    // 播种了限定种子的地挂 `special`：由 CSS 的 .plot-aura 画一圈加厚的旋转金边。
+    // 厚度靠 aura 的 padding 表达（4px = 常规描边 1px 的两倍），
+    // 加粗 border 会挤压内容区，地块里的图标和按钮就得跟着让位
     const special = status !== 'locked' && status !== 'empty' && CROPS[plot.cropId]?.special;
     node.el.className = 'plot' + (
       status === 'locked' ? ' locked'

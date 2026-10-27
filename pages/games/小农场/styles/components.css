@@ -70,8 +70,11 @@
   text-align: center;
 }
 /* 播种了限定种子的地：一圈会转的金边（见文件下方的 .plot-aura）。
-   这里只留一道淡金描边当底色，旋转金边叠在它上面，
-   不再用 inset 阴影 —— 内外两圈会互相打架 */
+   金边本身由 .plot-aura 画（4px，是常规 1px 描边的两倍），
+   这里只把 border 调成同色当底色，两者叠在一起才是完整的一圈，
+   不再用 inset 阴影 —— 内外两圈会互相打架。
+   ⚠️ 厚度只靠 aura 的 padding 表达、**不加粗 border**：
+   border-box 下加粗 border 会挤压内容区，地块里的图标和按钮就得跟着让位。 */
 .plot.special {
   border-color: #dcb45c;
 }
@@ -199,21 +202,34 @@
   inherits: false;
 }
 
+/* 动效层的尺寸与圆角。
+   ⚠️ 这里对齐的是 `.plot` 的**边框盒（border box）**，也就是卡片最外沿。
+   三个坑连在一起，曾经让金边看起来歪掉、圆角外面还漏底色：
+
+   ① `inset: 0` 贴的是父元素的 padding box，比外沿小 2px；
+   ② 尺寸小了、半径却 `inherit` 同一个 16px，曲率就对不上 ——
+      表现是「特效边框比地块更圆」（玩家第 55 轮的反馈）；
+   ③ 顶到外沿之后，环的最外圈正好压在抗锯齿的临界线上，
+      圆角处会透出底下的页面背景 —— 这一条来自实测截图。
+
+   所以最终方案是：**aura 对齐外沿，环再往里收 1px**。
+   环的内外都落在地块自己的背景上，永远不可能漏底色，也不改变布局。 */
 .plot-aura {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  inset: -1px;
+  border-radius: var(--radius);
   pointer-events: none;
 }
 
-/* 一圈环形描边：padding 决定边宽，两层 mask 相减只留外环 */
+/* 一圈环形描边：padding 决定边宽，两层 mask 相减只留外环。
+   收进内侧 1px 之后尺寸比 aura 小 2px，半径同步减 2px 维持同一个曲率 */
 .plot.special .plot-aura::before,
 .plot.warn .plot-aura::after,
 .plot.ripe .plot-aura::after {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  inset: 1px;
+  border-radius: calc(var(--radius) - 2px);
   padding: 2px;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -221,7 +237,11 @@
   mask-composite: exclude;
 }
 
+/* 限定作物的金边：**4px** 厚（常规地块 border 只有 1px），一眼能认出来。
+   靠 padding 给厚度、整圈收在 border 内侧 —— 所以是「向内扩」：
+   地块自己的 border 还是 1px，内容区一寸没让，网格也不会因为它错位。 */
 .plot.special .plot-aura::before {
+  padding: 4px;
   background: conic-gradient(from var(--plot-spin),
     #f8e6a4, #c8931f, #fffbe6, #e0a92c, #f8e6a4);
   animation: plot-spin 4.5s linear infinite;
@@ -232,8 +252,11 @@
 
 .plot.warn .plot-aura::after,
 .plot.ripe .plot-aura::after {
-  /* 比金边再往外 1px：限定作物 + 缺水同时出现时，两圈不会叠成一条 */
-  inset: -1px;
+  /* 比金边收得更深一点（2px）：限定作物 + 缺水同时出现时，两圈不会叠成一条。
+     尺寸比上面那个小 2px，半径也再减 2px */
+  inset: 2px;
+  border-radius: calc(var(--radius) - 4px);
+  padding: 2px;
   background: linear-gradient(135deg, var(--plot-pulse-a), var(--plot-pulse-b));
   animation: plot-pulse 1.9s ease-out infinite;
 }
@@ -275,6 +298,9 @@
 .grid.dense .plot-side .icon-btn { width: 25px; height: 25px; font-size: 12.5px; }
 .grid.dense .plot-side .btn.small { padding: 5px 1px; font-size: 10px; }
 .grid.dense .bar { width: 88%; }
+/* 紧凑模式下 .plot-main 只有约 72px 可用宽：堆叠的基准字号跟着收一档，
+   半径与旋转都是 em，改这一处整摞等比缩下去（3.1em × 19px ≈ 59px） */
+.grid.dense .plot-art { font-size: 19px; }
 
 /* 成熟地块的产量行：可收（绿）/ 本应（灰、删除线，直观看出被顺走几个） */
 .plot-sub.yield-line b { font-variant-numeric: tabular-nums; }
@@ -285,6 +311,60 @@
   text-decoration: line-through;
   text-decoration-color: rgba(209, 72, 63, .55);
 }
+
+/* ---------- 可收获的产出堆叠 ----------
+   成熟地块不再只放一张 47px 的大图 —— 一张图说明不了「熟了一堆」。
+   改成每 2 个产出摞一张（最多 10 张），坐标由 data/yield-pile.js 按
+   黄金角螺旋算好，这里只负责画。
+
+   三个要点：
+     ① 每张图都带 drop-shadow，否则几张叠起来会糊成一坨，看不出层次；
+     ② 坐标用的是 em（不是 px），紧凑模式换一个 font-size 就整摞等比缩，
+        不会溢出格子去跟右侧按钮打架；
+     ③ 容器**不吃点击**（pointer-events: none），点击交给外层 .plot-art，
+        否则点到堆叠里的图不会触发作物详情。 */
+.yield-pile {
+  position: relative;
+  /* 尺寸按 em 写（1em = 一颗图的大小）。3.4em 是「横向最大偏移 ±1.0em
+     再加一颗图的余量」算出来的，纵向同理。
+     ⚠️ 这组数不能随便放大：紧凑模式下 .plot-main 的可用宽度只有约 72px，
+     3.4em × 21px = 71px 刚好卡住，再大就会顶到右侧的按钮列上。 */
+  width: 3.4em;
+  height: 2.3em;
+  pointer-events: none;
+}
+.yield-pile > i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 1em;
+  font-style: normal;
+  line-height: 1;
+  /* 同字号下 Apple 与 Windows 的彩色 emoji 宽度差得比较多，
+     写死这串字体才保证两边摞出来的形状一致 */
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  filter: drop-shadow(0 0 .1em .02em rgba(85, 65, 30, .36));
+  will-change: transform;
+}
+/* 承载堆叠的可点区域：尺寸就是堆叠区本身，别撑开地块。
+   ⚠️ 横向要留 0.4em 的 padding：图标按黄金角散开后会超出 .yield-pile 的盒子
+   （实测左 5.9px / 右 3.3px），不给这点余量的话，点到最外侧那张图的边缘
+   命中的是父级 .plot-main，作物详情打不开 —— 看着能点、实际没反应。
+   加 padding 只是把「可点范围」撑到图标外沿，不改布局（art 不含外边距）。 */
+.plot-art,
+.np-art {
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  line-height: 1;
+  padding: 0 .4em;
+}
+.plot-art.tappable,
+.np-art.tappable { cursor: pointer; }
+.plot-art.tappable:active,
+.np-art.tappable:active { transform: scale(.94); }
+.plot-art.tappable:hover,
+.np-art.tappable:hover { filter: drop-shadow(0 3px 8px rgba(90, 140, 70, .35)); }
 
 /* ---------- 地块网格折叠行 ---------- */
 .plot-fold {
@@ -1264,6 +1344,9 @@
 .npc-plot.stolen::after, .npc-plot.empty::after { display: none; }
 /* 和玩家地块同一个逻辑：作物图标是主角，放大到一眼认得出来 */
 .npc-plot .np-emoji { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .12)); }
+/* 邻居的可偷地块也是同一摞图，但格子只有 138px 高、且要挤出按钮的位置：
+   基准字号比自家再小一档 */
+.npc-plot .np-art { font-size: 19px; }
 .npc-plot .np-name { font-size: 12px; font-weight: 600; margin-top: 3px; }
 .npc-plot .np-meta { font-size: 10px; color: var(--muted); line-height: 1.4; }
 .npc-plot.ripe .np-meta { color: #a07818; font-weight: 700; }
@@ -2378,12 +2461,18 @@
   line-height: 1;
   font-family: inherit;
   cursor: pointer;
+  /* 按住不放是「连续增减」（见 ui/hold.js）：touch-action 必须关掉浏览器手势，
+     否则移动端长按会先弹系统的选择 / 放大菜单、或者被纵向滚动抢走指针，
+     连发根本收不到事件。同时禁掉文字选中，免得长按把「−」选成蓝色。
+     ⚠️ 只能写一条：同时写 manipulation 和 none 时后者生效，读代码的人会被骗 */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   display: grid;
   place-items: center;
   box-shadow: 0 1px 3px rgba(40, 80, 40, .08);
   transition: .14s;
-  /* 按住连发时不能被浏览器的纵向手势抢走 */
-  touch-action: none;
 }
 .qty-btn:hover:not(:disabled) { color: var(--green-d); }
 .qty-btn:active:not(:disabled) { transform: scale(.92); }

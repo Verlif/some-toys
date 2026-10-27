@@ -11,6 +11,7 @@
  */
 import { byId, delegate } from '../core/dom.js';
 import { dragToClose } from './drag-close.js';
+import { mountHoldRepeat } from './hold.js';
 
 /** 右上角的关闭按钮：所有弹窗都有，不用各自写 */
 const CLOSE_HTML = '<button class="close" data-close aria-label="关闭">✕</button>';
@@ -126,4 +127,6 @@ export function mountModal() {
     onClose: closeModal,
     scrollArea: () => card.querySelector('.modal-body'),
   });
+  // 数量加减钮的长按连发：统一在分派层拦，业务代码不用各自去挂绑定
+  mountHoldRepeat(root, (el) => actionHandler?.(el.dataset.action, el, null));
 }

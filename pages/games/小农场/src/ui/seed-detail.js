@@ -21,44 +21,6 @@ import { closeModal, openModal } from './modal.js';
 const MAX_QTY = 99;
 
 /**
- * 按住连续触发。
- *
- * 单击仍然走正常的 data-action 分派；按住超过 380ms 才进入连发。
- * 连发状态下松手会再补一次 click，所以用捕获阶段把它吞掉，
- * 否则「按住减到 1」会多减一次。
- */
-function bindHold(root, selector, tick) {
-  for (const el of root.querySelectorAll(selector)) {
-    let delay = 0;
-    let repeat = 0;
-    let held = false;
-
-    const stop = () => {
-      clearTimeout(delay);
-      clearInterval(repeat);
-      delay = 0;
-      repeat = 0;
-    };
-
-    el.addEventListener('pointerdown', () => {
-      held = false;
-      delay = setTimeout(() => {
-        held = true;
-        repeat = setInterval(tick, 90);
-      }, 380);
-    });
-    for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
-      el.addEventListener(type, stop);
-    }
-    el.addEventListener('click', (event) => {
-      if (!held) return;
-      held = false;
-      event.stopPropagation();
-    }, true);
-  }
-}
-
-/**
  * 打开某种作物的种子详情。
  * @param {string} cropId
  * @param {{buy?: boolean}} [options] buy 为真才渲染数量与购买按钮
@@ -169,7 +131,7 @@ export function openSeedModal(cropId, { buy = false } = {}) {
 
   if (!buy) return;
 
-  bindHold(card, '[data-action="qty-minus"]', () => step(-1));
-  bindHold(card, '[data-action="qty-plus"]', () => step(1));
+  // 长按连发由 ui/hold.js 在弹窗的分派层统一接管（所有 .qty-btn 通用），
+  // 这里只要把初始状态刷对就行
   refresh();
 }

@@ -25,6 +25,7 @@ import { isNpcOnline } from '../data/friends.js';
 import { toolUses } from '../store/tools.js';
 import { count } from '../store/inventory.js';
 import { stageEmoji, stageName, stageOf } from '../data/stages.js';
+import { pileHTML } from '../data/yield-pile.js';
 import { fmtDuration, formatCoins } from '../core/utils.js';
 import { notify } from '../store/notify.js';
 import { closeModal, openModal } from './modal.js';
@@ -92,10 +93,17 @@ function plotCardHTML(friend, index, now) {
 
   if (social.isStealable(plot, now) && !plot.guarded) {
     const left = crop.harvests - (plot.harvested || 0);
+    // 和自家农场同一套摞法（data/yield-pile.js）：偷掉 1 个就少一张，
+    // 玩家不用读数字也能看出「这块被顺过了」。种子带上邻居 id，
+    // 否则两家的第 1 块地会摞出一模一样的形状
+    const remain = social.remainYield(plot);
     return base({
       cls: 'ripe',
       body: `
-        ${emoji(crop.emoji)}
+        <div class="np-art tappable" data-action="crop-info" data-id="${friend.id}"
+          data-plot="${index}" title="查看作物详情">
+          ${pileHTML(crop.emoji, remain, `${friend.id}-${plot.id || index}`)}
+        </div>
         <div class="np-name">${crop.name}</div>
         <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>
         <div class="np-acts">
@@ -110,10 +118,20 @@ function plotCardHTML(friend, index, now) {
     const note = plot.guarded
       ? '🐕 被守护犬盯着，这轮偷不了'
       : stolen ? `已被顺走 ${stolen} 个` : '这块刚被顺过';
+    // 这一格已经不能偷了，但**产量还在**（每块地每轮只能偷 1 个）。
+    // 所以这里照旧摞出来，只是把可偷的提示换成「已被顺走 N 个」：
+    // 偷完立刻退回一张小图会像是「整块被搬空了」，跟实际剩的量对不上。
+    const remain = social.remainYield(plot);
+    const art = remain > 0
+      ? `<div class="np-art tappable" data-action="crop-info" data-id="${friend.id}"
+          data-plot="${index}" title="查看作物详情">
+          ${pileHTML(crop.emoji, remain, `${friend.id}-${plot.id || index}`)}
+        </div>`
+      : emoji(crop.emoji);
     return base({
       cls: 'stolen',
       body: `
-        ${emoji(crop.emoji)}
+        ${art}
         <div class="np-name">${crop.name}</div>
         <div class="np-meta">${note}</div>
         <div class="np-acts">${care}</div>`,

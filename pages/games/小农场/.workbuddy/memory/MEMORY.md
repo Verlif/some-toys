@@ -81,6 +81,9 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 - ⚠️ `store/codex.js` 须同时 import `produceId` 与 `seedId`，少 `seedId` 会让 `makeSpecimen` 抛 ReferenceError（点不刷新三连）。
 - 图鉴双进度条（收集≠点亮）；点亮先 `closeModal()` 再播 `codex-celebrate`。
 - 设置页 `<input type=file>` 挂 `document.body`；拖拽先判 `#subpage.show [data-role=save-drop]`。
+- **产出堆叠** `data/yield-pile.js`：`floor(n/2)+1` 张（**不是 ceil**，偶数产量偷 1 个才看得出少一张）、封顶 10；黄金角螺旋+LCG 定种（心跳 500ms 不能 random）；坐标全 em（紧凑只改 font-size）；邻居 key 带 `friend.id`；⚠️ `.plot-art/.np-art` 要 `padding:0 .4em` 否则最外侧图边缘点不动。
+- **地块 aura**：`inset:-1px` 对齐 border box；环向内收 N px 则半径 −N px；金边 4px 靠 `padding` 不给 border。⚠️ 贴外沿会在圆角抗锯齿处漏底色。
+- **长按连发** `ui/hold.js`：`.qty-btn` 委托，只在 `modal.js`/`subpage.js` 各挂一次，业务零改动。⚠️ `touch-action` 只能写一条。
 
 ## 村镇联机
 一村一房间(localStorage)；`state.peers` 仅内存，真人≠NPC；硬前提 https/localhost。主人权威；送礼 `peer-gift` 三段握手；报文>48KB丢、`cleanText()` 按码点截断。

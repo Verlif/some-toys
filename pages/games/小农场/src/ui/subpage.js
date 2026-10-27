@@ -7,6 +7,7 @@ import { SUBPAGE_TITLES } from '../data/navigation.js';
 import { state } from '../store/state.js';
 import { subpages } from './subpages/index.js';
 import { dragToClose } from './drag-close.js';
+import { mountHoldRepeat } from './hold.js';
 
 let root = null;
 let titleEl = null;
@@ -104,4 +105,15 @@ export function mountSubpage() {
     if (!handler) return;
     Promise.resolve(handler(el, { closeSubpage, renderCurrent, syncCoins, setFoot })).then(renderCurrent);
   });
+
+  // 数量加减钮的长按连发（子页面里的卖货 / 分解包装都用这套）。
+  // 和点击走同一个 action 回调，业务代码不用改
+  const holdFire = (el) => {
+    const page = subpages[current];
+    const handler = page?.actions?.[el.dataset.action];
+    if (!handler) return;
+    Promise.resolve(handler(el, { closeSubpage, renderCurrent, syncCoins, setFoot })).then(renderCurrent);
+  };
+  mountHoldRepeat(body, holdFire);
+  mountHoldRepeat(footEl, holdFire);
 }
