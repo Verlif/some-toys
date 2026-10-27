@@ -70,9 +70,10 @@ function showNext() {
       <div class="bc-rank">${medal(award.rank)}</div>
       <div class="bc-value">${award.value}</div>
       <div class="bc-reward">
-        <span class="bc-reward-label">获得</span>
+        <span class="bc-reward-label">奖励（待领取）</span>
         <b>${award.reward}</b>
       </div>
+      <div class="bc-tip">📬 已寄到农场通知，点「收下」才入账</div>
       ${shortDate(award.date) ? `<div class="bc-date">${shortDate(award.date)} 的榜单</div>` : ''}
       ${queue.length ? `<div class="bc-more">还有 ${queue.length} 个名次</div>` : ''}
     </div>`;

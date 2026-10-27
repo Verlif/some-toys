@@ -1,0 +1,25 @@
+<Slide style={{ width: '1280px', height: '720px', background: 'linear-gradient(135deg,#1B5E20 0%,#2E7D32 60%,#66BB6A 100%)', overflow: 'hidden', position: 'relative' }}>
+  <Animation animType="zoom" duration={600} startType="withPrevious">
+    <Box style={{ position: 'absolute', left: 265, top: 270, width: 210, background: 'rgba(251,248,239,0.95)', borderRadius: 20, padding: '26px 0', alignItems: 'center', boxShadow: '0 14px 40px rgba(0,0,0,0.3)' }}>
+      <Text style={{ fontSize: 56 }}>🌱</Text>
+      <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1B5E20', marginTop: 8 }}>零构建</Text>
+    </Box>
+  </Animation>
+  <Animation animType="zoom" duration={600} startType="afterPrevious" delay={1200}>
+    <Box style={{ position: 'absolute', left: 535, top: 270, width: 210, background: 'rgba(251,248,239,0.95)', borderRadius: 20, padding: '26px 0', alignItems: 'center', boxShadow: '0 14px 40px rgba(0,0,0,0.3)' }}>
+      <Text style={{ fontSize: 56 }}>⚡</Text>
+      <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1B5E20', marginTop: 8 }}>PWA</Text>
+    </Box>
+  </Animation>
+  <Animation animType="zoom" duration={600} startType="afterPrevious" delay={1200}>
+    <Box style={{ position: 'absolute', left: 805, top: 270, width: 210, background: 'rgba(251,248,239,0.95)', borderRadius: 20, padding: '26px 0', alignItems: 'center', boxShadow: '0 14px 40px rgba(0,0,0,0.3)' }}>
+      <Text style={{ fontSize: 56 }}>🔗</Text>
+      <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1B5E20', marginTop: 8 }}>联机</Text>
+    </Box>
+  </Animation>
+  <Animation animType="fadeIn" duration={600} startType="afterPrevious" delay={700}>
+    <Box style={{ position: 'absolute', left: 0, bottom: 90, width: 1280, alignItems: 'center' }}>
+      <Text style={{ fontSize: 40, fontWeight: 'bold', color: '#FBF8EF', letterSpacing: 6, textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>打开就能玩</Text>
+    </Box>
+  </Animation>
+</Slide>

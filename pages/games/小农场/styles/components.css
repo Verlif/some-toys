@@ -1443,6 +1443,17 @@
   text-shadow: 0 2px 10px rgba(0, 0, 0, .5);
   animation: fade .3s ease .26s both;
 }
+/* 被牵连的邻居数：比罚款轻一档，是「余波」不是「主罚」 */
+.dc-ripple {
+  margin-top: 8px;
+  padding: 3px 11px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .13);
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .86);
+  animation: fade .3s ease .34s both;
+}
 
 @keyframes dcPop {
   0% { transform: scale(.35) rotate(-14deg); opacity: 0; }
@@ -1633,6 +1644,8 @@
 }
 .bc-reward-label { display: block; font-size: 10.5px; color: #a08a4a; }
 .bc-reward b { font-size: 13px; color: #7a5a12; line-height: 1.5; }
+/* 奖励改成「寄到通知、手动领取」之后，庆祝卡要交代一句东西在哪 */
+.bc-tip { margin-top: 8px; font-size: 10.5px; color: #8a978a; }
 .bc-date { margin-top: 10px; font-size: 10.5px; color: #b0a179; }
 .bc-more { margin-top: 4px; font-size: 10.5px; color: #b0a179; }
 
@@ -3173,73 +3186,101 @@
 /* 交易清单里那句「每份花 −N 好感」：好感是花掉，用暖红提示代价 */
 .rel-cost { color: #b4703a; }
 
-/* ---------- 收到赠礼（整屏） ---------- */
-/* 离线攒下的礼物上线时补播：压暗整屏，中间一枚大图标 + 一句谁送的。
-   点任意处收下，排队里还有就接着播。 */
-.gift-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 210;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  /* 深底 + 一圈柔光，不用「深色渐变铺满」：铺满式的半透明渐变在
-     合成层上容易被渲染成一整片浅色，压不住底下的页面 */
-  background-color: rgba(14, 26, 12, .9);
-  background-image: radial-gradient(circle at 50% 38%, rgba(126, 186, 112, .34), rgba(14, 26, 12, 0) 62%);
-  cursor: pointer;
-  /* 刻意不做 opacity 动画/过渡：整层在 opacity 动画期间被提升为合成层，
-     半透明底色会渲染成一整片浅色（压不住底下的页面），实测很明显。
-     入场动效全部交给礼盒自己的 giftPop —— 底色一出现就是满的。 */
-}
-.gift-layer[hidden] { display: none; }
-
-.gift-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  text-align: center;
-}
-/* 送礼的人：一枚小头像挂在礼盒上方 */
-.gift-from {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .16);
-  border: 2px solid rgba(255, 255, 255, .3);
-  display: grid;
-  place-items: center;
-  font-size: 27px;
-  margin-bottom: 2px;
-  animation: fade .3s ease both;
-}
-.gift-emoji {
-  font-size: 108px;
-  line-height: 1;
-  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, .5));
-  animation: giftPop .62s cubic-bezier(.2, 1.5, .45, 1) both;
-}
-.gift-title {
-  margin-top: 10px;
-  font-size: 18px;
+/* ---------- 农场通知（信箱） ---------- */
+/* 入口是农场页顶部那颗 📬（与 📔 日志并排）。
+   角标有两档形态：
+     ① 有没领的 → 红色数字（「还有 3 件没拿」比「有 3 封没读」要紧）；
+     ② 都领完了、只是没读 → 一颗纯红点（`.dot`），不写数字。
+   两种都是绝对定位贴右上角，**不占布局**，亮不亮都不会把 📬 挤歪。 */
+.farm-notice { position: relative; }
+.farm-notice .fn-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9.5px;
   font-weight: 800;
-  color: #fff8e6;
-  letter-spacing: .4px;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, .55);
-  animation: fade .32s ease .1s both;
+  font-style: normal;
+  line-height: 15px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
 }
-.gift-sub {
-  font-size: 12px;
-  color: rgba(255, 248, 230, .72);
-  animation: fade .32s ease .2s both;
+/* 纯红点：没有数字，就一颗 9px 的圆，位置比数字角标更贴角 */
+.farm-notice .fn-badge.dot {
+  min-width: 0;
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  top: -2px;
+  right: -2px;
+  line-height: 0;
+  box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, .18);
 }
-@keyframes giftPop {
-  0% { transform: scale(.3) rotate(-18deg); opacity: 0; }
-  62% { transform: scale(1.12) rotate(6deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
+.farm-notice .fn-badge[hidden] { display: none; }
+.farm-notice.has-unread { background: #fff4e8; }
+
+.nt-list { display: flex; flex-direction: column; }
+.nt-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 2px;
+  border-bottom: 1px dashed #eef2ea;
 }
+.nt-item:last-child { border-bottom: none; }
+.nt-item[data-action] { cursor: pointer; }
+/* 已经收下的淡一档：列表里一眼能分出「还有东西没领」 */
+.nt-item.done { opacity: .6; }
+/* 未读：标题前一颗红点 + 加粗。打开列表时按「打开前」的状态渲染一帧，
+   玩家能看清哪几条是这次新读的；角标那边同时就清掉了。
+   未读的优先级高于 .done 的淡化 —— 万一出现「已领但没读」也不该被压暗 */
+.nt-item.unread { opacity: 1; }
+.nt-item.unread .nt-title { font-weight: 800; }
+.nt-item.unread .nt-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  vertical-align: 1px;
+}
+.nt-ico {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #f6f9f1;
+  border: 1px solid #e3ecd9;
+  font-size: 17px;
+  line-height: 1;
+}
+.nt-main { flex: 1; min-width: 0; }
+.nt-title { font-size: 13px; font-weight: 700; color: #33412f; line-height: 1.4; word-break: break-word; }
+.nt-sub { margin-top: 2px; font-size: 10.5px; color: var(--muted); }
+.nt-btn {
+  flex-shrink: 0;
+  padding: 6px 13px;
+  border: none;
+  border-radius: 99px;
+  background: var(--green);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .14s ease;
+}
+.nt-btn:active { transform: scale(.94); }
+.nt-done { flex-shrink: 0; font-size: 10.5px; color: #a8b3a5; }
 
 /* ---------- 作物原型标签 ---------- */
 /* 速生 / 丰产 / 精品 / 慢生 / 多茬 —— 商店种子行与作物详情共用。

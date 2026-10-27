@@ -27,7 +27,7 @@ import { mountCodexCelebrate } from './ui/codex-celebrate.js';
 import { mountDogCaught } from './ui/dog-caught.js';
 import { mountBoardCelebrate, celebratePending } from './ui/board-celebrate.js';
 import { showOfflineReport, wantsReport } from './ui/offline-report.js';
-import { flushOfflineGifts, mountGift } from './ui/gift.js';
+import { mountNotices } from './ui/notices.js';
 import { mountPeerGift } from './ui/peer-gift.js';
 import { mountVillage } from './ui/village-sheet.js';
 import { showStarterGift } from './ui/starter-gift.js';
@@ -77,7 +77,7 @@ async function boot() {
   mountCodexCelebrate();
   mountDogCaught();
   mountBoardCelebrate();
-  mountGift();
+  mountNotices();
   mountPeerGift();
   mountVillage();
   mountHud();
@@ -146,8 +146,8 @@ async function boot() {
     }, 3000);
   }
 
-  // 离线期间邻居送的礼：启动画面收起来之后再整屏补播
-  flushOfflineGifts();
+  // 离线期间邻居送的礼、拿到的榜奖都寄在 📬 农场通知里（第 54 轮），
+  // 启动画面收起后不再整屏补播，由玩家自己点开信箱收下
 
   // 第一次进游戏：开局礼包在建号时就进仓库了（见 store/state.js），
   // 这里只负责把「给了你什么」摊开给他看一次

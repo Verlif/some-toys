@@ -293,9 +293,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 6px 5px 12px;
+  padding: 5px 8px 5px 12px;
 }
-.farm-bar-dog { flex: 1; min-width: 0; display: flex; }
+/* 守护犬占掉剩下的宽度；右侧两颗 34px 按钮已固定，
+   窄屏上宁可把这一行裁掉一点，也不让它顶到按钮上去 */
+.farm-bar-dog { flex: 1; min-width: 0; display: flex; overflow: hidden; }
 
 /* 守护犬：有没有狗、什么品种、拦得住几成（狗粮条贴着右侧，像一行读数）。
    整格是按钮 —— 点它开狗窝，所以要把 button 的默认皮剥干净 */
@@ -340,18 +342,20 @@
 .farm-dog .fd-pct { flex-shrink: 0; color: var(--green-d); font-variant-numeric: tabular-nums; }
 .farm-dog.off { color: #a7b1a3; }
 
-/* 日志按钮：卡片右上角的小方块，和农田内容同一个平面，不再浮起来 */
+/* 日志 / 信箱按钮：卡片右上角的小方块，和农田内容同一个平面，不再浮起来。
+   34px 是「一眼看得见、又不会把上排撑厚」的折中 —— 28px 时这两个图标
+   在手机上和守护犬那行文字混在一起，玩家经常找不到入口。 */
 .farm-log {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   display: inline-grid;
   place-items: center;
   padding: 0;
   border: none;
-  border-radius: 9px;
+  border-radius: 10px;
   background: #f4f8f0;
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1;
   cursor: pointer;
   transition: transform .14s ease, background .14s ease;

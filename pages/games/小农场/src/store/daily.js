@@ -21,16 +21,14 @@
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { PLAYER_ID, state, getFriend } from './state.js';
-import * as player from './player.js';
-import * as inventory from './inventory.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
+import { pushNotice } from './notices.js';
 import { boardDayKey, boardPeriodStart, formatCoins } from '../core/utils.js';
 import { farmMaxBonus } from '../data/care.js';
 import { MAP_TIERS } from '../data/adventure.js';
 import { mapId, itemLabel } from '../data/keys.js';
-import { SPRINKLER_ID, PESTICIDE_ID, HARVESTER_ID, ITEMS } from '../data/items.js';
-import { addAuto } from './automation.js';
+import { SPRINKLER_ID, PESTICIDE_ID, HARVESTER_ID } from '../data/items.js';
 
 /** 保留多少天的行：昨天要展示、再往前要容得下补算期间的翻日结算 */
 const KEEP_DAYS = 8;
@@ -267,20 +265,12 @@ export function rewardText(reward) {
   return parts.join('、');
 }
 
-/** 把一份奖励发到玩家身上（金币 / 道具 / 藏宝图） */
-function grantReward(reward) {
-  if (reward.coins) player.addCoins(reward.coins);
-  for (const [id, n] of Object.entries(reward.items || {})) {
-    // 自动机器不占背包（第 51 轮）：直接叠到有效期上
-    const auto = ITEMS[id]?.auto;
-    if (auto) addAuto(auto, Date.now(), n);
-    else inventory.add(id, n);
-  }
-  for (const tier of reward.maps || []) inventory.add(mapId(tier), 1);
-}
-
 /**
  * 结算一天：每张榜前三名发奖，玩家写农场日志与时报，NPC 冠军上报一条时报。
+ *
+ * 玩家的奖励**不再当场入账**（第 54 轮）：推进「农场通知」，等玩家点「收下」
+ * 才由 store/notices.js 调 grantReward 发出去。所以这里只写时报与庆祝用的名次，
+ * 不动金币与背包 —— 补算期间也不会有一笔笔看不见的进账。
  *
  * @returns {{date: string, awards: object[], playerWon: boolean, playerAwards: object[]}}
  *   本日发奖记录；playerAwards 是玩家拿到的名次（给庆祝动画用）
@@ -304,10 +294,20 @@ function settleDay(row, now = Date.now()) {
       // 并列第一的两个人都该显示「第 1 名」，不是 1、2
       const reward = board.rewards[i];
       if (entry.actor === PLAYER_ID) {
-        grantReward(reward);
         const value = board.format(entry.value);
         const prize = rewardText(reward);
-        player.addLog('🏆', `昨日「${board.name}」第 ${entry.rank} 名（${value}），获得${prize}`);
+        // 第 54 轮：奖励不再当场入账，先寄进「农场通知」等玩家手动领取。
+        // 结算可能发生在离线补算里（quiet 模式），只改内存，由调用方统一落盘。
+        pushNotice({
+          kind: 'award',
+          emoji: board.icon,
+          title: `昨日「${board.name}」第 ${entry.rank} 名`,
+          body: `${value} · ${prize}`,
+          from: '排行榜',
+          at: now,
+          reward,
+          claimText: `领取了昨日「${board.name}」第 ${entry.rank} 名奖励：${prize}`,
+        });
         // 公告栏（时报）也要有玩家这一条 —— 早年只写农场日志，
         // 公告栏里只剩 NPC 的名字，玩家自己获奖了却看不见
         addNews(board.icon, `${state.farm.name} 拿了昨日「${board.name}」第 ${entry.rank} 名（${value}）`);

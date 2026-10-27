@@ -54,6 +54,7 @@ import {
 import { WORKSHOP_MAX_LEVEL } from '../data/workshop.js';
 import { baseRelation, readRelations, relKey } from '../data/relation.js';
 import { scheduleCare } from '../data/care.js';
+import { cleanNotices } from '../data/notice.js';
 import { dayKey, randInt, safeNum } from '../core/utils.js';
 
 /** 玩家农场的 id：farm 表的主键，也是地块 / 日志表里的 farmId */
@@ -195,6 +196,11 @@ function createPlayerFarm() {
        * 存剩余毫秒的话关一次页面就等于把它冻住了。
        */
       auto: { water: 0, pest: 0, harvest: 0 },
+      /**
+       * 农场通知（第 54 轮）：NPC 寄来的信，玩家手动领取。
+       * 形状与清洗见 data/notice.js，读写入口在 store/notices.js。
+       */
+      notices: [],
       titles: { claimed: {}, equipped: '' },
       guide: {},
     },
@@ -504,11 +510,12 @@ function normalizePlayerFarm(row, save) {
     pest: safeNum(progress.auto?.pest, 0),
     harvest: safeNum(progress.auto?.harvest, 0),
   };
+  // 农场通知：旧档没有这个字段 → 空信箱；有就洗干净并裁到保留窗口
+  progress.notices = cleanNotices(progress.notices);
   // 签到历史：旧档没有这个字段，补空数组；有就裁到保留窗口内
   progress.signDays = Array.isArray(progress.signDays)
     ? progress.signDays.slice(-SIGN_KEEP_DAYS)
-    : [];
-  // 老存档只有 lastSign、没有历史：至少把上次签到那天补进去 ——
+    : [];  // 老存档只有 lastSign、没有历史：至少把上次签到那天补进去 ——
   // 否则日历上明明签过、格子却空白，玩家会以为记录丢了
   if (progress.lastSign) {
     const key = dayKey(progress.lastSign);

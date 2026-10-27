@@ -32,9 +32,10 @@ function dismiss() {
 
 /**
  * 播放一次提示。
- * @param {{breed?: string, owner?: string, fine?: number}} payload
+ * @param {{breed?: string, owner?: string, fine?: number, ripple?: number}} payload
+ *   `ripple` = 被这事牵连的其他邻居数（各掉 1 点好感），0 时不显示
  */
-export function showDogCaught({ breed, owner = '邻居', fine = 0 } = {}) {
+export function showDogCaught({ breed, owner = '邻居', fine = 0, ripple = 0 } = {}) {
   dismiss();
 
   const dog = dogBreed(breed);
@@ -50,6 +51,7 @@ export function showDogCaught({ breed, owner = '邻居', fine = 0 } = {}) {
     <div class="dc-title">被守护犬抓住了！</div>
     <div class="dc-sub">${owner} 家的${name}${dog ? `（拦截 ${Math.round(dog.rate * 100)}%）` : ''}</div>
     ${fine > 0 ? `<div class="dc-fine">罚款 ${formatCoins(fine)} 💰</div>` : ''}
+    ${ripple > 0 ? `<div class="dc-ripple">😳 消息传遍全村 · 其他 ${ripple} 位邻居好感 −1</div>` : ''}
   `;
   layer.addEventListener('click', dismiss);
   document.body.appendChild(layer);

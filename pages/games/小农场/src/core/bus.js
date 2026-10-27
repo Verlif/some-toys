@@ -27,6 +27,8 @@ export const EVENTS = {
   PETS: 'state:pets',
   /** 时报有新的大新闻 */
   NEWS: 'state:news',
+  /** 农场通知有新消息 / 被领取（角标与信箱列表都靠它刷） */
+  NOTICE: 'state:notice',
   /** 好感度变化（偷菜掉、打理涨、送礼涨） */
   RELATION: 'state:relation',
   /** 联机好友的农场有新快照，payload 为对方农场 id（`peer:xxx`） */
@@ -35,9 +37,7 @@ export const EVENTS = {
   GIFT_OFFER: 'ui:gift-offer',
   /** 其它联机报文（送礼回执等），payload 为 { msg, peerId }，由 store/peer-gift.js 消费 */
   PEER_MSG: 'net:peer-msg',
-  /** 收到邻居的赠礼，payload 为 { at, from, avatar, cropId, name, emoji, n, offline } */
-  GIFT: 'ui:gift',
-  /** 每日排行榜跨天结算完成（发了奖、换了新的一天），payload 为结算结果 */
+  /** 每日排行榜跨天结算完成（换了新的一天、奖励已寄进通知），payload 为结算结果 */
   DAILY: 'state:daily',
   /** 每日统计数值变化（bump 防抖后发），排行榜页靠它实时刷新 */
   STATS: 'state:stats',

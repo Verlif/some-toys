@@ -1,0 +1,16 @@
+<Slide style={{ width: '1280px', height: '720px', background: '#1B5E20', overflow: 'hidden', position: 'relative' }}>
+  <Animation animType="flip" duration={650} startType="withPrevious">
+    <Image src="assets/bag.png" style={{ position: 'absolute', left: 0, top: 0, width: 1280, height: 720, objectFit: 'cover' }} />
+  </Animation>
+  <Animation animType="fadeIn" duration={500} startType="afterPrevious" delay={1100}>
+    <Image src="assets/promo.png" style={{ position: 'absolute', left: 0, top: 0, width: 1280, height: 720, objectFit: 'cover' }} />
+  </Animation>
+  <Animation animType="flyIn" direction="left" duration={600} startType="afterPrevious" delay={1100}>
+    <Image src="assets/log_mine.png" style={{ position: 'absolute', left: 0, top: 0, width: 1280, height: 720, objectFit: 'cover' }} />
+  </Animation>
+  <Animation animType="fadeIn" duration={600} startType="afterPrevious" delay={700}>
+    <Box style={{ position: 'absolute', left: 0, bottom: 54, width: 1280, alignItems: 'center' }}>
+      <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#FBF8EF', background: 'rgba(20,50,20,0.72)', padding: '14px 36px', borderRadius: 999, letterSpacing: 4, textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>藏宝图 · 限定种子</Text>
+    </Box>
+  </Animation>
+</Slide>

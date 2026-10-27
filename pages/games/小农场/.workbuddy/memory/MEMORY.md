@@ -30,6 +30,7 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 - 制造间 Lv5+2000：`craft()` 只入队、`claimJobs()` 到点收；⚠️ **限定作物不能制种**（`crop.special` 挡）。
 - 村庄荣耀 4 种（`HONOR_CROP_IDS`，藏宝图挖不到）：5茬、慢长(≤3.6天)、整轮收入1.5倍。
 - 好感 −200~200：打理+1/偷0/被逮`round(售价/10)`/送礼`round(等级/2)`/交易`round(等级×份/2)`/催−10；≥100 优先打理+送礼。
+- ⚠️ 玩家偷被抓时**其他所有邻居各 −1**（`CAUGHT_RIPPLE_REL_LOSS`）：固定值不乘在线双倍、被偷那家不重复扣、不含 peers、NPC 互偷不触发；日志 + `.dc-ripple` 都要说。
 - 土地 `nextSoilId` 晋升；⚠️ `SOILS` 按 id 索引且条目**无 id 字段**，取出自补。
 - **开局礼包**（仅新档）：6 颗「≤玩家等级最高档里同档最快」种子+洒水器/杀虫剂/采收机各3+狗粮3，直接写 `state.bag`（不走 `inventory.add`）。
 
@@ -55,11 +56,18 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 ## 排行榜
 11榜，每天14:00结算；前三递减、并列都发；实时榜上/昨日在下。
 
+## 农场通知（信箱）
+`state.farm.progress.notices`（随 farm 行落盘，**不新开表**）；形状 `{id,at,kind,emoji,title,body,by,from,reward,claimText,read,claimed}`，清洗在 `data/notice.js`。
+送礼 + 排行榜奖励都改**寄信**，`claimNotice` 才入账（发奖唯一入口 `store/reward.js` 的 `grantReward`）。`ui/gift.js` 与 `#giftLayer` 已整块删除。
+⚠️ 保留规则「领过的留 30 天、**未领的永不过期**」上限 120 条；无 `reward` 的消息 `claimed` 恒 true。
+⚠️ 角标两档：未领取→**数字**，仅未读→**纯红点**(`.fn-badge.dot`)，都没有→`hidden`。两种都是绝对定位，**不参与布局**（不许改成 flex 占位）。
+⚠️ 打开列表 = `markNoticesRead()`，但列表**先渲染再标已读**：这一帧还看得见 `.nt-item.unread` 的红点与加粗标题。
+
 ## 自动机器
 `autoSprinkler`🚰/`autoPest`🪤/`autoHarvest`🛻 各 2000；时效存 `farm.progress.auto={water,pest,harvest}`（到期时间戳）。
 ⚠️ **不写 `permanent`**（会让商店按钮变禁用）；`addAuto` 从 `max(now,旧)` 起+days（连买叠加）。
 执行在 `world.js tick()` 第⑤步，离线上线同一套；**刻意不给经验/不 bump 榜/不 completeGuide**。
-⚠️ 三处发奖特判 `ITEMS[id]?.auto`：adventure.applyReward / titles.claimTitle / daily.grantReward。
+⚠️ 三处发奖特判 `ITEMS[id]?.auto`：adventure.applyReward / titles.claimTitle / `store/reward.js` 的 `grantReward`（第 54 轮从 daily 搬出，唯一发奖入口）。
 
 ## 称号
 57条（等级26+图鉴26+金币5）；数据源 `TITLES` 改完重跑 `gen-data.mjs`。
@@ -67,7 +75,7 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 
 ## UI 硬约束
 - 四 tab：农场/邻居/**村中心🏡**(≠村镇🏘联机)/商店。村中心：村庄卡→总览→📢公告+📋订单(唯一入口带徽标)→🏆排行。
-- `.farm-bar` 首位：上排狗+日志/中排三键/下排 `#farmAuto`(仅买过出现)；**不堆 fixed 浮层**。
+- `.farm-bar` 首位：上排狗 + 📬信箱 + 📔日志（`.farm-log` **34×34 / emoji 17px**）/中排三键/下排 `#farmAuto`(仅买过出现)；**不堆 fixed 浮层**。
 - 村中心村民总览默认只看在线(`villagerFilter='online'`)。
 - 弹窗四段式 handle/head/body/foot，**别用 sticky 替 foot**；`.modal-sub` 不许负上边距。
 - ⚠️ `store/codex.js` 须同时 import `produceId` 与 `seedId`，少 `seedId` 会让 `makeSpecimen` 抛 ReferenceError（点不刷新三连）。

@@ -1,0 +1,25 @@
+<Slide style={{ width: '1280px', height: '720px', background: 'linear-gradient(135deg,#1B5E20 0%,#2E7D32 55%,#66BB6A 100%)', overflow: 'hidden', position: 'relative' }}>
+  {/* 旋转光环装饰 */}
+  <Animation animType="spin" duration={2600} startType="withPrevious">
+    <Box style={{ position: 'absolute', left: 340, top: 70, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(242,183,5,0.35) 0%, rgba(102,187,106,0.08) 45%, transparent 70%)' }} />
+  </Animation>
+
+  {/* Logo 缩放+旋转入场 */}
+  <Animation animType="zoom" duration={900} startType="withPrevious">
+    <Image src="assets/logo.png" style={{ position: 'absolute', left: 384, top: 110, width: 512, height: 512, borderRadius: 28, boxShadow: '0 24px 70px rgba(0,0,0,0.4)' }} />
+  </Animation>
+
+  {/* 标题淡入 */}
+  <Animation animType="fadeIn" duration={700} startType="afterPrevious" delay={700}>
+    <Box style={{ position: 'absolute', left: 0, top: 600, width: 1280, alignItems: 'center' }}>
+      <Text style={{ fontSize: 66, fontWeight: 'bold', color: '#FBF8EF', letterSpacing: 10 }}>西米的农场</Text>
+    </Box>
+  </Animation>
+
+  {/* 副标 */}
+  <Animation animType="fadeIn" duration={600} startType="afterPrevious" delay={300}>
+    <Box style={{ position: 'absolute', left: 0, top: 668, width: 1280, alignItems: 'center' }}>
+      <Text style={{ fontSize: 22, color: '#C9E6B4', letterSpacing: 6 }}>一款打开即玩的网页农场</Text>
+    </Box>
+  </Animation>
+</Slide>

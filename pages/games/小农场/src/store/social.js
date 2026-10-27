@@ -24,7 +24,7 @@ import { produceId } from '../data/keys.js';
 import { BOOST_CAP, LIVE_STEP_MS, PEST_YIELD_BONUS, WATER_SPEEDUP, isNpcOnline, syncNpcPlots, trimLog } from '../data/friends.js';
 import { careExp, needsPest, needsWater, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
-import { REL_PER_CARE, SUMMON_REL_COST, dogCaughtRelLoss, giftRelGain, summonDelayRange, tradeRelCost } from '../data/relation.js';
+import { CAUGHT_RIPPLE_REL_LOSS, REL_PER_CARE, SUMMON_REL_COST, dogCaughtRelLoss, giftRelGain, summonDelayRange, tradeRelCost } from '../data/relation.js';
 import { adjustRelation, getRelation } from './relation.js';
 import { bump, bumpMax, flushAwards } from './daily.js';
 import { addCrystal, contributeCore, prayNpc, villageYield } from './village.js';
@@ -34,6 +34,7 @@ import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
+import { pushNotice } from './notices.js';
 import { fmtDuration, fmtSaved, formatCoins, randInt } from '../core/utils.js';
 
 /* ---------- 邻居状态查询 ---------- */
@@ -136,20 +137,22 @@ function receiveGift(at, npc, cropId, n = 1) {
   const crop = CROPS[cropId];
   if (!crop) return null;
 
-  inventory.add(produceId(cropId), n);
-  // by = npc.id：邻居主动送礼，归进农场日志的「邻居动向」tab
-  player.addLog('🎁', `${npc.name} 送来 ${crop.emoji}${crop.name} ×${n}`, at, npc.id);
-  logFriend(npc, at, '🎁', `给 ${state.farm.name} 送去一份 ${crop.emoji}${crop.name}`);
-  emit(EVENTS.GIFT, {
-    at,
-    from: npc.name,
-    avatar: npc.avatar,
-    cropId,
-    name: crop.name,
+  // 第 54 轮：礼物不再直接进背包，而是进「农场通知」等玩家手动收下 ——
+  // 这样「谁送的、送了什么」会留在信箱里，而不是一闪而过的 toast。
+  pushNotice({
+    kind: 'gift',
     emoji: crop.emoji,
-    n,
-    offline: at < sessionStart,
+    title: `${npc.name} 送来 ${crop.emoji}${crop.name} ×${n}`,
+    body: `值 ${formatCoins(crop.sell * n)} 金币`,
+    by: npc.id,
+    from: npc.name,
+    at,
+    reward: { items: { [produceId(cropId)]: n } },
+    claimText: `收下了 ${npc.name} 送来的 ${crop.emoji}${crop.name} ×${n}`,
   });
+  // by = npc.id：邻居主动送礼，归进农场日志的「邻居动向」tab
+  player.addLog('🎁', `${npc.name} 送来 ${crop.emoji}${crop.name} ×${n}（待领取）`, at, npc.id);
+  logFriend(npc, at, '🎁', `给 ${state.farm.name} 送去一份 ${crop.emoji}${crop.name}`);
   return crop;
 }
 
@@ -539,6 +542,26 @@ export async function pollOnline(onProgress) {
 /* ---------- 玩家与邻居互动 ---------- */
 
 /**
+ * 「被狗逮住」这件事在村里传开了：除当事人以外，每位邻居各掉 1 点好感。
+ *
+ * 只掉固定的 1 点、**不乘在线双倍** —— 双倍是主人家的事（他家的菜被惦记了），
+ * 旁人只是听说了，不该跟着翻倍。被偷那家已经在别处按售价折算过，这里跳过。
+ * 联机真人（state.peers）不是 NPC，本来就不在 state.friends 里。
+ *
+ * @param {string} culpritId 被偷的那家
+ * @returns {number} 被牵连的人数
+ */
+function spreadCaughtRelLoss(culpritId) {
+  let count = 0;
+  for (const npc of state.friends) {
+    if (npc.id === culpritId) continue;
+    adjustRelation(PLAYER_ID, npc.id, -CAUGHT_RIPPLE_REL_LOSS);
+    count += 1;
+  }
+  return count;
+}
+
+/**
  * 偷一块成熟的作物。
  *
  * 偷菜**不给经验** —— 经验只来自自己的收获和照料邻居，
@@ -579,21 +602,26 @@ export async function steal(friendId, index) {
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
     // 想偷还被当场逮住，关系只会更差：按这个果实的售价折算（至少 1）
     adjustRelation(PLAYER_ID, friend.id, -dogCaughtRelLoss(crop.sell) * mul);
+    // 村里没有秘密：这事第二天半个村子都在说，其他邻居各掉 1 点
+    const ripple = spreadCaughtRelLoss(friend.id);
     // 狗狗王记在**狗主人**头上：谁家的狗拦下的功劳就归谁。
     // 玩家偷 NPC 被抓时玩家一分不得 —— 这里是玩家唯一能给别人刷分的地方，
     // 所以漏了这一笔，NPC 的狗狗王就永远是 0（曾经真的漏了）
     bump(friend.id, 'dog', 1, now);
     const doubleNote = online ? '（对方在线，双倍惩罚）' : '';
+    // 被牵连的人数是文案里的实情：村里几位邻居，就说几位
+    const rippleNote = ripple ? `，消息传遍全村（其他 ${ripple} 位邻居好感 −1）` : '';
     logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币${doubleNote}`);
-    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币${doubleNote}`, now);
+    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币${doubleNote}${rippleNote}`, now);
     addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币${doubleNote}`, { at: now });
 
     await commit({ farms: [state.farm, friend], news: state.news, relations: state.relations });
     emit(EVENTS.FRIENDS);
     emit(EVENTS.PLAYER);
     emit(EVENTS.RELATION);
-    // 全屏闪一下这只狗：玩家正盯着地块点偷，toast 很容易看漏
-    emit(EVENTS.DOG_CAUGHT, { breed: friend.dog.breed, owner: friend.name, fine: paid });
+    // 全屏闪一下这只狗：玩家正盯着地块点偷，toast 很容易看漏。
+    // 「消息传遍全村」这件事也交给它说 —— toast 是药丸形，塞不下第二行
+    emit(EVENTS.DOG_CAUGHT, { breed: friend.dog.breed, owner: friend.name, fine: paid, ripple });
 
     notify(
       `🐕 被 ${friend.name} 家的守护犬抓住了！${online ? '对方在线，双倍罚款！' : ''}`

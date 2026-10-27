@@ -74,6 +74,10 @@
       <div class="farm-bar">
         <div class="farm-bar-row">
           <div class="farm-bar-dog" id="farmTools"></div>
+          <!-- 农场通知：邻居送礼 / 排行榜奖励都寄到这里，点开手动收下 -->
+          <button class="farm-log farm-notice" id="noticeBtn" aria-label="农场通知" title="农场通知">
+            📬<i class="fn-badge" id="noticeBadge" hidden>0</i>
+          </button>
           <button class="farm-log" id="logBtn" aria-label="农场日志" title="农场日志">📔</button>
         </div>
         <div class="farm-actions" id="farmActions" hidden></div>
@@ -204,16 +208,6 @@
   <div class="modal-card"></div>
 </div>
 <div id="toasts"></div>
-
-<!-- 收到赠礼：离线攒下的那些，上线时整屏播一遍（点击收下） -->
-<div id="giftLayer" class="gift-layer" hidden>
-  <div class="gift-card">
-    <div class="gift-from"><span class="gift-avatar" id="giftAvatar">🧑‍🌾</span></div>
-    <div class="gift-emoji" id="giftEmoji">🎁</div>
-    <div class="gift-title" id="giftTitle"></div>
-    <div class="gift-sub" id="giftSub">点击任意处收下</div>
-  </div>
-</div>
 
 <!-- 进入邻居页时的离线结算等待画面 -->
 <div id="simOverlay" hidden>
