@@ -1,0 +1,26 @@
+<Slide style={{ background: 'linear-gradient(155deg, #2E9E5B 0%, #3FB56B 55%, #57C277 100%)', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+  <Animation animType="zoom" duration={700}>
+    <Box style={{ width: 140, height: 140, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+      <svg width="124" height="124" viewBox="0 0 100 100">
+        <path d="M50 94 V44" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" fill="none" />
+        <path d="M50 60 C28 60 16 45 16 30 C36 30 50 43 50 60 Z" fill="#FFFFFF" />
+        <path d="M50 52 C72 52 84 37 84 22 C64 22 50 35 50 52 Z" fill="#FFFFFF" />
+        <circle cx="50" cy="44" r="5" fill="#F2A33C" />
+      </svg>
+    </Box>
+  </Animation>
+
+  <Animation animType="fadeIn" startType="afterPrevious" duration={600}>
+    <Text style={{ fontSize: 72, fontWeight: 'bold', color: '#FFFFFF', textShadow: '2px 3px 10px rgba(0,0,0,0.18)', letterSpacing: 4 }}>西米的农场</Text>
+  </Animation>
+
+  <Animation animType="fadeIn" startType="afterPrevious" duration={600}>
+    <Text style={{ fontSize: 26, color: '#F0FBF1', opacity: 0.96, marginTop: 16, textAlign: 'center', letterSpacing: 2 }}>现在就打开浏览器，种下你的第一颗种子。</Text>
+  </Animation>
+
+  <Animation animType="fadeIn" startType="afterPrevious" duration={600}>
+    <Box style={{ marginTop: 38, padding: '14px 34px', borderRadius: 999, background: '#FFFFFF' }}>
+      <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#2E9E5B', letterSpacing: 2 }}>打开即玩 · 无需下载</Text>
+    </Box>
+  </Animation>
+</Slide>

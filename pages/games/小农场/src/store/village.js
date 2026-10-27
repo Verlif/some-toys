@@ -11,7 +11,8 @@
  *   coins     本期已投入的金币
  *   crystals  本期已投入的水晶数
  *   pray      本期祈福总次数（玩家 + 全部邻居）
- *   stock     { 1..4: n } 手上还没投入的水晶，冒险挖到就进这里
+ *   stock     { 1..4: n } **玩家**手上还没投入的水晶，冒险挖到就进这里
+ *            （邻居挖到的记在他们各自的 `npc.crystals` 上，第 53 轮分开）
  *   prayDay   { 谁: dayKey } 今天谁祈过 —— 只留今天，跨天就清
  *   logs      建设日志 [{ at, emoji, text }]，保留 7 天
  *
@@ -20,7 +21,7 @@
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
 import { dayKey, formatCoins } from '../core/utils.js';
-import { PLAYER_ID, state } from './state.js';
+import { PLAYER_ID, admitVillageNeighbours, state } from './state.js';
 import { notify } from './notify.js';
 import { addNews } from './news.js';
 import * as player from './player.js';
@@ -127,10 +128,17 @@ export function villageLogs(now = Date.now()) {
 /* ---------- 水晶 ---------- */
 
 /**
- * 冒险挖到一枚升级水晶（玩家与邻居共用）。
+ * 冒险挖到一枚升级水晶。
  *
- * 直接进村庄库存，不进背包：它是村庄建设的材料，不是能卖、能送、
- * 能进图鉴的道具 —— 塞进道具表会让商店、包裹、图鉴、联机校验全都要跟着改。
+ * **谁挖到的就归谁**（第 53 轮）：玩家挖到的进村庄库存 `v.stock`（那是玩家
+ * 自己的投入仓），邻居挖到的进他自己的 `npc.crystals`。
+ *
+ * 早先不分是谁，统统塞进 `v.stock`，于是村民能用「村里那一堆」去投共建 ——
+ * 玩家看到的是「我仓库里一枚水晶都没有，怎么就被投出去了」。归谁所有之后，
+ * 村民必须自己挖到才能投，玩家投的也必然是自己捡的那些。
+ *
+ * 仍然不进背包 / 道具表：它是村庄建设的材料，不是能卖、能送、能进图鉴的道具，
+ * 塞进道具表会让商店、包裹、图鉴、联机校验全都要跟着改。
  *
  * @param {number} tier 1~4
  * @param {object} [who] 挖到的人（玩家不传）
@@ -139,7 +147,12 @@ export function villageLogs(now = Date.now()) {
 export function addCrystal(tier, who = null, at = Date.now()) {
   const v = villageState();
   const level = Math.min(4, Math.max(1, Math.floor(tier) || 1));
-  v.stock[level] = (v.stock[level] || 0) + 1;
+  if (who && who.id !== PLAYER_ID) {
+    if (!who.crystals || typeof who.crystals !== 'object') who.crystals = {};
+    who.crystals[level] = Math.max(0, Math.floor(who.crystals[level] || 0)) + 1;
+  } else {
+    v.stock[level] = (v.stock[level] || 0) + 1;
+  }
   note(at, crystalEmoji(level), `${who?.name || state.farm.name} 挖到了 ${crystalName(level)} ×1`);
   emit(EVENTS.VILLAGE);
   return level;
@@ -204,6 +217,16 @@ function checkUpgrade(at) {
 
     // 每升一级发一颗荣耀种子（连升几级就发几颗，各不重复）
     grantHonorSeeds(v.level, at);
+
+    // 每升一级搬进来 5 户新人家（第 53 轮，名单见 data/friends.js 的 arrive）
+    const arrived = admitVillageNeighbours(v.level, at);
+    if (arrived.length) {
+      const names = arrived.map((npc) => `${npc.avatar}${npc.name}`).join('、');
+      note(at, '🏡', `${names} 搬进了 ${VILLAGE_NAME}`);
+      addNews('🏡', `${VILLAGE_NAME}热闹起来了：${names} 搬进了村子`, { at });
+      notify(`🏡 ${arrived.length} 户新人家搬进了村子`, 'gold');
+      emit(EVENTS.FRIENDS);
+    }
   }
 
   if (leveled) emit(EVENTS.VILLAGE);
@@ -259,7 +282,9 @@ export async function invest(input = {}, at = Date.now()) {
   note(at, '🚧', `${state.farm.name} 投入了 ${parts.join(' 与 ')}`);
 
   const leveled = checkUpgrade(at);
-  await commit({ farms: [state.farm] });
+  // 连邻居一起落盘：升级可能刚请进来 5 户新人家（第 53 轮），
+  // 只写 state.farm 的话他们只活在内存里，刷新就没了。
+  await commit({ farms: [state.farm, ...state.friends], relations: state.relations });
   emit(EVENTS.VILLAGE);
   emit(EVENTS.PLAYER);
   if (!leveled) notify(`🚧 已投入 ${parts.join('、')}`);
@@ -303,9 +328,15 @@ export function prayCore(who, at, npc = null) {
   const day = dayKey(at);
   if (v.prayDay[who] === day) return { ok: false, reason: '今天已经祈福过了' };
 
-  // 只留今天：昨天的标记没有任何用处，留着会让 prayDay 长成一张 33 × N 的表
+  // 只留今天：昨天的标记没有任何用处，留着会让 prayDay 长成一张「人数 × N」的表。
+  //
+  // ⚠️ 这里必须同时保住「真实今天」那一格（第 53 轮修的 bug）：
+  // 邻居祈福是离线补算跑出来的，`at` 可能是昨天甚至前天的时刻，
+  // 早先按 `day` 清理，于是村民在补算里祈一次福，就把玩家「今天已祈过」
+  // 的标记一起抹掉 —— 表现就是「我明明祈过了，过一会儿又能再祈一次」。
+  const today = dayKey(Date.now());
   for (const key of Object.keys(v.prayDay)) {
-    if (v.prayDay[key] !== day) delete v.prayDay[key];
+    if (v.prayDay[key] !== day && v.prayDay[key] !== today) delete v.prayDay[key];
   }
   v.prayDay[who] = day;
   v.pray += 1;
@@ -324,7 +355,10 @@ export function prayCore(who, at, npc = null) {
       npc.coins += npcPrayValue(won);
       note(at, '✨', `${name} 祈福抽到了 ${rewardLabel(won)}`);
     }
-  } else if (isPlayer) {
+  } else {
+    // 没抽到也要记一笔（第 53 轮）：早先只给玩家写，村民那 95% 的
+    // 「祈了个风调雨顺」全被吞掉，日志里只剩抽奖的少数几条，
+    // 玩家自然觉得「怎么没见村民祈福，祈福数却已经几十了」。
     note(at, '🙏', `${name} 在村中心祈福`);
   }
 
@@ -342,7 +376,8 @@ export async function pray(at = Date.now()) {
   const out = prayCore(PLAYER_ID, at);
   if (!out.ok) return out;
 
-  await commit({ farms: [state.farm], bag: state.bag, news: state.news });
+  // 同 invest：升级可能刚请进来新人家，一起落盘
+  await commit({ farms: [state.farm, ...state.friends], bag: state.bag, news: state.news, relations: state.relations });
   emit(EVENTS.PLAYER);
   emit(EVENTS.INVENTORY);
   return out;
@@ -437,7 +472,7 @@ export function contributeCore(npc, at = Date.now()) {
   if (!tier || !npc) return null;
 
   // 一人一天只投一次：跟祈福同一个节奏。不限次数的话，离线补算的 16 小时里
-  // 32 位村民会各自投五六趟，第一档 10,000 金币在玩家进游戏之前就填满了，
+  // 几十位村民会各自投五六趟，第一档 20,000 金币在玩家进游戏之前就填满了，
   // 这张卡片的「金币」一行永远一开始就是满的，共建感全无。
   const day = dayKey(at);
   if (v.giveDay[npc.id] === day) return null;
@@ -455,11 +490,12 @@ export function contributeCore(npc, at = Date.now()) {
   }
   let crystals = 0;
   if (needCrystals > 0) {
-    const have = v.stock[tier.crystal] || 0;
-    // 水晶按风格折算：`eager` 肯掏七成，`half` 只掏一两成。
-    // 仍然至少留 1 枚给玩家（`have >= 2` 才动手），不然刚捡到就没了
-    const share = Math.floor(have * style.crystal);
-    if (have >= 2 && share > 0) crystals = Math.min(needCrystals, share);
+    // 只掏自己挖到的那些（第 53 轮）。早先从 v.stock 里拿，等于村民
+    // 用玩家捡的水晶做人情 —— 玩家那边「仓库里一枚都没有却被投出去」的 bug。
+    const mine = Math.max(0, Math.floor(npc.crystals?.[tier.crystal] || 0));
+    // 仍然至少留 1 枚给自己：`have >= 2` 才动手
+    const share = Math.floor(mine * style.crystal);
+    if (mine >= 2 && share > 0) crystals = Math.min(needCrystals, share);
   }
   if (!coins && !crystals) return null;
 
@@ -468,21 +504,27 @@ export function contributeCore(npc, at = Date.now()) {
     v.coins += coins;
   }
   if (crystals) {
-    v.stock[tier.crystal] -= crystals;
+    npc.crystals[tier.crystal] = Math.max(0, Math.floor(npc.crystals[tier.crystal] || 0)) - crystals;
+    if (npc.crystals[tier.crystal] <= 0) delete npc.crystals[tier.crystal];
     v.crystals += crystals;
   }
 
   const parts = [];
   if (coins) parts.push(`💰 ${formatCoins(coins)} 金币`);
   if (crystals) parts.push(`${crystalEmoji(tier.crystal)} ${crystalName(tier.crystal)} ×${crystals}`);
-  // 「意思意思」的那几位，日志里把态度也写出来 —— 否则玩家只会觉得
-  // 「赵六怎么才投这么点」，看不出这是设定而不是 bug
-  const mood = style.tier === 'eager' ? '（很上心）' : style.tier === 'half' ? '（意思意思）' : '';
-  note(at, '🚧', `${npc.name} 投入了 ${parts.join(' 与 ')}${mood}`);
+  // 只记投入了什么（第 53 轮）：早先还带「（很上心）」「（意思意思）」，
+  // 玩家读日志时以为那是 bug 提示，其实只是想说明性格差异 —— 但差异
+  // 本来就体现在数量上，写出来反而喧宾夺主。
+  note(at, '🚧', `${npc.name} 投入了 ${parts.join(' 与 ')}`);
 
-  // 记账并只留今天（理由同 prayDay：留着历史会长成 33×N 的表）
+  // 记账并只留今天（理由同 prayDay：留着历史会长成「人数 × N」的表）
+  //
+  // ⚠️ 与 prayDay 同一个坑：邻居投入也是离线补算跑出来的，`at` 可能是昨天。
+  // 早先按 `day` 清理，村民在补算里投一次就把别人「今天已投过」的标记抹掉，
+  // 于是同一户一天能投好几次。这里同样要保住「真实今天」那一格。
+  const today = dayKey(Date.now());
   for (const key of Object.keys(v.giveDay)) {
-    if (v.giveDay[key] !== day) delete v.giveDay[key];
+    if (v.giveDay[key] !== day && v.giveDay[key] !== today) delete v.giveDay[key];
   }
   v.giveDay[npc.id] = day;
 

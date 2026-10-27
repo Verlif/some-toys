@@ -181,10 +181,10 @@ export const giftPersonalityFactor = (personality) => GIFT_PERSONALITY_FACTOR[pe
  * 「催促上线」要花多少好感。
  *
  * 交情是有限资源：催一次就像上门敲一次门，敲多了人家烦。
- * 20 点按当前口径大约等于「送 8~10 份高阶产出」或「帮浇 20 块地」，
+ * 10 点按当前口径大约等于「送 4~5 份高阶产出」或「帮浇 10 块地」，
  * 一次催促就该有分量，但也不至于高到没人用。
  */
-export const SUMMON_REL_COST = 20;
+export const SUMMON_REL_COST = 10;
 
 /**
  * 催促之后，他多久才会出现（毫秒区间）。

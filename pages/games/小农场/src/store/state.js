@@ -22,7 +22,6 @@ import { INITIAL_COINS, MAX_LEVEL, TOTAL_PLOTS, unlockedPlotCount } from '../dat
 import { FREE_PLOTS } from '../data/plots.js';
 import { SIGN_KEEP_DAYS } from '../data/signin.js';
 import {
-  NPCS,
   PERSONALITIES,
   STEAL_CHANCE,
   cropsNearLevel,
@@ -30,6 +29,8 @@ import {
   generateNpcPlots,
   nextVisitAt,
   npcStartCoins,
+  npcsAtVillageLevel,
+  npcsArrivingAt,
   rollNpcLevel,
   rollNpcSoil,
   shuffled,
@@ -249,9 +250,16 @@ function createPlot(id) {
  * lastVisitAt 定在过去、nextVisitAt 按他上线节奏排，
  * 这样玩家第一次进来就能看到他们已经「离线了一段时间」。
  */
-function createNpc(def, now) {
+export function createNpc(def, now) {
   const lastVisitAt = now - randInt(2 * HOUR, 20 * HOUR);
-  const level = rollNpcLevel();
+  /**
+   * 等级：随村庄升级搬来的新住户（第 53 轮）自带 `levelRange`，
+   * 刚搬来的人地少、等级低，不走 rollNpcLevel() 那套 1~36 的分布；
+   * 原住民照旧加权随机。
+   */
+  const level = def.levelRange
+    ? randInt(def.levelRange[0], def.levelRange[1])
+    : rollNpcLevel();
   const npc = {
     id: def.id,
     kind: 'npc',
@@ -276,6 +284,11 @@ function createNpc(def, now) {
     idleAt: 0,
     /** NPC 自己的小仓库：收获时按性格留一部分，接订单 / 互通有无靠它 */
     bag: {},
+    /**
+     * NPC 自己挖到的升级水晶（第 53 轮）：`{1: n, ...}`。
+     * 与玩家的 `farm.village.stock` 分开记 —— 村民只能投自己挖到的。
+     */
+    crystals: {},
     /** 张榜中的收购订单（同时最多 1 条），null = 没有 */
     order: null,
     dog: { breed: rollNpcDogBreed(level).id, satiety: rollNpcDogSatiety(), at: lastVisitAt },
@@ -346,6 +359,26 @@ function cleanNpcBag(raw) {
     bag[id] = Math.max(0, Math.floor(Number(n) || 0));
   }
   return bag;
+}
+
+/**
+ * 邻居自己挖到的升级水晶（第 53 轮）：`{1: n, 2: n, 3: n, 4: n}`。
+ *
+ * 水晶从来不在背包里 —— 玩家挖到的记在 `farm.village.stock`，
+ * 邻居挖到的记在各自的 `crystals` 上。分开记之后，村民只能投自己挖到的，
+ * 不会再用「村里公共那一堆」去投共建（那正是「我没水晶却被投出去」的来源）。
+ *
+ * @param {any} raw 存档里的原始行
+ * @returns {Record<number, number>}
+ */
+function cleanNpcCrystals(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const tier of CRYSTAL_TIERS) {
+    const n = Math.max(0, Math.floor(safeNum(raw[tier], 0)));
+    if (n > 0) out[tier] = n;
+  }
+  return out;
 }
 
 /* ============================================================
@@ -442,7 +475,7 @@ function normalizeVillage(raw) {
   };
   for (const tier of CRYSTAL_TIERS) out.stock[tier] = Math.max(0, safeNum(v.stock?.[tier], 0));
 
-  // prayDay / giveDay 都只留今天那几个 key：留着历史只会长成 33×N 的表
+  // prayDay / giveDay 都只留今天那几个 key：留着历史只会长成「人数 × N」的表
   const today = dayKey(Date.now());
   for (const [who, day] of Object.entries(v.prayDay || {})) {
     if (typeof who === 'string' && day === today) out.prayDay[who] = day;
@@ -611,6 +644,7 @@ function normalizeNpc(row, def, save) {
     // 心跳里顺手补一个（见 world.js 的 runIdleActions）
     idleAt: safeNum(row.idleAt, 0),
     bag: cleanNpcBag(row.bag),
+    crystals: cleanNpcCrystals(row.crystals),
     order: cleanOrder(row.order, def.id, def.id),
     dog: { ...fresh.dog, ...(row.dog || {}) },
     plots: [],
@@ -659,7 +693,16 @@ export async function initState() {
   state.dailyRows = save.dailyRows || {};
 
   const rows = new Map(save.farms.filter((row) => row.id !== PLAYER_ID).map((row) => [row.id, row]));
-  state.friends = NPCS.map((def) => {
+  /**
+   * 谁在村里，看村庄等级（第 53 轮）。
+   *
+   * 开局只有 32 位原住民，另外 20 位是村子升到 Lv.2~5 时陆续搬来的
+   * （`npcsArrivingAt` 在 store/village.js 的 checkUpgrade 里补进名单）。
+   * 这里按等级过滤而不是照单全收：老档里可能存着「村子还没升级却已经写进库」
+   * 的新住户，直接 map 全部 NPCS 会让他们提前入住。
+   */
+  const villageLevel = state.farm.village?.level || 1;
+  state.friends = npcsAtVillageLevel(villageLevel).map((def) => {
     const row = rows.get(def.id);
     rows.delete(def.id);
     return row ? normalizeNpc(row, def, save) : createNpc(def, now);
@@ -681,6 +724,42 @@ export async function initState() {
   });
 
   return state;
+}
+
+/**
+ * 村子升级时把新一批邻居请进村（第 53 轮）。
+ *
+ * 谁在名单里由 data/friends.js 的 `arrive` 决定：4 批 × 5 人，村子升到
+ * Lv.2 / 3 / 4 / 5 各搬来一批，农场等级 2~10 级。由 store/village.js 的
+ * checkUpgrade 调用 —— state.js 不认识村庄模块，反过来 village.js 认识
+ * state.js，依赖只有一个方向，不会绕成环。
+ *
+ * @param {number} level 村子升到的等级
+ * @param {number} [now]
+ * @returns {object[]} 这次搬进来的邻居，没有新住户时是空数组
+ */
+export function admitVillageNeighbours(level, now = Date.now()) {
+  const arrived = [];
+  for (const def of npcsArrivingAt(level)) {
+    if (state.friends.some((friend) => friend.id === def.id)) continue;
+    const npc = createNpc(def, now);
+    /**
+     * 「刚搬来」就是刚刚：createNpc 会给所有人把上次上线推到 2~20 小时前
+     * （让老邻居一进游戏就看着像离线了一段时间），但对新住户不行 ——
+     * 世界时钟会拿 `nextVisitAt` 往前补算，等于让他们**入住之前**就在
+     * 村里串了二十小时的门、顺了二十小时的菜。这里把他们按到当下。
+     */
+    npc.createdAt = now;
+    npc.lastVisitAt = now;
+    npc.nextVisitAt = nextVisitAt(def, now);
+    npc.dog.at = now;
+    state.friends.push(npc);
+    arrived.push(npc);
+  }
+  // 新来的人跟玩家、跟老住户之间也要有初始好感，否则第一次点开全是 0。
+  // 传全量 id：seedRelations 自己会跳过已经有记录的那些对。
+  if (arrived.length) seedRelations([PLAYER_ID, ...state.friends.map((npc) => npc.id)]);
+  return arrived;
 }
 
 /**

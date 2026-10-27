@@ -1,0 +1,24 @@
+<Slide style={{ background: 'linear-gradient(155deg, #2E9E5B 0%, #3FB56B 55%, #57C277 100%)', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+  <Animation animType="zoom" duration={700}>
+    <Box style={{ width: 130, height: 130, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+      <svg width="120" height="120" viewBox="0 0 100 100">
+        <path d="M50 94 V44" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" fill="none" />
+        <path d="M50 60 C28 60 16 45 16 30 C36 30 50 43 50 60 Z" fill="#FFFFFF" />
+        <path d="M50 52 C72 52 84 37 84 22 C64 22 50 35 50 52 Z" fill="#FFFFFF" />
+        <circle cx="50" cy="44" r="5" fill="#F2A33C" />
+      </svg>
+    </Box>
+  </Animation>
+
+  <Animation animType="fadeIn" startType="afterPrevious" duration={700}>
+    <Text style={{ fontSize: 66, fontWeight: 'bold', color: '#FFFFFF', textShadow: '2px 3px 12px rgba(0,0,0,0.18)', textAlign: 'center', lineHeight: 1.25, letterSpacing: 3 }}>打开就能玩，<br />关掉接着玩</Text>
+  </Animation>
+
+  <Animation animType="fadeIn" startType="afterPrevious" duration={700}>
+    <Box style={{ width: 300, height: 1, background: 'rgba(255,255,255,0.6)', margin: '30px 0' }} />
+  </Animation>
+
+  <Animation animType="fadeIn" startType="afterPrevious" duration={700}>
+    <Text style={{ fontSize: 26, color: '#F0FBF1', opacity: 0.95, textAlign: 'center', letterSpacing: 2 }}>你的农场，一直都在那里等你。</Text>
+  </Animation>
+</Slide>

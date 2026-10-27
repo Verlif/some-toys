@@ -1,0 +1,41 @@
+=== boot pid=35960 ts=2026-10-27 11:01:07.667 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js create 西米的农场.pptx ===
+[2026-10-27 11:01:07.665] [INFO ] [pid=35960] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+=== boot pid=22396 ts=2026-10-27 11:02:25.571 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/01.slide ===
+[2026-10-27 11:02:25.570] [INFO ] [pid=22396] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:02:25.680] [INFO ] [pid=22396] [slide-version] fileId=sid_mvq3 version=0 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=32772 ts=2026-10-27 11:03:42.138 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/02.slide ===
+[2026-10-27 11:03:42.136] [INFO ] [pid=32772] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:03:42.248] [INFO ] [pid=32772] [slide-version] fileId=sid_mvq3 version=1 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=13204 ts=2026-10-27 11:04:04.103 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/02.slide --page-index 1 ===
+[2026-10-27 11:04:04.102] [INFO ] [pid=13204] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:04:04.155] [INFO ] [pid=13204] [slide-version] fileId=sid_mvq3 version=2 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=5220 ts=2026-10-27 11:05:13.484 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/03.slide ===
+[2026-10-27 11:05:13.483] [INFO ] [pid=5220] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:05:13.584] [INFO ] [pid=5220] [slide-version] fileId=sid_mvq3 version=3 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=37748 ts=2026-10-27 11:06:06.243 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/04.slide ===
+[2026-10-27 11:06:06.243] [INFO ] [pid=37748] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:06:06.295] [INFO ] [pid=37748] [slide-version] fileId=sid_mvq3 version=4 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=31980 ts=2026-10-27 11:06:38.224 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/05.slide ===
+[2026-10-27 11:06:38.223] [INFO ] [pid=31980] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:06:38.283] [INFO ] [pid=31980] [slide-version] fileId=sid_mvq3 version=5 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=43556 ts=2026-10-27 11:07:24.106 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/06.slide ===
+[2026-10-27 11:07:24.105] [INFO ] [pid=43556] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:07:24.161] [INFO ] [pid=43556] [slide-version] fileId=sid_mvq3 version=6 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=2256 ts=2026-10-27 11:08:11.253 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/07.slide ===
+[2026-10-27 11:08:11.252] [INFO ] [pid=2256] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:08:11.327] [INFO ] [pid=2256] [slide-version] fileId=sid_mvq3 version=7 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=29288 ts=2026-10-27 11:09:18.170 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/08.slide ===
+[2026-10-27 11:09:18.170] [INFO ] [pid=29288] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:09:18.226] [INFO ] [pid=29288] [slide-version] fileId=sid_mvq3 version=8 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=11660 ts=2026-10-27 11:10:08.655 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/09.slide ===
+[2026-10-27 11:10:08.654] [INFO ] [pid=11660] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:10:08.707] [INFO ] [pid=11660] [slide-version] fileId=sid_mvq3 version=9 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=13344 ts=2026-10-27 11:11:41.420 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/10.slide ===
+[2026-10-27 11:11:41.419] [INFO ] [pid=13344] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:11:41.493] [INFO ] [pid=13344] [slide-version] fileId=sid_mvq3 version=10 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=3120 ts=2026-10-27 11:12:47.945 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/11.slide ===
+[2026-10-27 11:12:47.944] [INFO ] [pid=3120] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:12:48.036] [INFO ] [pid=3120] [slide-version] fileId=sid_mvq3 version=11 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx
+=== boot pid=4660 ts=2026-10-27 11:13:36.455 cwd=D:\Code\someToys\pages\games\小农场\farm-promo argv=C:\Users\16508\.workbuddy\binaries\node\versions\22.22.2-6\node_modules\@tencent\slidep\dist\index.js upsert-dsl 西米的农场.pptx --dsl-file slides/12.slide ===
+[2026-10-27 11:13:36.454] [INFO ] [pid=4660] [server-url] baseUrl=http://localhost:39099 source=portFile(C:\Users\16508\.workbuddy\tencent-docs-engine.port)
+[2026-10-27 11:13:36.505] [INFO ] [pid=4660] [slide-version] fileId=sid_mvq3 version=12 filePath=D:\Code\someToys\pages\games\小农场\farm-promo\西米的农场.pptx

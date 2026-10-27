@@ -3,7 +3,8 @@
  *
  * 每位邻居 = 性格 + 职业 + 上线节奏 + 偷菜倾向。
  * 这四样叠起来决定他这座农场长什么样、什么时候上线、
- * 会不会摸到玩家家里顺菜 —— 32 位邻居因此各有各的发展轨迹。
+ * 会不会摸到玩家家里顺菜 —— 52 位邻居因此各有各的发展轨迹。
+ * （开局 32 位，另外 20 位是随村庄升级陆续搬进来的，见 NPCS 里的 arrive）
  *
  * 邻居是完全离线的：玩家什么时候打开游戏、什么时候进邻居页，
  * 都不影响他们的节奏；进度由「上次结算时间 → 现在」的时间差补算出来。
@@ -53,7 +54,7 @@ export const STEAL_LABELS = {
   always: '见菜就偷',
 };
 
-/* ---------- 32 位邻居 ---------- */
+/* ---------- 32 位原住民 + 20 位随村庄升级搬来的新村民 ---------- */
 
 /**
  * 邻居的起始等级。
@@ -155,7 +156,77 @@ export const NPCS = [
     schedule: { type: 'interval', min: 4, max: 8 }, steal: 'never' },
   { id: 'npc32', name: '赵六', avatar: '🧤', personality: 'greedy', profession: '收废品的',
     schedule: { type: 'interval', min: 1, max: 4 }, steal: 'always' },
+
+  /* ----- 第 53 轮：随村庄升级搬进来的 20 位新村民 -----
+   *
+   * `arrive` 是「村子升到几级时他们家盖好」—— 1 就是开局就在（原住民都不写）。
+   * 玩家把村子从 Lv.1 推到 Lv.5，会陆续多出 4 批 × 5 人。
+   *
+   * `levelRange` 是新住户的农场等级区间：刚搬来的人地少、等级低，
+   * 不给 rollNpcLevel() 那套 1~36 的分布 —— 否则一升级就冒出一堆 30 级大户，
+   * 村子显得没在「长大」。四批分别是 2~4 / 4~6 / 6~8 / 8~10 级。
+   */
+
+  // 第 1 批：村子升到 Lv.2 时搬来（2~4 级）
+  { id: 'npc33', name: '小满', avatar: '🐣', personality: 'friendly', profession: '送奶工',
+    schedule: { type: 'interval', min: 3, max: 6 }, steal: 'never', arrive: 2, levelRange: [2, 4] },
+  { id: 'npc34', name: '老陶', avatar: '🏺', personality: 'leisurely', profession: '陶艺匠',
+    schedule: { type: 'fixed', hours: [2, 9, 15, 20] }, steal: 'rare', arrive: 2, levelRange: [2, 4] },
+  { id: 'npc35', name: '阿珍', avatar: '🧵', personality: 'thrifty', profession: '绣娘',
+    schedule: { type: 'interval', min: 4, max: 8 }, steal: 'never', arrive: 2, levelRange: [2, 4] },
+  { id: 'npc36', name: '二狗', avatar: '🐕', personality: 'diligent', profession: '果园帮工',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'often', arrive: 2, levelRange: [2, 4] },
+  { id: 'npc37', name: '沈婆婆', avatar: '🍵', personality: 'friendly', profession: '茶馆婆婆',
+    schedule: { type: 'fixed', hours: [1, 7, 13, 19] }, steal: 'never', arrive: 2, levelRange: [2, 4] },
+
+  // 第 2 批：村子升到 Lv.3 时搬来（4~6 级）
+  { id: 'npc38', name: '阿福', avatar: '🍜', personality: 'merchant', profession: '面馆老板',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'often', arrive: 3, levelRange: [4, 6] },
+  { id: 'npc39', name: '陆老师', avatar: '🎨', personality: 'scholar', profession: '美术老师',
+    schedule: { type: 'fixed', hours: [3, 9, 15, 21] }, steal: 'never', arrive: 3, levelRange: [4, 6] },
+  { id: 'npc40', name: '铁牛', avatar: '🐂', personality: 'diligent', profession: '养牛户',
+    schedule: { type: 'interval', min: 3, max: 6 }, steal: 'rare', arrive: 3, levelRange: [4, 6] },
+  { id: 'npc41', name: '温姑娘', avatar: '🎐', personality: 'leisurely', profession: '古琴老师',
+    schedule: { type: 'fixed', hours: [4, 10, 16, 22] }, steal: 'never', arrive: 3, levelRange: [4, 6] },
+  { id: 'npc42', name: '老蔫', avatar: '🥱', personality: 'leisurely', profession: '看门人',
+    schedule: { type: 'interval', min: 5, max: 9 }, steal: 'rare', arrive: 3, levelRange: [4, 6] },
+
+  // 第 3 批：村子升到 Lv.4 时搬来（6~8 级）
+  { id: 'npc43', name: '金娃', avatar: '💰', personality: 'greedy', profession: '放贷的',
+    schedule: { type: 'interval', min: 1, max: 4 }, steal: 'always', arrive: 4, levelRange: [6, 8] },
+  { id: 'npc44', name: '林场长', avatar: '🌲', personality: 'boss', profession: '林场场长',
+    schedule: { type: 'fixed', hours: [6, 12, 18] }, steal: 'rare', arrive: 4, levelRange: [6, 8] },
+  { id: 'npc45', name: '苗苗', avatar: '🌻', personality: 'friendly', profession: '花房姑娘',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'never', arrive: 4, levelRange: [6, 8] },
+  { id: 'npc46', name: '老秦', avatar: '🚜', personality: 'diligent', profession: '农机手',
+    schedule: { type: 'interval', min: 3, max: 6 }, steal: 'often', arrive: 4, levelRange: [6, 8] },
+  { id: 'npc47', name: '胡掌柜', avatar: '🏮', personality: 'merchant', profession: '杂货铺掌柜',
+    schedule: { type: 'interval', min: 2, max: 6 }, steal: 'often', arrive: 4, levelRange: [6, 8] },
+
+  // 第 4 批：村子升到 Lv.5 时搬来（8~10 级）
+  { id: 'npc48', name: '白先生', avatar: '🕊️', personality: 'scholar', profession: '中医',
+    schedule: { type: 'fixed', hours: [2, 8, 14, 20] }, steal: 'never', arrive: 5, levelRange: [8, 10] },
+  { id: 'npc49', name: '大鹏', avatar: '🛩️', personality: 'boss', profession: '快递站站长',
+    schedule: { type: 'interval', min: 2, max: 5 }, steal: 'often', arrive: 5, levelRange: [8, 10] },
+  { id: 'npc50', name: '翠婶', avatar: '🧺', personality: 'thrifty', profession: '腌菜高手',
+    schedule: { type: 'interval', min: 3, max: 7 }, steal: 'rare', arrive: 5, levelRange: [8, 10] },
+  { id: 'npc51', name: '小北', avatar: '🎧', personality: 'leisurely', profession: '电竞少年',
+    schedule: { type: 'interval', min: 4, max: 9 }, steal: 'rare', arrive: 5, levelRange: [8, 10] },
+  { id: 'npc52', name: '老陈', avatar: '🪓', personality: 'greedy', profession: '伐木的',
+    schedule: { type: 'interval', min: 1, max: 4 }, steal: 'always', arrive: 5, levelRange: [8, 10] },
 ];
+
+/**
+ * 村子还只有 Lv.N 时，哪些邻居已经在了。
+ *
+ * 原住民不写 `arrive`，一律算 1 级就在。
+ * 读档时用它过滤名单 —— 老档里可能存着「村子还没升级却已经写进库」的新住户，
+ * 也保证新档不会一开局就冒出 52 个人。
+ */
+export const npcsAtVillageLevel = (level) => NPCS.filter((def) => (def.arrive || 1) <= level);
+
+/** 村子从 Lv.N 升到 Lv.N+1 时搬进来的那一批 */
+export const npcsArrivingAt = (level) => NPCS.filter((def) => def.arrive === level);
 
 /* ---------- 模拟节奏 ---------- */
 const HOUR = 3600_000;
@@ -198,7 +269,7 @@ export const PLAYER_FARM_WEIGHT = 2;
  * 「串门帮忙」挑农场时给「玩家农场」的权重。
  *
  * 和偷菜的 PLAYER_FARM_WEIGHT 分开：帮忙是另一回事 ——
- * 32 个邻居分 33 座农场，权重不给足，玩家农场长期没人管，
+ * 几十户人家分几十座农场，权重不给足，玩家农场长期没人管，
  * 离线几天回来一片缺水生虫，高好感邻居像白交了一样
  * （2026-10-24 用户反馈「我有很多好感度高的邻居，他们上线时应该会帮我打理啊」）。
  */
@@ -266,7 +337,7 @@ export const isNpcOnline = (npc, now = Date.now()) => now < (npc.onlineUntil || 
  * 现在把这段填上：在线期间每 1~3 分钟顺手做一件事，**自家地有活就优先自家**
  * （收获 → 打理 → 补种），没事才去串门。
  *
- * 间隔不能再短：32 位邻居里随时有一小半挂着在线窗口，
+ * 间隔不能再短：几十位邻居里随时有一小半挂着在线窗口，
  * 半分钟一次会让玩家被动态刷屏。
  */
 export const IDLE_MS = [60_000, 180_000];
