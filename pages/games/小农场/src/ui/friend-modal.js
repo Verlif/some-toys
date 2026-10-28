@@ -126,8 +126,11 @@ function plotCardHTML(friend, index, now) {
 
   if (now >= plot.readyAt) {
     const stolen = plot.stolenCount || 0;
+    // ⚠️ 这行必须短到**一行放得下**：窄卡（360px 两列时约 153px）里
+    // 「🐕 被守护犬盯着，这轮偷不了」会折成两行，这块地就比同排高出 10px。
+    // 完整那句留在作物详情弹窗里（那里地方够）。
     const note = plot.guarded
-      ? '🐕 被守护犬盯着，这轮偷不了'
+      ? '🐕 有狗盯着'
       : stolen ? `已被顺走 ${stolen} 个` : '这块刚被顺过';
     // 这一格已经不能偷了，但**产量还在**（每块地每轮只能偷 1 个）。
     // 所以这里照旧摞出来，只是把可偷的提示换成「已被顺走 N 个」：

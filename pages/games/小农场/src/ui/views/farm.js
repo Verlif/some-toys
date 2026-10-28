@@ -184,11 +184,19 @@ function ripeHTML(plot) {
         stolen > 0 ? ` / 本应 <b class="yield-was">${total}</b>` : ''
       }</div>`
     : '';
-  // 成熟那一刻还挂着「该浇水 / 该杀虫」的账：产量已经扣过了，得让玩家看见
+  // 成熟那一刻还挂着「该浇水 / 该杀虫」的账：产量已经扣过了，得让玩家看见。
+  //
+  // ⚠️ **不能单独占一行**：成熟地块的堆叠图（4.4em × 2.6em）本来就比生长中的
+  // 单图高近 30px，5 行就顶到 156px，比「生长中 + 缺水生虫」那 6 行（137px）还高，
+  // 会把 .plot-main 的地板顶穿、同一行一起变高。
+  // 所以它和「还可收获 N 次」**挤在同一行**：行数恒为 4，高度才锁得住。
+  // 措辞随之压缩 —— 一格只有一百来像素宽，「照料不周 · −15%」+「还可收获 2 次」
+  // 并排放不下，会折成两行，等于白折腾。缩减版「照料 −15% · 剩 2 茬」刚好一行。
   const care = carePenalty(plot);
-  const careLine = care.pct
-    ? `<div class="plot-sub warn-text">照料不周 · −${care.pct}%</div>`
-    : '';
+  const tail = [
+    care.pct ? `照料 −${care.pct}%` : '',
+    left > 1 ? `剩 ${left - 1} 茬` : '最后一茬',
+  ].filter(Boolean).join(' · ');
   // 一张图说明不了「熟了一堆」：按产量摞起来，被偷走就少一张（见 data/yield-pile.js）
   const pile = pileHTML(crop.emoji, remain, plot.id);
   const art = pile
@@ -203,8 +211,7 @@ function ripeHTML(plot) {
       ${art}
       <div class="plot-name">${crop.name} · 成熟</div>
       ${yieldLine}
-      ${careLine}
-      <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
+      <div class="plot-sub${care.pct ? ' warn-text' : ''}">${tail}</div>
     </div>
     ${hangHTML(`<button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收获</button>`)}`;
 }

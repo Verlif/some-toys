@@ -83,6 +83,7 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 - 设置页 `<input type=file>` 挂 `document.body`；拖拽先判 `#subpage.show [data-role=save-drop]`。
 - **产出堆叠** `data/yield-pile.js`：`floor(n/2)+1` 张（**不是 ceil**，偶数产量偷 1 个才看得出少一张）、封顶 10；黄金角螺旋+LCG 定种（心跳 500ms 不能 random）；坐标全 em（紧凑只改 font-size）；邻居 key 带 `friend.id`；散落 `RADIUS_X=1.62/RADIUS_Y=0.66/MAX_ROT=±24°`（1.7 以上会被卡片裁角）；每图带白描边 + 双层 drop-shadow；⚠️ `.plot-art/.np-art` 要 `width:100%` + `padding:0 .5em` 否则最外侧图边缘点不动。
 - **地块骨架**（玩家与 NPC 同一套）：单列 `.plot-main` 铺满整格 + `.plot-hang` 悬挂底边（`bottom:0` + `translate(-50%, calc(25% + 1px))`，3/4 在内 1/4 在外）。⚠️ 绝对定位所以不动邻格行高；那个 **+1px 不能省**（包含块是 padding box，`bottom:0` 在 border 内侧，否则只露 5/24）。底部统一留 padding（23/22/22）。
+- ⚠️ **地块高度必须锁在 `.plot-main` 上**（`min-height:141px`，紧凑 `113px`），**别锁 `.plot`** —— 四种状态内容行数 3~6 行不等，外层 min-height 只是地板、内容一多照样顶穿。病根不是悬挂按钮（摘光全部 `.plot-hang` 高度变化 0.0px），是「💧 缺水」那行警示文字：点掉 💧 时它同时消失 → 矮 15px → grid 整行缩回。连带约束：`ripeHTML` 的「照料不周」**不能单独占一行**（成熟是 4.4em 堆叠图，多一行 156px 比生长中 6 行 137px 还高），要和「还可收获」挤一行、压缩成 `照料 −40% · 最后一茬`。验证口径：同一 `top` 上高度集合只能有一个值。
 - **铲除 / 施肥在作物详情弹窗**，不在土地上：`plotActionsHTML` 用 `minmax(0,1fr) auto`（施肥吃剩余 + 铲除 36×34 方框），`.pa-row{max-width:300px;margin:auto}` 上限居中；成熟后只剩铲除→改胶囊。`.plot-side` / `.np-acts` 已整块删除。
 - **地块 aura**：`inset:-1px` 对齐 border box；环向内收 N px 则半径 −N px；金边 4px 靠 `padding` 不给 border。⚠️ 贴外沿会在圆角抗锯齿处漏底色。
 - **长按连发** `ui/hold.js`：`.qty-btn` 委托，只在 `modal.js`/`subpage.js` 各挂一次，业务零改动。⚠️ `touch-action` 只能写一条。

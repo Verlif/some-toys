@@ -27,7 +27,7 @@
 const PER_IMAGE = 2;
 
 /** 一张地图上最多摆几张。再多就只是糊成一团，反而看不出「多」 */
-export const PILE_MAX = 10;
+export const PILE_MAX = 16;
 
 /**
  * 这个产量该画几张图。
