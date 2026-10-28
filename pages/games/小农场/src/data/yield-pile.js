@@ -63,10 +63,26 @@ const GOLDEN_ANGLE = 2.39996323;
 
 /**
  * 散落的横向 / 纵向半径，单位是**基准字号**的倍数（不是 px）。
- * 扁一点更像摊在地上的一堆：横向 1.15 个字宽、纵向 0.54 个字高。
+ *
+ * 横向给得比纵向大不少：地块是横的，横着摊才像「收了一把撒在地上」；
+ * 纵向一拉高，几张图就会顶到上面的名字行。
+ * 1.62 / 0.66 是「10 张图摆开仍看得出层次、又不至于散成孤立几点」的取值 ——
+ * 再小会挤成一坨分不清张数，再大就超出地块、被卡片边缘切掉。
+ *
+ * ⚠️ 这个上界是**实测**出来的：横排取消右侧操作列、地块宽度还给作物图之后，
+ * 图标外缘到格边只剩十几个像素；RADIUS_X 再往上加（约 1.7 以上），
+ * 最外侧那张图会被卡片裁掉一角。改完这个值请在地块上量一遍。
  */
-const RADIUS_X = 1.15;
-const RADIUS_Y = 0.54;
+const RADIUS_X = 1.62;
+const RADIUS_Y = 0.66;
+
+/**
+ * 单张图的最大随机旋转（度，正负各一半）。
+ *
+ * 全是正着的图摆在一起像贴纸；给一点角度（±24°）之后，
+ * 一眼就能看出「这是一把随手堆起来的」，而不是排版排出来的。
+ */
+const MAX_ROT = 24;
 
 /**
  * 一个 32 位的确定性伪随机数生成器（LCG）。
@@ -123,17 +139,17 @@ export function pileLayout(yieldNow, key = '') {
     // 半径随序号开方增长：开方之后点的**面积密度**才均匀，
     // 直接用序号会让中心挤成一团、外圈稀疏
     const t = (i + 0.6) / count;
-    const base = 0.42 + 0.58 * Math.sqrt(t);
+    const base = 0.5 + 0.5 * Math.sqrt(t);
     // 角度按黄金角步进，再加一点抖动打散螺旋的规律
-    const angle = i * GOLDEN_ANGLE + (rand() - 0.5) * 0.62;
+    const angle = i * GOLDEN_ANGLE + (rand() - 0.5) * 0.9;
     // 半径也抖一下，否则同一圈上的点会落在同一个椭圆轨迹上
-    const radius = base * (0.86 + rand() * 0.3);
+    const radius = base * (0.72 + rand() * 0.56);
 
     out.push({
-      x: Math.cos(angle) * radius * RADIUS_X + (rand() - 0.5) * 0.2,
-      y: Math.sin(angle) * radius * RADIUS_Y + (rand() - 0.5) * 0.16,
-      rot: (rand() - 0.5) * 26,
-      scale: 0.9 + rand() * 0.22,
+      x: Math.cos(angle) * radius * RADIUS_X + (rand() - 0.5) * 0.34,
+      y: Math.sin(angle) * radius * RADIUS_Y + (rand() - 0.5) * 0.24,
+      rot: (rand() - 0.5) * MAX_ROT * 2,
+      scale: 0.82 + rand() * 0.34,
       // 越靠近中心 z 越高：中心附近约 35，最外圈约 10
       z: Math.round(60 - radius * 42),
     });

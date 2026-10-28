@@ -81,7 +81,9 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 - ⚠️ `store/codex.js` 须同时 import `produceId` 与 `seedId`，少 `seedId` 会让 `makeSpecimen` 抛 ReferenceError（点不刷新三连）。
 - 图鉴双进度条（收集≠点亮）；点亮先 `closeModal()` 再播 `codex-celebrate`。
 - 设置页 `<input type=file>` 挂 `document.body`；拖拽先判 `#subpage.show [data-role=save-drop]`。
-- **产出堆叠** `data/yield-pile.js`：`floor(n/2)+1` 张（**不是 ceil**，偶数产量偷 1 个才看得出少一张）、封顶 10；黄金角螺旋+LCG 定种（心跳 500ms 不能 random）；坐标全 em（紧凑只改 font-size）；邻居 key 带 `friend.id`；⚠️ `.plot-art/.np-art` 要 `padding:0 .4em` 否则最外侧图边缘点不动。
+- **产出堆叠** `data/yield-pile.js`：`floor(n/2)+1` 张（**不是 ceil**，偶数产量偷 1 个才看得出少一张）、封顶 10；黄金角螺旋+LCG 定种（心跳 500ms 不能 random）；坐标全 em（紧凑只改 font-size）；邻居 key 带 `friend.id`；散落 `RADIUS_X=1.62/RADIUS_Y=0.66/MAX_ROT=±24°`（1.7 以上会被卡片裁角）；每图带白描边 + 双层 drop-shadow；⚠️ `.plot-art/.np-art` 要 `width:100%` + `padding:0 .5em` 否则最外侧图边缘点不动。
+- **地块骨架**（玩家与 NPC 同一套）：单列 `.plot-main` 铺满整格 + `.plot-hang` 悬挂底边（`bottom:0` + `translate(-50%, calc(25% + 1px))`，3/4 在内 1/4 在外）。⚠️ 绝对定位所以不动邻格行高；那个 **+1px 不能省**（包含块是 padding box，`bottom:0` 在 border 内侧，否则只露 5/24）。底部统一留 padding（23/22/22）。
+- **铲除 / 施肥在作物详情弹窗**，不在土地上：`plotActionsHTML` 用 `minmax(0,1fr) auto`（施肥吃剩余 + 铲除 36×34 方框），`.pa-row{max-width:300px;margin:auto}` 上限居中；成熟后只剩铲除→改胶囊。`.plot-side` / `.np-acts` 已整块删除。
 - **地块 aura**：`inset:-1px` 对齐 border box；环向内收 N px 则半径 −N px；金边 4px 靠 `padding` 不给 border。⚠️ 贴外沿会在圆角抗锯齿处漏底色。
 - **长按连发** `ui/hold.js`：`.qty-btn` 委托，只在 `modal.js`/`subpage.js` 各挂一次，业务零改动。⚠️ `touch-action` 只能写一条。
 

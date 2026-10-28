@@ -39,13 +39,17 @@ import { on, EVENTS } from '../core/bus.js';
 /**
  * 弹窗里一块地的卡片。
  *
+ * 骨架与自家农场**完全同一套**（见 ui/views/farm.js）：
+ *   .npc-plot 单列内容，作物图与文字铺满整格宽；
+ *   .plot-hang 操作按钮绝对定位挂在底边框上（3/4 在格内、1/4 探出）。
+ *
  * 缺水 / 生虫的地会多出对应的操作按钮 —— 玩家必须在**具体那块地**上
  * 点一下才能拿到经验，没有「一键打理」这种捷径。
  *
  * 两个角标固定在格子角上，不占正文的流：
  *   左上角 = 产量加成百分比（按档位换颜色）
  *   右上角 = 这一轮不能再偷的原因（🥷 已被偷 / 🐕 被狗盯上）
- * 这样无论地里有几个按钮，操作区都不会被挤下去。
+ * 这样无论地里有几个按钮，正文都不会被挤动。
  */
 function plotCardHTML(friend, index, now) {
   const plot = friend.plots[index];
@@ -57,8 +61,17 @@ function plotCardHTML(friend, index, now) {
     ? `<div class="np-emoji tappable" data-action="crop-info" data-id="${friend.id}"
         data-plot="${index}" title="查看作物详情">${ch}</div>`
     : `<div class="np-emoji">${ch}</div>`);
+  /**
+   * 悬挂在底边框上的按钮条（和自家农场同一个 .plot-hang）。
+   * ⚠️ 绝对定位，不参与 grid 的行高计算 —— 按钮探出 1/4 也不动邻格位置。
+   * @param {string} html 按钮
+   */
+  const hang = (html) => {
+    const body = html.trim();
+    return body ? `<div class="plot-hang">${body}</div>` : '';
+  };
   const base = (extra) => `<div class="npc-plot ${extra.cls || ''}${soil}" data-slot="${index}">${
-    boostBadge(plot)}${flagBadge(plot)}${extra.body}</div>`;
+    boostBadge(plot)}${flagBadge(plot)}${extra.body}${hang(extra.hang || '')}</div>`;
 
   if (!plot.cropId) {
     // 空地把土地档位写出来：升级过的地闲置着也认得出来是哪一档
@@ -77,7 +90,7 @@ function plotCardHTML(friend, index, now) {
   const act = (name) => (remote ? `peer-${name}` : `npc-${name}`);
 
   // 照料按钮：只有真的缺水 / 生虫时才出现
-  // 做成小图标按钮，这样一格里能同时放下「偷」和两个照料按钮，格子高度才统一
+  // 挂在底边框上，所以一格里同时放「偷」和两个照料按钮也不会把正文挤窄
   const care = [
     wantWater ? `<button class="icon-btn warn" data-action="${act('water')}" data-id="${friend.id}"
       data-plot="${index}" title="帮忙浇水（+经验）">💧</button>` : '',
@@ -105,11 +118,9 @@ function plotCardHTML(friend, index, now) {
           ${pileHTML(crop.emoji, remain, `${friend.id}-${plot.id || index}`)}
         </div>
         <div class="np-name">${crop.name}</div>
-        <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>
-        <div class="np-acts">
-          <button class="btn small harvest" data-action="${act('steal')}" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>
-          ${care}
-        </div>`,
+        <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>`,
+      // 偷菜是这颗格子的主动作，和自家「收获」同一位置、同一身橙色
+      hang: `<button class="btn small harvest" data-action="${act('steal')}" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>${care}`,
     });
   }
 
@@ -133,8 +144,9 @@ function plotCardHTML(friend, index, now) {
       body: `
         ${art}
         <div class="np-name">${crop.name}</div>
-        <div class="np-meta">${note}</div>
-        <div class="np-acts">${care}</div>`,
+        <div class="np-meta">${note}</div>`,
+      // 偷不了但还能照料：💧🐛 照样挂在底边上
+      hang: care,
     });
   }
 
@@ -145,8 +157,8 @@ function plotCardHTML(friend, index, now) {
       ${emoji(stageEmoji(crop, stage))}
       <div class="np-name">${crop.name}</div>
       <div class="np-meta">${stageName(stage)}</div>
-      <div class="np-time">${fmtDuration(plot.readyAt - now)}</div>
-      ${care || fertBtn ? `<div class="np-acts">${care}${fertBtn}</div>` : ''}`,
+      <div class="np-time">${fmtDuration(plot.readyAt - now)}</div>`,
+    hang: `${care}${fertBtn}`,
   });
 }
 

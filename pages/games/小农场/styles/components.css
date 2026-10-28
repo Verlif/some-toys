@@ -49,19 +49,23 @@
 .icon-btn.danger:hover { background: #fdeeee; border-color: #e8a0a0; }
 
 /* ---------- 地块 ---------- */
-/* 两段结构：主内容（flex:1）+ 右侧操作列（固定宽）。
-   操作列宽度写死，按钮再多也撑不开格子；主内容 min-width:0，
-   长名字自动收窄，不会把格子顶出滚动条。
-   高度按「最坏情况的内容 + 内边距」收口：生长中且缺水生虫时主内容
-   约 126px，加 24px 内边距 = 150，再留 2px 余量。 */
+/* 单列结构：内容占满整宽，操作按钮**悬挂在底边框上**（见 .plot-hang）。
+   右侧那列 34px 的操作列已经取消 —— 它把主内容挤到 83px（手机）之后，
+   作物图和产量堆叠几乎没有横向空间，而这块宽度正是最该给图的地方。
+
+   高度仍要「收口」：同一行里只要有一块地内容更高，grid 就会把整行拉到同高，
+   没有按钮的地块底下就会空出一截。所以底部预留的按钮带是**所有地块都留**的，
+   有没有按钮都一样高。 */
 .plot {
   position: relative;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
-  gap: 7px;
   min-height: 152px;
-  padding: 12px 9px;
+  /* 底部这条只留「悬挂按钮探进来那 3/4」的空间：内容不会压到按钮上，
+     但它不是 flex 项，所以按钮有几个都不改变格子的高度。
+     23px = 30px 按钮在格内的 21.5px 再留 1.5px 余量（见 .plot-hang 的说明） */
+  padding: 11px 10px 23px;
   background: linear-gradient(180deg, #fffefa, #f8f2e6);
   border: 1px solid #ece2cf;
   border-radius: var(--radius);
@@ -78,6 +82,9 @@
 .plot.special {
   border-color: #dcb45c;
 }
+/* 主内容：横向铺满整块地。img 那一行（.plot-art / .plot-emoji）自带 margin:auto，
+   所以图会居中；下面的文字同样居中，但**宽度是整格**，长作物名不会像以前那样
+   被 34px 的操作列挤窄换行。 */
 .plot-main {
   flex: 1;
   min-width: 0;
@@ -87,24 +94,50 @@
   justify-content: center;
   gap: 5px;
 }
-.plot-side {
-  flex-shrink: 0;
-  width: 34px;
+
+/* ---------- 悬挂在底边框上的操作按钮 ----------
+   一条绝对定位的横排，中点压在 `.plot` 的底边框上：
+   `bottom: 0` + `translateY(50%)` 会让按钮改成上下各半 —— 这里要的是
+   **3/4 在格内、1/4 探出**，所以往下只推 25%。
+
+   两条硬约束：
+     ① 必须 `left: 50% / translateX(-50%)` 居中，不能靠 flex 撑 ——
+        按钮数量会变（收获 / 浇水 / 捉虫），靠撑会把这条压得左半边空；
+     ② **绝对定位才不占布局**：它悬在底边上，既不撑高卡片，
+        也不参与 grid 的行高计算，所以邻格的位置一像素都不会动。
+   层级压在 aura（动效层）之上：金边转过按钮时不能把按钮盖住。
+
+   ⚠️ `calc(25% + 1px)` 那个 +1px 不能省：绝对定位的包含块是 padding box，
+   `bottom: 0` 落在 border **内侧**，探出量会少掉 border 的 1px
+   （实测 24px 的按钮只露出 5px 而不是 6px，比例成了 0.79 而不是 0.75）。
+   补上这 1px，露出的才是真正的高度四分之一。 */
+.plot-hang {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 3;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* 最挤的时候是 4 个按钮（浇水 / 捉虫 / 施肥 / 铲除）：
-     4×29 + 3×3 = 125，刚好卡在 152 − 24 的可用高度里 */
-  gap: 3px;
-  /* 按钮纵向排布，再多也不会撑开格子或挤出滚动条 */
-  overflow: hidden;
+  gap: 5px;
+  transform: translate(-50%, calc(25% + 1px));
+  /* 空白处不吃点击：网格的委托靠冒泡，这里留空是为了不挡住地块本身的点击 */
+  pointer-events: none;
 }
-.plot-side .btn.small {
-  width: 100%;
-  padding: 6px 2px;
-  font-size: 10.5px;
-  letter-spacing: 0;
+.plot-hang > * { pointer-events: auto; }
+/* 悬挂带上的按钮统一成胶囊形：圆的像钉子，方的压在边上会显得很硬 */
+.plot-hang .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 14px;
+  /* 白底 + 一圈同色描边：按钮压在边框上，不描边会跟底纹糊在一起 */
+  box-shadow: 0 2px 6px rgba(70, 90, 60, .18);
+}
+.plot-hang .btn.small {
+  padding: 6px 13px;
+  font-size: 11.5px;
+  border-radius: 99px;
 }
 .plot::after {
   content: '';
@@ -286,21 +319,23 @@
 }
 
 /* 紧凑模式（.grid.dense 下生效，手机竖屏也走这套）：地块缩小以容纳 40 块。
-   最坏情况（生长中 + 缺水生虫）内容约 118px，留一点余量不贴边框。 */
-.grid.dense .plot { min-height: 126px; padding: 8px 6px; gap: 4px; }
+   最坏情况（生长中 + 缺水生虫）内容约 118px，留一点余量不贴边框。
+   底部那 22px 是悬挂按钮（26px 的 3/4 = 19.5px）探进来的部分，
+   横向铺满之后内容反而比旧版更宽松。 */
+.grid.dense .plot { min-height: 126px; padding: 8px 6px 22px; }
 .grid.dense .plot-main { gap: 2px; }
 .grid.dense .plot-emoji { font-size: 38px; }
 .grid.dense .plot-emoji.empty { font-size: 32px; }
 .grid.dense .plot-name { font-size: 11px; }
 .grid.dense .plot-sub { font-size: 10px; }
 .grid.dense .plot-lock { width: 38px; height: 38px; }
-.grid.dense .plot-side { width: 30px; gap: 2px; }
-.grid.dense .plot-side .icon-btn { width: 25px; height: 25px; font-size: 12.5px; }
-.grid.dense .plot-side .btn.small { padding: 5px 1px; font-size: 10px; }
+.grid.dense .plot-hang { gap: 4px; }
+.grid.dense .plot-hang .icon-btn { width: 26px; height: 26px; font-size: 12.5px; }
+.grid.dense .plot-hang .btn.small { padding: 5px 10px; font-size: 10.5px; }
 .grid.dense .bar { width: 88%; }
-/* 紧凑模式下 .plot-main 只有约 72px 可用宽：堆叠的基准字号跟着收一档，
-   半径与旋转都是 em，改这一处整摞等比缩下去（3.1em × 19px ≈ 59px） */
-.grid.dense .plot-art { font-size: 19px; }
+/* 紧凑模式下地块窄，堆叠的基准字号跟着收一档，
+   半径与旋转都是 em，改这一处整摞等比缩下去 */
+.grid.dense .plot-art { font-size: 18px; }
 
 /* 成熟地块的产量行：可收（绿）/ 本应（灰、删除线，直观看出被顺走几个） */
 .plot-sub.yield-line b { font-variant-numeric: tabular-nums; }
@@ -314,23 +349,23 @@
 
 /* ---------- 可收获的产出堆叠 ----------
    成熟地块不再只放一张 47px 的大图 —— 一张图说明不了「熟了一堆」。
-   改成每 2 个产出摞一张（最多 10 张），坐标由 data/yield-pile.js 按
+   按产量摞起来（张数见 data/yield-pile.js 的 pileCount），坐标由
    黄金角螺旋算好，这里只负责画。
 
-   三个要点：
-     ① 每张图都带 drop-shadow，否则几张叠起来会糊成一坨，看不出层次；
-     ② 坐标用的是 em（不是 px），紧凑模式换一个 font-size 就整摞等比缩，
-        不会溢出格子去跟右侧按钮打架；
+   四个要点：
+     ① **每张图都带笔画 + 投影**：只有 drop-shadow 时，深浅色的 emoji 叠在一起
+        边界还是会糊；加一圈 `-webkit-text-stroke` 描边之后，每张图的轮廓都清楚，
+        一眼能数出「这是几张」；
+     ② 坐标用的是 em（不是 px），紧凑模式换一个 font-size 就整摞等比缩；
      ③ 容器**不吃点击**（pointer-events: none），点击交给外层 .plot-art，
-        否则点到堆叠里的图不会触发作物详情。 */
+        否则点到堆叠里的图不会触发作物详情；
+     ④ 容器尺寸按「最大单点偏移 + 一颗图」留足，宽了才能摊得开（现在是整格宽）。 */
 .yield-pile {
   position: relative;
-  /* 尺寸按 em 写（1em = 一颗图的大小）。3.4em 是「横向最大偏移 ±1.0em
-     再加一颗图的余量」算出来的，纵向同理。
-     ⚠️ 这组数不能随便放大：紧凑模式下 .plot-main 的可用宽度只有约 72px，
-     3.4em × 21px = 71px 刚好卡住，再大就会顶到右侧的按钮列上。 */
-  width: 3.4em;
-  height: 2.3em;
+  /* 1em = 一颗图。横向 4.4em = 最大偏移 ±1.7em 再加一颗图的余量；
+     纵向 2.6em 同理。这块宽度现在是整个格子，不再受右侧操作列挤压 */
+  width: 4.4em;
+  height: 2.6em;
   pointer-events: none;
 }
 .yield-pile > i {
@@ -343,21 +378,38 @@
   /* 同字号下 Apple 与 Windows 的彩色 emoji 宽度差得比较多，
      写死这串字体才保证两边摞出来的形状一致 */
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  filter: drop-shadow(0 0 .1em .02em rgba(85, 65, 30, .36));
+  /* 描边 + 投影：叠起来时每张图的轮廓才分得清谁压着谁 */
+  -webkit-text-stroke: .035em rgba(255, 255, 255, .9);
+  filter:
+    drop-shadow(0 .045em .05em rgba(72, 55, 26, .5))
+    drop-shadow(0 .12em .16em rgba(72, 55, 26, .26));
   will-change: transform;
 }
-/* 承载堆叠的可点区域：尺寸就是堆叠区本身，别撑开地块。
-   ⚠️ 横向要留 0.4em 的 padding：图标按黄金角散开后会超出 .yield-pile 的盒子
-   （实测左 5.9px / 右 3.3px），不给这点余量的话，点到最外侧那张图的边缘
-   命中的是父级 .plot-main，作物详情打不开 —— 看着能点、实际没反应。
-   加 padding 只是把「可点范围」撑到图标外沿，不改布局（art 不含外边距）。 */
+/* 承载堆叠的可点区域：宽度跟着堆叠区走，别撑开地块。
+   ⚠️ 横向要留 0.5em 的 padding：图标散开 + 随机旋转之后会超出 .yield-pile 的盒子，
+   不给这点余量的话，点到最外侧那张图的边角时命中的是父级 .plot-main，
+   作物详情打不开 —— 看着能点、实际没反应。
+   加 padding 只是把「可点范围」撑到图标外沿，不改布局（只加内边距、不加外边距）。
+   `width: 100%` 让这块（连同它的可点范围）横向铺满格子 —— 右侧操作列取消之后
+   横向空间全归这里，宽屏上点到图标两侧的空白也能打开详情。 */
 .plot-art,
 .np-art {
   display: grid;
   place-items: center;
-  font-size: 24px;
+  width: 100%;
+  font-size: 25px;
   line-height: 1;
-  padding: 0 .4em;
+  padding: 0 .5em;
+}
+/* 宽屏地块更宽，堆叠要跟着放大一档，否则一摞图缩在格子中间显得空
+   （em 是相对 .plot-art 的 font-size，这里只改字号，半径与旋转自动等比） */
+@media (min-width: 720px) {
+  .plot-art, .np-art { font-size: 27px; }
+  .npc-plot .np-art { font-size: 20px; }
+}
+@media (min-width: 960px) {
+  .plot-art { font-size: 29px; }
+  .npc-plot .np-art { font-size: 21px; }
 }
 .plot-art.tappable,
 .np-art.tappable { cursor: pointer; }
@@ -1297,6 +1349,9 @@
   gap: 11px;
   /* 同一行的卡片高度由 grid 自动拉伸对齐 */
   align-items: stretch;
+  /* 最后一行地块底边的悬挂按钮会探出 1/4（约 8px），
+     不预留就会压在下面那句 .npc-tip 上 */
+  padding-bottom: 8px;
 }
 @media (min-width: 720px) {
   .npc-plots { grid-template-columns: repeat(3, 1fr); }
@@ -1304,18 +1359,20 @@
 @media (min-width: 960px) {
   .npc-plots { grid-template-columns: repeat(4, 1fr); }
 }
-/* 所有地块卡片共用同一套骨架，用 flex + margin-top:auto 把按钮顶到底部，
-   这样「偷完之后少了按钮」也不会让同一行看起来参差不齐 */
-/* 统一高度：所有邻居地格子都是这个高度，
-   按钮用 margin-top:auto 顶到底部，多几个按钮也不会把卡片撑高 */
+/* 所有地块卡片共用同一套骨架（与 .plot 一致）：单列内容 + 悬挂在底边上的操作按钮。
+   以前是固定 138px + .np-acts 底部横排，按钮一变多就把正文往下挤；
+   现在正文占满整格、按钮绝对定位挂在底边框上，有没有按钮都一样高。 */
 .npc-plot {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-  height: 138px;
-  padding: 10px 6px;
+  min-height: 138px;
+  /* 底部这条只留「悬挂按钮探进来那 3/4」的空间 —— 和 .plot 是同一个道理
+     （30px 按钮的 21.5px + 余量） */
+  padding: 10px 8px 22px;
   /* 底色与玩家地块同一套暖土色 —— 邻居的地也是地，
      之前这里偏冷白，点进邻居页像是四十张白卡片 */
   background: linear-gradient(180deg, #fffefa, #f8f2e6);
@@ -1344,25 +1401,16 @@
 .npc-plot.stolen::after, .npc-plot.empty::after { display: none; }
 /* 和玩家地块同一个逻辑：作物图标是主角，放大到一眼认得出来 */
 .npc-plot .np-emoji { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .12)); }
-/* 邻居的可偷地块也是同一摞图，但格子只有 138px 高、且要挤出按钮的位置：
-   基准字号比自家再小一档 */
-.npc-plot .np-art { font-size: 19px; }
+/* 可偷地块的堆叠图**直接用 .plot-art / .np-art 那一套字号**（见文件上方），
+   不再为邻居单独降一档 —— 两边必须是同一堆东西，玩家才认得出这是同一机制。
+   格子本身比自家宽（弹窗两列比农场三列宽），25px 摆 4.4em 绰绰有余。 */
 .npc-plot .np-name { font-size: 12px; font-weight: 600; margin-top: 3px; }
 .npc-plot .np-meta { font-size: 10px; color: var(--muted); line-height: 1.4; }
 .npc-plot.ripe .np-meta { color: #a07818; font-weight: 700; }
 .npc-plot .np-time { font-size: 10px; color: #a8b3a5; font-variant-numeric: tabular-nums; }
-.npc-plot .btn { margin-top: auto; }
-/* 一格里可能要同时出现「偷」和「浇水 / 捉虫」，按钮要并排且等宽 */
-.np-acts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  justify-content: center;
-  margin-top: auto;
-  width: 100%;
-}
-.np-acts .btn { flex: 1 1 auto; min-width: 0; padding-left: 6px; padding-right: 6px; }
-.np-acts .icon-btn { flex: 0 0 auto; width: 27px; height: 27px; font-size: 13px; }
+/* 一格里可能要同时出现「偷」和「浇水 / 捉虫」：它们都挂在 .plot-hang 上，
+   尺寸与自家农场同一套（见文件上方的 .plot-hang 区块），这里不重写 */
+.npc-plot .plot-hang { gap: 4px; }
 /* 缺水 / 生虫只换边框与光晕，**不换底色** —— 和玩家那边 .plot.warn 一个做法。
    这里以前把 background 改成 #fffaf9，结果整窗邻居的地都变回白粉色，
    土地档位的底纹（左土地色 → 右普通色）也就跟着看不见了。 */
@@ -2434,6 +2482,46 @@
 .sd-note b { color: #40503c; font-variant-numeric: tabular-nums; }
 /* 详情类弹窗底部那句话（不分左右栏）：和上面的收入条拉开一点 */
 .sd-gain + .sd-note { margin-top: 9px; }
+
+/* ---------- 作物详情里的地块操作条（施肥 + 铲除） ----------
+   这两件事从地块上搬到了这里：它们一株作物一轮只用一次，
+   常年挂在地块上只会挤掉作物图的宽度。
+
+   尺寸规则：**铲除固定一个正方形，施肥吃掉剩下的宽度但有上限**，
+   整排在弹窗里居中。实现上用 grid 的两列：
+     minmax(0, 1fr)  施肥可伸缩（minmax(0,…) 才能让它真的缩下去不撑破容器）
+     auto            铲除按内容宽，正方形靠 .pa-square 定死
+   外层 .pa-row 负责居中与上限，不是靠 flex 撑满整张卡片。 */
+.pa-row {
+  display: grid;
+  place-items: center;
+  /* 整排的上限：再宽施肥就拉成一条横幅了 */
+  max-width: 300px;
+  margin: 14px auto 0;
+}
+.pa-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  width: 100%;
+  align-items: stretch;
+}
+/* 两列都吃满同一行高：施肥的文字行高与铲除的方框对齐 */
+.pa-grid > .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 铲除：一个正方的方框（宽高由行高与 padding 撑成 1:1） */
+.pa-square {
+  width: 36px;
+  padding: 0;
+  font-size: 16px;
+  flex: none;
+}
 /* 确认类弹窗（铲除 / 卖出）的底部按钮行 */
 .rm-actions {
   display: flex;

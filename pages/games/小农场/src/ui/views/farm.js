@@ -36,11 +36,30 @@ let grid = null;
 /* ---------- 单块地的内容 ---------- */
 
 /**
- * 地块采用「主内容 + 右侧操作列」的两段结构：
- *   .plot-main  作物 / 名称 / 进度 / 倒计时，纵向居中
- *   .plot-side  操作按钮（播种 / 收获 / 浇水 / 捉虫 / 施肥）纵向排列，
- *               固定宽度、不撑开格子，按钮再多也不会挤出滚动条
+ * 地块结构：单列内容 + **悬挂在底边框上**的操作按钮。
+ *   .plot-main  作物图 / 名称 / 进度 / 倒计时，占满整格宽
+ *   .plot-hang  浇水 / 捉虫 / 收获，绝对定位挂在底边上（3/4 在内、1/4 在外）
+ *
+ * 施肥与铲除**不在地块上**：它们是低频操作，放在点作物打开的详情弹窗里，
+ * 才不会让每块地都常年挂着两个用不到的按钮。右侧那列 34px 的操作列因此取消 ——
+ * 那块宽度全归作物图，横向终于够摊开一摞产出了。
  */
+
+/**
+ * 悬挂在底边框上的按钮条。
+ *
+ * 只有「现在真能做」的动作才出现：不缺水就没有 💧，没成熟就没有「收获」。
+ * 一个都没有时整条不渲染（空条也会占 z-index，没必要）。
+ *
+ * ⚠️ 这一条是 `position: absolute`，**不参与 flex 与 grid 的行高计算** ——
+ * 这正是「按钮探出格子却不影响邻格位置」的关键。别为了好写改回 flex 子项。
+ *
+ * @param {string} html 按钮
+ */
+function hangHTML(html) {
+  const body = html.trim();
+  return body ? `<div class="plot-hang">${body}</div>` : '';
+}
 
 /**
  * 荒地：还没买下的地。
@@ -86,18 +105,18 @@ function emptyHTML(plot) {
   // 升级入口就放在空地上：地里种着东西时本来也升不了
   const upgrade = next
     ? `<button class="btn small ghost" data-action="soil-upgrade" data-id="${plot.id}"
-        title="升级为${next.name}（💰 ${formatCoins(next.cost)}）">升级</button>`
+        title="升级为${next.name}（💰 ${formatCoins(next.cost)}）">升级为${next.name}</button>`
     : '';
+  // 播种挂在底边上；升级是「土地本身」的事，留在格内 ——
+  // 它和作物无关，挂在同一排会让人以为也是在动这株作物
   return `
     <div class="plot-main">
       <div class="plot-emoji empty">🌱</div>
       <div class="plot-sub">空闲土地</div>
       <span class="soil-tag ${soil.cls}">${soil.tag}</span>
-    </div>
-    <div class="plot-side">
-      <button class="btn small" data-action="plant" data-id="${plot.id}">播种</button>
       ${upgrade}
-    </div>`;
+    </div>
+    ${hangHTML(`<button class="btn small" data-action="plant" data-id="${plot.id}">播种</button>`)}`;
 }
 
 /** 缺水 / 生虫的提示条 */
@@ -121,11 +140,6 @@ function careButtonsHTML(plot) {
       title="捉虫：这块地的产量 +10%">🐛</button>`);
   }
   return out.join('');
-}
-
-/** 铲除按钮：认赔腾地用的，所以配色偏警示 */
-function removeButtonHTML(plot) {
-  return `<button class="icon-btn danger" data-action="remove" data-id="${plot.id}" title="铲除作物">🪓</button>`;
 }
 
 /**
@@ -155,11 +169,7 @@ function growingHTML(plot) {
       <div class="bar"><i style="width:0%"></i></div>
       <div class="ptime"></div>
     </div>
-    <div class="plot-side">
-      ${careButtonsHTML(plot)}
-      ${plot.fert ? '' : '<button class="icon-btn" data-action="fert" data-id="' + plot.id + '" title="施肥">🧪</button>'}
-      ${removeButtonHTML(plot)}
-    </div>`;
+    ${hangHTML(careButtonsHTML(plot))}`;
 }
 
 function ripeHTML(plot) {
@@ -196,10 +206,7 @@ function ripeHTML(plot) {
       ${careLine}
       <div class="plot-sub">${left > 1 ? `还可收获 ${left - 1} 次` : '最后一次收获'}</div>
     </div>
-    <div class="plot-side">
-      <button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收获</button>
-      ${removeButtonHTML(plot)}
-    </div>`;
+    ${hangHTML(`<button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收获</button>`)}`;
 }
 
 function plotInnerHTML(plot, status) {
@@ -764,7 +771,8 @@ function confirmRemove(plotId) {
  * 点地块上的作物图标 → 作物详情。
  *
  * 只读信息：这一株是什么、还要多久、攒了多少加成、能收几个。
- * 地块上的操作按钮（浇水 / 施肥 / 铲除）都还在，这里不重复给。
+ * 底部另有**两个低频操作**（施肥 / 铲除）—— 它们不再挂在每块地上：
+ * 常年摆着 🧪🪓 会占掉作物图的横向空间，而这两个按钮一株作物一轮只用一次。
  *
  * @param {number} plotId
  */
@@ -789,10 +797,63 @@ function openPlotCrop(plotId) {
       pending: ripe ? plot.pendingYield || 0 : 0,
       penalty: ripe ? carePenalty(plot).pct : 0,
     }),
+    extra: plotActionsHTML(plot, ripe),
     foot: ripe
-      ? '已经成熟了，点右侧「收获」拿收成'
+      ? '已经成熟了，点地块底边那颗「收获」拿收成'
       : '作物在成熟前会缺水、生虫，照料一下能提高产量',
+    onAction: (action) => {
+      if (action === 'fert') {
+        openFertModal(plotId);
+        return;
+      }
+      if (action === 'remove') {
+        // 铲除一定要二次确认：确认框叠在详情卡上面，关掉确认框会回到详情
+        confirmRemove(plotId);
+      }
+    },
   });
+}
+
+/**
+ * 作物详情里的地块操作条：施肥 + 铲除同一排。
+ *
+ * 尺寸规则是玩家指定的：**铲除固定一个方框，施肥吃掉剩下的宽度**，
+ * 但施肥有最长限制，整排在弹窗里居中。所以用 grid：
+ *   `minmax(0, 1fr) auto` —— 施肥可伸缩、铲除按内容宽（含正方形）；
+ * 外面套一个 `max-width` + `margin: auto` 的居中盒，宽屏上施肥不会拉成横幅。
+ *
+ * 成熟后只剩「铲除」一个按钮（施肥对已成熟的作物没有意义），
+ * 此时不放方框形态 —— 一颗正方形孤零零摆在中间会很怪，改成一颗正常胶囊。
+ *
+ * @param {object} plot
+ * @param {boolean} ripe 是否已成熟
+ */
+function plotActionsHTML(plot, ripe) {
+  // 成熟后施肥已经没意义，只留铲除 —— 一颗正方形孤零零摆在中间会很怪，
+  // 这时候用正常胶囊
+  if (ripe) {
+    return `
+      <div class="pa-row">
+        <div class="pa-grid">
+          <button class="btn ghost danger" data-action="remove">🪓 铲除这块地</button>
+        </div>
+      </div>`;
+  }
+  const fert = plot.fert
+    ? '<button class="btn ghost" disabled>🧪 这轮已施过肥</button>'
+    : `<button class="btn ghost" data-action="fert">🧪 施肥（${countFert()}）</button>`;
+  return `
+    <div class="pa-row">
+      <div class="pa-grid">
+        ${fert}
+        <button class="btn ghost danger pa-square" data-action="remove" title="铲除作物">🪓</button>
+      </div>
+    </div>`;
+}
+
+/** 背包里还有多少份化肥：按钮上直接报数，免得上点开弹窗才知道没货 */
+function countFert() {
+  return FERTILIZER_IDS.reduce((sum, id) => sum + count(id), 0);
 }
 
 const PLOT_ACTIONS = {
@@ -800,9 +861,7 @@ const PLOT_ACTIONS = {
   plant: (id) => openPlantModal(id),
   water: (id) => farm.water(id),
   pest: (id) => farm.catchPest(id),
-  fert: (id) => openFertModal(id),
   harvest: (id) => farm.harvest(id),
-  remove: (id) => confirmRemove(id),
   'soil-upgrade': (id) => openSoilUpgradeModal(id),
   'unlock-plot': () => farm.unlockPlot(),
 };
