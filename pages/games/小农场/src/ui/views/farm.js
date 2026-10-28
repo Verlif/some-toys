@@ -72,9 +72,13 @@ function lockedHTML() {
   const price = farm.nextPlotPrice();
   return `
     <div class="plot-main">
-      <div class="plot-lock" aria-hidden="true"></div>
-      <div class="plot-sub">荒地 · 未开垦</div>
-      <button class="btn small unlock" data-action="unlock-plot">🔓 ${price} 💰</button>
+      <div class="plot-head">
+        <div class="plot-lock" aria-hidden="true"></div>
+      </div>
+      <div class="plot-body">
+        <div class="plot-sub">荒地 · 未开垦</div>
+        <button class="btn small unlock" data-action="unlock-plot">🔓 ${price} 💰</button>
+      </div>
     </div>`;
 }
 
@@ -111,10 +115,14 @@ function emptyHTML(plot) {
   // 它和作物无关，挂在同一排会让人以为也是在动这株作物
   return `
     <div class="plot-main">
-      <div class="plot-emoji empty">🌱</div>
-      <div class="plot-sub">空闲土地</div>
-      <span class="soil-tag ${soil.cls}">${soil.tag}</span>
-      ${upgrade}
+      <div class="plot-head">
+        <div class="plot-emoji empty">🌱</div>
+      </div>
+      <div class="plot-body">
+        <div class="plot-sub">空闲土地</div>
+        <span class="soil-tag ${soil.cls}">${soil.tag}</span>
+        ${upgrade}
+      </div>
     </div>
     ${hangHTML(`<button class="btn small" data-action="plant" data-id="${plot.id}">播种</button>`)}`;
 }
@@ -161,13 +169,17 @@ function growingHTML(plot) {
   return `
     ${boostHTML(plot)}
     <div class="plot-main">
-      <div class="plot-emoji tappable" data-role="stage" data-action="crop-info"
-        data-id="${plot.id}" title="查看作物详情">${crop.emoji}</div>
-      <div class="plot-name">${crop.name}</div>
-      <div class="plot-sub" data-role="phase"></div>
-      ${careWarnHTML(plot)}
-      <div class="bar"><i style="width:0%"></i></div>
-      <div class="ptime"></div>
+      <div class="plot-head">
+        <div class="plot-emoji tappable" data-role="stage" data-action="crop-info"
+          data-id="${plot.id}" title="查看作物详情">${crop.emoji}</div>
+      </div>
+      <div class="plot-body">
+        <div class="plot-name">${crop.name}</div>
+        <div class="plot-sub" data-role="phase"></div>
+        ${careWarnHTML(plot)}
+        <div class="bar"><i style="width:0%"></i></div>
+        <div class="ptime"></div>
+      </div>
     </div>
     ${hangHTML(careButtonsHTML(plot))}`;
 }
@@ -208,10 +220,12 @@ function ripeHTML(plot) {
   return `
     ${boostHTML(plot)}
     <div class="plot-main">
-      ${art}
-      <div class="plot-name">${crop.name} · 成熟</div>
-      ${yieldLine}
-      <div class="plot-sub${care.pct ? ' warn-text' : ''}">${tail}</div>
+      <div class="plot-head">${art}</div>
+      <div class="plot-body">
+        <div class="plot-name">${crop.name} · 成熟</div>
+        ${yieldLine}
+        <div class="plot-sub${care.pct ? ' warn-text' : ''}">${tail}</div>
+      </div>
     </div>
     ${hangHTML(`<button class="btn small harvest" data-action="harvest" data-id="${plot.id}">收获</button>`)}`;
 }

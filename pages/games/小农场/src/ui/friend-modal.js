@@ -70,15 +70,30 @@ function plotCardHTML(friend, index, now) {
     const body = html.trim();
     return body ? `<div class="plot-hang">${body}</div>` : '';
   };
+  /**
+   * 一格卡片。结构和自家 `.plot` 完全一致，**图与文字分成两层**：
+   *
+   *   `.plot-head`  作物图标 / 成熟堆叠，固定不动；
+   *   `.plot-body`  名字 / 状态 / 倒计时，占满剩下的高度、超出就自己滚。
+   *
+   * 以前这里是「图 + 文字」混在同一个 flex 列里、靠 `min-height` 兜地板，
+   * 一旦某行折行（窄卡里「🐕 被守护犬盯着，这轮偷不了」就会）整块地就比同排
+   * 高出十像素。现在高度是硬锁的，多出来的字进滚动区，格子永远一样高。
+   *
+   * @param {{cls?: string, head?: string, body: string, hang?: string}} extra
+   */
   const base = (extra) => `<div class="npc-plot ${extra.cls || ''}${soil}" data-slot="${index}">${
-    boostBadge(plot)}${flagBadge(plot)}${extra.body}${hang(extra.hang || '')}</div>`;
+    boostBadge(plot)}${flagBadge(plot)
+  }<div class="plot-head">${extra.head || ''}</div><div class="plot-body">${extra.body || ''}</div>${
+    hang(extra.hang || '')}</div>`;
 
   if (!plot.cropId) {
     // 空地把土地档位写出来：升级过的地闲置着也认得出来是哪一档
     const info = SOILS[plot.soil] || SOILS.normal;
     return base({
       cls: 'empty',
-      body: `<div class="np-emoji">${info.emoji}</div><div class="np-name">空地</div><div class="np-meta">${info.name} · 闲置中</div>`,
+      head: `<div class="np-emoji">${info.emoji}</div>`,
+      body: `<div class="np-name">空地</div><div class="np-meta">${info.name} · 闲置中</div>`,
     });
   }
 
@@ -112,11 +127,12 @@ function plotCardHTML(friend, index, now) {
     const remain = social.remainYield(plot);
     return base({
       cls: 'ripe',
-      body: `
+      head: `
         <div class="np-art tappable" data-action="crop-info" data-id="${friend.id}"
           data-plot="${index}" title="查看作物详情">
           ${pileHTML(crop.emoji, remain, `${friend.id}-${plot.id || index}`)}
-        </div>
+        </div>`,
+      body: `
         <div class="np-name">${crop.name}</div>
         <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>`,
       // 偷菜是这颗格子的主动作，和自家「收获」同一位置、同一身橙色
@@ -144,8 +160,8 @@ function plotCardHTML(friend, index, now) {
       : emoji(crop.emoji);
     return base({
       cls: 'stolen',
+      head: art,
       body: `
-        ${art}
         <div class="np-name">${crop.name}</div>
         <div class="np-meta">${note}</div>`,
       // 偷不了但还能照料：💧🐛 照样挂在底边上
@@ -156,8 +172,8 @@ function plotCardHTML(friend, index, now) {
   const stage = stageOf(plot, crop, now);
   return base({
     cls: wantWater || wantPest ? 'care' : '',
+    head: emoji(stageEmoji(crop, stage)),
     body: `
-      ${emoji(stageEmoji(crop, stage))}
       <div class="np-name">${crop.name}</div>
       <div class="np-meta">${stageName(stage)}</div>
       <div class="np-time">${fmtDuration(plot.readyAt - now)}</div>`,

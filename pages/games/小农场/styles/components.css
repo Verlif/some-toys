@@ -85,32 +85,85 @@
    所以图会居中；下面的文字同样居中，但**宽度是整格**，长作物名不会像以前那样
    被 34px 的操作列挤窄换行。
 
-   ⚠️ 这里必须锁一个 min-height，否则「浇完水整片地缩短」：
-   四种状态的**内容行数不一样** ——
+   ⚠️ 高度是**硬锁**（`height` 而不是 `min-height`），内容分两层：
+     `.plot-head`  作物图 / 成熟堆叠，`flex: 0 0 auto`，永远不动；
+     `.plot-body`  名字 / 阶段 / 警示 / 进度 / 倒计时，吃掉剩下的高度，
+                   **超出就自己滚**（无滚动条，见下）。
+
+   为什么必须硬锁、不能只给个地板：四种状态的**内容行数不一样** ——
      生长中 + 缺水生虫  6 行（图 / 名 / 阶段 / ⚠警示 / 进度条 / 倒计时）
      生长中 正常        5 行
      成熟               4 行
      空地               4 行（含升级按钮）
-   缺的不是按钮（按钮是绝对定位、完全不影响高度，实测摘掉全部 .plot-hang 后
-   每块地的高度变化都是 0.0px），而是缺水那句警示文字。
-   玩家点掉 💧 的同时警示文字一起消失 → 这块地矮一截 → grid 把**整行**都缩回去。
-   所以按最高那档（6 行）给一个地板，矮的地块由 justify-content:center 居中吃掉，
-   看起来只是内容更松一点，不会有空白行。
+   `min-height` 只兜得住「比地板矮」的情况，兜不住「比地板高」：
+   长作物名 + 加成 + 被偷 + 照料不周挤在一格里折了行，这块地就比同排高十几像素，
+   grid 把**整行**一起拉高，一屏里出现两种格子高度。
+   现在高度封顶，多出来的文字进 `.plot-body` 滚动，**格子永远一样高**。
+
+   （顺带记一笔：之前「点掉 💧 整行变矮」不是按钮撑的 —— 摘掉全部 .plot-hang
+   高度变化 0.0px —— 而是「💧 缺水」那行警示文字跟着消失。硬锁之后这类问题
+   一律不会再出现。）
 
    141px = 实测 1200px 宽下 6 行内容的自然高度 137px 再留 4px 余量
    （图 75.4 + 名 16 + 阶段 15 + 警示 15 + 进度条 5 + 倒计时 14，
-   加上 5 个 5px 间距；留余量是因为不同系统的行高会有亚像素差，
-   卡在 137 上差 1px 就会重新把整行顶高）。改字号或加行时同步改这里。 */
+   加上 5 个 5px 间距；留余量是因为不同系统的行高会有亚像素差）。
+   改字号或加行时同步改这里。 */
 .plot-main {
-  flex: 1;
+  /* ⚠️ 不能写 `flex: 1` —— 它是 `flex-basis: 0%`，会**盖掉下面的 height**，
+     高度就退化成「内容有多高就多高」，硬锁当场失效（实测变成 127 / 142 两档）。
+     `min-height` 不受 flex-basis 影响，所以以前用 min-height 时没暴露这个坑。
+     `0 0 auto` = 不伸不缩、按 height 来。 */
+  flex: 0 0 auto;
   min-width: 0;
-  min-height: 141px;
+  height: 141px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 5px;
+  /* 兜底：就算哪天 `.plot-body` 的滚动失效，也绝不撑破卡片 */
+  overflow: hidden;
 }
+
+/* 图区：作物图标 / 成熟堆叠。**不参与滚动**，文字从它下面滚过去。
+   `width: 100%` 不能省 —— 父级 `.plot-main` 是 `align-items: center`，
+   不给宽度这一层会收缩成内容宽度，里面 `.plot-art { width: 100% }`
+   就失去了参照，堆叠图会缩成一小坨。 */
+.plot-head {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 文本区：占满图以下的所有高度，超出就滚。三个要点：
+     ① `min-height: 0` 不能省 —— flex 子项默认 `min-height: auto`，
+        内容再长也不会缩到 0，滚动就永远不会触发；
+     ② 滚动条**不显示**：格子只有一百来像素宽，一条 8px 的滚动条吃掉近十分之一，
+        而且没有任何「这里能滚」的暗示，露出来更像渲染错误。手机上用手指滑、
+        桌面上用滚轮，都够用；
+     ③ `overscroll-behavior: contain` —— 手指在格子里滑到底时不能「传染」给
+        整个页面（否则滑一下正文就跳走半屏）。 */
+.plot-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: inherit;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.plot-body::-webkit-scrollbar { width: 0; height: 0; }
+/* 内容不满一屏时仍然垂直居中：上下两个 auto margin 把内容挤到中间；
+   一旦溢出，auto margin 自动变 0，内容从顶部开始、能正常滚到第一行。
+   直接用 `justify-content: center` 是错的 —— flex 居中溢出时顶部会被裁掉，
+   而且**滚不到**（最上面那一截永远停在负偏移）。 */
+.plot-body > :first-child { margin-top: auto; }
+.plot-body > :last-child { margin-bottom: auto; }
 
 /* ---------- 悬挂在底边框上的操作按钮 ----------
    一条绝对定位的横排，中点压在 `.plot` 的底边框上：
@@ -341,9 +394,9 @@
    横向铺满之后内容反而比旧版更宽松。 */
 .grid.dense .plot { padding: 8px 6px 22px; }
 /* 锁死内容高度：紧凑模式下最坏情况（生长中 + 缺水生虫）是 6 行 = 110px，
-   留 3px 余量避免亚像素差顶穿。不锁的话点掉 💧 之后这块地会矮 15px，
-   grid 把整行一起缩回去 —— 见 .plot-main 的说明。 */
-.grid.dense .plot-main { min-height: 113px; gap: 2px; }
+   取 113 留 3px 余量。这里是**硬锁**（height），不是地板 ——
+   理由见 .plot-main 的说明：`min-height` 兜不住「内容比它高」的情况。 */
+.grid.dense .plot-main { height: 113px; gap: 2px; }
 .grid.dense .plot-emoji { font-size: 38px; }
 .grid.dense .plot-emoji.empty { font-size: 32px; }
 .grid.dense .plot-name { font-size: 11px; }
@@ -1392,29 +1445,30 @@
 @media (min-width: 960px) {
   .npc-plots { grid-template-columns: repeat(4, 1fr); }
 }
-/* 所有地块卡片共用同一套骨架（与 .plot 一致）：单列内容 + 悬挂在底边上的操作按钮。
+/* 所有地块卡片共用同一套骨架（与 .plot 一致）：图固定 + 文字可滚 + 悬挂在底边上的按钮。
    以前是固定 138px + .np-acts 底部横排，按钮一变多就把正文往下挤；
    现在正文占满整格、按钮绝对定位挂在底边框上，有没有按钮都一样高。
 
-   ⚠️ 高度必须**锁死**，理由和 .plot 一样但更严重：这里的行数是 3（空地 /
+   ⚠️ 高度必须**硬锁**，理由和 .plot 一样但更严重：这里的行数是 3（空地 /
    已偷）~ 4（生长中多一行倒计时），点掉 💧 只是少一颗按钮、行数不变，
    但「可偷 → 已偷」会少一行；而可偷那块带的是 65px 的堆叠图、
    其他只有 34px 的单图，两者差 31px。
-   地板取最矮的 4 行（124px）就够 —— 3 行那档会被 justify-content:center
-   居中补上空白，看起来只是松一点，不会空出一行。 */
+   所以按**最挤的那一档**锁死（见下面的 height），矮的那几档由 `.plot-body`
+   的首尾 auto margin 居中补空白，看起来只是松一点，不会空出一行。 */
 .npc-plot {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 3px;
-  /* 地板高度：本卡直接装内容（没有 .plot-main 那种中间层）。
+  /* **硬锁**高度（不是 min-height），内容超出交给内部的 .plot-body 滚动。
      取**最挤的那一档**（可偷：65px 堆叠图 + 名字 + 一行提示 = 141.6px），
-     四舍五入到 142，其余状态由 justify-content:center 居中补空白。
-     不取更小的 138：那样可偷那行会比别的行高出 3.6px，同一页里
-     「偷菜行」和「生长行」齐不了 —— 用户会以为是按钮撑的。 */
-  min-height: 142px;
+     四舍五入到 142。不取更小的 138：那样可偷那行会比别的行高出 3.6px，
+     同一页里「偷菜行」和「生长行」齐不了 —— 用户会以为是按钮撑的。
+     为什么必须硬锁见 .plot-main 的说明；这里结构完全一样：
+     `.plot-head`（图）+ `.plot-body`（文字，可滚）。 */
+  height: 142px;
+  overflow: hidden;
   /* 底部这条只留「悬挂按钮探进来那 3/4」的空间 —— 和 .plot 是同一个道理
      （30px 按钮的 21.5px + 余量） */
   padding: 10px 8px 22px;
@@ -1449,7 +1503,11 @@
 /* 可偷地块的堆叠图**直接用 .plot-art / .np-art 那一套字号**（见文件上方），
    不再为邻居单独降一档 —— 两边必须是同一堆东西，玩家才认得出这是同一机制。
    格子本身比自家宽（弹窗两列比农场三列宽），25px 摆 4.4em 绰绰有余。 */
-.npc-plot .np-name { font-size: 12px; font-weight: 600; margin-top: 3px; }
+/* ⚠️ 这里不能写 `margin-top`：`.plot-body > :first-child { margin-top: auto }`
+   是让内容垂直居中用的，两边特异性相同（0,2,0），谁在后面谁赢 ——
+   写了 margin-top 就会把居中顶掉。图与文字之间的间距由 `.plot-body` 的
+   `gap` 负责（它继承 `.npc-plot` 的 3px）。 */
+.npc-plot .np-name { font-size: 12px; font-weight: 600; }
 .npc-plot .np-meta { font-size: 10px; color: var(--muted); line-height: 1.4; }
 .npc-plot.ripe .np-meta { color: #a07818; font-weight: 700; }
 .npc-plot .np-time { font-size: 10px; color: #a8b3a5; font-variant-numeric: tabular-nums; }

@@ -75,6 +75,7 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 
 ## UI 硬约束
 - 四 tab：农场/邻居/**村中心🏡**(≠村镇🏘联机)/商店。村中心：村庄卡→总览→📢公告+📋订单(唯一入口带徽标)→🏆排行。
+- ⚠️ **地块列数只有一套**：`.grid` = 2/3/4 列（720/960 断点），`.grid.dense` 与 `.npc-plots` **只改 gap/padding/字号，不改列数**（dense 原来用 auto-fill minmax(102px) 在 430px 算出 3 列，与邻居 2 列对不上）。⚠️ `.grid.dense` 别写 `grid-template-columns`：两个类选择器优先级高于媒体查询里的 `.grid`，会把宽屏 3/4 列顶掉。
 - `.farm-bar` 首位：上排狗 + 📬信箱 + 📔日志（`.farm-log` **34×34 / emoji 17px**）/中排三键/下排 `#farmAuto`(仅买过出现)；**不堆 fixed 浮层**。
 - 村中心村民总览默认只看在线(`villagerFilter='online'`)。
 - 弹窗四段式 handle/head/body/foot，**别用 sticky 替 foot**；`.modal-sub` 不许负上边距。
@@ -83,8 +84,8 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 - 设置页 `<input type=file>` 挂 `document.body`；拖拽先判 `#subpage.show [data-role=save-drop]`。
 - **产出堆叠** `data/yield-pile.js`：`floor(n/2)+1` 张（**不是 ceil**，偶数产量偷 1 个才看得出少一张）、封顶 16（≥30 产量）；黄金角螺旋+LCG 定种（心跳 500ms 不能 random）；坐标全 em（紧凑只改 font-size）；邻居 key 带 `friend.id`；散落 `RADIUS_X=1.62/RADIUS_Y=0.66/MAX_ROT=±24°`（1.7 以上会被卡片裁角）；每图带白描边 + 双层 drop-shadow；⚠️ `.plot-art/.np-art` 要 `width:100%` + `padding:0 .5em` 否则最外侧图边缘点不动。
 - ⚠️ **`.yield-pile > i` 绝不能加 `will-change: transform`**（一行把农场从满帧拖到 24fps）：40 地 × 16 张 = 640 个元素各自提升合成层。实测 40.8ms→16.4ms、卡顿帧 53~60/70→0/70，而 JS 侧 renderFarm 只要 0.06ms —— **瓶颈在合成不在脚本**。`filter: drop-shadow` 是清白的（单删无收益），换 `text-shadow` 反而更慢（26.5ms）。判断标准：静态定位元素一律不写 `will-change`。
-- **地块骨架**（玩家与 NPC 同一套）：单列 `.plot-main` 铺满整格 + `.plot-hang` 悬挂底边（`bottom:0` + `translate(-50%, calc(25% + 1px))`，3/4 在内 1/4 在外）。⚠️ 绝对定位所以不动邻格行高；那个 **+1px 不能省**（包含块是 padding box，`bottom:0` 在 border 内侧，否则只露 5/24）。底部统一留 padding（23/22/22）。
-- ⚠️ **地块高度必须锁在 `.plot-main` 上**（`min-height:141px`，紧凑 `113px`），**别锁 `.plot`** —— 四种状态内容行数 3~6 行不等，外层 min-height 只是地板、内容一多照样顶穿。病根不是悬挂按钮（摘光全部 `.plot-hang` 高度变化 0.0px），是「💧 缺水」那行警示文字：点掉 💧 时它同时消失 → 矮 15px → grid 整行缩回。连带约束：`ripeHTML` 的「照料不周」**不能单独占一行**（成熟是 4.4em 堆叠图，多一行 156px 比生长中 6 行 137px 还高），要和「还可收获」挤一行、压缩成 `照料 −40% · 最后一茬`。验证口径：同一 `top` 上高度集合只能有一个值。
+- **地块骨架**（玩家与 NPC 同一套）：`.plot-main` / `.npc-plot` 是**两层**容器 —— `.plot-head`（图，不滚）+ `.plot-body`（文字，超出自己滚），外挂 `.plot-hang` 悬挂底边（`bottom:0` + `translate(-50%, calc(25% + 1px))`，3/4 在内 1/4 在外）。⚠️ 绝对定位所以不动邻格行高；那个 **+1px 不能省**（包含块是 padding box，`bottom:0` 在 border 内侧，否则只露 5/24）。底部统一留 padding（23/22/22）。
+- ⚠️ **地块高度是硬锁 `height`（141px / 紧凑 113px），不是 `min-height`**：min-height 只兜「比地板矮」，兜不住「比地板高」（长名字+加成+被偷折行就撑开整行）。现在超出的文字进 `.plot-body` 滚动（`min-height:0` + `overflow-y:auto` + 隐藏滚动条 + `overscroll-behavior:contain`，居中靠首尾 `margin:auto` 不用 `justify-content:center`）。⚠️ **`.plot-main` 不能写 `flex:1`** —— 它是 `flex-basis:0%` 会盖掉 `height`，硬锁当场失效（实测变 127/142 两档）；`min-height` 不受影响所以旧版没暴露。⚠️ `.plot-head` 要给 `width:100%`，否则 `align-items:center` 让它收缩、里面 `.plot-art{width:100%}` 失去参照、堆叠图缩成一坨。验证口径：同一 `top` 上高度集合只能有一个值。
 - **铲除 / 施肥在作物详情弹窗**，不在土地上：`plotActionsHTML` 用 `minmax(0,1fr) auto`（施肥吃剩余 + 铲除 36×34 方框），`.pa-row{max-width:300px;margin:auto}` 上限居中；成熟后只剩铲除→改胶囊。`.plot-side` / `.np-acts` 已整块删除。
 - **地块 aura**：`inset:-1px` 对齐 border box；环向内收 N px 则半径 −N px；金边 4px 靠 `padding` 不给 border。⚠️ 贴外沿会在圆角抗锯齿处漏底色。
 - **长按连发** `ui/hold.js`：`.qty-btn` 委托，只在 `modal.js`/`subpage.js` 各挂一次，业务零改动。⚠️ `touch-action` 只能写一条。

@@ -218,17 +218,18 @@
   .grid { grid-template-columns: repeat(4, 1fr); }
 }
 
-/* 解锁地块变多后由 JS 切上紧凑排布，避免手机上要滚十几屏 */
+/* 解锁地块变多后由 JS 切上紧凑排布：只收紧 gap / padding 和字号，**不动列数**。
+ *
+ * ⚠️ 这里以前是 `repeat(auto-fill, minmax(102px, 1fr))`，430px 下算出来是 3 列，
+ * 而邻居弹窗的 `.npc-plots` 是固定 2 列 —— 同一个游戏里两块地一个三排一个两排，
+ * 改一处样式得记两套断点。现在列数**完全交给上面的 `.grid`**（2 / 3 / 4），
+ * 紧凑模式只负责「更挤一点」，这样玩家农场与邻居永远同一套列数。
+ *
+ * ⚠️ 别在这里再写 `grid-template-columns`：`.grid.dense` 是两个类选择器，
+ * 优先级高于媒体查询里的 `.grid`（一个类），写了就会把宽屏的三列/四列顶掉。 */
 .grid.dense {
-  grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
   gap: 8px;
   padding: 12px 10px;
-}
-@media (min-width: 720px) {
-  .grid.dense { grid-template-columns: repeat(3, 1fr); }
-}
-@media (min-width: 960px) {
-  .grid.dense { grid-template-columns: repeat(4, 1fr); }
 }
 
 
