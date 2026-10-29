@@ -88,7 +88,7 @@
    ⚠️ 高度是**硬锁**（`height` 而不是 `min-height`），内容分两层：
      `.plot-head`  作物图 / 成熟堆叠，`flex: 0 0 auto`，永远不动；
      `.plot-body`  名字 / 阶段 / 警示 / 进度 / 倒计时，吃掉剩下的高度，
-                   **超出就自己滚**（无滚动条，见下）。
+                   **超出就裁掉**（不滚，见下）。
 
    为什么必须硬锁、不能只给个地板：四种状态的**内容行数不一样** ——
      生长中 + 缺水生虫  6 行（图 / 名 / 阶段 / ⚠警示 / 进度条 / 倒计时）
@@ -98,7 +98,7 @@
    `min-height` 只兜得住「比地板矮」的情况，兜不住「比地板高」：
    长作物名 + 加成 + 被偷 + 照料不周挤在一格里折了行，这块地就比同排高十几像素，
    grid 把**整行**一起拉高，一屏里出现两种格子高度。
-   现在高度封顶，多出来的文字进 `.plot-body` 滚动，**格子永远一样高**。
+   现在高度封顶，多出来的文字被 `.plot-body` 裁掉，**格子永远一样高**。
 
    （顺带记一笔：之前「点掉 💧 整行变矮」不是按钮撑的 —— 摘掉全部 .plot-hang
    高度变化 0.0px —— 而是「💧 缺水」那行警示文字跟着消失。硬锁之后这类问题
@@ -120,11 +120,13 @@
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  /* 兜底：就算哪天 `.plot-body` 的滚动失效，也绝不撑破卡片 */
+  /* 兜底：万一哪一格的内容撑破了 .plot-body，也绝不撑破卡片。
+     ⚠️ 这一层可以裁（`.plot-hang` 是它的**兄弟**，不受影响）；
+     `.npc-plot` 那边不行 —— 见那边的说明。 */
   overflow: hidden;
 }
 
-/* 图区：作物图标 / 成熟堆叠。**不参与滚动**，文字从它下面滚过去。
+/* 图区：作物图标 / 成熟堆叠。**不参与裁切**，文字区在它下面。 */
    `width: 100%` 不能省 —— 父级 `.plot-main` 是 `align-items: center`，
    不给宽度这一层会收缩成内容宽度，里面 `.plot-art { width: 100% }`
    就失去了参照，堆叠图会缩成一小坨。 */
@@ -136,14 +138,17 @@
   justify-content: center;
 }
 
-/* 文本区：占满图以下的所有高度，超出就滚。三个要点：
-     ① `min-height: 0` 不能省 —— flex 子项默认 `min-height: auto`，
-        内容再长也不会缩到 0，滚动就永远不会触发；
-     ② 滚动条**不显示**：格子只有一百来像素宽，一条 8px 的滚动条吃掉近十分之一，
-        而且没有任何「这里能滚」的暗示，露出来更像渲染错误。手机上用手指滑、
-        桌面上用滚轮，都够用；
-     ③ `overscroll-behavior: contain` —— 手指在格子里滑到底时不能「传染」给
-        整个页面（否则滑一下正文就跳走半屏）。 */
+/* 文本区：占满图以下的所有高度，**超出直接裁掉，不滚**。
+     ⚠️ 第 56 轮改：原来是 `overflow-y: auto`，想让挤不下的文字自己滚。实测
+     这条路是错的 —— 格子在手机上只有一百来像素高，手指一碰正文就被这个内层
+     滚动容器接管，**整页滚不动了**（想往下翻农场，结果只在格子里挪几个像素）。
+     格子里能滚的内容本来就不多（最多裁掉最后一行倒计时），拿整页的手感去换
+     这点信息不值。现在 `overflow: hidden`：不可滚 = 不抢手势，超出就裁。
+
+     ① `min-height: 0` 留着 —— 没有它 flex 子项按内容撑开，`.plot-main` 的
+        硬锁高度会被顶穿（裁切也失效）；
+     ② 不用写 `overscroll-behavior` / `scrollbar-width` 了：根本没有滚动条，
+        也没有滚动可以「传染」给页面。 */
 .plot-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -152,16 +157,13 @@
   flex-direction: column;
   align-items: center;
   gap: inherit;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
+  overflow: hidden;
 }
-.plot-body::-webkit-scrollbar { width: 0; height: 0; }
 /* 内容不满一屏时仍然垂直居中：上下两个 auto margin 把内容挤到中间；
-   一旦溢出，auto margin 自动变 0，内容从顶部开始、能正常滚到第一行。
-   直接用 `justify-content: center` 是错的 —— flex 居中溢出时顶部会被裁掉，
-   而且**滚不到**（最上面那一截永远停在负偏移）。 */
+   一旦溢出，auto margin 自动变 0，内容从顶部开始排、**底部**被裁掉
+   （留头不留尾 —— 名字和阶段比最后一行倒计时重要）。
+   直接用 `justify-content: center` 是错的：flex 居中溢出时上下各裁一半，
+   连作物名都可能看不见。 */
 .plot-body > :first-child { margin-top: auto; }
 .plot-body > :last-child { margin-bottom: auto; }
 
@@ -1473,7 +1475,7 @@
 @media (min-width: 960px) {
   .npc-plots { grid-template-columns: repeat(4, 1fr); }
 }
-/* 所有地块卡片共用同一套骨架（与 .plot 一致）：图固定 + 文字可滚 + 悬挂在底边上的按钮。
+/* 所有地块卡片共用同一套骨架（与 .plot 一致）：图固定 + 文字裁切 + 悬挂在底边上的按钮。
    以前是固定 138px + .np-acts 底部横排，按钮一变多就把正文往下挤；
    现在正文占满整格、按钮绝对定位挂在底边框上，有没有按钮都一样高。
 
@@ -1489,14 +1491,19 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  /* **硬锁**高度（不是 min-height），内容超出交给内部的 .plot-body 滚动。
+  /* **硬锁**高度（不是 min-height），内容超出交给内部的 .plot-body 裁掉。
      取**最挤的那一档**（可偷：65px 堆叠图 + 名字 + 一行提示 = 141.6px），
      四舍五入到 142。不取更小的 138：那样可偷那行会比别的行高出 3.6px，
      同一页里「偷菜行」和「生长行」齐不了 —— 用户会以为是按钮撑的。
      为什么必须硬锁见 .plot-main 的说明；这里结构完全一样：
-     `.plot-head`（图）+ `.plot-body`（文字，可滚）。 */
+     `.plot-head`（图）+ `.plot-body`（文字，超出裁掉）。
+     ⚠️ **这一层绝不能写 `overflow: hidden`**（第 56 轮修的）：`.plot-hang`
+       是它的**直接子元素**，探出底边的那 1/4 会被卡片自己裁掉 —— 表现就是
+       「按钮在边缘内被吞掉，另一半被土地下边缘切平」。玩家那边之所以没事，
+       是因为裁切在 `.plot-main` 上，而按钮是 `.plot-main` 的兄弟。
+       这里没有中间那层，所以裁切只能交给 `.plot-body`（它只管文字）。
+       正文真的撑破时靠 `.plot-body` 的 `overflow: hidden` 兜，够用。 */
   height: 142px;
-  overflow: hidden;
   /* 底部这条只留「悬挂按钮探进来那 3/4」的空间 —— 和 .plot 是同一个道理
      （30px 按钮的 21.5px + 余量） */
   padding: 10px 8px 22px;
