@@ -778,9 +778,17 @@ function actContribute(npc, ctx, at) {
   if (!res) return null;
 
   const parts = [];
-  if (res.coins) parts.push(`💰 ${res.coins} 金币`);
+  if (res.coins) parts.push(`💰 ${formatCoins(res.coins)} 金币`);
   if (res.crystals) parts.push(`💠 升级水晶 ×${res.crystals}`);
-  return { emoji: '🚧', text: `往村建设投了 ${parts.join('、')}` };
+  // 投了东西就报投入 —— 卖水晶是顺手做的买卖，不必挤进同一条动态
+  if (parts.length) return { emoji: '🚧', text: `往村建设投了 ${parts.join('、')}` };
+
+  // 只卖了水晶（这一趟没有可投的）：换个说法，
+  // 否则会拼出「往村建设投了 」这种半截句子
+  return {
+    emoji: '💠',
+    text: `把 ${res.soldCount} 枚升级水晶卖了 ${formatCoins(res.soldCoins)} 金币`,
+  };
 }
 
 /**
@@ -802,7 +810,7 @@ function actAdventure(npc, farm, ctx, at) {
 
   // 村庄升级水晶：和玩家同一档规则（50% 额外掉一个）。进的是村庄库存，
   // 所以走 ctx.addCrystal —— 模拟层不认存取，只认注入的函数
-  if (trip.crystal) ctx?.addCrystal?.(trip.crystal, npc, at);
+  if (trip.crystal) ctx?.addCrystal?.(trip.crystal, npc);
 
   const net = trip.net >= 0 ? `赚了 ${formatCoins(trip.net)}` : `亏了 ${formatCoins(-trip.net)}`;
   const crystalNote = trip.crystal ? `，还捡到一枚 ${trip.crystal} 级升级水晶` : '';
@@ -1139,7 +1147,11 @@ export function bulkAdvance(npc, until, ctx) {
 
   // 远期也会去买藏宝图，但只抽有限次，免得离线一年要跑几千轮
   for (let i = 0, n = Math.min(visits, 20); i < n; i += 1) {
-    if (Math.random() < NPC_ADVENTURE_CHANCE) rollNpcAdventure(npc);
+    if (Math.random() >= NPC_ADVENTURE_CHANCE) continue;
+    const trip = rollNpcAdventure(npc);
+    // 早先这里把返回值直接丢掉，于是聚合补算那一段挖到的水晶凭空消失
+    // （金币没丢，函数内部已经改过 npc.coins）。第 55 轮一并接上
+    if (trip?.crystal) ctx?.addCrystal?.(trip.crystal, npc);
   }
 
   // 地里作物按随机进度重建，保证状态看起来是「正在长的」，且尽量不重样

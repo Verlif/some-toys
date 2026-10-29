@@ -1,6 +1,10 @@
 /**
  * 包裹：查看已拥有的种子、藏宝图与道具，可以按数量丢弃。
  *
+ * 第 55 轮把原来的三段「标题 + 列表」改成**标签分类**：种子一多，
+ * 三个分区摞在一起要滑很久才能看到道具，而且看不出各自有多少种。
+ * 现在一屏只看一类，标签上带计数。
+ *
  * 丢弃走一次确认弹窗（上半是物品信息、下半是数量操作与确认）——
  * 和商店的购买弹窗同一套布局，玩家在两个页面间的操作肌肉记忆一致。
  */
@@ -13,6 +17,23 @@ import { fmtDuration } from '../../core/utils.js';
 import { closeModal, openModal } from '../modal.js';
 import { openSeedModal } from '../seed-detail.js';
 import { showToast } from '../toast.js';
+
+/** 标签分类。`key` 同时是 `data-id`，切档只重绘内容不重建页面 */
+const TABS = [
+  { key: 'seed', icon: '🌱', label: '种子' },
+  { key: 'map', icon: '🧭', label: '藏宝图' },
+  { key: 'item', icon: '🧪', label: '道具' },
+];
+
+/** 当前标签，默认种子（包裹里最常见的东西） */
+let activeTab = 'seed';
+
+/** 每档空掉时的提示：说清楚「去哪弄」比只说「空空如也」有用 */
+const EMPTY_TIPS = {
+  seed: '🌱<br>还没有种子<br>去商店买一些吧～',
+  map: '🧭<br>还没有藏宝图<br>去商店「藏宝图」买一张吧～',
+  item: '🧪<br>还没有道具<br>去商店买点化肥和工具吧～',
+};
 
 /** 包裹里三种东西共用一套丢弃弹窗：背包 key → 展示信息 */
 const LABELS = new Map();
@@ -32,17 +53,13 @@ for (const id of ITEM_IDS) {
 }
 
 /**
- * 一个分区。
- *
- * ⚠️ `rows` 通常是 `map()` 出来的**数组**，必须自己 join ——
- * 直接塞进模板字符串会调用 `Array#toString()`，于是每两项之间多出一个逗号
- * （包裹里种子一多就露馅：「小麦种子 … , 🗺️ 一级藏宝图」）。
- * @param {string} title
- * @param {string[]|string} rows
+ * 标签栏。计数用 `.chip-num`，和村中心的「全部 / 在线」是同一套长相。
+ * @param {Record<string, number>} counts
  */
-function section(title, rows) {
-  const html = Array.isArray(rows) ? rows.join('') : rows;
-  return html ? `<div class="section-title">${title}</div><div class="list">${html}</div>` : '';
+function tabsHTML(counts) {
+  return `<div class="sub-tabs">${TABS.map((t) => `
+    <button class="filter-chip ${activeTab === t.key ? 'active' : ''}"
+            data-action="pkg-tab" data-id="${t.key}">${t.icon} ${t.label}<i class="chip-num">${counts[t.key] || 0}</i></button>`).join('')}</div>`;
 }
 
 /**
@@ -179,14 +196,19 @@ export const packagePage = {
         permanent: Boolean(ITEMS[id].permanent),
       }));
 
-    const html = section('🌱 种子', seeds)
-      + section('🧭 藏宝图', maps)
-      + section('🧪 道具', items);
-    body.innerHTML = html
-      || '<div class="empty-tip">🎒<br>包裹空空如也<br>去商店采购种子和道具吧～</div>';
+    const groups = { seed: seeds, map: maps, item: items };
+    const counts = { seed: seeds.length, map: maps.length, item: items.length };
+    const rows = groups[activeTab] || [];
+
+    body.innerHTML = tabsHTML(counts) + (rows.length
+      ? `<div class="list">${rows.join('')}</div>`
+      : `<div class="empty-tip">${EMPTY_TIPS[activeTab] || ''}</div>`);
   },
 
   actions: {
+    'pkg-tab'(el) {
+      activeTab = TABS.some((t) => t.key === el.dataset.id) ? el.dataset.id : 'seed';
+    },
     discard(el) {
       openDiscardModal(el.dataset.id);
     },

@@ -53,6 +53,20 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 ⚠️ 投入图标用 **🚧** 不用 🧱（U+1F9F1 老字体渲染成方框）。
 ⚠️ 升阶 `grantHonorSeeds`：玩家 `add`、邻居 `npc.bag[seedId]+=1`；`cleanNpcBag()` 须放行 `seed_` 前缀。
 
+## 水晶（第 55 轮：可卖）
+`CRYSTAL_SELL={1:500,2:1_000,3:2_000,4:5_000}`（`data/village.js`，`crystalSellPrice`）；入口 `sellCrystal(tier,n)`，**只 commit farms 一张表**（水晶挂 `farm.village.stock`，不进 `state.bag`）。
+⚠️ 建设日志只由 `invest`/`contributeCore` 写 —— **`addCrystal` 不写**（捡到不算建设）。`contributeCore` 的 `note` 用 `if (coins || crystals)` 包住，纯卖水晶不写。
+⚠️ `CONTRIB_STYLE` 每档多一个 `crystalInvest`（.3~.85），**0.3 是硬下限**：能卖之后推到 0，村民一拿到就卖光，村庄进度反而更慢。
+⚠️ 投水晶量必须 `max(1, floor(mine × ratio))`（`floor(2×0.15)=0` = 愿意投却投不出）。
+村民岔路：`tier.crystal` 之外的档位**一律卖掉折现**（堵「99 枚 1 级永远用不上」）；当前档 `mine>=2` 才掷，卖时**留 1 枚**。
+⚠️ `sellCrystal` 必须补 `emit(EVENTS.INVENTORY)` —— 仓库靠它重绘，只发 `VILLAGE` 列表停在卖之前。
+
+## 子页面标签分类（第 55 轮）
+仓库 `bag.js`：🌾农产品 / 💠其他（水晶在这档）。包裹 `package.js`：🌱种子 / 🧭藏宝图 / 🧪道具（删掉了原来的 `section()` 分区标题）。
+⚠️ **tab 状态只能挂模块变量 `activeTab`**：每个动作后 `renderCurrent()` 整页重绘，状态进 DOM 会丢。
+芯片复用商店 `.filter-chip` + `.chip-num`（带计数），外壳 `.sub-tabs` 只管排布：横滚、不换行、无滚动条。⚠️ **不能 `position: sticky`**（子页面本身是滚动容器，会压住标题）。
+`confirmSell(rows)` 已泛化成行数据 `{key,name,unit,have,doSell}`，作物与水晶共用一套确认框。
+
 ## 排行榜
 11榜，每天14:00结算；前三递减、并列都发；实时榜上/昨日在下。
 

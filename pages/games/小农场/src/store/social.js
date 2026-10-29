@@ -180,7 +180,7 @@ function simCtx(farm = farmView()) {
     // 村庄（第 48 轮）：产量加成、挖到水晶、每日祈福。
     // 同样是「注入」而不是让模拟层去 import store —— 它只认这些函数
     villageYield: villageYield(),
-    addCrystal: (tier, who, at) => addCrystal(tier, who, at),
+    addCrystal: (tier, who) => addCrystal(tier, who),
     prayNpc: (npc, at) => prayNpc(npc, at),
     // 村民也会往村建设里投钱投水晶（第 49 轮）—— 同样注入，模拟层不 import store
     contributeNpc: (npc, at) => contributeCore(npc, at),

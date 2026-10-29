@@ -97,6 +97,26 @@ export const crystalName = (tier) => CRYSTAL_META[tier]?.name || `${tier} 级升
 /** 一档水晶的图标 */
 export const crystalEmoji = (tier) => CRYSTAL_META[tier]?.emoji || '🔹';
 
+/**
+ * 一档水晶的收购价（第 55 轮）。
+ *
+ * 水晶原来只能投进村庄，攒到「用不上的档位」就彻底作废 —— 实测 20 天里
+ * 村民手里囤了 99 枚 1 级 + 37 枚 2 级，而村庄要的是 3 级。给一条变现
+ * 出口之后，旧档水晶至少还能换成金币，不至于烂在存档里。
+ *
+ * 档位越高越值钱，但**明显低于「投进村庄」的价值**：一枚 4 级水晶
+ * 在 4→5 那档值 920,000 / 144 ≈ 6,400 金币的共建份额，卖价 5,000 ——
+ * 卖是兜底，不是更划算的选择。
+ */
+export const CRYSTAL_SELL = { 1: 500, 2: 1_000, 3: 2_000, 4: 5_000 };
+
+/**
+ * 一档水晶能卖多少钱。
+ * @param {number} tier 1~4
+ * @returns {number} 认不出的档位返回 0
+ */
+export const crystalSellPrice = (tier) => CRYSTAL_SELL[tier] || 0;
+
 /** 冒险结算时额外掉水晶的概率（玩家与 NPC 同一档规则） */
 export const CRYSTAL_DROP_CHANCE = 0.5;
 

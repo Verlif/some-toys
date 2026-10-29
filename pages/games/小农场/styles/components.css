@@ -773,6 +773,34 @@
 }
 .list { padding: 0 13px; }
 
+/* ---------- 子页面的标签分类（仓库 / 包裹，第 55 轮） ---------- */
+/* 长相直接复用商店筛选的 `.filter-chip`，这里只管排布：
+   横向可滚、不换行、不显示滚动条（和 `.filter-bar` 一个口径）。
+   ⚠️ 别给它 `position: sticky`：子页面自己已经是一层滚动容器，
+   再吸顶会和顶栏抢层级，滑到一半时标签会压在标题上。 */
+.sub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 13px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sub-tabs::-webkit-scrollbar { width: 0; height: 0; }
+.sub-tabs .filter-chip { flex-shrink: 0; }
+
+/* 标签下面的一句说明（比如「水晶能卖、卖了会怎样」） */
+.sub-hint {
+  margin: 0 13px 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #f4f8f1;
+  border: 1px solid var(--line);
+  color: #6b7a68;
+  font-size: 11.5px;
+  line-height: 1.65;
+}
+
 .empty-tip {
   text-align: center;
   color: var(--muted);

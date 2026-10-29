@@ -157,7 +157,7 @@ export async function finishRun() {
   const crystal = rollCrystalDrop(run.tier);
   if (crystal) {
     addCrystal(crystal);
-    notify(`💎 山道尽头捡到一枚${crystalName(crystal)}，可以拿去建村了`, 'gold');
+    notify(`💎 山道尽头捡到一枚${crystalName(crystal)}，可以拿去建村，用不上的档位能在仓库卖掉`, 'gold');
   }
 
   const summary = { tier: run.tier, earned, totalRewards: run.totalRewards, value, crystal };

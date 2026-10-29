@@ -39,6 +39,7 @@ import {
   PRAY_CHANCE,
   crystalEmoji,
   crystalName,
+  crystalSellPrice,
   npcPrayValue,
   rollPrayReward,
   villageTier,
@@ -137,14 +138,19 @@ export function villageLogs(now = Date.now()) {
  * 玩家看到的是「我仓库里一枚水晶都没有，怎么就被投出去了」。归谁所有之后，
  * 村民必须自己挖到才能投，玩家投的也必然是自己捡的那些。
  *
- * 仍然不进背包 / 道具表：它是村庄建设的材料，不是能卖、能送、能进图鉴的道具，
- * 塞进道具表会让商店、包裹、图鉴、联机校验全都要跟着改。
+ * 仍然不进背包 / 道具表：它是村庄建设的材料，不是能送、能进图鉴的道具。
+ * 第 55 轮起它**可以卖**（仓库 → 其他），但卖出入口直接读 `v.stock`，
+ * 没有搬进 `state.bag` —— 搬一次要动存档结构、联机校验、图鉴、包裹，
+ * 换来的只是「少一处读取」，不值。
+ *
+ * ⚠️ **这里不写建设日志**（第 55 轮用户要求）：挖到只是「捡到了」，
+ * 还不算为村子做了什么；只有真正投进去才算建设。日志只由 `invest` /
+ * `contributeCore` 写。
  *
  * @param {number} tier 1~4
  * @param {object} [who] 挖到的人（玩家不传）
- * @param {number} [at]
  */
-export function addCrystal(tier, who = null, at = Date.now()) {
+export function addCrystal(tier, who = null) {
   const v = villageState();
   const level = Math.min(4, Math.max(1, Math.floor(tier) || 1));
   if (who && who.id !== PLAYER_ID) {
@@ -153,9 +159,47 @@ export function addCrystal(tier, who = null, at = Date.now()) {
   } else {
     v.stock[level] = (v.stock[level] || 0) + 1;
   }
-  note(at, crystalEmoji(level), `${who?.name || state.farm.name} 挖到了 ${crystalName(level)} ×1`);
   emit(EVENTS.VILLAGE);
   return level;
+}
+
+/**
+ * 卖掉手上的升级水晶（第 55 轮）。
+ *
+ * 卖的是 `v.stock` —— 玩家自己挖到的那一份。村民的水晶不在这里，
+ * 他们的卖出决策在 `contributeCore` 里按性格掷。
+ *
+ * 与 `invest` 的分工：投入推进村庄进度，卖出只换金币，**不动进度**。
+ *
+ * @param {number} tier 1~4
+ * @param {number} [n] 数量，默认全卖
+ * @returns {Promise<{ok: boolean, reason?: string, coins?: number, count?: number}>}
+ */
+export async function sellCrystal(tier, n) {
+  const v = villageState();
+  const level = Math.min(4, Math.max(1, Math.floor(tier) || 1));
+  const have = Math.max(0, Math.floor(v.stock[level] || 0));
+  const price = crystalSellPrice(level);
+  if (!price) return { ok: false, reason: '这个档位的水晶卖不出去' };
+  if (have <= 0) return { ok: false, reason: `没有${crystalName(level)}了` };
+
+  const qty = Math.max(0, Math.min(have, Math.floor(Number(n) || have)));
+  if (qty <= 0) return { ok: false, reason: '至少要卖一枚' };
+
+  const income = qty * price;
+  v.stock[level] = have - qty;
+  player.addCoins(income);
+  player.addLog('💰', `卖出 ${crystalEmoji(level)}${crystalName(level)} ×${qty}，+${income} 💰`);
+  // 水晶挂在 `farm.village` 上，不碰背包 —— 只写 farms 这一张表
+  await commit({ farms: [state.farm] });
+  // ⚠️ 这里必须发 INVENTORY：仓库页（「💠 其他」那一档）靠它重绘。
+  // 只发 VILLAGE 的话，列表会停在卖之前的样子 —— 水晶已经没了，
+  // 行还在原地，玩家会以为没卖出去。
+  emit(EVENTS.INVENTORY);
+  emit(EVENTS.VILLAGE);
+  emit(EVENTS.PLAYER);
+  notify(`卖出 ${crystalEmoji(level)}${crystalName(level)} ×${qty}，+${income} 💰`);
+  return { ok: true, coins: income, count: qty };
 }
 
 /* ---------- 升级 ---------- */
@@ -420,23 +464,30 @@ export const NPC_GIVE_CAP = 800;
  *
  * 数值上刻意让 `eager` 大约是 `half` 的四五倍 —— 差距要看得出来，
  * 但不能让「意思意思」的那几位干脆不掏（那又变成「只有几个人在建村」）。
+ *
+ * 第 55 轮加了 `crystalInvest`：手上**有当前档位**的水晶时，选择「投进村」
+ * 而不是「卖掉换钱」的概率。水晶能卖了之后必须给一个倾向值，否则村民
+ * 会一拿到就卖光，村庄进度反而更慢 —— 所以**最低也给到 0.3**，
+ * 爱占便宜的赵六也是三次里投一次。
  */
 const CONTRIB_STYLE = {
   // 热心 / 勤勉 / 场面人：村里的事当自己的事
-  friendly: { tier: 'eager', ratio: 0.55, cap: 1400, crystal: 0.7 },
-  diligent: { tier: 'eager', ratio: 0.5, cap: 1200, crystal: 0.65 },
-  boss: { tier: 'eager', ratio: 0.5, cap: 1200, crystal: 0.6 },
+  friendly: { tier: 'eager', ratio: 0.55, cap: 1400, crystal: 0.7, crystalInvest: 0.85 },
+  diligent: { tier: 'eager', ratio: 0.5, cap: 1200, crystal: 0.65, crystalInvest: 0.8 },
+  boss: { tier: 'eager', ratio: 0.5, cap: 1200, crystal: 0.6, crystalInvest: 0.7 },
   // 爱钻研 / 精打细算：算得清楚，出得起也愿意出
-  scholar: { tier: 'normal', ratio: 0.4, cap: 900, crystal: 0.5 },
-  thrifty: { tier: 'normal', ratio: 0.35, cap: 800, crystal: 0.5 },
+  scholar: { tier: 'normal', ratio: 0.4, cap: 900, crystal: 0.5, crystalInvest: 0.65 },
+  thrifty: { tier: 'normal', ratio: 0.35, cap: 800, crystal: 0.5, crystalInvest: 0.55 },
   // 悠闲 / 生意人 / 爱占便宜：意思意思
-  leisurely: { tier: 'half', ratio: 0.18, cap: 300, crystal: 0.25 },
-  merchant: { tier: 'half', ratio: 0.15, cap: 260, crystal: 0.2 },
-  greedy: { tier: 'half', ratio: 0.1, cap: 180, crystal: 0.15 },
+  leisurely: { tier: 'half', ratio: 0.18, cap: 300, crystal: 0.25, crystalInvest: 0.45 },
+  merchant: { tier: 'half', ratio: 0.15, cap: 260, crystal: 0.2, crystalInvest: 0.35 },
+  greedy: { tier: 'half', ratio: 0.1, cap: 180, crystal: 0.15, crystalInvest: 0.3 },
 };
 
 /** 默认档位（名单里出现新性格时用） */
-const CONTRIB_DEFAULT = { tier: 'normal', ratio: NPC_GIVE_RATIO, cap: NPC_GIVE_CAP, crystal: 0.5 };
+const CONTRIB_DEFAULT = {
+  tier: 'normal', ratio: NPC_GIVE_RATIO, cap: NPC_GIVE_CAP, crystal: 0.5, crystalInvest: 0.6,
+};
 
 /** 这个邻居出钱出力的风格 */
 export function contribStyle(npc) {
@@ -464,7 +515,8 @@ export function contribStyle(npc) {
  *
  * @param {object} npc
  * @param {number} [at]
- * @returns {?{coins: number, crystals: number}} 投了多少；没投返回 null
+ * @returns {?{coins: number, crystals: number, soldCount: number, soldCoins: number}}
+ *   投了多少、另外卖了多少枚水晶换了多少金币；什么都没做返回 null
  */
 export function contributeCore(npc, at = Date.now()) {
   const v = villageState();
@@ -488,16 +540,47 @@ export function contributeCore(npc, at = Date.now()) {
     const spare = Math.max(0, npc.coins - NPC_KEEP_COINS);
     coins = Math.min(needCoins, style.cap, Math.floor(spare * style.ratio));
   }
+  // ① 用不上的旧档水晶（第 55 轮）：村庄这一档只认 `tier.crystal`，
+  //    别的档位留着永远不会被用上，升级时还会一起清零 —— 能卖就卖掉换钱。
+  //    实测「1 级水晶囤了 99 枚、村庄却在要 3 级」正是从这里堵死的。
+  let soldCount = 0;
+  let soldCoins = 0;
+  for (const key of Object.keys(npc.crystals || {})) {
+    const t = Number(key);
+    if (t === tier.crystal) continue;
+    const n = Math.max(0, Math.floor(npc.crystals[key] || 0));
+    const price = crystalSellPrice(t);
+    if (n <= 0 || price <= 0) continue;
+    soldCount += n;
+    soldCoins += n * price;
+    delete npc.crystals[key];
+  }
+  if (soldCoins) npc.coins += soldCoins;
+
+  // ② 当前档位：按性格掷一次「投进村」还是「卖掉换钱」。
+  //    `crystalInvest` 最低也是 0.3 —— 水晶能卖之后不能让村民一拿到就卖光，
+  //    否则村庄进度反而比改动前更慢。
   let crystals = 0;
   if (needCrystals > 0) {
     // 只掏自己挖到的那些（第 53 轮）。早先从 v.stock 里拿，等于村民
     // 用玩家捡的水晶做人情 —— 玩家那边「仓库里一枚都没有却被投出去」的 bug。
     const mine = Math.max(0, Math.floor(npc.crystals?.[tier.crystal] || 0));
-    // 仍然至少留 1 枚给自己：`have >= 2` 才动手
-    const share = Math.floor(mine * style.crystal);
-    if (mine >= 2 && share > 0) crystals = Math.min(needCrystals, share);
+    // 仍然至少留 1 枚给自己：`mine >= 2` 才动手
+    if (mine >= 2) {
+      if (Math.random() < style.crystalInvest) {
+        // 投：性格越热心掏得越多，但**至少 1 枚** ——
+        // `floor(2 × 0.15)` 是 0，等于「愿意投却投不出去」，白掷一次
+        crystals = Math.min(needCrystals, Math.max(1, Math.floor(mine * style.crystal)));
+      } else {
+        // 卖：留 1 枚在手上，下一天还有机会投
+        const n = mine - 1;
+        soldCount += n;
+        soldCoins += n * crystalSellPrice(tier.crystal);
+        npc.crystals[tier.crystal] = 1;
+      }
+    }
   }
-  if (!coins && !crystals) return null;
+  if (!coins && !crystals && !soldCount) return null;
 
   if (coins) {
     npc.coins -= coins;
@@ -509,13 +592,17 @@ export function contributeCore(npc, at = Date.now()) {
     v.crystals += crystals;
   }
 
-  const parts = [];
-  if (coins) parts.push(`💰 ${formatCoins(coins)} 金币`);
-  if (crystals) parts.push(`${crystalEmoji(tier.crystal)} ${crystalName(tier.crystal)} ×${crystals}`);
-  // 只记投入了什么（第 53 轮）：早先还带「（很上心）」「（意思意思）」，
-  // 玩家读日志时以为那是 bug 提示，其实只是想说明性格差异 —— 但差异
-  // 本来就体现在数量上，写出来反而喧宾夺主。
-  note(at, '🚧', `${npc.name} 投入了 ${parts.join(' 与 ')}`);
+  // 只有「投进村」才写建设日志（第 55 轮）：挖到只是捡到，卖出只是买卖，
+  // 都不算为村子做了什么。日志里每一条都必须是实打实的进度。
+  if (coins || crystals) {
+    const parts = [];
+    if (coins) parts.push(`💰 ${formatCoins(coins)} 金币`);
+    if (crystals) parts.push(`${crystalEmoji(tier.crystal)} ${crystalName(tier.crystal)} ×${crystals}`);
+    // 只记投入了什么（第 53 轮）：早先还带「（很上心）」「（意思意思）」，
+    // 玩家读日志时以为那是 bug 提示，其实只是想说明性格差异 —— 但差异
+    // 本来就体现在数量上，写出来反而喧宾夺主。
+    note(at, '🚧', `${npc.name} 投入了 ${parts.join(' 与 ')}`);
+  }
 
   // 记账并只留今天（理由同 prayDay：留着历史会长成「人数 × N」的表）
   //
@@ -530,5 +617,5 @@ export function contributeCore(npc, at = Date.now()) {
 
   checkUpgrade(at);
   emit(EVENTS.VILLAGE);
-  return { coins, crystals };
+  return { coins, crystals, soldCount, soldCoins };
 }
