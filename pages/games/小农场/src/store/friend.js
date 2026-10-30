@@ -9,7 +9,8 @@
  *   - **NPC → 玩家**：`friendTick` 每次上线掷 20%，过了 0.8 倍门槛就往信箱寄一封
  *     `action: 'friend-request'` 的信，玩家点头才算成。
  *   - **NPC → NPC**：同样 20%、同样 0.8 倍门槛（两边取更难的），自动成，
- *     只寄一封「谁和谁成了好友」的消息让玩家知道村里发生了什么。
+ *     两边各自的动态里各记一条 —— **不进玩家信箱**（第 61 轮用户定死：
+ *     村民之间的社交是他们自己的事，玩家的信箱只放玩家自己的事）。
  *   - **解除**：玩家手动点，或者好感跌破门槛一半（见 store/relation.js）。
  *
  * NPC 那一侧是**纯函数 + 副作用注入**：npc-sim 不认识 store，它通过 `ctx` 拿到
@@ -185,7 +186,8 @@ function hasPendingRequest(npcId) {
  *
  * @param {object} npc
  * @param {number} at 这一次上线的时刻（补算时是过去）
- * @returns {?{emoji: string, text: string}} 写进邻居动态的一条，没有就是 null
+ * @returns {?{emoji: string, text: string, farms?: string[]}} 写进邻居动态的一条，
+ *   没有就是 null。`farms` 是「这次还动了别的村民」的 id 清单（见 npcToNpc）
  */
 export function friendTick(npc, at) {
   return resolvePendingAsk(npc, at) || proactiveTry(npc, at);
@@ -269,10 +271,13 @@ function proactiveTry(npc, at) {
 }
 
 /**
- * NPC 之间互相加好友（用户定死：也进信箱）。
+ * NPC 之间互相加好友。
  *
- * 门槛同样按 0.8 倍、两边各判各的（取更难的那位）—— 自动成，不用谁点头，
- * 但玩家在信箱里看得见「谁和谁处到了一起」，村庄才像活的。
+ * 门槛同样按 0.8 倍、两边各判各的（取更难的那位）—— 自动成，不用谁点头。
+ *
+ * **不寄信箱**（第 61 轮用户定死）：村民之间谁跟谁处得来，是村里自己的热闹，
+ * 玩家要看就去那位村民的动态里看。信箱里只有玩家自己的事 ——
+ * 「NPC 和 NPC 成了好友」摆在玩家的信箱里，玩家既没参与也没法处理。
  */
 function npcToNpc(npc, at) {
   const pool = state.friends.filter((other) => other.id !== npc.id
@@ -285,14 +290,14 @@ function npcToNpc(npc, at) {
   if (rel < proactiveFriendThreshold(npc.personality, target.personality)) return null;
 
   setFriend(npc.id, target.id, true);
-  pushNotice({
-    kind: 'friend',
-    emoji: '🤝',
-    title: `${npc.name} 和 ${target.name} 成了好友`,
-    body: '两位村民处到了一起',
-    by: target.id,
-    from: '村庄',
-    at,
-  });
-  return { emoji: '🤝', text: `跟 ${target.name} 成了好友` };
+  // 发起者自己那一条**不在这里写**：`runStep` 会拿这个返回值
+  // （`{ emoji, text }`）调一次 `log(npc, ...)`，这里再写就是重复两条。
+  // 但对方那条没人替他写 —— 他这趟可能压根没上线，得手动补。
+  logNpc(target, at, '🤝', `跟 ${npc.name} 成了好友`);
+  // ⚠️ `farms` 不能省：上面那条日志改的是**另一位村民**的行。
+  // 在线演出（social.js 的 runLiveStep）提交的是「玩家 + 这位发起人」，
+  // 不把 target 报上去，这条日志就只活在内存里，刷新即丢。
+  // 离线批量那条线走 farmRows(state.farm, ...state.friends) 全量写，用不到它 ——
+  // 但两条线共用同一个返回值，所以必须带（与 npc-sim 接单时的 `farms` 同款）。
+  return { emoji: '🤝', text: `跟 ${target.name} 成了好友`, farms: [target.id] };
 }

@@ -11,7 +11,6 @@
  */
 import { on, EVENTS } from '../core/bus.js';
 import { dogBreed } from '../data/dogs.js';
-import { formatCoins } from '../core/utils.js';
 
 /** 停留时长：够看清是谁家的狗，又不至于烦人 */
 const HOLD_MS = 1700;
@@ -32,9 +31,9 @@ function dismiss() {
 
 /**
  * 播放一次提示。
- * @param {{breed?: string, owner?: string, fine?: number}} payload
+ * @param {{breed?: string, owner?: string}} payload
  */
-export function showDogCaught({ breed, owner = '邻居', fine = 0 } = {}) {
+export function showDogCaught({ breed, owner = '邻居' } = {}) {
   dismiss();
 
   const dog = dogBreed(breed);
@@ -49,7 +48,6 @@ export function showDogCaught({ breed, owner = '邻居', fine = 0 } = {}) {
     <div class="dc-emoji">${emoji}</div>
     <div class="dc-title">被守护犬抓住了！</div>
     <div class="dc-sub">${owner} 家的${name}${dog ? `（拦截 ${Math.round(dog.rate * 100)}%）` : ''}</div>
-    ${fine > 0 ? `<div class="dc-fine">罚款 ${formatCoins(fine)} 💰</div>` : ''}
   `;
   layer.addEventListener('click', dismiss);
   document.body.appendChild(layer);

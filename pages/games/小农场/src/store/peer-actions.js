@@ -3,14 +3,16 @@
  *
  * 铁律：**农场主人是权威**。访客只发「我想在这块地上做这个」，
  * 由对方在自己的存档里校验并执行，再把结果回给访客；
- * 访客本地只做「自己这一侧」的记账（经验、扣道具、拿到收成、交罚款）。
+ * 访客本地只做「自己这一侧」的记账（经验、扣道具、拿到收成）。
  *
  * 这样即使访客改了内存，也改不动别人家的地：
  *   - 每块地每轮只能偷 1 个 → 主人侧用 `stolen` 拦住，重放无效；
  *   - 被狗抓住 → 主人侧把**所有**作物标 `guarded`，本轮都偷不了；
  *   - 浇水 / 杀虫 / 施肥都先校验状态（真的缺水？这轮没施过肥？），
- *     状态不对直接回 `ok:false`；
- *   - 罚款由访客扣、报给主人入账，钱不会凭空生出来。
+ *     状态不对直接回 `ok:false`。
+ *
+ * 被狗赶走**不罚款**（第 61 轮用户定死）：两边都不动钱，
+ * 原先的「访客扣钱 → act:pay 报给主人入账」整条报文链路已删除。
  *
  * 请求带 `req` + 4 秒超时：对方掉线时不会让按钮一直转。
  */
@@ -26,7 +28,7 @@ import { produceId } from '../data/keys.js';
 import { needsPest, needsWater, serveCare } from '../data/care.js';
 import { stageBounds } from '../data/stages.js';
 import { BOOST_CAP, PEST_YIELD_BONUS, WATER_SPEEDUP } from '../data/friends.js';
-import { DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, catchChance, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { DOG_FOOD_SATIETY, DOG_SATIETY_MAX, catchChance, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { isStealable } from './social.js';
 import { completeGuide } from './codex.js';
 import { commit } from '../core/storage.js';
@@ -42,9 +44,6 @@ const pending = new Map();
 let seq = 0;
 let inited = false;
 
-/** 主人侧记下的罚款：req → 金额，防止对方事后报一个离谱的数字来「送钱/刷钱」 */
-const fines = new Map();
-
 /**
  * 接上 `act` 报文。启动时调一次。
  */
@@ -55,7 +54,6 @@ export function initPeerActions() {
     if (!msg || !peerId) return;
     if (msg.t === MSG.ACT) handleAct(msg, peerId);
     else if (msg.t === MSG.ACT_RES) handleResult(msg);
-    else if (msg.t === MSG.ACT_PAY) handlePay(msg, peerId);
   });
 }
 
@@ -167,7 +165,7 @@ export async function fertPeer(peerId, index, itemId) {
 
 /**
  * 偷对方的菜。主人判定能不能偷 / 有没有被狗抓住；
- * 访客只负责「拿到 1 个」或「交罚款」。
+ * 访客只负责「拿到 1 个」或者「这趟白跑」。
  */
 export async function stealPeer(peerId, index) {
   const peer = peerList().find((item) => item.connectId === peerId);
@@ -182,16 +180,9 @@ export async function stealPeer(peerId, index) {
 
   const crop = CROPS[cropId];
   if (res.caught) {
-    const fine = Math.max(0, Math.round(res.fine || 0));
-    const paid = Math.min(state.farm.coins, fine);
-    player.addCoins(-paid);
-    player.addLog('🐕', `偷 ${peer.name} 家被守护犬抓住，罚款 ${paid} 金币`);
-    await commit({ farms: [state.farm] });
-    emit(EVENTS.PLAYER);
-    // 罚款归对方：单独回一条，让对方入账
-    sendToPeer(peerId, { t: MSG.ACT_PAY, req: res.req, paid });
-    emit(EVENTS.DOG_CAUGHT, { breed: peer.dog?.breed, owner: peer.name, fine: paid });
-    notify(`🐕 被 ${peer.name} 家的守护犬抓住了！罚款 ${paid} 金币，这一轮他家都偷不了`, 'gold');
+    player.addLog('🐕', `偷 ${peer.name} 家被守护犬赶了出来`);
+    emit(EVENTS.DOG_CAUGHT, { breed: peer.dog?.breed, owner: peer.name });
+    notify(`🐕 被 ${peer.name} 家的守护犬赶出来了！这一轮他家都偷不了`, 'gold');
     return { ok: false, caught: true };
   }
 
@@ -365,19 +356,17 @@ function handleAct(msg, peerId) {
     const breed = dogBreed(state.farm.dog?.breed);
     const chance = breed ? catchChance(breed.rate, dogSatietyAt(state.farm.dog, now)) : 0;
     if (chance > 0 && Math.random() < chance) {
-      // 抓住一次，整座农场的作物这一轮都进不去
+      // 抓住一次，整座农场的作物这一轮都进不去（第 61 轮起不再罚款）
       for (const item of state.farm.plots) {
         if (item.cropId) item.guarded = true;
       }
-      const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE);
-      fines.set(req, fine);
       // 狗狗王：我家的狗拦下了真人访客 —— 和拦下 NPC 是同一件事
       bump(PLAYER_ID, 'dog', 1, now);
-      player.addLog('🐕', `守护犬抓住了想偷菜的 ${peer.name}（罚款 ${fine} 金币）`, now, peer.id);
+      player.addLog('🐕', `守护犬把想偷菜的 ${peer.name} 赶了出去`, now, peer.id);
       commit({ farms: [state.farm] })
         .then(() => emit(EVENTS.FARM))
         .catch((error) => console.error(error));
-      reply({ ok: false, caught: true, fine });
+      reply({ ok: false, caught: true });
       return;
     }
 
@@ -387,27 +376,6 @@ function handleAct(msg, peerId) {
     applyHostChange(reply, { ok: true });
     return;
   }
-}
-
-/** 罚款到账 */
-function handlePay(msg, peerId) {
-  const peer = peerList().find((item) => item.connectId === peerId);
-  if (!peer) return;
-  // 罚款金额由对方报过来，但**上限是主人自己记下的那笔**：
-  // 不夹的话对方可以报一个大数给自己刷金 / 给主人塞钱。
-  const req = String(msg.req || '').slice(0, 64);
-  const fine = fines.get(req) || 0;
-  fines.delete(req);
-  const paid = Math.max(0, Math.min(fine, Math.round(Number(msg.paid) || 0)));
-  if (!paid) return;
-  player.addCoins(paid);
-  player.addLog('💰', `${peer.name} 交了 ${paid} 金币罚款`, Date.now(), peer.id);
-  commit({ farms: [state.farm] })
-    .then(() => {
-      emit(EVENTS.PLAYER);
-      emit(EVENTS.FARM);
-    })
-    .catch((error) => console.error(error));
 }
 
 /** 主人改完自己的地：落盘、回执、让推送把新快照发出去 */

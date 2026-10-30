@@ -71,7 +71,6 @@ import {
 } from '../data/relation.js';
 import { SOILS } from '../data/soils.js';
 import {
-  DOG_FINE_MULTIPLE,
   DOG_FOOD_PRICE,
   DOG_FOOD_SATIETY,
   DOG_SATIETY_MAX,
@@ -396,11 +395,11 @@ function npcGuardChance(owner, at) {
  *
  * 邻居家与玩家农场一视同仁 —— 偷玩家的时候会写进玩家日志，
  * 玩家收获时按 stolenCount 扣掉。守护犬也是同一套：
- * 不管偷谁，被狗抓住都要按想偷的果实价值 ×DOG_FINE_MULTIPLE 罚款，
- * 罚金归被偷的农场主；小偷钱不够就倾家荡产。
+ * 不管偷谁，被狗赶走就是这一趟白跑 —— **不罚款**（第 61 轮用户定死），
+ * 小偷没有损失，被偷的那家也没进账。
  *
  * **只对好友下手**（第 57 轮）：非好友的地连看都不看 —— 与玩家那侧同一道门。
- * **偷菜也不掉好感**了：顺走、被逮住都只动钱，不动交情。
+ * **偷菜也不掉好感**了：顺走、被逮住都只是「偷没偷到」的事，不动交情。
  */
 function actSteal(npc, ctx, at) {
   const chance = interactChance(STEAL_CHANCE[npc.steal] || 0);
@@ -435,34 +434,26 @@ function actSteal(npc, ctx, at) {
 
   // 守护犬：玩家农场与邻居农场一视同仁。品种决定基础拦截率，
   // 饱腹度决定它现在有没有力气。被赶走时这一趟白跑 ——
-  // 作物没少、邻居也没拿到钱，还要倒贴一笔罚款。
+  // 作物没少、谁的钱也没动（第 61 轮：不罚款）。
   const guard = isPlayer && farm.dogGuardChanceAt
     ? farm.dogGuardChanceAt(at)
     : npcGuardChance(owner, at);
   if (guard > 0 && Math.random() < guard) {
-    const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE);
-    // 有多少罚多少：NPC 也可能穷到叮当响，不记负债
-    const paid = Math.min(npc.coins, fine);
-    npc.coins -= paid;
-    // 人赃并获也只是钱的事：偷菜与好感是两套东西（第 57 轮）
-
     if (isPlayer) {
       farm.caught += 1;
       // 狗狗王：玩家农场拦下一次
       ctx.daily?.(farm.id, 'dog', 1, at);
-      farm.addCoins?.(paid);
       // by = npc.id：这条是「邻居对玩家农场做的事」，农场日志的邻居动向 tab 靠它认
-      farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了，罚了 ${formatCoins(paid)} 金币（拦截率 ${Math.round(guard * 100)}%）`, npc.id);
-      farm.news?.(at, '🐕', `${npc.name} 溜进你的农场想顺菜，被守护犬赶了出来并罚了款`);
-      return { emoji: '🐕', text: `溜进 ${farm.name} 家想顺菜，被守护犬抓住罚了 ${formatCoins(paid)} 金币` };
+      farm.log(at, '🐕', `守护犬把 ${npc.name} 赶走了（拦截率 ${Math.round(guard * 100)}%）`, npc.id);
+      farm.news?.(at, '🐕', `${npc.name} 溜进你的农场想顺菜，被守护犬赶了出来`);
+      return { emoji: '🐕', text: `溜进 ${farm.name} 家想顺菜，被守护犬赶了出来` };
     }
 
-    owner.coins += paid;
     // 狗狗王：这座邻居农场拦下一次
     ctx.daily?.(owner.id, 'dog', 1, at);
-    log(owner, at, '🐕', `守护犬抓住了想顺菜的 ${npc.name}，罚了 ${formatCoins(paid)} 金币`);
-    farm?.news?.(at, '🐕', `${npc.name} 想顺 ${owner.name} 家的菜，被守护犬抓住罚了款`);
-    return { emoji: '🐕', text: `想顺 ${owner.name} 家的菜，被守护犬抓住罚了 ${formatCoins(paid)} 金币` };
+    log(owner, at, '🐕', `守护犬把想顺菜的 ${npc.name} 赶了出去`);
+    farm?.news?.(at, '🐕', `${npc.name} 想顺 ${owner.name} 家的菜，被守护犬赶了出来`);
+    return { emoji: '🐕', text: `想顺 ${owner.name} 家的菜，被守护犬赶了出来` };
   }
 
   plot.stolen = true;

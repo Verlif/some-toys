@@ -31,6 +31,7 @@ import {
   commonsCanTake,
   commonsPlotCount,
   commonsRemain,
+  commonsRipeDeadline,
   rollCommonsCrop,
 } from '../data/commons.js';
 import { villageYield } from './village.js';
@@ -218,10 +219,14 @@ export function sowCommons(now = Date.now()) {
 }
 
 /**
- * 世界时钟每一步调一次：补地块 → 清空拿光的 → 摇产量 → 补种。
+ * 世界时钟每一步调一次：补地块 → 摇产量 → 清空该换种的 → 补种。
  *
  * 返回 true 表示公共地在这一步里变过，调用方（world.js）要把它算进
  * 「这次推进动过东西、需要落盘」。
+ *
+ * ⚠️ **顺序不能倒**：先 `rollRipe` 再判断清空。`commonsRemain` 是拿
+ * `pendingYield` 减 `taken` 算的，没摇过产量的地两者都是 0，先判就会把
+ * 一块刚熟、一份都没被拿的地当成「已经被拿光了」直接铲掉重种。
  *
  * @param {number} [now]
  * @returns {boolean}
@@ -232,16 +237,19 @@ export function advanceCommons(now = Date.now()) {
 
   let dirty = ensurePlots();
 
-  // 已经被拿光的地：清空，交给下面的 sowCommons 重新种上
+  if (rollRipe(now)) dirty = true;
+
+  // 该换种的两条路（第 59 轮加了第二条）：
+  //   ① 已经被拿光了 —— 没东西可拿，留着只是占位置；
+  //   ② 熟了满 1 天 —— 还剩一两份没人要也算到期。
+  // 只看 ① 的话，剩一份的地会永远停在那儿，地里越来越空。
   for (const plot of current.plots) {
     if (!plot.cropId || now < plot.readyAt) continue;
-    if (!plot.pendingYield) continue;
-    if (commonsRemain(plot) > 0) continue;
+    if (commonsRemain(plot) > 0 && now < commonsRipeDeadline(plot)) continue;
     clearCommonsPlot(plot);
     dirty = true;
   }
 
-  if (rollRipe(now)) dirty = true;
   if (sowCommons(now)) dirty = true;
   return dirty;
 }
@@ -464,12 +472,14 @@ export function npcCommonsTick(npc, at) {
  * 播种交给 `advanceCommons`（世界时钟）与 `openCommonsModal`（开弹窗前）。
  *
  * @param {number} [now]
- * @returns {{level: number, plots: object[], ripe: number, mine: number, total: number}}
+ * @returns {{level: number, plots: object[], ripe: number, mine: number, ready: number, water: number, pest: number, total: number}}
  */
 export function commonsSnapshot(now = Date.now()) {
   const current = farm();
   if (!current) {
-    return { level: 1, plots: [], ripe: 0, mine: 0, total: 0 };
+    return {
+      level: 1, plots: [], ripe: 0, mine: 0, ready: 0, water: 0, pest: 0, total: 0,
+    };
   }
   ensurePlots();
   rollRipe(now);
@@ -478,11 +488,25 @@ export function commonsSnapshot(now = Date.now()) {
     && commonsCanTake(plot, PLAYER_ID)).length;
   const mine = current.plots.filter((plot) => (plot.takers || []).includes(PLAYER_ID)
     && plot.cropId && now >= plot.readyAt).length;
+  // 熟了的总块数（含「你拿过了」的那些）：入口文案要靠它区分
+  // 「地里都在长」与「都熟了但这一轮你拿过了」—— 后者在 1 天窗口里
+  // 可能持续好几个小时，说「都在长」就是骗人
+  const ready = current.plots.filter((plot) => plot.cropId && now >= plot.readyAt).length;
+  // 入口那颗方格右下角要报的两个数（第 60 轮）：只算「还在长」的地 ——
+  // 熟了的浇水捉虫本来就不让点了（waterCommons / pestCommons 会挡），
+  // 算进去只会出现一个按不动的数字
+  const growing = current.plots.filter((plot) => plot.cropId && now < plot.readyAt);
+  const water = growing.filter((plot) => needsWater(plot, now)).length;
+  const pest = growing.filter((plot) => needsPest(plot, now)).length;
+
   return {
     level: current.level,
     plots: current.plots,
     ripe,
     mine,
+    ready,
+    water,
+    pest,
     total: current.plots.length,
   };
 }

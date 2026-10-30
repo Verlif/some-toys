@@ -6,12 +6,17 @@
  *     （金币 / 水晶 / 祈福）、投入资源 / 每日祈福 / 建设日志三个入口。
  *     升级是**自动的**：三项同时达标就当场升，不需要按「升级」按钮 ——
  *     祈福每天只有一次，玩家不需要在某个瞬间守着点；
- *   - **村民总览卡**：在线人数 / 总人数（都含玩家自己）+ 在线头像行。
- *     点它是**弹窗**（全部名单 + 全部 / 在线 筛选），页面本身不再展开名单；
- *   - **两枚入口**：📢 公告栏（时报弹窗）、📋 订单（子页面）。
- *     订单按钮右上角常驻当前订单总数 —— 这是订单唯一入口（「更多」里已移除）；
- *   - **🏆 排行榜卡**：两列 —— 左列 6 个榜单，右列昨日冠军
- *     （并列第一折成「+N」）。点开是排行榜弹窗（`openRankModal`）。
+ *   - **村民总览卡 + 🏆 排行榜卡 同一行**（1fr / 2fr）：总览是在线人数 / 总人数
+ *     （都含玩家自己）+ 单行在线头像，点它弹窗看全部名单；排行榜两列 ——
+ *     左列 6 个榜单、右列昨日冠军（并列第一折成「+N」）；
+ *   - **第二块**（第 61 轮，用户选定的方案）：左 1/3 是 📢 公告栏（上）与
+ *     📋 订单（下）两格竖排，右 2/3 是 🏞 公共用地 —— 它跨两行，是一块
+ *     大方格，右下角常驻 💧/🐛/🧺 三个数。订单按钮右上角常驻当前订单总数，
+ *     这是订单唯一入口（「更多」里已移除）。
+ *
+ * ⚠️ 公共用地方格**不能被内容撑开**：内部元素全部绝对定位，
+ * 高度由 `min-height` 定死，文字多了裁掉 —— 它一长高，左边两格也跟着长，
+ * 整页就被这一块推下去了。
  *
  * 「在线」是 NPC 的挂机窗口（见 data/friends.js 的 onlineMs）：总览计数、
  * 头像行、名单里的圆点与灰度都跟着它走 —— 分钟 TICK 与邻居上线事件都会刷，
@@ -66,24 +71,20 @@ let villagerFilter = 'online';
 const orderCount = (now = Date.now()) => npcOrders(now).length + myOrders(now).length;
 
 /**
- * 公共用地入口的副标题（第 58 轮）。
+ * 公共用地方格右下角的三行统计（第 60 轮）。
  *
- * 这一行要能回答「现在值不值得点进去」：有几块能收 → 直接说数字，
- * 一块都没有就说还在长，别让人白点一次。
+ * 一行一个：可浇水 / 可捉虫 / 已成熟。三个数都是「现在能做几件事」，
+ * 所以为 0 的那行只压灰、**不隐藏** —— 三行位置固定，数字忽隐忽现
+ * 反而看不出变化。
  *
- * ⚠️ 还要兜住「一片空地」：`commonsSnapshot` 不播种（那是开弹窗前与
- * 世界时钟的事），刚开新档点进村中心时可能真的六块全空 ——
- * 这时候说「都在长」就是骗人。
- * @param {{ripe: number, total: number, plots: object[]}} snap
+ * @param {{water: number, pest: number, ready: number}} snap
  */
-const commonsHint = (snap) => {
-  if (snap.ripe) return `${snap.ripe} 块能收了 · 共 ${snap.total} 块`;
-  const plots = snap.plots || [];
-  if (plots.length && plots.every((plot) => !plot.cropId)) {
-    return `${snap.total} 块地 · 村里马上补种`;
-  }
-  return `${snap.total} 块地都在长 · 熟了先到先得`;
-};
+const commonsStatsHTML = (snap) => `
+  <span class="ca-stats">
+    <i class="${snap.water ? '' : 'zero'}" data-role="commons-water">💧 ${snap.water}</i>
+    <i class="${snap.pest ? '' : 'zero'}" data-role="commons-pest">🐛 ${snap.pest}</i>
+    <i class="${snap.ready ? '' : 'zero'}" data-role="commons-ripe">🧺 ${snap.ready}</i>
+  </span>`;
 
 /** 在线人数（含玩家）与总人数（含玩家） */
 function onlineStats(now = Date.now()) {
@@ -92,24 +93,50 @@ function onlineStats(now = Date.now()) {
   return { online, total: state.friends.length + 1 };
 }
 
-/** 在线村民的头像行：玩家在最前，最多 10 个，多了折成 +N */
-function facesHTML(now, limit = 10) {
+/**
+ * 在线村民的头像行：玩家在最前，**一行排开**。
+ *
+ * 不在 JS 里定死「最多几个」—— 这张卡只占 1/3 宽，能放几个完全取决于屏幕，
+ * 所以全量渲染，交给 `fitFaces()` 实测裁剪；末尾那颗同尺寸圆框里写「…」。
+ */
+function facesHTML(now) {
   const online = [
     { avatar: state.farm.avatar, name: '你' },
     ...state.friends.filter((f) => isNpcOnline(f, now)),
   ];
-  const shown = online.slice(0, limit);
-  const more = online.length - shown.length;
-  return shown
+  return online
     .map((v) => `<span class="co-face" title="${escapeHtml(v.name)}">${v.avatar}</span>`)
-    .join('') + (more > 0 ? `<span class="co-face more">+${more}</span>` : '');
+    .join('') + '<span class="co-face more">…</span>';
 }
 
-/** 总览卡副标题：你 + N 位邻居 · M 位正在线 */
-function subText(online) {
-  const neighborsOnline = online - 1;
-  return `你 + ${state.friends.length} 位邻居`
-    + (neighborsOnline > 0 ? ` · ${neighborsOnline} 位邻居正在线` : ' · 邻居们都不在');
+/**
+ * 把头像行裁到「正好放得下」。
+ *
+ * 量一颗头像的宽度 + 间距，一次算出能放几个，然后一次性挂 `.off` ——
+ * 不要「收一个量一次」：32 位邻居在线时会连续强制重排三十多次，
+ * 切到村中心那一下能明显卡一下。
+ *
+ * 放不下时**留一格给省略号**：末尾那颗同尺寸圆框，视觉上占的宽度和头像一样，
+ * 所以能放 N 个就只显示 N−1 个头像。玩家永远在最前，不会被收掉。
+ *
+ * @param {HTMLElement} [root] 村中心根节点
+ */
+function fitFaces(root = byId('center')) {
+  const box = root?.querySelector('[data-role="faces"]');
+  if (!box) return;
+  const more = box.querySelector('.co-face.more');
+  const faces = [...box.querySelectorAll('.co-face:not(.more)')];
+  if (!faces.length) return;
+
+  const width = faces[0].offsetWidth || 22;
+  const gap = Number.parseFloat(getComputedStyle(box).columnGap) || 0;
+  const room = box.clientWidth;
+  // 每个元素占「宽 + 间距」，最后一个不用留间距
+  const fit = Math.floor((room + gap) / (width + gap));
+  const show = fit >= faces.length ? faces.length : Math.max(1, fit - 1);
+
+  faces.forEach((face, i) => face.classList.toggle('off', i >= show));
+  more?.classList.toggle('show', show < faces.length);
 }
 
 /* ---------- 村民总览弹窗 ---------- */
@@ -288,13 +315,14 @@ function rankCardHTML() {
       <i class="cr-ico">${r.icon}</i>${r.label}
     </span>`).join('');
 
+  // 右列只留头像（第 60 轮）：卡片压到 2/3 宽之后，头像 + 名字 + 徽标
+  // 三个东西挤在 100px 里，名字必定被截成两个字。名字的完整信息在弹窗里，
+  // 这里只要「认得出是谁」——「是不是你」改用一圈绿边，不占宽度
   const champs = rows.map((r) => {
     if (!r.champ) return '<span class="cr-item empty">—</span>';
     return `
-      <span class="cr-item champ">
-        <i class="cr-ava">${r.champ.avatar}</i>
-        <b>${escapeHtml(r.champ.name)}</b>
-        ${r.champ.me ? '<i class="cr-me">你</i>' : ''}
+      <span class="cr-item champ" title="${escapeHtml(r.champ.name)}">
+        <i class="cr-ava${r.champ.me ? ' me' : ''}">${r.champ.avatar}</i>
         ${r.champ.more > 0 ? `<i class="cr-more">+${r.champ.more}</i>` : ''}
       </span>`;
   }).join('');
@@ -303,7 +331,6 @@ function rankCardHTML() {
     <div class="center-rank" data-action="center-rank" role="button" tabindex="0">
       <div class="cr-head">
         <span class="cr-title">🏆 排行榜</span>
-        <span class="cr-sub">昨日冠军 · 点开看实时名次</span>
         <span class="cr-go">›</span>
       </div>
       <div class="cr-grid">
@@ -506,15 +533,15 @@ export function renderCenter() {
 
   setHTML(root, `
     ${villageCardHTML(now)}
-    <div class="center-head">
+    <div class="center-duo">
       <div class="center-overview" data-action="center-villagers" role="button" tabindex="0">
-        <div class="co-title">🏡 村民总览</div>
-        <div class="co-count"><b data-role="online">${online}</b> <span>/ ${total} 在线</span></div>
-        <div class="co-sub" data-role="sub">${subText(online)}</div>
+        <div class="co-title">🏡 村民</div>
+        <div class="co-count"><b data-role="online">${online}</b><span data-role="total">/${total}</span></div>
         <div class="co-faces" data-role="faces">${facesHTML(now)}</div>
       </div>
+      ${rankCardHTML()}
     </div>
-    <div class="center-acts">
+    <div class="center-main">
       <button class="center-act board" data-action="center-board">
         <span class="ca-ico">📢</span>
         <span class="ca-body"><b>公告栏</b><i data-role="news-n">${newsList().length} 条村镇动态</i></span>
@@ -526,12 +553,15 @@ export function renderCenter() {
       </button>
       <button class="center-act commons" data-action="center-commons">
         <span class="ca-ico">🏞</span>
-        <span class="ca-body"><b>公共用地</b><i data-role="commons-hint">${commonsHint(commons)}</i></span>
-        <i class="ca-badge ${commons.ripe ? '' : 'zero'}" data-role="commons-n">${commons.ripe}</i>
+        <span class="ca-body"><b>公共用地</b><i class="ca-hint">先到先得 · 熟了摆 1 天换种</i></span>
+        <i class="ca-total">共 ${commons.total} 块</i>
+        ${commonsStatsHTML(commons)}
       </button>
     </div>
-    ${rankCardHTML()}
   `);
+
+  // 头像行要实测宽度才知道能放几个 —— 必须等节点进 DOM 之后再裁
+  fitFaces(root);
 }
 
 /**
@@ -542,14 +572,18 @@ function refreshMarks() {
   const root = byId('center');
   if (!root || !root.innerHTML) return;
   const now = Date.now();
-  const { online } = onlineStats(now);
+  const { online, total } = onlineStats(now);
 
   const count = root.querySelector('[data-role="online"]');
   if (count) count.textContent = String(online);
-  const sub = root.querySelector('[data-role="sub"]');
-  if (sub) sub.textContent = subText(online);
+  // 总人数会随村庄升级涨（新住户搬来），不是渲染时那一个数就定死了
+  const totalEl = root.querySelector('[data-role="total"]');
+  if (totalEl) totalEl.textContent = `/${total}`;
   const faces = root.querySelector('[data-role="faces"]');
-  if (faces) faces.innerHTML = facesHTML(now);
+  if (faces) {
+    faces.innerHTML = facesHTML(now);
+    fitFaces(root);
+  }
 
   const newsN = root.querySelector('[data-role="news-n"]');
   if (newsN) newsN.textContent = `${newsList().length} 条村镇动态`;
@@ -564,15 +598,18 @@ function refreshMarks() {
   const hint = root.querySelector('[data-role="order-hint"]');
   if (hint) hint.textContent = orders ? '有活干了' : '暂时没有单';
 
-  // 公共用地：能收几块、地里还有没有货 —— 跟订单一样常驻跟着走
+  // 公共用地方格右下角的三行：浇水 / 捉虫 / 已成熟
   const commons = commonsSnapshot(now);
-  const commonsBadge = root.querySelector('[data-role="commons-n"]');
-  if (commonsBadge) {
-    commonsBadge.textContent = String(commons.ripe);
-    commonsBadge.classList.toggle('zero', !commons.ripe);
+  for (const [role, icon, n] of [
+    ['commons-water', '💧', commons.water],
+    ['commons-pest', '🐛', commons.pest],
+    ['commons-ripe', '🧺', commons.ready],
+  ]) {
+    const el = root.querySelector(`[data-role="${role}"]`);
+    if (!el) continue;
+    el.textContent = `${icon} ${n}`;
+    el.classList.toggle('zero', !n);
   }
-  const commonsText = root.querySelector('[data-role="commons-hint"]');
-  if (commonsText) commonsText.textContent = commonsHint(commons);
 
   // 名单里的圆点 / 灰度（弹窗开着的时候才有节点）：与邻居页共用一套
   refreshOnline();
@@ -658,6 +695,17 @@ export function mountCenter() {
   on(EVENTS.TICK, refreshMarks);
   // 村庄：投入 / 祈福 / 升级（含邻居祈福把计数推上去）→ 只重绘那一张卡
   on(EVENTS.VILLAGE, paintVillage);
-  // 公共用地：玩家照料 / 拿走、村民顺手来一趟 → 入口上的「能收几块」跟着变
+  // 公共用地：玩家照料 / 拿走、村民顺手来一趟 → 方格右下角那三个数跟着变
   on(EVENTS.COMMONS, refreshMarks);
+
+  // 转屏 / 拉窗口：卡片宽度变了，头像行能放几个也跟着变。
+  // 用一帧合并，拖窗口时 resize 一秒能来几十次，每次都量一遍会抖
+  let faceRaf = 0;
+  window.addEventListener('resize', () => {
+    if (faceRaf) return;
+    faceRaf = requestAnimationFrame(() => {
+      faceRaf = 0;
+      fitFaces();
+    });
+  });
 }

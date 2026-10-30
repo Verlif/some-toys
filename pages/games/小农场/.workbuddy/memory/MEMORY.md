@@ -1,125 +1,126 @@
 # 项目长期约定 · 西米的农场
 
-纯前端原生 ESM、零构建，`node server.mjs`（5173），IndexedDB `sun_farm_v2`，无后端。
-DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣耀）/40 地/8 档土/52 邻居（开局 32）/11 榜。
+纯前端原生 ESM、零构建，`node server.mjs`（5173），IndexedDB `sun_farm_v2`，无后端。DB/key/APP 名保持 `sun_farm*`。
+**271 作物**（165 常规+102 限定+4 荣耀）/40 地/8 档土/52 邻居（开局 32）/11 榜。**详细设计一律见 `docs/01~09`，本文件只留踩过的坑。**
 
 ## 工程
 - 分层 `ui→store→core`，`data` 只读；store 唯一改状态、**禁 DOM**，提示走 `notify()`。
-- 不写测试，只跑 `npm run check`；中文注释+JSDoc，勤清死代码。
+- 不写测试，只跑 `npm run check`（9 项）；中文注释+JSDoc，勤清死代码。
 - `data/{crops,soils,progression}.js` 由 `tools/gen-data.mjs` 生成，**不手改**（改完重跑）。
 - 多表事务 `commit({…})` **动了才带**；`data-action` 必须字面量（`check.mjs` 扫不到模板拼接）；删/搬函数后 `grep` 全调用点。
 
 ## 存档
-`state={farm,friends[32~52],peers,bag,relations,news,dailyRows}`，玩家邻居同形。七表：farm/plot/log/news/relation/inventory/daily。
-⚠️ 复合主键每段必有值；日志 `{at,emoji,text,by}`（`by`=邻居id）；新字段在 `normalizePlot/normalizeNpc/normalizePlayerFarm` 补。
-备份：`core/zip.js`+`core/backup.js`，导入五步校验过才弹确认；导出前 `flushDaily()`，导入后 `suspendPersist()+freezeWrites()` 双闸 + 整页 reload。
+七表：farm/plot/log/news/relation/inventory/daily。`state={farm,friends,peers,bag,relations,news,dailyRows}`，玩家邻居同形。
+⚠️ 复合主键每段必有值；日志 `{at,emoji,text,by}`（`by`=邻居id）；新字段须在 `normalizePlot/normalizeNpc/normalizePlayerFarm` 补。
+备份 `core/zip.js`+`core/backup.js`：导出前 `flushDaily()`，导入五步校验→`suspendPersist()+freezeWrites()` 双闸→整页 reload。
 
 ## 世界时钟
-`advanceWorld` 逐段：⓪下线→①上线→①'空闲→②订单过期→③跨14:00结算→④收炉→⑤自动机器→⑥公共用地补种。
-`stepMsFor` ≤7天1分，翻倍×2封顶60分；`VISIT_BUDGET=30000` 超则最早段 bulkAdvance。
-⚠️ 补算期跨表动作 quiet，结束 `flushAwards()`；循环里 commit 是性能陷阱（365天18s→0.4s）。
-`from=min(worldCursor,lastSeen())`；`deferFrom=sessionStart` 才演出，>2分直接算完。
-上线 `EVENTS.ARRIVAL` 当场发；下线 `noteDepartures()` 在段开头发且 `until>=deferFrom` 才发。
-**NPC 行动框架**：`ACTIONS` 注册表，加行为只加一条；sweep 不写 `can`；`harvest/tend` 须同时挂 main+sweep；上线 90 秒内不 idle（`IDLE_AFTER_VISIT_MS`）。
+`advanceWorld` 逐段：⓪下线→①上线→①'空闲→②订单过期→③跨14:00结算→④收炉→⑤自动机器→⑥公共用地。
+`stepMsFor` ≤7天1分、翻倍×2封顶60分；`VISIT_BUDGET=30000` 超则 bulkAdvance。
+⚠️ 补算期跨表动作 quiet，结束 `flushAwards()`；**循环里 commit 是性能陷阱**（365天18s→0.4s）。
+`from=min(worldCursor,lastSeen())`；`deferFrom=sessionStart` 才演出，>2分直接算完。下线通知在段开头发且 `until>=deferFrom`。
+**NPC 行动框架**：`ACTIONS` 注册表，加行为只加一条；sweep 不写 `can`；`harvest/tend` 须同时挂 main+sweep；上线 90 秒内不 idle。
+⚠️ `run()` 返回的 `{emoji,text}` 由 `runStep` 统一 `log(npc,…)` —— **动作里别再给自己写一条**（会重复）。但**改了别的 NPC** 就必须在返回里带 `farms:[那位id]`：在线演出只提交「玩家+发起人」，不带就丢（同 `npc-sim.js` 接单带 `order.ownerId`）。
 
 ## 数值
 - `expForLevel(n)=100n(n+1)`；整轮收益 `(种子价×1.2+等级×10)×(1+0.05×整轮小时)`。
 - **照料经验 `careExp(lv)=max(1,round(lv/10))`**（自家/邻居同口径）；欠水−15%、欠虫−40%。
-- **产量×1.2/售价÷1.2**（仅改 `gen-data.mjs` 的 `YIELD_SCALE`，`sell` 守恒倒推）。
+- **产量×1.2/售价÷1.2**（只改 `gen-data.mjs` 的 `YIELD_SCALE`，`sell` 守恒倒推）。
 - 地块开局 6，第 N 块 `(已拥有-6)×1000+500`；三件省手道具各 200（永久采收机2万/另两5万）。
 - 制造间 Lv5+2000：`craft()` 只入队、`claimJobs()` 到点收；⚠️ **限定作物不能制种**（`crop.special` 挡）。
-- 村庄荣耀 4 种（`HONOR_CROP_IDS`，藏宝图挖不到）：5茬、慢长(≤3.6天)、整轮收入1.5倍。
 - 好感 −200~200：打理+1/偷0/被逮`round(售价/10)`/送礼`round(等级/2)`/交易`round(等级×份/2)`/催−10；≥100 优先打理+送礼。
 - ⚠️ 玩家偷被抓时**其他所有邻居各 −1**（`CAUGHT_RIPPLE_REL_LOSS`）：固定值不乘在线双倍、被偷那家不重复扣、不含 peers、NPC 互偷不触发；日志 + `.dc-ripple` 都要说。
-- 土地 `nextSoilId` 晋升；⚠️ `SOILS` 按 id 索引且条目**无 id 字段**，取出自补。
-- **开局礼包**（仅新档）：6 颗「≤玩家等级最高档里同档最快」种子+洒水器/杀虫剂/采收机各3+狗粮3，直接写 `state.bag`（不走 `inventory.add`）。
+- ⚠️ `SOILS` 按 id 索引且条目**无 id 字段**，取出自补。
+- **开局礼包**（仅新档）：6 颗「≤玩家等级最高档里同档最快」种子+洒水器/杀虫剂/采收机各3+狗粮3，直接写 `state.bag`。
 
 ## 邻居与世界
 - `interactChance(c)=1-(1-c)²`（**不能 `c×2`**）；`actCare` 每趟≤2 块；玩家 care 权重3/偷2。
-- 在线窗口 `npc.onlineUntil=at+onlineMs(npc)`（5~15分）控绿点/灰度/偷双倍惩罚/排序。
+- 在线窗口 `npc.onlineUntil=at+onlineMs(npc)`（5~15分）控绿点/灰度/排序。
 - 订单只认产出、1.2倍托管；NPC 单挂 `npc.order`、玩家 `state.farm.orders`(≤5)。
-- ⚠️ **村民随村庄升级变多**（20新住户 `arrive`2~5）：`initState` 按 `village.level` 过滤；`admitVillageNeighbours` 把新住户 `lastVisitAt/nextVisitAt/dog.at` 按到 now；`invest/pray` 的 commit 必须带 `...state.friends`。
+- ⚠️ **村民随村庄升级变多**（20新住户）：`initState` 按 `village.level` 过滤；`admitVillageNeighbours` 把新住户 `lastVisitAt/nextVisitAt/dog.at` 按到 now。
 
 ## 守护犬
-10档20%~80%；`catchChance=rate×(0.5+0.5×sat/max)`；罚款 `售价×5`+掉好感。
-⚠️ 饱腹度=值+`dog.at`，写须成对(`satiety=新;at=now`)；容量 `100+30×狗窝级`，界面是点数。
-狗窝升级前 `settleSatiety(now)`；挖宝每天30%、只掷已过完的天。
+10档20%~80%；`catchChance=rate×(0.5+0.5×sat/max)`。
+⚠️ **逮到不罚款**（第 61 轮用户定死）：只掉好感（被偷那家）＋当日进不去他家，`DOG_FINE_MULTIPLE` 已废弃。
+⚠️ 饱腹度=值+`dog.at`，写须成对；容量 `100+30×狗窝级`，界面是点数。狗窝升级前 `settleSatiety(now)`；挖宝每天30%、只掷已过完的天。
 
 ## 村庄
-`village={level(1~5),coins,crystals,pray,stock{1..4},prayDay,giveDay,logs[]}` 挂 farm 行零改表。
-升级自动（投入/祈福后 `checkUpgrade`）：金币20k/72k/260k/920k + 水晶20/48/88/144 + 祈福120/400/940/1540；每升一级多5人。全村产量+2%/级。
+`village={level(1~5),coins,crystals,pray,stock,prayDay,giveDay,logs[]}` 挂 farm 行零改表。全村产量+2%/级，每级多5人。
+升级自动（投入/祈福后 `checkUpgrade`）：金币20k/72k/260k/920k + 水晶20/48/88/144 + 祈福120/400/940/1540。
 ⚠️ 拆同步 `prayCore`(邻居)+`pray`(玩家补commit)；`prayDay/giveDay` 只留今天。
-⚠️ `invest()` 夹到「还差的那点」（多投清零=白扔）；金币水晶都满则按钮禁用。
-⚠️ 投入图标用 **🚧** 不用 🧱（U+1F9F1 老字体渲染成方框）。
+⚠️ `invest()` 夹到「还差的那点」；金币水晶都满则按钮禁用；投入图标用 **🚧** 不用 🧱（老字体渲染成方框）。
 ⚠️ 升阶 `grantHonorSeeds`：玩家 `add`、邻居 `npc.bag[seedId]+=1`；`cleanNpcBag()` 须放行 `seed_` 前缀。
 
-## 水晶（第 55 轮：可卖）
-`CRYSTAL_SELL={1:500,2:1_000,3:2_000,4:5_000}`（`data/village.js`，`crystalSellPrice`）；入口 `sellCrystal(tier,n)`，**只 commit farms 一张表**（水晶挂 `farm.village.stock`，不进 `state.bag`）。
-⚠️ 建设日志只由 `invest`/`contributeCore` 写 —— **`addCrystal` 不写**（捡到不算建设）。`contributeCore` 的 `note` 用 `if (coins || crystals)` 包住，纯卖水晶不写。
-⚠️ `CONTRIB_STYLE` 每档多一个 `crystalInvest`（.3~.85），**0.3 是硬下限**：能卖之后推到 0，村民一拿到就卖光，村庄进度反而更慢。
-⚠️ 投水晶量必须 `max(1, floor(mine × ratio))`（`floor(2×0.15)=0` = 愿意投却投不出）。
-村民岔路：`tier.crystal` 之外的档位**一律卖掉折现**（堵「99 枚 1 级永远用不上」）；当前档 `mine>=2` 才掷，卖时**留 1 枚**。
-⚠️ `sellCrystal` 必须补 `emit(EVENTS.INVENTORY)` —— 仓库靠它重绘，只发 `VILLAGE` 列表停在卖之前。
+## 水晶（可卖）
+`CRYSTAL_SELL={1:500,2:1_000,3:2_000,4:5_000}`；`sellCrystal(tier,n)` **只 commit farms 一张表**（水晶挂 `farm.village.stock`）。
+⚠️ 建设日志只由 `invest`/`contributeCore` 写 —— **`addCrystal` 不写**；纯卖水晶不写（`if (coins||crystals)` 包住）。
+⚠️ `CONTRIB_STYLE` 的 `crystalInvest` **0.3 是硬下限**（能卖之后推到 0，村民一拿到就卖光）。投量 `max(1,floor(mine×ratio))`。
+村民岔路：非当前档**一律卖掉折现**；当前档 `mine>=2` 才掷，卖时**留 1 枚**。
+⚠️ `sellCrystal` 必须补 `emit(EVENTS.INVENTORY)`（仓库靠它重绘）。
 
-## 公共用地（第 58 轮）
-`state.commons` = `farm` 表里 `id:'commons'`/`kind:'commons'` 的**无主农场**，地块与日志照样落 `plot`/`log` 表 → 存储层/备份/导入校验零改动，**不升 `DB_VERSION`**。
-块数 `2×村庄等级`（2/4/6/8/10）；作物池 `[(级−1)×10, 级×20]`，**限定作物不进池**。
-⚠️ `initState()` 两处顺序死穴：`rows` 过滤必须**排除 `COMMONS_ID`**（否则被 `dropFarms` 当孤儿删掉）；`villageLevel` 必须**先于** `normalizeCommons` 算出来。
-补地块只增不减（`ensurePlots`，由 `advanceCommons` 与 `commonsSnapshot` 调），`village.js` 不认识它 → 依赖不成环。
-世界时钟第 ⑥ 步 `advanceCommons`：补地块→清空拿光的→摇产量→补种，返回 true 置 `report.dirty`，**循环里不 commit**。
-先到先得账本 `plot.taken`+`plot.takers`（玩家/NPC 共用），`commonsCanTake(plot,who)` 同时判「还剩」与「这人没拿过」。
-照料照给经验（`careExp`），**收获不给经验**（否则成刷分线）。村民走 `ACTIONS.commons`(sweep)+`ctx.commonsTick` 注入，先抢收 65%（进 `npc.bag`）再照料 50%。
-⚠️ **落盘**：`persistFriends`/`flushAwards`/`runLiveStep` 三处批量提交走 `state.js` 的 **`farmRows(...)`**（自动追加 commons、去重、滤空值）；`store/commons.js` 的 `persist()` 反过来必须带 `state.farm`（经验在玩家农场上）。玩家主动操作邻居的 10 处单点提交**刻意不带**（动了才带）。
-⚠️ 弹窗顶部 `data-role` 用 **`commons-board`** 不用 `board`（邻居弹窗全局查 `#modal [data-role="board"]` 重绘，撞名互相覆盖）。
-`sowCommons()` 内部先 `ensurePlots()`；`commonsSnapshot()` **不播种**（渲染路径不改状态），播种只在 `advanceCommons` 与 `openCommonsModal`（后者种过就 `flushCommons()`）。
-公共地照料**不记任何榜**（care 是「帮人」、work 是「自家」，两头都不算）；也不补算历史（地里最多长到成熟停住）。
+## 公共用地
+`state.commons` = `farm` 表里 `id:'commons'`/`kind:'commons'` 的**无主农场** → 存储层/备份/导入零改动，**不升 `DB_VERSION`**。
+块数 `2×村庄等级`；作物池 `[(级−1)×10, 级×20]`，限定作物不进池。
+⚠️ `initState()` 两处顺序死穴：`rows` 过滤必须**排除 `COMMONS_ID`**；`villageLevel` 必须**先于** `normalizeCommons`。
+`advanceCommons`：补地块→**摇产量**→清空该换种的→补种，返回 true 置 `report.dirty`，**循环里不 commit**。
+⚠️ 摇产量必须**先于**清空判断（`commonsRemain=pendingYield−taken`，没摇过两者都是 0，先判会铲掉刚熟的）。
+**熟了摆 1 天就换种**：`COMMONS_RIPE_HOURS=24`、`commonsRipeDeadline(plot)=plot.readyAt+24h`，**不另存字段**。该换种=拿光 **或** 过期；系统补种**不写日志**。
+先到先得账本 `plot.taken`+`plot.takers`，`commonsCanTake(plot,who)` 同时判「还剩」与「这人没拿过」。
+照料给经验（`careExp`），**收获不给经验**；村民走 `ACTIONS.commons`(sweep)+`ctx.commonsTick`，先抢收 65% 再照料 50%。
+⚠️ **落盘**：`persistFriends`/`flushAwards`/`runLiveStep` 走 `state.js` 的 **`farmRows(...)`**（自动补 commons、去重、滤空值）；`store/commons.js` 的 `persist()` 反过来必须带 `state.farm`。玩家主动操作邻居的单点提交**刻意不带**。
+⚠️ 弹窗顶部 `data-role` 用 **`commons-board`** 不用 `board`（邻居弹窗全局查 `[data-role="board"]`，撞名互相覆盖）。
+`commonsSnapshot()` **不播种**；播种只在 `advanceCommons` 与 `openCommonsModal`。返回 `ripe`（我能拿）/`mine`/`ready`/`water`/`pest`/`total`。
+⚠️ `water`/`pest` 只统计**还在长**的地。公共地照料**不记任何榜**、不补算历史。
+村中心入口是**左半格大方格**：内部**全绝对定位**（`display:block`，flex 居中会把右下角统计顶上去）。右半格留白。
 
-## 子页面标签分类（第 55 轮）
-仓库 `bag.js`：🌾农产品 / 💠其他（水晶在这档）。包裹 `package.js`：🌱种子 / 🧭藏宝图 / 🧪道具（删掉了原来的 `section()` 分区标题）。
-⚠️ **tab 状态只能挂模块变量 `activeTab`**：每个动作后 `renderCurrent()` 整页重绘，状态进 DOM 会丢。
-芯片复用商店 `.filter-chip` + `.chip-num`（带计数），外壳 `.sub-tabs` 只管排布：横滚、不换行、无滚动条。⚠️ **不能 `position: sticky`**（子页面本身是滚动容器，会压住标题）。
-`confirmSell(rows)` 已泛化成行数据 `{key,name,unit,have,doSell}`，作物与水晶共用一套确认框。
+## 子页面标签
+仓库 `bag.js`：🌾农产品 / 💠其他（水晶）。包裹 `package.js`：🌱种子 / 🧭藏宝图 / 🧪道具。
+⚠️ **tab 态只能挂模块变量 `activeTab`**：每动作后整页重绘，状态进 DOM 会丢。芯片复用 `.filter-chip`+`.chip-num`；⚠️ `.sub-tabs` **不能 sticky**（子页面本身是滚动容器）。
+`confirmSell(rows)` 泛化成行数据 `{key,name,unit,have,doSell}`，作物与水晶共用。
 
 ## 排行榜
 11榜，每天14:00结算；前三递减、并列都发；实时榜上/昨日在下。
 
 ## 农场通知（信箱）
-`state.farm.progress.notices`（随 farm 行落盘，**不新开表**）；形状 `{id,at,kind,emoji,title,body,by,from,reward,claimText,read,claimed}`，清洗在 `data/notice.js`。
-送礼 + 排行榜奖励都改**寄信**，`claimNotice` 才入账（发奖唯一入口 `store/reward.js` 的 `grantReward`）。`ui/gift.js` 与 `#giftLayer` 已整块删除。
-⚠️ 保留规则「领过的留 30 天、**未领的永不过期**」上限 120 条；无 `reward` 的消息 `claimed` 恒 true。
-⚠️ 角标两档：未领取→**数字**，仅未读→**纯红点**(`.fn-badge.dot`)，都没有→`hidden`。两种都是绝对定位，**不参与布局**（不许改成 flex 占位）。
-⚠️ 打开列表 = `markNoticesRead()`，但列表**先渲染再标已读**：这一帧还看得见 `.nt-item.unread` 的红点与加粗标题。
+`state.farm.progress.notices`（随 farm 行落盘，**不新开表**）；清洗在 `data/notice.js`。
+发奖唯一入口 `store/reward.js` 的 `grantReward`，`claimNotice` 才入账。`ui/gift.js` 已整块删除。
+⚠️ 保留「领过的留 30 天、**未领的永不过期**」上限 120 条；无 `reward` 的消息 `claimed` 恒 true。
+⚠️ 角标两档：未领取→**数字**，仅未读→**纯红点**，都没有→`hidden`；两种都绝对定位，**不参与布局**。
+⚠️ 打开列表先渲染**再** `markNoticesRead()`（这一帧还看得见红点与加粗）。
+⚠️ **信箱只放玩家自己的事**：NPC 之间的社交（如互加好友）写 NPC 日志，不进信箱。
 
 ## 自动机器
-`autoSprinkler`🚰/`autoPest`🪤/`autoHarvest`🛻 各 2000；时效存 `farm.progress.auto={water,pest,harvest}`（到期时间戳）。
-⚠️ **不写 `permanent`**（会让商店按钮变禁用）；`addAuto` 从 `max(now,旧)` 起+days（连买叠加）。
-执行在 `world.js tick()` 第⑤步，离线上线同一套；**刻意不给经验/不 bump 榜/不 completeGuide**。
-⚠️ 三处发奖特判 `ITEMS[id]?.auto`：adventure.applyReward / titles.claimTitle / `store/reward.js` 的 `grantReward`（第 54 轮从 daily 搬出，唯一发奖入口）。
+`autoSprinkler`🚰/`autoPest`🪤/`autoHarvest`🛻 各 2000；时效存 `farm.progress.auto`（到期时间戳）。
+⚠️ **不写 `permanent`**（会让商店按钮变禁用）；`addAuto` 从 `max(now,旧)` 起+days。
+执行在 `world.js tick()` 第⑤步；**刻意不给经验/不 bump 榜/不 completeGuide**。
+⚠️ 三处发奖特判 `ITEMS[id]?.auto`：adventure.applyReward / titles.claimTitle / `store/reward.js` 的 `grantReward`。
 
 ## 称号
-57条（等级26+图鉴26+金币5）；数据源 `TITLES` 改完重跑 `gen-data.mjs`。
-`attachTitleSeeds()` 按难度进度自动配限定种子（须定义在 `specialCrops` 之后、校验之前）；奖励只有道具无金币。
+57条（等级26+图鉴26+金币5）；改 `TITLES` 后重跑 `gen-data.mjs`。`attachTitleSeeds()` 须定义在 `specialCrops` 之后、校验之前；奖励只有道具无金币。
 
 ## UI 硬约束
-- 四 tab：农场/邻居/**村中心🏡**(≠村镇🏘联机)/商店。村中心：村庄卡→总览→📢公告+📋订单(唯一入口带徽标)→🏆排行。
-- ⚠️ **地块列数只有一套**：`.grid` = 2/3/4 列（720/960 断点），`.grid.dense` 与 `.npc-plots` **只改 gap/padding/字号，不改列数**（dense 原来用 auto-fill minmax(102px) 在 430px 算出 3 列，与邻居 2 列对不上）。⚠️ `.grid.dense` 别写 `grid-template-columns`：两个类选择器优先级高于媒体查询里的 `.grid`，会把宽屏 3/4 列顶掉。
-- `.farm-bar` 首位：上排狗 + 📬信箱 + 📔日志（`.farm-log` **34×34 / emoji 17px**）/中排三键/下排 `#farmAuto`(仅买过出现)；**不堆 fixed 浮层**。
-- 村中心村民总览默认只看在线(`villagerFilter='online'`)。
+- 四 tab：农场/邻居/**村中心🏡**(≠村镇🏘联机)/商店。
+- 村中心：村庄卡 → **村民总览(1fr)+🏆排行榜(2fr) 同一行** → **第二块 `.center-main`**：左列上=📢公告栏/下=📋订单，右侧 🏞公共用地 `grid-column:2`+`grid-row:1/span 2` 跨两行。
+- ⚠️ `.center-main` 里 commons 有显式 grid 位置会**先于自动放置占位**，前两格不用写 `grid-area`。⚠️ 公共用地内部**全绝对定位** + `min-height:122px` + `overflow:hidden`，`ca-body` 要**同时钉 left 与 right**（shrink-to-fit 会顶出卡片），`b`/`i` 都要 `display:block` 才吃省略号。⚠️ 带徽标的按钮 `.ca-body` 要补 `padding-right`（徽标绝对定位不占布局）。
+- ⚠️ 总览只 1/3 宽：头像行 `nowrap`+`overflow:hidden` 一行，`fitFaces()` **量一次算完**（别「收一个量一次」，32 人在线会连续强制重排），末尾同尺寸「…」圆框。`mountCenter` 挂 `resize`（rAF 合并）。
+- ⚠️ 排行榜右列**只留头像**，「是不是你」用 `.cr-ava.me` 的 `box-shadow` 绿边，不占宽度。
+- 公共用地弹窗成熟卡：名字 / **剩余份数常驻**（`还剩 N 份 · 你拿过了|先到先得`，拿光才写「已经被拿光了」）/ **换种倒计时**（≥1h 静态，<1h `mm:ss`，到点「马上换种」）。1 秒心跳**只改文本**；整块重绘只留给「刚熟」与「该换种」；`lastExpiry` 挡 3 秒防每秒落盘；`#modal` 没 `show` 自 `clearInterval`。⚠️ `plotsSignature` **必须带 `commonsRemain` 与 `takers.length`**（村民随时抢收，不含数量会盯着早就拿光的地看）。
+- ⚠️ **地块列数只有一套**：`.grid` = 2/3/4 列（720/960）；`.grid.dense`/`.npc-plots` **只改 gap/padding/字号**。⚠️ 别在 `.dense` 写 `grid-template-columns`（优先级高于媒体查询）。
+- `.farm-bar` 首位：上排狗 + 📬信箱 + 📔日志（`.farm-log` **34×34 / emoji 17px**）/中排三键/下排 `#farmAuto`；**不堆 fixed 浮层**。
 - 弹窗四段式 handle/head/body/foot，**别用 sticky 替 foot**；`.modal-sub` 不许负上边距。
-- ⚠️ `store/codex.js` 须同时 import `produceId` 与 `seedId`，少 `seedId` 会让 `makeSpecimen` 抛 ReferenceError（点不刷新三连）。
-- 图鉴双进度条（收集≠点亮）；点亮先 `closeModal()` 再播 `codex-celebrate`。
+- ⚠️ `store/codex.js` 须同时 import `produceId` 与 `seedId`（少 `seedId` 抛 ReferenceError）。图鉴双进度条；点亮先 `closeModal()` 再播庆祝。
 - 设置页 `<input type=file>` 挂 `document.body`；拖拽先判 `#subpage.show [data-role=save-drop]`。
-- **产出堆叠** `data/yield-pile.js`：`floor(n/2)+1` 张（**不是 ceil**，偶数产量偷 1 个才看得出少一张）、封顶 16（≥30 产量）；黄金角螺旋+LCG 定种（心跳 500ms 不能 random）；坐标全 em（紧凑只改 font-size）；邻居 key 带 `friend.id`；散落 `RADIUS_X=1.62/RADIUS_Y=0.66/MAX_ROT=±24°`（1.7 以上会被卡片裁角）；每图带白描边 + 双层 drop-shadow；⚠️ `.plot-art/.np-art` 要 `width:100%` + `padding:0 .5em` 否则最外侧图边缘点不动。
-- ⚠️ **`.yield-pile > i` 绝不能加 `will-change: transform`**（一行把农场从满帧拖到 24fps）：40 地 × 16 张 = 640 个元素各自提升合成层。实测 40.8ms→16.4ms、卡顿帧 53~60/70→0/70，而 JS 侧 renderFarm 只要 0.06ms —— **瓶颈在合成不在脚本**。`filter: drop-shadow` 是清白的（单删无收益），换 `text-shadow` 反而更慢（26.5ms）。判断标准：静态定位元素一律不写 `will-change`。
-- **地块骨架**（玩家与 NPC 同一套）：`.plot-main` / `.npc-plot` 是**两层**容器 —— `.plot-head`（图，不滚）+ `.plot-body`（文字，超出自己滚），外挂 `.plot-hang` 悬挂底边（`bottom:0` + `translate(-50%, calc(25% + 1px))`，3/4 在内 1/4 在外）。⚠️ 绝对定位所以不动邻格行高；那个 **+1px 不能省**（包含块是 padding box，`bottom:0` 在 border 内侧，否则只露 5/24）。底部统一留 padding（23/22/22）。
-- ⚠️ **地块高度是硬锁 `height`（141px / 紧凑 113px），不是 `min-height`**：min-height 只兜「比地板矮」，兜不住「比地板高」（长名字+加成+被偷折行就撑开整行）。现在超出的文字被 `.plot-body` **裁掉、不滚**（`overflow:hidden` + `min-height:0`，居中靠首尾 `margin:auto` 不用 `justify-content:center`）。⚠️ 第 56 轮把 `overflow-y:auto` 关掉了：内层滚动容器会抢走整页的滑动手势（手指落在作物名上整页翻不动），`overscroll-behavior:contain` 救不了；代价实测为 0（最挤一格 73/73 不溢出）。⚠️ **`.plot-main` 不能写 `flex:1`** —— 它是 `flex-basis:0%` 会盖掉 `height`，硬锁当场失效（实测变 127/142 两档）；`min-height` 不受影响所以旧版没暴露。⚠️ `.plot-head` 要给 `width:100%`，否则 `align-items:center` 让它收缩、里面 `.plot-art{width:100%}` 失去参照、堆叠图缩成一坨。验证口径：同一 `top` 上高度集合只能有一个值，且 `.plot-body` 里 `scrollHeight>clientHeight` 的个数为 0。
-- ⚠️ **`.npc-plot` 绝不能写 `overflow:hidden`**（第 56 轮）：`.plot-hang` 是它的**直接子元素**，卡片一裁就把探出底边的 1/4 切平（「按钮被土地下边缘截断」）。玩家那边没事是因为裁切在 `.plot-main` 上、按钮是它的**兄弟**。验证口径：`hang.bottom - card.bottom == 按钮高×1/4`（30px → **7.5px**）。
-- **铲除 / 施肥在作物详情弹窗**，不在土地上：`plotActionsHTML` 用 `minmax(0,1fr) auto`（施肥吃剩余 + 铲除 36×34 方框），`.pa-row{max-width:300px;margin:auto}` 上限居中；成熟后只剩铲除→改胶囊。`.plot-side` / `.np-acts` 已整块删除。
-- **地块 aura**：`inset:-1px` 对齐 border box；环向内收 N px 则半径 −N px；金边 4px 靠 `padding` 不给 border。⚠️ 贴外沿会在圆角抗锯齿处漏底色。
-- **长按连发** `ui/hold.js`：`.qty-btn` 委托，只在 `modal.js`/`subpage.js` 各挂一次，业务零改动。⚠️ `touch-action` 只能写一条。
+- **产出堆叠** `data/yield-pile.js`：`floor(n/2)+1` 张（**不是 ceil**）、封顶 16；黄金角螺旋+LCG 定种（心跳不能 random）；坐标全 em；散落 `RADIUS_X=1.62/RADIUS_Y=0.66/MAX_ROT=±24°`（1.7 以上被裁角）。⚠️ `.plot-art/.np-art` 要 `width:100%`+`padding:0 .5em`。
+- ⚠️ **`.yield-pile > i` 绝不能加 `will-change: transform`**（40 地×16 张=640 层，满帧→24fps，实测 40.8ms→16.4ms）。静态定位元素一律不写 `will-change`；`filter: drop-shadow` 清白，换 `text-shadow` 更慢。
+- **地块骨架**：`.plot-main`/`.npc-plot` 两层 —— `.plot-head`（图不滚）+`.plot-body`（文字超出裁掉）。外挂 `.plot-hang` 悬挂底边（`bottom:0`+`translate(-50%, calc(25% + 1px))`，**+1px 不能省**）。
+- ⚠️ **地块高度是硬锁 `height`（141/紧凑113），不是 `min-height`**（兜不住「比地板高」）。⚠️ `.plot-body` 用 `overflow:hidden` **不滚**（内层滚动容器会抢走整页滑动手势）。⚠️ **`.plot-main` 不能写 `flex:1`**（`flex-basis:0%` 盖掉 `height`）。⚠️ `.plot-head` 要 `width:100%`。验证口径：同一 `top` 高度集合只有一个值，`.plot-body` 溢出个数为 0。
+- ⚠️ **`.npc-plot` 绝不能写 `overflow:hidden`**（`.plot-hang` 是它直接子元素，一裁就把探出的 1/4 切平）。验证口径：`hang.bottom - card.bottom == 按钮高×1/4`。
+- **铲除/施肥在作物详情弹窗**，不在土地上：`plotActionsHTML` 用 `minmax(0,1fr) auto`；`.pa-row{max-width:300px}`；`.plot-side`/`.np-acts` 已删。
+- **地块 aura**：`inset:-1px` 对齐 border box；环内收 N px 半径 −N px；金边 4px 靠 `padding`。
+- **长按连发** `ui/hold.js`：`.qty-btn` 委托，只在 `modal.js`/`subpage.js` 各挂一次。⚠️ `touch-action` 只能写一条。
 
 ## 村镇联机
-一村一房间(localStorage)；`state.peers` 仅内存，真人≠NPC；硬前提 https/localhost。主人权威；送礼 `peer-gift` 三段握手；报文>48KB丢、`cleanText()` 按码点截断。
+一村一房间(localStorage)；`state.peers` 仅内存，真人≠NPC；硬前提 https/localhost。主人权威；送礼 `peer-gift` 三段握手；报文>48KB 丢、`cleanText()` 按码点截断。
 
 ## 其它
 - 时报 30天/240条；农场日志与邻居动态纯 7天无条数上限。

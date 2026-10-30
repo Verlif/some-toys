@@ -201,13 +201,19 @@ function emptyFriendsHTML() {
 export function renderFriends() {
   const now = Date.now();
   const list = friendsShown(now);
+  const total = myFriends().length;
   const body = byId('friendsBody');
+
+  // 标题后面那枚好友总数（第 61 轮）：它在静态标题里、不参与列表重绘，
+  // 所以每次重绘都要自己补一次 —— 加好友、被自动解除都会走到这里
+  const count = byId('friendCount');
+  if (count) count.textContent = String(total);
 
   keepBarScroll(body, '.filter-bar', () => {
     setHTML(body, `
       <div class="filter-bar">
         ${sortChips(now)}
-        <span class="shop-filter-count">${list.length} / ${myFriends().length}</span>
+        <span class="shop-filter-count">${list.length} / ${total}</span>
       </div>
       <div class="friend-list">${list.length
         ? list.map((friend) => friendCardHTML(friend, now)).join('')

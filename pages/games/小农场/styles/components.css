@@ -773,6 +773,22 @@
   letter-spacing: .5px;
   padding: 17px 17px 8px;
 }
+/* 标题后面那枚计数（好友页「我的好友 N」）：比标题大一号、深一号，
+   不占额外行高 —— 用 inline-block 贴着文字基线，标题那行不会有半个像素的抖动 */
+.sec-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #eaf3e4;
+  color: #4c7a3c;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 16px;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+}
 .list { padding: 0 13px; }
 
 /* ---------- 子页面的标签分类（仓库 / 包裹，第 55 轮） ---------- */
@@ -1093,53 +1109,77 @@
 }
 .cvi-tip { margin: 10px 0 0; line-height: 1.6; }
 
-/* 顶部：总览卡占满一行（点开弹窗看名单），下面并排两枚入口按钮。
-   以前是「总览 + 右侧 78px 竖条按钮」，公告栏只能挤成一个窄条；
-   2026-10-24 改成整行总览 + 两个半宽按钮，两个入口都有地方放字。 */
-.center-head {
+/* 顶部一行：村民总览（1/3）+ 排行榜（2/3）。
+   第 60 轮把两张卡并到一行 —— 它们原来各占整行，光这两块就吃掉半屏，
+   而它们都是「一眼看完」的卡片，不需要那么宽。 */
+.center-duo {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
   padding: 13px 13px 0;
+  align-items: stretch;
 }
 .center-overview {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 12px 14px 11px;
+  padding: 10px 11px;
   cursor: pointer;
 }
 .center-overview:active { transform: scale(.99); }
-.co-title { font-size: 12px; font-weight: 700; color: var(--muted); }
-.co-count { font-size: 25px; font-weight: 800; color: #3c4a39; line-height: 1.25; }
+.co-title { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+/* 在线 / 总数（第 60 轮把原来那行「你 + 32 位邻居」整行换成了这个） */
+.co-count { font-size: 24px; font-weight: 800; color: #3c4a39; line-height: 1.2; }
 .co-count b { font-variant-numeric: tabular-nums; }
-.co-count span { font-size: 12px; font-weight: 600; color: var(--muted); }
-.co-sub { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
-/* 在线头像行：玩家在最前 */
+.co-count span { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+/* 在线头像行：只占一行。放不下的由 fitFaces() 挂上 .off 收起来，
+   末尾那颗同尺寸圆框里写「…」—— 玩家永远在最前，不会被收掉 */
 .co-faces {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-wrap: nowrap;
+  gap: 3px;
   margin-top: 8px;
-  min-height: 26px;
+  overflow: hidden;
+  min-width: 0;
 }
 .co-face {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: #eef7e9;
   display: grid;
   place-items: center;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1;
 }
-.co-face.more { background: #e7ece3; color: #6c7a67; font-size: 10px; font-weight: 700; }
-.co-caret { margin-top: 8px; font-size: 10.5px; color: #9db08f; text-align: center; }
+.co-face.off { display: none; }
+/* 省略号圆框：默认不占位，只有真被裁过才由 fitFaces() 点亮 */
+.co-face.more {
+  display: none;
+  background: #e7ece3;
+  color: #6c7a67;
+  font-size: 11px;
+  font-weight: 700;
+}
+.co-face.more.show { display: grid; }
 
-/* 两个入口：图标 + 名字 + 一行说明，右上角挂计数 */
-.center-acts {
+/* ---------- 村中心：第二块（公告栏 / 订单 竖排 + 公共用地大方格） ---------- */
+/* 第 61 轮（用户选定的方案）：左 1fr 上下两格 = 📢 公告栏 / 📋 订单，
+   右 2fr = 🏞 公共用地，`grid-row: 1 / span 2` 跨满两行。
+   ⚠️ commons 有显式 grid 位置，会先于自动放置占位 —— 所以前两个按钮
+   天然落到第 1 列的第 1、2 行，不需要给它们写 grid-area。 */
+.center-main {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 2fr;
+  grid-template-rows: 1fr 1fr;
   gap: 10px;
-  padding: 10px 13px 4px;
+  padding: 10px 13px 13px;
+  align-items: stretch;
 }
 .center-act {
   position: relative;
@@ -1168,8 +1208,17 @@
   font-size: 19px;
   line-height: 1;
 }
-.center-act .ca-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.center-act .ca-body b { font-size: 13px; font-weight: 700; color: #3c4a39; white-space: nowrap; }
+.center-act .ca-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+/* ⚠️ 两行都要能省略（第 61 轮压到 1/3 宽）：窄屏只有 90 多像素，
+   「12 条村镇动态」这种说明不截断就会顶出圆角 */
+.center-act .ca-body b {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3c4a39;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .center-act .ca-body i {
   font-size: 10.5px;
   font-style: normal;
@@ -1201,22 +1250,100 @@
   font-variant-numeric: tabular-nums;
 }
 .center-act .ca-badge.zero { background: #e6ebe1; color: #7d8a78; }
-/* 公共用地（第 58 轮）：整宽一颗 —— 它和公告栏 / 订单不是一类东西，
-   单独占一行才说得清「这是村里的地，不是一条信息」 */
+/* ⚠️ 有徽标的按钮要给正文右侧留位：徽标是绝对定位的，不占布局。
+   压到 1/3 宽之后正文只剩 60 来像素，徽标直接盖在「有活干了」的尾字上。 */
+.center-act.orders .ca-body { padding-right: 24px; }
+/* 公共用地（第 58 轮）：它和公告栏 / 订单不是一类东西。
+   第 60 轮是「左半格 + 右半格留白」，第 61 轮改成**跨两行的右 2/3 大方格**
+   —— 左列腾给公告栏与订单竖排之后，它才真的有了自己的位置和面积。
+   内部全部绝对定位（`display:block`），因为要在右下角钉三行统计，
+   flex 的居中会把它顶上去。
+   ⚠️ 高度是 `min-height` + 内部全绝对定位 + `overflow:hidden`：
+   绝对定位的子元素不参与撑高，所以这一格永远撑不开 —— 它一长高，
+   左边两格（`grid-template-rows: 1fr 1fr`）也跟着长，整页被推下去。 */
 .center-act.commons {
-  grid-column: 1 / -1;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: block;
+  min-width: 0;
+  min-height: 122px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
   border-color: #cfe0c6;
   background: linear-gradient(160deg, #f4fbef, #e9f5e2);
 }
-.center-act.commons .ca-ico { background: #e4f2da; }
-.center-act.commons .ca-body b { color: #3f6b34; }
-.center-act.commons .ca-body i { color: #6d8a63; }
-/* ---------- 村中心：排行榜卡（两列） ---------- */
+.center-act.commons .ca-ico {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  font-size: 19px;
+  background: #e4f2da;
+}
+/* 标题块：右边界也钉住（`right:12px`），这样里面那行说明才能省略。
+   绝对定位元素 width:auto 是 shrink-to-fit，不钉右边的话 nowrap 的长句
+   会直接顶出卡片 —— 反正 `overflow:hidden` 在卡片上，顶出去就被裁掉半个字。 */
+.center-act.commons .ca-body {
+  position: absolute;
+  left: 53px;
+  right: 12px;
+  top: 20px;
+  display: block;
+}
+/* 名字与说明都要 `display:block` 才能各占一行并生效省略号（行内元素不吃 overflow） */
+.center-act.commons .ca-body b { display: block; font-size: 13.5px; color: #3f6b34; }
+.center-act.commons .ca-hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #8aa180;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 左下角：这片地一共几块 */
+.center-act.commons .ca-total {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  font-size: 10px;
+  font-style: normal;
+  color: #8aa180;
+}
+/* 右下角：可浇水 / 可捉虫 / 已成熟，一行一个 */
+.center-act.commons .ca-stats {
+  position: absolute;
+  right: 12px;
+  bottom: 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.center-act.commons .ca-stats i {
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #3f6b34;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* 为 0 的那行只压灰、不隐藏：三行位置固定，忽隐忽现反而看不出变化 */
+.center-act.commons .ca-stats i.zero { color: #b9c8b2; }
+/* ---------- 村中心：排行榜卡（两列，2/3 宽） ---------- */
 /* 左列榜单、右列昨日冠军；整张卡是一个按钮，点哪儿都开排行榜弹窗。
-   两列用同一个行高（22px）对齐 —— 左边六行名字、右边六个头像必须一条线 */
+   两列用同一个行高（19px）对齐 —— 左边六行名字、右边六个头像必须一条线。
+   第 60 轮压到 2/3 宽：右列只留头像（名字放不下，完整信息在弹窗里），
+   「是不是你」改用一圈绿边而不是「你」徽标 —— 徽标同样吃宽度。 */
 .center-rank {
-  margin: 6px 13px 4px;
-  padding: 11px 13px 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px 11px 11px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -1226,8 +1353,7 @@
 .center-rank:hover { border-color: #c4e0b8; }
 .center-rank:active { transform: scale(.995); }
 .cr-head { display: flex; align-items: baseline; gap: 7px; }
-.cr-title { font-size: 12.5px; font-weight: 700; color: #3c4a39; }
-.cr-sub { font-size: 10.5px; color: var(--muted); }
+.cr-title { font-size: 11.5px; font-weight: 700; color: #3c4a39; }
 .cr-go { margin-left: auto; color: #b6c0b3; font-size: 15px; line-height: 1; }
 
 .cr-grid {
@@ -1235,20 +1361,21 @@
   /* 左列只占榜单名字那么宽（最长的「送礼达人」也就 4 个字）：
      早先给的是 0.9fr，名字和冠军之间会空出一大片，看着像两列没对上 */
   grid-template-columns: auto 1fr;
-  column-gap: 18px;
-  margin-top: 8px;
+  column-gap: 10px;
+  margin-top: 6px;
+  flex: 1;
 }
-.cr-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cr-col { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cr-item {
   display: flex;
   align-items: center;
   gap: 5px;
-  height: 22px;
+  height: 19px;
   min-width: 0;
-  font-size: 11.5px;
+  font-size: 11px;
   color: #4c5a49;
 }
-.cr-ico { font-size: 12px; line-height: 1; flex-shrink: 0; }
+.cr-ico { font-size: 11.5px; line-height: 1; flex-shrink: 0; }
 .cr-item.champ { color: #3c4a39; font-weight: 600; }
 .cr-ava {
   width: 18px;
@@ -1262,7 +1389,8 @@
   font-style: normal;
   line-height: 1;
 }
-.cr-item.champ b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+/* 冠军是你自己：一圈绿边，不占宽度 */
+.cr-ava.me { box-shadow: 0 0 0 1.5px #8fc47f; }
 /* 并列第一：只露一位，其余折成 +N */
 .cr-more {
   flex-shrink: 0;
@@ -1270,16 +1398,6 @@
   border-radius: 99px;
   background: #f1f4ec;
   color: #7d8a78;
-  font-size: 9.5px;
-  font-style: normal;
-  font-weight: 700;
-}
-.cr-me {
-  flex-shrink: 0;
-  padding: 0 4px;
-  border-radius: 99px;
-  background: #e9f4e2;
-  color: #5c9050;
   font-size: 9.5px;
   font-style: normal;
   font-weight: 700;
@@ -1567,6 +1685,8 @@
    土地档位的底纹（左土地色 → 右普通色）也就跟着看不见了。 */
 .npc-plot.care { border-color: #e8a0a0; box-shadow: 0 0 0 2px rgba(224, 90, 78, .15); }
 .npc-plot .np-meta.ripe-meta { color: #a07818; font-weight: 700; }
+/* 剩余份数的那个数字：比正文再大一号，扫一眼就知道还剩几个 */
+.npc-plot .np-remain { font-size: 12px; font-weight: 800; color: #8a6212; }
 
 /* 角落标记：左上角产量加成，右上角「这一轮不能再偷」的原因 */
 .np-corner {
@@ -1716,14 +1836,6 @@
   font-size: 12.5px;
   color: rgba(255, 246, 228, .82);
   animation: fade .3s ease .2s both;
-}
-.dc-fine {
-  margin-top: 6px;
-  font-size: 15px;
-  font-weight: 800;
-  color: #ffd764;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, .5);
-  animation: fade .3s ease .26s both;
 }
 
 @keyframes dcPop {

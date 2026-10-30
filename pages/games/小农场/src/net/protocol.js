@@ -36,8 +36,6 @@ export const MSG = {
   ACT: 'act',
   /** 对方对 act 的执行结果 */
   ACT_RES: 'act:res',
-  /** 偷菜被狗抓住后，把罚款交给对方 */
-  ACT_PAY: 'act:pay',
 };
 
 /**

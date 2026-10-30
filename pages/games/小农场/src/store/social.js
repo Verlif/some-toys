@@ -31,7 +31,7 @@ import { bump, bumpMax, flushAwards } from './daily.js';
 import { addCrystal, contributeCore, prayNpc, villageYield } from './village.js';
 import { npcCommonsTick } from './commons.js';
 import { announceAuto } from './automation.js';
-import { catchChance, DOG_FINE_MULTIPLE, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
+import { catchChance, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
 import { hasTool, useTool } from './tools.js';
 import { notify } from './notify.js';
@@ -112,8 +112,6 @@ function farmView() {
     log: (at, emoji, text, by = '') => player.addLog(emoji, text, at, by),
     news: (at, emoji, text) => addNews(emoji, text, { at }),
     dogGuardChanceAt: (at) => guardChance(at),
-    /** 守护犬拦下小偷时玩家入账的罚款（内存操作，随当次结算一起落盘） */
-    addCoins: (amount) => player.addCoins(amount),
     /** NPC 交单：产出进玩家包裹（图鉴收集埋点在 inventory.add 里） */
     giveItem: null,
   };
@@ -563,8 +561,10 @@ export async function pollOnline(onProgress) {
  *
  * 两道门（第 57 轮）：
  *   1. **只有好友能偷**：非好友的地块压根点不动，玩家与 NPC 都一样；
- *   2. **偷菜不掉好感**：顺走不掉，被守护犬当场逮住也只罚款不动交情 ——
- *      用户明确要的就是「偷」和「好感」彻底解耦。
+ *   2. **偷菜不掉好感**：顺走不掉，被守护犬当场逮住也不动交情。
+ *
+ * 被逮住的代价（第 61 轮用户定死：**不罚款**）：他家的作物这一轮全碰不了，
+ * 白跑一趟。钱是玩家自己的，偷菜失败就该只是「没偷到」，不该倒贴。
  *
  * @returns {Promise<{ok: boolean, reason?: string, caught?: boolean, cropId?: string}>}
  */
@@ -585,44 +585,30 @@ export async function steal(friendId, index) {
   // 邻居的狗也在看家：品种决定它的能耐，饱腹度决定它现在有没有力气。
   // 一旦被逮住，这座农场**当前所有作物**这一轮都进不去了 ——
   // 和「每块地已被偷过」是同一个效果，只是原因不同。
-  // 此外还要按这个果实的价值 ×DOG_FINE_MULTIPLE 缴纳罚款，钱归邻居；
-  // 玩家钱不够就倾家荡产，不记负债。
+  // 逮住只赔上这一趟，不罚款（第 61 轮）。
   const breed = dogBreed(friend.dog.breed);
   const chance = breed ? catchChance(breed.rate, dogSatietyAt(friend.dog, now)) : 0;
-  // 偷**正在在线**的邻居被抓住：双倍罚款 —— 人家盯着呢。
-  // 联机好友没有在线态（onlineUntil 缺省 0），天然不触发
-  const online = isNpcOnline(friend, now);
-  const mul = online ? 2 : 1;
   if (chance > 0 && Math.random() < chance) {
     for (const plot of friend.plots) {
       if (plot.cropId) plot.guarded = true;
     }
-    const fine = Math.round(crop.sell * DOG_FINE_MULTIPLE) * mul;
-    const paid = Math.min(state.farm.coins, fine);
-    player.addCoins(-paid);
-    friend.coins += paid;
     // 狗狗王记在**狗主人**头上：谁家的狗拦下的功劳就归谁。
     // 玩家偷 NPC 被抓时玩家一分不得 —— 这里是玩家唯一能给别人刷分的地方，
     // 所以漏了这一笔，NPC 的狗狗王就永远是 0（曾经真的漏了）
     bump(friend.id, 'dog', 1, now);
-    const doubleNote = online ? '（对方在线，双倍罚款）' : '';
     // 文案里要写真实名字（不是硬编码「农场主」）：日志与时报会把名字就地
     // 渲染成「名字 + 头像」的标签，写死了改名之后就对不上
-    logFriend(friend, now, '🐕', `守护犬抓住了想偷菜的 ${state.farm.name}，罚了 ${formatCoins(paid)} 金币${doubleNote}`);
-    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚款 ${formatCoins(paid)} 金币${doubleNote}`, now);
-    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬抓住，罚了 ${formatCoins(paid)} 金币${doubleNote}`, { at: now });
+    logFriend(friend, now, '🐕', `守护犬把想偷菜的 ${state.farm.name} 赶了出去`);
+    player.addLog('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬赶了出来`, now);
+    addNews('🐕', `${state.farm.name} 偷 ${friend.name} 家被守护犬赶了出来`, { at: now });
 
     await commit({ farms: [state.farm, friend], news: state.news });
     emit(EVENTS.FRIENDS);
     emit(EVENTS.PLAYER);
     // 全屏闪一下这只狗：玩家正盯着地块点偷，toast 很容易看漏
-    emit(EVENTS.DOG_CAUGHT, { breed: friend.dog.breed, owner: friend.name, fine: paid });
+    emit(EVENTS.DOG_CAUGHT, { breed: friend.dog.breed, owner: friend.name });
 
-    notify(
-      `🐕 被 ${friend.name} 家的守护犬抓住了！${online ? '对方在线，双倍罚款！' : ''}`
-      + `罚款 ${formatCoins(paid)} 金币，这一轮他家的作物都不敢碰了`,
-      'gold',
-    );
+    notify(`🐕 被 ${friend.name} 家的守护犬赶出来了！这一轮他家的作物都碰不了了`, 'gold');
     return { ok: false, caught: true, reason: '被守护犬抓住了' };
   }
 
