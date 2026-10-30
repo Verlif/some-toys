@@ -17,8 +17,9 @@ import { CROPS, CROP_IDS } from '../data/crops.js';
 import { ITEMS } from '../data/items.js';
 import { SOILS } from '../data/soils.js';
 import { isItemKey, itemLabel, produceId } from '../data/keys.js';
-import { SUMMON_REL_COST, clampRelation, giftRelGain, summonDelayRange, tradeRelCost } from '../data/relation.js';
-import { getRelation, relationBadge } from '../store/relation.js';
+import { SUMMON_REL_COST, clampRelation, friendThreshold, giftRelGain, relText, summonDelayRange, tradeRelCost } from '../data/relation.js';
+import { getRelation, isFriend, relationBadge } from '../store/relation.js';
+import { requestFriend, unfriend } from '../store/friend.js';
 import { PERSONALITIES } from '../data/friends.js';
 import { DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { isNpcOnline } from '../data/friends.js';
@@ -104,6 +105,8 @@ function plotCardHTML(friend, index, now) {
   // 联机好友的地由对方执行操作，动作名带 peer- 前缀
   const remote = friend.net === true;
   const act = (name) => (remote ? `peer-${name}` : `npc-${name}`);
+  // 只有好友才偷得了（第 57 轮）：非好友的熟地照常显示，但没有那颗按钮
+  const buddy = remote || isFriend(PLAYER_ID, friend.id);
 
   // 照料按钮：只有真的缺水 / 生虫时才出现
   // 挂在底边框上，所以一格里同时放「偷」和两个照料按钮也不会把正文挤窄
@@ -135,9 +138,13 @@ function plotCardHTML(friend, index, now) {
         </div>`,
       body: `
         <div class="np-name">${crop.name}</div>
-        <div class="np-meta ripe-meta">可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}</div>`,
+        <div class="np-meta${buddy ? ' ripe-meta' : ''}">${buddy
+    ? `可偷取${left > 1 ? ` · 还剩 ${left - 1} 茬` : ''}`
+    : '熟了 · 还不是好友'}</div>`,
       // 偷菜是这颗格子的主动作，和自家「收获」同一位置、同一身橙色
-      hang: `<button class="btn small harvest" data-action="${act('steal')}" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>${care}`,
+      hang: buddy
+        ? `<button class="btn small harvest" data-action="${act('steal')}" data-id="${friend.id}" data-plot="${index}">偷 1 个</button>${care}`
+        : care,
     });
   }
 
@@ -212,7 +219,9 @@ function openFriendCrop(friend, index) {
 
   let foot = '';
   if (ripe) {
-    if (plot.guarded) foot = '🐕 被守护犬盯着，这一轮谁也偷不了';
+    if (!friend.net && !isFriend(PLAYER_ID, friend.id)) {
+      foot = '熟了也偷不了 —— 你们还不是好友';
+    } else if (plot.guarded) foot = '🐕 被守护犬盯着，这一轮谁也偷不了';
     else if (plot.stolen) foot = `这一轮已经被顺走 ${plot.stolenCount || 1} 个了`;
     else if (social.isStealable(plot, now)) foot = '现在就能偷 —— 每块地每轮只能顺 1 个';
   } else {
@@ -394,10 +403,17 @@ function confirmFeedDog(friend, onDone) {
  * @param {number} now
  */
 function boardHTML(friend, now) {
+  // 好友标记（第 57 轮）：非好友偷不了菜、也催不动，得在弹窗最显眼处说清楚，
+  // 否则玩家会以为是「按钮坏了」
+  const buddy = friend.net === true || isFriend(PLAYER_ID, friend.id);
+  const tag = friend.net
+    ? ''
+    : `<span class="friend-chip ${buddy ? 'buddy' : 'stranger'}">${buddy ? '🤝 好友' : '还没加好友'}</span>`;
   return `
     <div class="npc-board" data-role="board">
       <div class="npc-board-top">
         <span class="npc-board-title">🟫 农场 <b>${friend.plots.length}</b> 块</span>
+        ${tag}
         <button class="npc-chip icon" data-action="open-friend-log" data-id="${friend.id}"
           title="最近两天的农场日志">📜</button>
         <span class="npc-sec-tools">${secToolsHTML(friend, now)}</span>
@@ -489,6 +505,25 @@ function openInteract(friend, onDone = () => {}) {
   const online = isNpcOnline(friend, now);
   const rel = remote ? 0 : getRelation(PLAYER_ID, friend.id);
   const range = summonDelayRange(rel);
+  // 好友那一行（第 57 轮）：已经是好友就给「解除」，不是就给「加好友」。
+  // 门槛写在副标题里 —— 玩家得知道「还差多少」，否则只能瞎点
+  const buddy = !remote && isFriend(PLAYER_ID, friend.id);
+  const asking = !remote && Boolean(friend.friendAsk);
+  const need = friendThreshold(friend.personality);
+  const friendRow = remote ? '' : buddy
+    ? `<button class="ia-row" data-action="unfriend-ask" data-id="${friend.id}">
+      <span class="ia-ico">💔</span>
+      <span class="ia-body"><b>解除好友</b><i>解除之后偷不了他家的菜，也催不动他</i></span>
+      <span class="ia-go">›</span>
+    </button>`
+    : `<button class="ia-row${asking ? ' off' : ''}" data-action="friend-ask" data-id="${friend.id}">
+      <span class="ia-ico">🤝</span>
+      <span class="ia-body"><b>加好友</b><i>${asking
+        ? '申请已经递过去了，等他答复'
+        : `好感到 ${need} 他才会点头（现在 ${relText(rel)}）`}</i></span>
+      ${asking ? '<span class="ia-badge off">等答复</span>' : `<span class="ia-badge">门槛 ${need}</span>`}
+      <span class="ia-go">›</span>
+    </button>`;
 
   // 三行都写成字面量：`tools/check.mjs` 靠扫源码里的 data-action 字符串
   // 校验「每个动作都有处理器」，用 ${action} 拼出来的它扫不到
@@ -511,14 +546,17 @@ function openInteract(friend, onDone = () => {}) {
       ${online ? '' : '<span class="ia-badge off">离线</span>'}
       <span class="ia-go">›</span>
     </button>
-    <button class="ia-row${online ? ' off' : ''}" data-action="summon-ask" data-id="${friend.id}">
+    <button class="ia-row${online || !buddy ? ' off' : ''}" data-action="summon-ask" data-id="${friend.id}">
       <span class="ia-ico">📣</span>
-      <span class="ia-body"><b>催促上线</b><i>${online
-        ? '他就在村里，不用催'
+      <span class="ia-body"><b>催促上线</b><i>${!buddy
+        ? '还不是好友，催了他也不会来'
+        : online ? '他就在村里，不用催'
         : `预计 ${fmtDuration(range.min)}~${fmtDuration(range.max)}后来`}</i></span>
-      ${online ? '<span class="ia-badge off">在线</span>' : `<span class="ia-badge">−${SUMMON_REL_COST} 好感</span>`}
+      ${!buddy
+        ? '<span class="ia-badge off">非好友</span>'
+        : online ? '<span class="ia-badge off">在线</span>' : `<span class="ia-badge">−${SUMMON_REL_COST} 好感</span>`}
       <span class="ia-go">›</span>
-    </button>`;
+    </button>${friendRow}`;
 
   openModal(`
     <div class="modal-head">
@@ -526,7 +564,7 @@ function openInteract(friend, onDone = () => {}) {
       <button class="close" data-close>✕</button>
     </div>
     <div class="modal-sub">
-      ${remote ? '联机好友 · 只能送礼' : `好感 ${rel >= 0 ? '+' : ''}${rel} · 交情越好，越愿意搭理你`}
+      ${remote ? '联机好友 · 只能送礼' : `好感 ${rel >= 0 ? '+' : ''}${rel}${buddy ? ' · 好友' : ''} · 交情越好，越愿意搭理你`}
     </div>
     <div class="ia-list" data-role="interact">${rows}</div>
   `, (action) => {
@@ -546,8 +584,81 @@ function openInteract(friend, onDone = () => {}) {
       openTradePicker(friend.id, onDone);
       return;
     }
-    if (action === 'summon-ask') confirmSummon(friend, onDone);
+    if (action === 'summon-ask') {
+      if (!isFriend(PLAYER_ID, friend.id)) {
+        notify(`还不是好友，${friend.name} 不一定会搭理你`);
+        return;
+      }
+      confirmSummon(friend, onDone);
+      return;
+    }
+    if (action === 'friend-ask') {
+      requestFriend(friend.id).then(() => {
+        // 申请递出去了，把互动弹窗重开一遍：那一行要变成「等答复」
+        closeModal();
+        openInteract(getFriend(friend.id), onDone);
+      });
+      return;
+    }
+    if (action === 'unfriend-ask') confirmUnfriend(friend, onDone);
   }, 'interact-modal');
+}
+
+/**
+ * 「解除好友」的确认框（第 57 轮）。
+ *
+ * 解除是**有代价**的：偷不了他家的菜、也催不动他，而好感不会跟着清零 ——
+ * 再想加回来还得重新过门槛。所以先说清楚，再让人按。
+ *
+ * @param {object} friend
+ * @param {() => void} [onDone] 解除之后回头刷新下面那层邻居农场
+ */
+function confirmUnfriend(friend, onDone = () => {}) {
+  const rel = getRelation(PLAYER_ID, friend.id);
+  const need = friendThreshold(friend.personality);
+
+  openModal(`
+    <div class="modal-head">
+      <h3>💔 解除好友 · ${escapeHtml(friend.name)}</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="modal-sub">好感不会清零，但这段交情就不算数了</div>
+
+    <div class="sd-hero">
+      <div class="sd-emoji">${friend.avatar}</div>
+      <div class="sd-id">
+        <div class="sd-name">${escapeHtml(friend.name)}</div>
+        <div class="sd-tags">
+          <span class="sd-lv">${escapeHtml(PERSONALITIES[friend.personality]?.name || '邻居')}</span>
+          <span class="sd-chip ${rel >= 0 ? 'gold' : ''}">好感 ${rel >= 0 ? '+' : ''}${rel}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sd-grid">
+      <div class="sd-cell"><span>偷菜</span><b>不能再偷</b></div>
+      <div class="sd-cell"><span>催促上线</span><b>催不动</b></div>
+      <div class="sd-cell"><span>再加回来</span><b>好感要到 ${need}</b></div>
+      <div class="sd-cell"><span>送礼 / 照料</span><b>照常可以</b></div>
+    </div>
+
+    <div class="sd-gain">
+      只有<b>偷菜</b>和<b>催促上线</b>需要好友关系，送礼、交易、帮忙照料都不受影响。
+    </div>
+
+    <div class="modal-foot">
+      <div class="rm-actions">
+        <button class="btn ghost" data-close>再想想</button>
+        <button class="btn" data-action="unfriend-ok">确认解除</button>
+      </div>
+    </div>
+  `, async (action) => {
+    if (action !== 'unfriend-ok') return;
+    closeModal();          // 先收确认层
+    closeModal();          // 再收互动层，回到邻居农场
+    await unfriend(friend.id);
+    onDone();
+  });
 }
 
 /**

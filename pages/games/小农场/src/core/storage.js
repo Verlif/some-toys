@@ -72,7 +72,8 @@ export async function loadSave() {
       bySeq(rows).map(({ at, emoji, text, by }) => ({ at, emoji, text, by: by || '' })),
     ])),
     // 旧档时报可能没有 crop / cat：分类字段留空（读时按图标兜底）
-    relations: relRows.map(({ a, b, v }) => ({ a, b, v })),
+    // friend：第 57 轮加的好友标记，老存档没有就是 false
+    relations: relRows.map(({ a, b, v, friend }) => ({ a, b, v, friend: friend === true })),
     news: bySeq(newsRows).map(({ at, emoji, text, crop, cat }) => ({
       at,
       emoji,
@@ -113,7 +114,7 @@ export function freezeWrites() {
  * @param {object[]} [changes.farms] 要写回的农场（行 + 全部地块 + 整段日志）
  * @param {Record<string, number>} [changes.bag] 背包（全量覆盖）
  * @param {object[]} [changes.news] 时报（全量覆盖）
- * @param {Record<string, number>} [changes.relations] 好感度（全量覆盖，键是 `a|b`）
+ * @param {Record<string, {v: number, friend: boolean}>} [changes.relations] 好感度与好友（全量覆盖，键是 `a|b`）
  * @param {Record<string, object>} [changes.dailyRows] 每日排行榜（全量覆盖，键是日期）
  */
 export function commit(changes = {}) {
@@ -187,19 +188,25 @@ function writeNews(tx, news) {
 }
 
 /**
- * 好感度全量覆盖：只写非 0 的，几百行的表清空重写最不容易出错。
+ * 好感度与好友全量覆盖：只写有意义的行，几百行的表清空重写最不容易出错。
  * 键是 `a|b`（见 data/relation.js 的 relKey），这里拆回两段存成复合主键。
+ *
+ * 一行有意义的条件是「好感非 0 **或** 是好友」—— 0 好感的好友必须写下去，
+ * 否则重开游戏就变成「好感 0 + 不是好友」，好友关系凭空消失。
+ *
  * @param {IDBTransaction} tx
- * @param {Record<string, number>} relations
+ * @param {Record<string, {v: number, friend: boolean}>} relations
  */
 function writeRelations(tx, relations) {
   const store = tx.objectStore('relation');
   store.clear();
-  for (const [key, value] of Object.entries(relations)) {
-    if (!value) continue;
+  for (const [key, entry] of Object.entries(relations)) {
+    const v = Number(entry?.v) || 0;
+    const friend = entry?.friend === true;
+    if (!v && !friend) continue;
     const [a, b] = key.split('|');
     if (!a || !b) continue;
-    store.put({ a, b, v: value });
+    store.put({ a, b, v, friend });
   }
 }
 

@@ -65,7 +65,7 @@ function nextId(at) {
  * 推一条通知。
  *
  * @param {object} options
- * @param {string} options.kind gift / award
+ * @param {string} options.kind gift / award / npc / friend
  * @param {string} options.emoji
  * @param {string} options.title 主文案
  * @param {string} [options.body] 副文案（时间与明细由 UI 拼，这里只写内容）
@@ -74,6 +74,8 @@ function nextId(at) {
  * @param {number} [options.at] 发生时刻（离线补算时是过去）
  * @param {?object} [options.reward] 领取时发放的奖励
  * @param {string} [options.claimText] 领取后写进农场日志的那句话
+ * @param {string} [options.action] 需要玩家点按钮处理的动作（如 `friend-request`）
+ * @param {boolean} [options.pending] 有动作但还没处理完 —— 让它留在「待办」里
  * @returns {string} 通知 id
  */
 export function pushNotice({
@@ -86,6 +88,8 @@ export function pushNotice({
   at = Date.now(),
   reward = null,
   claimText = '',
+  action = '',
+  pending = false,
 } = {}) {
   const entries = list();
   const id = nextId(at);
@@ -102,8 +106,10 @@ export function pushNotice({
     from,
     reward: clean,
     claimText,
+    action,
     read: false,
-    claimed: !clean,
+    // 没有奖励也没有待办动作的消息「已读即完成」
+    claimed: pending ? false : !clean,
   });
   entries.sort((a, b) => b.at - a.at);
   state.farm.progress.notices = trim(entries);
@@ -164,10 +170,13 @@ export async function claimNotice(id) {
 
 /**
  * 一键收下所有还能领的。
+ *
+ * **跳过带 `action` 的条目**（好友申请）：它们要玩家自己点头或摇头，
+ * 「全部收下」替人做主就成了「全部同意」。
  * @returns {Promise<number>} 收下了几条
  */
 export async function claimAllNotices() {
-  const pending = list().filter((entry) => !entry.claimed);
+  const pending = list().filter((entry) => !entry.claimed && !entry.action);
   if (!pending.length) return 0;
 
   const now = Date.now();

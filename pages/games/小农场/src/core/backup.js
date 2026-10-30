@@ -59,7 +59,8 @@ export function describeSave(save) {
     createdAt: Number(player.createdAt) || 0,
     plots: plots.length,
     planted: plots.filter((plot) => plot.cropId).length,
-    friends: farms.filter((row) => row.id !== PLAYER_ID).length,
+    // 公共用地也是一行农场，但它不是邻居 —— 算进去会让「32 位邻居」变成 33
+    friends: farms.filter((row) => row.id !== PLAYER_ID && row.kind !== 'commons').length,
     bagKinds: Object.keys(bag).length,
     lit: Object.keys(specimens).filter((id) => specimens[id]).length,
   };
@@ -139,17 +140,20 @@ function checkShape(save) {
 }
 
 /**
- * 好感度：存档里是 `[{a,b,v}]`（loadSave 的形状），
- * 而 commit() 要的是 `{ 'a|b': v }` —— 键必须用 relKey 拼，
+ * 好感度与好友：存档里是 `[{a,b,v,friend}]`（loadSave 的形状），
+ * 而 commit() 要的是 `{ 'a|b': {v, friend} }` —— 键必须用 relKey 拼，
  * 与运行时 state.relations 保持同一套写法，否则读回来是空的。
+ *
+ * 「好感 0 但是好友」这一行要留着：它是合法的，丢了等于解除好友。
  */
 function relationsOf(rows) {
   const out = {};
   for (const row of rows || []) {
     if (!row || !row.a || !row.b) continue;
     const v = Number(row.v) || 0;
-    if (!v) continue;
-    out[relKey(row.a, row.b)] = v;
+    const friend = row.friend === true;
+    if (!v && !friend) continue;
+    out[relKey(row.a, row.b)] = { v, friend };
   }
   return out;
 }

@@ -20,6 +20,7 @@
 import { byId, delegate, escapeHtml, setHTML } from '../../core/dom.js';
 import { on, EVENTS } from '../../core/bus.js';
 import { PLAYER_ID, state } from '../../store/state.js';
+import { isFriend } from '../../store/relation.js';
 import { isNpcOnline } from '../../data/friends.js';
 import { filterNews, NEWS_FILTERS, newsList } from '../../store/news.js';
 import { myOrders, npcOrders } from '../../store/orders.js';
@@ -33,6 +34,8 @@ import { showToast } from '../toast.js';
 import { completeGuide } from '../../store/codex.js';
 import { formatCoins, dayKey } from '../../core/utils.js';
 import { invest, pray, villageLogs, villageSnapshot } from '../../store/village.js';
+import { commonsSnapshot } from '../../store/commons.js';
+import { openCommonsModal } from '../commons-modal.js';
 import {
   VILLAGE_NAME,
   VILLAGE_YIELD_PER_LEVEL,
@@ -46,11 +49,14 @@ let boardFilter = 'all';
 let boardDesc = true;
 
 /**
- * 村民总览弹窗的筛选：all = 全部（含离线），online = 只看在线的。
+ * 村民总览弹窗的筛选：all = 全部（含离线），online = 只看在线的，
+ * friend = 只看已经是好友的。
  *
  * 默认 `online`（第 51 轮）：玩家点开这个总览，想看的是「现在谁在」——
  * 32 个村民全铺出来，一屏里大半是灰的，还得自己往下找绿点。
- * 想翻名单（比如找人送礼）切「全部」即可，选择会记住。
+ * 想翻名单（比如找人递好友申请）切「全部」即可，选择会记住。
+ *
+ * 第 57 轮起这里是**唯一**的全量名单：底部「好友」页只列好友。
  */
 let villagerFilter = 'online';
 
@@ -58,6 +64,26 @@ let villagerFilter = 'online';
 
 /** 进行中的订单总数：邻居张榜 + 我发布的 */
 const orderCount = (now = Date.now()) => npcOrders(now).length + myOrders(now).length;
+
+/**
+ * 公共用地入口的副标题（第 58 轮）。
+ *
+ * 这一行要能回答「现在值不值得点进去」：有几块能收 → 直接说数字，
+ * 一块都没有就说还在长，别让人白点一次。
+ *
+ * ⚠️ 还要兜住「一片空地」：`commonsSnapshot` 不播种（那是开弹窗前与
+ * 世界时钟的事），刚开新档点进村中心时可能真的六块全空 ——
+ * 这时候说「都在长」就是骗人。
+ * @param {{ripe: number, total: number, plots: object[]}} snap
+ */
+const commonsHint = (snap) => {
+  if (snap.ripe) return `${snap.ripe} 块能收了 · 共 ${snap.total} 块`;
+  const plots = snap.plots || [];
+  if (plots.length && plots.every((plot) => !plot.cropId)) {
+    return `${snap.total} 块地 · 村里马上补种`;
+  }
+  return `${snap.total} 块地都在长 · 熟了先到先得`;
+};
 
 /** 在线人数（含玩家）与总人数（含玩家） */
 function onlineStats(now = Date.now()) {
@@ -108,22 +134,29 @@ const meCardHTML = () => `
 
 /** 名单：你自己 + 按筛选取的邻居（卡片与邻居页同一套，离线自带灰度） */
 function villagerRowsHTML(filter = villagerFilter, now = Date.now()) {
-  const list = state.friends.filter((f) => filter === 'all' || isNpcOnline(f, now));
+  const list = state.friends.filter((f) => {
+    if (filter === 'online') return isNpcOnline(f, now);
+    if (filter === 'friend') return isFriend(PLAYER_ID, f.id);
+    return true;
+  });
   // 默认档是「在线」，而村里可能一个人都没上线 —— 得说句话，
   // 否则弹窗里只剩「你自己」一张卡，看起来像加载失败
   const empty = list.length || filter === 'all'
     ? ''
-    : '<div class="empty-tip">🌙<br>这会儿没有邻居在线<br>切「全部」看看谁在家</div>';
-  return meCardHTML() + empty + list.map((f) => friendCardHTML(f, now)).join('');
+    : `<div class="empty-tip">🌙<br>${filter === 'friend' ? '这会儿没有好友在线' : '这会儿没有邻居在线'}<br>切「全部」看看谁在家</div>`;
+  // friendTag：这里是**全量名单**，得标出谁已经是好友 ——
+  // 非好友的地偷不了、人也催不动，玩家得先知道这件事
+  return meCardHTML() + empty + list.map((f) => friendCardHTML(f, now, { friendTag: true })).join('');
 }
 
-/** 筛选芯片：全部 / 在线 */
+/** 筛选芯片：全部 / 在线 / 好友 */
 function villagerBarHTML(now = Date.now()) {
   const { online, total } = onlineStats(now);
+  const buddies = state.friends.filter((f) => isFriend(PLAYER_ID, f.id)).length;
   const chip = (key, label, n) => `
     <button class="filter-chip ${villagerFilter === key ? 'active' : ''}"
             data-action="villager-filter" data-id="${key}">${label}<i class="chip-num">${n}</i></button>`;
-  return chip('all', '全部', total) + chip('online', '在线', online);
+  return chip('all', '全部', total) + chip('online', '在线', online) + chip('friend', '好友', buddies);
 }
 
 /** 打开村民总览：筛选只重刷芯片与名单，不重建弹窗 */
@@ -469,6 +502,7 @@ export function renderCenter() {
   const now = Date.now();
   const { online, total } = onlineStats(now);
   const orders = orderCount(now);
+  const commons = commonsSnapshot(now);
 
   setHTML(root, `
     ${villageCardHTML(now)}
@@ -489,6 +523,11 @@ export function renderCenter() {
         <span class="ca-ico">📋</span>
         <span class="ca-body"><b>订单</b><i data-role="order-hint">${orders ? '有活干了' : '暂时没有单'}</i></span>
         <i class="ca-badge ${orders ? '' : 'zero'}" data-role="orders-n">${orders}</i>
+      </button>
+      <button class="center-act commons" data-action="center-commons">
+        <span class="ca-ico">🏞</span>
+        <span class="ca-body"><b>公共用地</b><i data-role="commons-hint">${commonsHint(commons)}</i></span>
+        <i class="ca-badge ${commons.ripe ? '' : 'zero'}" data-role="commons-n">${commons.ripe}</i>
       </button>
     </div>
     ${rankCardHTML()}
@@ -525,6 +564,16 @@ function refreshMarks() {
   const hint = root.querySelector('[data-role="order-hint"]');
   if (hint) hint.textContent = orders ? '有活干了' : '暂时没有单';
 
+  // 公共用地：能收几块、地里还有没有货 —— 跟订单一样常驻跟着走
+  const commons = commonsSnapshot(now);
+  const commonsBadge = root.querySelector('[data-role="commons-n"]');
+  if (commonsBadge) {
+    commonsBadge.textContent = String(commons.ripe);
+    commonsBadge.classList.toggle('zero', !commons.ripe);
+  }
+  const commonsText = root.querySelector('[data-role="commons-hint"]');
+  if (commonsText) commonsText.textContent = commonsHint(commons);
+
   // 名单里的圆点 / 灰度（弹窗开着的时候才有节点）：与邻居页共用一套
   refreshOnline();
 
@@ -542,6 +591,10 @@ const CENTER_ACTIONS = {
   },
   'center-orders'() {
     openSubpage('orders');
+  },
+  // 公共用地（第 58 轮）：弹窗里是一张「没有主人的农场」
+  'center-commons'() {
+    openCommonsModal();
   },
   // 榜单卡片：整张卡可点，开排行榜弹窗（与子页面版同源渲染）
   'center-rank'() {
@@ -605,4 +658,6 @@ export function mountCenter() {
   on(EVENTS.TICK, refreshMarks);
   // 村庄：投入 / 祈福 / 升级（含邻居祈福把计数推上去）→ 只重绘那一张卡
   on(EVENTS.VILLAGE, paintVillage);
+  // 公共用地：玩家照料 / 拿走、村民顺手来一趟 → 入口上的「能收几块」跟着变
+  on(EVENTS.COMMONS, refreshMarks);
 }

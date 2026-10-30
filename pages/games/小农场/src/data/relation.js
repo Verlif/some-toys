@@ -9,16 +9,17 @@
  *
  * 几条规则（全部是纯函数，谁都能读）：
  *   - **起点由性格决定**：`round((A 的性格值 + B 的性格值) / 2)`，玩家没有性格，按 0 算；
- *   - **偷菜不掉好感**：顺走一把菜只是「被偷的人心里有数」，不撕破脸；
- *   - **被守护犬抓住才掉好感**：按想偷的那个果实售价折算，`max(1, round(售价 / 10))`；
+ *   - **偷菜不掉好感**（第 57 轮）：顺走一把菜、甚至被守护犬当场逮住，
+ *     都只罚款不动交情 —— 「偷」和「好感」从此是两套互不相干的东西；
  *   - **打理加好感**：每照料一块地 +1；
  *   - **送礼加好感**：按送出的那份产出的等级，`round(等级 / 2)`，至少 1；
  *   - 好感低的人更爱来偷、好感高的人更愿意来帮忙与送礼（见下面的权重函数）；
  *   - **亲近档（≥100）是道坎**：NPC 上线会优先登门打理这些农场，
  *     打理完还按性格系数加权概率顺手送一份礼（见 REL_CARE_PRIORITY / closeGiftChanceFor）。
  *
- * 值本身存在 state.relations（`{ "a|b": v }`，a、b 按字典序排好，一对只有一条），
- * 落盘在 relation 表，见 core/storage.js。
+ * 值本身存在 state.relations（`{ "a|b": { v, friend } }`，a、b 按字典序排好，
+ * 一对只有一条 —— 好友是「同一对关系的另一种状态」，所以共用这一行，
+ * 不另开表），落盘在 relation 表，见 core/storage.js。
  */
 import { clamp } from '../core/utils.js';
 
@@ -27,25 +28,6 @@ export const REL_MAX = 200;
 
 /** 打理一次（浇水 / 杀虫）加多少好感 */
 export const REL_PER_CARE = 1;
-
-/**
- * 偷菜被守护犬抓住，掉的好感 = 想偷的那个果实售价 / 这个数（至少 1）。
- *
- * 只有**被抓住**才掉：顺利顺走不掉（见 stealWeightFor 的说明），
- * 但当场被狗逮住是另一回事 —— 钱也罚了、脸也丢了，关系自然破了个角。
- * 按售价折算是用户明确要的口径：高阶作物一份就上千，被抓一次掉上百，
- * 量级正好和「人赃并获」对得上。
- */
-const CAUGHT_SELL_DIVISOR = 10;
-
-/**
- * 被守护犬抓住之后，**其他**邻居各掉多少好感。
- *
- * 村里没有秘密：你半夜翻墙被人家狗逮住，第二天半个村子都在说。
- * 固定 1 点、**不乘在线双倍** —— 双倍是主人家的事（他家的菜被惦记了），
- * 旁人只是「听说了」，不该跟着翻倍；被偷那家已按售价折算，不重复扣。
- */
-export const CAUGHT_RIPPLE_REL_LOSS = 1;
 
 /** 送礼加的好感 = 产出等级 × 这个系数（至少 1） */
 const GIFT_REL_RATIO = 0.5;
@@ -64,9 +46,6 @@ export const clampRelation = (v) => clamp(Math.round(Number(v) || 0), REL_MIN, R
  */
 export const baseRelation = (friendlyA = 0, friendlyB = 0) =>
   clampRelation((friendlyA + friendlyB) / 2);
-
-/** 偷菜被守护犬抓住，掉多少好感（按想偷的果实售价折算，最少 1） */
-export const dogCaughtRelLoss = (sell) => Math.max(1, Math.round(sell / CAUGHT_SELL_DIVISOR));
 
 /** 送出一份等级 lv 的产出，加多少好感 */
 export const giftRelGain = (lv) => Math.max(1, Math.round(lv * GIFT_REL_RATIO));
@@ -102,24 +81,142 @@ export function relTier(v) {
 export const relText = (v) => (v > 0 ? `+${v}` : String(v));
 
 /**
- * 把 relation 表里的行读成 `{ "a|b": v }`。
+ * 把 relation 表里的行读成 `{ "a|b": { v, friend } }`。
  *
- * 只认当前还存在的一对（换过邻居名单之后，孤儿关系直接丢掉）；
- * 0 不落键 —— 「没有记录」和「正好 0」是同一件事。
+ * 只认当前还存在的一对（换过邻居名单之后，孤儿关系直接丢掉）。
+ * 一行只有在 **好感 0 且不是好友** 时才没有意义 —— 好友关系可能正好卡在
+ * 0 好感上（送礼送没了、催上线催到 0），那一行必须留着，否则解除好友
+ * 之后就再也加不回来（第 57 轮的坑）。
  *
- * @param {Array<{a: string, b: string, v: number}>} rows
+ * @param {Array<{a: string, b: string, v: number, friend?: boolean}>} rows
  * @param {Set<string>} ids 当前所有农场 id
- * @returns {Record<string, number>}
+ * @returns {Record<string, {v: number, friend: boolean}>}
  */
 export function readRelations(rows, ids) {
   const out = {};
   for (const row of rows || []) {
     if (!ids.has(row.a) || !ids.has(row.b) || row.a === row.b) continue;
     const v = clampRelation(row.v);
-    if (v) out[relKey(row.a, row.b)] = v;
+    const friend = row.friend === true;
+    if (!v && !friend) continue;
+    out[relKey(row.a, row.b)] = { v, friend };
   }
   return out;
 }
+
+/* ---------- 好友（第 57 轮） ---------- */
+
+/**
+ * 「跟这个人交朋友要多少好感」—— 按性格给门槛，最高 120。
+ *
+ * 门槛跟着**被申请的那位**走：想跟「爱占便宜」做朋友，好感得攒到 120；
+ * 「热心」的 30 就够了。玩家没有性格档案，查不到就是 0（只用于
+ * `pairFriendThreshold` 里取 max，玩家这一侧永远不会成为门槛来源）。
+ *
+ * 与 `PERSONALITIES[x].friendly` 的起点交叉之后，开局只有 7 位「热心」
+ * 邻居天生就是好友（起点 +38 ≥ 门槛 30），其余 45 位都得靠互动攒。
+ */
+export const FRIEND_THRESHOLD = {
+  friendly: 30,
+  diligent: 40,
+  scholar: 45,
+  boss: 60,
+  thrifty: 75,
+  leisurely: 80,
+  merchant: 100,
+  greedy: 120,
+};
+
+/**
+ * 一位村民的好友门槛。
+ * @param {string} personality data/friends.js 里 PERSONALITIES 的键
+ * @returns {number}
+ */
+export const friendThreshold = (personality) => FRIEND_THRESHOLD[personality] ?? 0;
+
+/**
+ * 一对关系的好友门槛：取两边里更难的**那一位**。
+ *
+ * 玩家没有性格 → 自己那侧是 0，取 max 之后就是对面 NPC 的门槛，
+ * 所以「玩家 ↔ NPC」和「NPC ↔ NPC」可以共用同一个函数。
+ * @param {string} personalityA
+ * @param {string} personalityB
+ */
+export const pairFriendThreshold = (personalityA, personalityB) =>
+  Math.max(friendThreshold(personalityA), friendThreshold(personalityB));
+
+/**
+ * NPC 主动来加好友的门槛倍率。
+ *
+ * 用户定死 0.8：**主动**比**被请求**低两成 —— 人家自己愿意开口，
+ * 当然比「你求他」容易一点。
+ */
+export const PROACTIVE_FRIEND_RATIO = 0.8;
+
+/**
+ * NPC 主动发申请 / NPC 之间互加的门槛（两边各判各的，取更难的 → max）。
+ *
+ * 玩家 ↔ NPC：玩家那侧是 0，取 max 之后就是「玩家向他申请的门槛 × 0.8」，
+ * 与用户的原话完全对上。
+ * @param {string} personalityA
+ * @param {string} [personalityB]
+ */
+export const proactiveFriendThreshold = (personalityA, personalityB = '') =>
+  Math.round(pairFriendThreshold(personalityA, personalityB) * PROACTIVE_FRIEND_RATIO);
+
+/**
+ * 好感掉到这个值以下就自动解除好友（门槛的一半）。
+ *
+ * 用户定的口径：「好感掉到门槛一半以下自动解除」。取 max 的那一侧
+ * 同理，所以「玩家 ↔ NPC」就是 NPC 门槛的一半 —— 热心 15 / 爱占便宜 60。
+ * @param {string} personalityA
+ * @param {string} personalityB
+ */
+export const autoUnfriendThreshold = (personalityA, personalityB) =>
+  Math.floor(pairFriendThreshold(personalityA, personalityB) / 2);
+
+/**
+ * 每次上线掷一次「要不要去加个好友」的概率。
+ * 用户定死 20%：平均五次上线才主动开口一次，不至于满信箱都是申请。
+ */
+export const PROACTIVE_FRIEND_CHANCE = 0.2;
+
+/**
+ * 在线时答复玩家申请的随机延迟区间（毫秒）。
+ * 一秒就回太假，拖到下次上线又太难受 —— 20 秒到 4 分钟刚好「等得起」。
+ */
+export const FRIEND_REPLY_MS = [20_000, 240_000];
+
+/**
+ * 各性格「这次上线先不处理、拖到下次上线再说」的概率。
+ *
+ * 用户要的就是这个「甚至不会在本次上线时处理」：勤快的当场就给你答复，
+ * 悠闲的、爱占便宜的能拖就拖。缺省 0.3。
+ */
+const FRIEND_DEFER_CHANCE = {
+  diligent: 0.1,
+  friendly: 0.12,
+  scholar: 0.2,
+  boss: 0.25,
+  thrifty: 0.35,
+  merchant: 0.45,
+  leisurely: 0.55,
+  greedy: 0.65,
+};
+
+/**
+ * 这位村民这次上线会不会把答复拖到下次。
+ * @param {string} personality
+ * @returns {number} 0~1
+ */
+export const friendDeferChance = (personality) => FRIEND_DEFER_CHANCE[personality] ?? 0.3;
+
+/**
+ * 被拒之后多久才能再递申请。
+ *
+ * 门槛没变的时候再问一遍必然还是拒，只会把信箱塞满 —— 缓半小时。
+ */
+export const FRIEND_ASK_COOLDOWN = 30 * 60_000;
 
 /* ---------- 好感度如何影响邻居的行为 ---------- */
 

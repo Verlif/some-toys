@@ -9,6 +9,7 @@
  *   ③ 每日榜单跨 14:00 结算（必须在当期的动作都记完之后）
  *   ④ 种子制造间收炉
  *   ⑤ 自动机器干活（第 51 轮：浇水 / 捉虫 / 收获，不给经验）
+ *   ⑥ 公共用地补种（第 58 轮：空地由系统种上、拿光的清空重种）
  *
  * 步长按离线总跨度自适应（见 data/world.js 的 stepMsFor）：
  * 一周以内 1 分钟一步，之后每翻一倍时长步长翻倍。
@@ -25,6 +26,7 @@ import { expireOrders } from './orders.js';
 import { claimJobs } from './workshop.js';
 import { beginVisit, bulkAdvance, estimateVisits, planIdle, planVisit, runStep, runVisit } from './npc-sim.js';
 import { runAutoStep } from './automation.js';
+import { advanceCommons } from './commons.js';
 import { IDLE_AFTER_VISIT_MS, IDLE_MS } from '../data/friends.js';
 import {
   FRAME_MS,
@@ -253,6 +255,12 @@ async function tick(prev, next, { ctx, deferFrom, onVisit, report }) {
     report.auto.gained += auto.gained;
     report.dirty = true;
   }
+
+  // ⑥ 公共用地（第 58 轮）：空地由系统补种、拿光的清空重种、刚熟的摇产量。
+  //    村民来浇水 / 抢收是**空闲动作**（npc-sim 的 commons），不在这里 ——
+  //    那件事跟「谁在线」有关，交给已经排好程的那条线更省。
+  //    同样不落盘，由 report.dirty 统一提交
+  if (advanceCommons(next)) report.dirty = true;
 }
 
 /**

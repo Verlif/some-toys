@@ -1201,6 +1201,16 @@
   font-variant-numeric: tabular-nums;
 }
 .center-act .ca-badge.zero { background: #e6ebe1; color: #7d8a78; }
+/* 公共用地（第 58 轮）：整宽一颗 —— 它和公告栏 / 订单不是一类东西，
+   单独占一行才说得清「这是村里的地，不是一条信息」 */
+.center-act.commons {
+  grid-column: 1 / -1;
+  border-color: #cfe0c6;
+  background: linear-gradient(160deg, #f4fbef, #e9f5e2);
+}
+.center-act.commons .ca-ico { background: #e4f2da; }
+.center-act.commons .ca-body b { color: #3f6b34; }
+.center-act.commons .ca-body i { color: #6d8a63; }
 /* ---------- 村中心：排行榜卡（两列） ---------- */
 /* 左列榜单、右列昨日冠军；整张卡是一个按钮，点哪儿都开排行榜弹窗。
    两列用同一个行高（22px）对齐 —— 左边六行名字、右边六个头像必须一条线 */
@@ -1348,6 +1358,9 @@
 .friend-chip.care { background: #fdeceb; color: #c73f36; }
 /* 职业：邻居之间最直观的差异之一，用中性的蓝灰调，不和状态色抢眼 */
 .friend-chip.job { background: #eaf0f8; color: #4b6288; }
+/* 好友标记（只在村中心的全量名单里出现）：好友一档绿，非好友一档灰 */
+.friend-chip.buddy { background: #e7f4dd; color: #4a7a2f; }
+.friend-chip.stranger { background: #f1f3ef; color: #93a08f; }
 
 /* 邻居页顶部的排序条：横向可滑，筛选档不会把宽度撑爆 */
 /* 排序条固定在顶栏下方，滚列表时不跟着走。
@@ -1711,17 +1724,6 @@
   color: #ffd764;
   text-shadow: 0 2px 10px rgba(0, 0, 0, .5);
   animation: fade .3s ease .26s both;
-}
-/* 被牵连的邻居数：比罚款轻一档，是「余波」不是「主罚」 */
-.dc-ripple {
-  margin-top: 8px;
-  padding: 3px 11px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, .13);
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, .86);
-  animation: fade .3s ease .34s both;
 }
 
 @keyframes dcPop {
@@ -3595,7 +3597,16 @@
   transition: transform .14s ease;
 }
 .nt-btn:active { transform: scale(.94); }
+/* 好友申请的「拒绝」：次要动作，描边款，别跟「同意」抢 */
+.nt-btn.ghost {
+  background: #fff;
+  color: #7b8a78;
+  box-shadow: inset 0 0 0 1px #dde6d6;
+}
+.nt-acts { flex-shrink: 0; display: flex; gap: 6px; }
 .nt-done { flex-shrink: 0; font-size: 10.5px; color: #a8b3a5; }
+/* 好友申请那一条：淡绿底，一眼看出「这封要你表态」 */
+.nt-item.ask { background: #f7fbf2; border-radius: 10px; padding-left: 8px; padding-right: 8px; }
 
 /* ---------- 作物原型标签 ---------- */
 /* 速生 / 丰产 / 精品 / 慢生 / 多茬 —— 商店种子行与作物详情共用。

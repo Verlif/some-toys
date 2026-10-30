@@ -15,7 +15,7 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 备份：`core/zip.js`+`core/backup.js`，导入五步校验过才弹确认；导出前 `flushDaily()`，导入后 `suspendPersist()+freezeWrites()` 双闸 + 整页 reload。
 
 ## 世界时钟
-`advanceWorld` 逐段：⓪下线→①上线→①'空闲→②订单过期→③跨14:00结算→④收炉→⑤自动机器。
+`advanceWorld` 逐段：⓪下线→①上线→①'空闲→②订单过期→③跨14:00结算→④收炉→⑤自动机器→⑥公共用地补种。
 `stepMsFor` ≤7天1分，翻倍×2封顶60分；`VISIT_BUDGET=30000` 超则最早段 bulkAdvance。
 ⚠️ 补算期跨表动作 quiet，结束 `flushAwards()`；循环里 commit 是性能陷阱（365天18s→0.4s）。
 `from=min(worldCursor,lastSeen())`；`deferFrom=sessionStart` 才演出，>2分直接算完。
@@ -60,6 +60,19 @@ DB/key/APP 名保持 `sun_farm*`。**271 作物**（165 常规+102 限定+4 荣�
 ⚠️ 投水晶量必须 `max(1, floor(mine × ratio))`（`floor(2×0.15)=0` = 愿意投却投不出）。
 村民岔路：`tier.crystal` 之外的档位**一律卖掉折现**（堵「99 枚 1 级永远用不上」）；当前档 `mine>=2` 才掷，卖时**留 1 枚**。
 ⚠️ `sellCrystal` 必须补 `emit(EVENTS.INVENTORY)` —— 仓库靠它重绘，只发 `VILLAGE` 列表停在卖之前。
+
+## 公共用地（第 58 轮）
+`state.commons` = `farm` 表里 `id:'commons'`/`kind:'commons'` 的**无主农场**，地块与日志照样落 `plot`/`log` 表 → 存储层/备份/导入校验零改动，**不升 `DB_VERSION`**。
+块数 `2×村庄等级`（2/4/6/8/10）；作物池 `[(级−1)×10, 级×20]`，**限定作物不进池**。
+⚠️ `initState()` 两处顺序死穴：`rows` 过滤必须**排除 `COMMONS_ID`**（否则被 `dropFarms` 当孤儿删掉）；`villageLevel` 必须**先于** `normalizeCommons` 算出来。
+补地块只增不减（`ensurePlots`，由 `advanceCommons` 与 `commonsSnapshot` 调），`village.js` 不认识它 → 依赖不成环。
+世界时钟第 ⑥ 步 `advanceCommons`：补地块→清空拿光的→摇产量→补种，返回 true 置 `report.dirty`，**循环里不 commit**。
+先到先得账本 `plot.taken`+`plot.takers`（玩家/NPC 共用），`commonsCanTake(plot,who)` 同时判「还剩」与「这人没拿过」。
+照料照给经验（`careExp`），**收获不给经验**（否则成刷分线）。村民走 `ACTIONS.commons`(sweep)+`ctx.commonsTick` 注入，先抢收 65%（进 `npc.bag`）再照料 50%。
+⚠️ **落盘**：`persistFriends`/`flushAwards`/`runLiveStep` 三处批量提交走 `state.js` 的 **`farmRows(...)`**（自动追加 commons、去重、滤空值）；`store/commons.js` 的 `persist()` 反过来必须带 `state.farm`（经验在玩家农场上）。玩家主动操作邻居的 10 处单点提交**刻意不带**（动了才带）。
+⚠️ 弹窗顶部 `data-role` 用 **`commons-board`** 不用 `board`（邻居弹窗全局查 `#modal [data-role="board"]` 重绘，撞名互相覆盖）。
+`sowCommons()` 内部先 `ensurePlots()`；`commonsSnapshot()` **不播种**（渲染路径不改状态），播种只在 `advanceCommons` 与 `openCommonsModal`（后者种过就 `flushCommons()`）。
+公共地照料**不记任何榜**（care 是「帮人」、work 是「自家」，两头都不算）；也不补算历史（地里最多长到成熟停住）。
 
 ## 子页面标签分类（第 55 轮）
 仓库 `bag.js`：🌾农产品 / 💠其他（水晶在这档）。包裹 `package.js`：🌱种子 / 🧭藏宝图 / 🧪道具（删掉了原来的 `section()` 分区标题）。

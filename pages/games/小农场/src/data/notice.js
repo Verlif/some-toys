@@ -6,12 +6,13 @@
  *
  * 一条通知：
  * ```
- * { id, at, kind, emoji, title, body, by, from, reward, claimText, read, claimed }
+ * { id, at, kind, emoji, title, body, by, from, reward, claimText, action, read, claimed }
  * ```
- *   - `kind`   gift / award / npc
+ *   - `kind`   gift / award / npc / friend
  *   - `by`     来源邻居 id（点一下能打开那位邻居）
  *   - `reward` `{ coins?, items?, maps? }`，null = 纯消息
- *   - `claimed` 没有 reward 的消息恒为 true（「已读即完成」）
+ *   - `action` 要玩家点按钮处理的动作（`friend-request`），空串 = 纯通知
+ *   - `claimed` 没有 reward 也没有 action 的消息恒为 true（「已读即完成」）
  */
 import { isItemKey } from './keys.js';
 
@@ -74,6 +75,7 @@ export function cleanNotices(raw, now = Date.now()) {
       const title = String(entry.title || '').trim();
       if (!title) return null;
       const reward = cleanReward(entry.reward);
+      const action = String(entry.action || '');
       return {
         id: String(entry.id || `nt-old-${index}-${at}`),
         at,
@@ -85,9 +87,10 @@ export function cleanNotices(raw, now = Date.now()) {
         from: String(entry.from || ''),
         reward,
         claimText: String(entry.claimText || ''),
+        action,
         read: Boolean(entry.read),
-        // 没有奖励的条目「已读即完成」；有奖励的以存档为准
-        claimed: reward ? Boolean(entry.claimed) : true,
+        // 有奖励 / 有待办动作的条目以存档为准；纯消息「已读即完成」
+        claimed: reward || action ? Boolean(entry.claimed) : true,
       };
     })
     .filter(Boolean)

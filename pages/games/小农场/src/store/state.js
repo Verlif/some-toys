@@ -4,6 +4,7 @@
  * 对象结构与存档结构一一对应：
  *   state.farm       玩家农场（farm 表里 kind='player' 的那一行）
  *   state.friends    邻居农场（同一张表里 kind='npc' 的行）
+ *   state.commons    公共用地（同一张表里 kind='commons' 的那一行，第 58 轮）
  *   state.relations  两两之间的好感度（relation 表，键是 `a|b`）
  *   state.news       全镇时报
  *
@@ -52,7 +53,8 @@ import {
   rollNpcDogSatiety,
 } from '../data/dogs.js';
 import { WORKSHOP_MAX_LEVEL } from '../data/workshop.js';
-import { baseRelation, readRelations, relKey } from '../data/relation.js';
+import { COMMONS_AVATAR, COMMONS_ID, COMMONS_NAME, commonsPlotCount } from '../data/commons.js';
+import { baseRelation, friendThreshold, readRelations, relKey } from '../data/relation.js';
 import { scheduleCare } from '../data/care.js';
 import { cleanNotices } from '../data/notice.js';
 import { dayKey, randInt, safeNum } from '../core/utils.js';
@@ -85,13 +87,19 @@ export function takeStarterGift() {
   return gift;
 }
 
-/** @type {{farm: object, friends: object[], peers: object[], bag: Record<string, number>,
+/** @type {{farm: object, friends: object[], peers: object[], commons: object, bag: Record<string, number>,
  *          relations: Record<string, number>, news: object[],
  *          dailyRows: Record<string, object>}} */
 export const state = {
   farm: null,
   /** 32 位 NPC：会落库、会被模拟推进 */
   friends: [],
+  /**
+   * 公共用地（第 58 轮）：一座**没有主人**的农场 —— 地块与日志照样落在
+   * plot / log 两张表里（farmId 是 `commons`），但它不属于任何人，
+   * 也不会进 `state.friends`（那不是一位邻居）。
+   */
+  commons: null,
   /**
    * 联机来的真人玩家：**只活在内存**，不落库、不参与邻居模拟。
    * 数据以对方浏览器为准，这里只放只读快照（见 store/peers.js）。
@@ -108,6 +116,29 @@ export const state = {
    */
   dailyRows: {},
 };
+
+/**
+ * 一次提交里「要一起写下去的农场」。
+ *
+ * 为什么需要这个函数：世界时钟那条线上有**三类**数据在同时被推进 ——
+ * 玩家农场、若干邻居农场、公共用地。早先每个落盘点都手写
+ * `[state.farm, ...state.friends]`，第 58 轮加了公共用地之后就漏了三处
+ * （村民在公共地抢收的账本没落盘，重开能原地再拿一遍）。
+ *
+ * 所以凡是「时钟线 / 补算收尾」这类批量落盘，一律走这里：
+ * 公共用地**自动跟上**，以后再加第四类数据也只改这一处。
+ *
+ * ⚠️ 玩家主动操作邻居（浇水 / 偷菜 / 送礼）的单点提交**不要**用它 ——
+ * 那些操作根本不碰公共地，带上只是白写一遍（「动了才带」原则）。
+ *
+ * @param {...(object|undefined|null)} base 本来就要写的农场，按顺序排在前
+ * @returns {object[]}
+ */
+export function farmRows(...base) {
+  const rows = base.filter(Boolean);
+  if (state.commons && !rows.includes(state.commons)) rows.push(state.commons);
+  return rows;
+}
 
 /* ============================================================
    新建
@@ -246,6 +277,53 @@ function createPlot(id) {
     stolenAt: 0,
     /** 成熟那一刻摇定的本轮产量（0 = 还没摇；收获与「可收 X」都用这个数） */
     pendingYield: 0,
+    /**
+     * 「先到先得」的账本（第 58 轮，只有公共用地用得上）：
+     * taken 是这一轮已经被拿走几个，takers 是拿过的人（每人每块地最多 1 个）。
+     * 玩家地块上它们永远是 0 / 空数组 —— 形状统一，省得 normalize 两套分支。
+     */
+    taken: 0,
+    takers: [],
+  };
+}
+
+/**
+ * 公共用地的地块：和玩家地块同一套字段，只是**永远可用**。
+ *
+ * 额外两个字段是「先到先得」的账本（第 58 轮）：
+ *   `taken`  这一轮已经被拿走几个
+ *   `takers` 谁拿过（玩家 `player` / 村民 id）—— 每人每块地最多 1 个
+ *
+ * @param {number} id
+ * @returns {object}
+ */
+export function createCommonsPlot(id) {
+  return {
+    ...createPlot(id),
+    usable: true,
+    taken: 0,
+    takers: [],
+  };
+}
+
+/**
+ * 新建公共用地。
+ *
+ * 它是一座**没有主人的农场**：没有等级、身家、狗、背包，
+ * 只有地块与日志 —— 所以能整条复用 farm / plot / log 三张表，
+ * 存储层与备份一行都不用改。
+ * @returns {object}
+ */
+function createCommonsFarm() {
+  return {
+    id: COMMONS_ID,
+    kind: 'commons',
+    name: COMMONS_NAME,
+    avatar: COMMONS_AVATAR,
+    /** 跟着村庄等级走，读档时由 initState / 升级流程对齐 */
+    level: 1,
+    plots: [],
+    log: [],
   };
 }
 
@@ -424,6 +502,12 @@ function normalizePlot(plot, index, fallbackUsable = false) {
   merged.stolen = Boolean(merged.stolen);
   merged.stolenCount = safeNum(merged.stolenCount, 0);
   merged.pendingYield = safeNum(merged.pendingYield, 0);
+  // 公共用地的「先到先得」账本（第 58 轮）：玩家地块上永远是 0 / 空数组，
+  // 统一在这里清洗，省得 createPlot 与 normalizePlot 两处各写一份
+  merged.taken = safeNum(merged.taken, 0);
+  merged.takers = Array.isArray(merged.takers)
+    ? merged.takers.filter((who) => typeof who === 'string' && who)
+    : [];
   merged.waterTimes = safeNum(merged.waterTimes, 0);
   merged.pestTimes = safeNum(merged.pestTimes, 0);
   // 旧档排过 0 次、又还在长：补一次排程，否则这块地永远不会缺水
@@ -497,6 +581,40 @@ function normalizeVillage(raw) {
     .filter(Boolean)
     .slice(-VILLAGE_LOG_CAP);
   return out;
+}
+
+/**
+ * 公共用地：一座没有主人的农场，只清洗地块与日志。
+ *
+ * 块数按村庄等级补齐（Lv.1 两块，每级 +2）—— 村庄升级后由 store/commons.js
+ * 的 `ensurePlots`（`advanceCommons` 每次调）再补一次，两边用同一个
+ * `commonsPlotCount`，所以这里只管「读档这一刻该有几块」。
+ * 地块全部可用：这里没有「买地」这回事。
+ *
+ * @param {?object} row 存档里的那一行（没有就是新档）
+ * @param {object} save loadSave() 的结果
+ * @param {number} [level] 当前村庄等级（块数看它）
+ * @returns {object}
+ */
+function normalizeCommons(row, save, level = 1) {
+  const base = createCommonsFarm();
+  const lv = Math.min(VILLAGE_MAX_LEVEL, Math.max(1, safeNum(level, safeNum(row?.level, 1))));
+  const farm = {
+    ...base,
+    level: lv,
+    plots: [],
+    log: save.logs[COMMONS_ID] || [],
+  };
+
+  const saved = (save.plots[COMMONS_ID] || []).map((plot, i) => normalizePlot(plot, i, true));
+  const want = commonsPlotCount(lv);
+  for (let id = 0; id < want; id += 1) {
+    const hit = saved.find((plot) => plot.id === id);
+    farm.plots.push(hit || createCommonsPlot(id));
+  }
+  // 村庄不会降级，所以只可能「存档里的地比现在该有的多」—— 多出来的丢掉
+  farm.plots.sort((a, b) => a.id - b.id);
+  return farm;
 }
 
 function normalizePlayerFarm(row, save) {
@@ -699,7 +817,21 @@ export async function initState() {
   state.news = save.news;
   state.dailyRows = save.dailyRows || {};
 
-  const rows = new Map(save.farms.filter((row) => row.id !== PLAYER_ID).map((row) => [row.id, row]));
+  /**
+   * 公共用地（第 58 轮）：**必须先于** `rows` 的过滤认领掉 `commons` 那一行，
+   * 否则它会被当成一位「名单里已经没有的邻居」丢给 dropFarms 清掉。
+   * 块数跟着村庄等级走，所以等级要先算出来一起传进去。
+   */
+  const villageLevel = state.farm.village?.level || 1;
+  state.commons = normalizeCommons(
+    save.farms.find((row) => row.id === COMMONS_ID),
+    save,
+    villageLevel,
+  );
+
+  const rows = new Map(save.farms
+    .filter((row) => row.id !== PLAYER_ID && row.id !== COMMONS_ID)
+    .map((row) => [row.id, row]));
   /**
    * 谁在村里，看村庄等级（第 53 轮）。
    *
@@ -708,7 +840,6 @@ export async function initState() {
    * 这里按等级过滤而不是照单全收：老档里可能存着「村子还没升级却已经写进库」
    * 的新住户，直接 map 全部 NPCS 会让他们提前入住。
    */
-  const villageLevel = state.farm.village?.level || 1;
   state.friends = npcsAtVillageLevel(villageLevel).map((def) => {
     const row = rows.get(def.id);
     rows.delete(def.id);
@@ -722,9 +853,11 @@ export async function initState() {
   const ids = [PLAYER_ID, ...state.friends.map((friend) => friend.id)];
   state.relations = readRelations(save.relations, new Set(ids));
   seedRelations(ids);
+  // 开局好友：起点就够门槛的自动成为好友（只有「热心」那 7 位够）
+  seedFriends();
 
   await commit({
-    farms: [state.farm, ...state.friends],
+    farms: [state.farm, ...state.friends, state.commons],
     bag: state.bag,
     news: state.news,
     relations: state.relations,
@@ -765,7 +898,11 @@ export function admitVillageNeighbours(level, now = Date.now()) {
   }
   // 新来的人跟玩家、跟老住户之间也要有初始好感，否则第一次点开全是 0。
   // 传全量 id：seedRelations 自己会跳过已经有记录的那些对。
-  if (arrived.length) seedRelations([PLAYER_ID, ...state.friends.map((npc) => npc.id)]);
+  if (arrived.length) {
+    seedRelations([PLAYER_ID, ...state.friends.map((npc) => npc.id)]);
+    // 刚搬来的人里，起点就够门槛的当场成为好友（「热心」那类）
+    for (const npc of arrived) markFriendIfQualified(npc);
+  }
   return arrived;
 }
 
@@ -808,9 +945,37 @@ function seedRelations(ids) {
       const key = relKey(ids[i], ids[j]);
       if (state.relations[key] !== undefined) continue;
       const base = baseRelation(valueOf(ids[i]), valueOf(ids[j]));
-      if (base) state.relations[key] = base;
+      if (base) state.relations[key] = { v: base, friend: false };
     }
   }
+}
+
+/**
+ * 开局好友（第 57 轮）：起点就够门槛的，直接算好友。
+ *
+ * 只判「玩家 ↔ 邻居」这一侧 —— 玩家点开好友页总得有几个熟人，
+ * 否则一个空列表像是坏了。邻居之间从零开始处，让他们靠主动申请慢慢处出来
+ * （见 store/npc-sim.js 的 friend 动作），不然开局全村早就结成一张网了。
+ *
+ * **只在第一次跑**：`progress.friendSeeded` 一旦落盘就再也不回来。
+ * 否则玩家手动解除掉一位「热心」邻居（好感还挂在 +37 上），下次开游戏
+ * 又会被自动加回去，等于解除按钮失灵。
+ */
+function seedFriends() {
+  const progress = (state.farm.progress ??= {});
+  if (progress.friendSeeded) return;
+  progress.friendSeeded = true;
+  for (const npc of state.friends) markFriendIfQualified(npc);
+}
+
+/**
+ * 这一对的起点够不够当好友，够就写标记。
+ * @param {object} npc
+ */
+function markFriendIfQualified(npc) {
+  const row = state.relations[relKey(PLAYER_ID, npc.id)];
+  if (!row || row.friend) return;
+  if (row.v >= friendThreshold(npc.personality)) row.friend = true;
 }
 
 /** 按序号取玩家地块 */

@@ -20,7 +20,7 @@
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
-import { PLAYER_ID, state, getFriend } from './state.js';
+import { PLAYER_ID, state, farmRows, getFriend } from './state.js';
 import { addNews } from './news.js';
 import { notify } from './notify.js';
 import { pushNotice } from './notices.js';
@@ -514,7 +514,9 @@ function persistNow(rich = false) {
   const changes = { dailyRows: state.dailyRows };
   // 结算场景：发的奖在 farm（金币 / 日志）、inventory（道具）、news（时报）里
   if (rich) {
-    changes.farms = [state.farm];
+    // 公共用地（第 58 轮）也在这条「补算结束统一落一次」的线上被推进，
+    // 只推进了公共地（没有邻居上线）时全靠这一次写 —— 见 state.js 的 farmRows
+    changes.farms = farmRows(state.farm);
     changes.bag = state.bag;
     changes.news = state.news;
   }

@@ -25,6 +25,7 @@ import {
 import { openModal } from './modal.js';
 import { openFriendModal } from './friend-modal.js';
 import { showToast } from './toast.js';
+import { answerFriendRequest } from '../store/friend.js';
 
 let btn = null;
 let badge = null;
@@ -65,20 +66,31 @@ function paintBadge() {
 function itemHTML(notice) {
   const pending = !notice.claimed;
   const unread = !notice.read;
+  // 好友申请：要玩家自己点头或摇头，「收下」在这里没有意义
+  const ask = pending && notice.action === 'friend-request';
   const sub = `${clockText(notice.at)}${notice.body ? ` · ${escapeHtml(notice.body)}` : ''}`;
   // 来源是邻居的整行可点（打开他的农场卡）；「排行榜」这类没有 by，就只是静态行
   const action = notice.by ? ' data-action="notice-from"' : '';
+
+  let tail = '<span class="nt-done">已处理</span>';
+  if (ask) {
+    tail = `<span class="nt-acts">
+        <button class="nt-btn" data-action="notice-friend-yes" data-id="${escapeHtml(notice.id)}">同意</button>
+        <button class="nt-btn ghost" data-action="notice-friend-no" data-id="${escapeHtml(notice.id)}">拒绝</button>
+      </span>`;
+  } else if (pending) {
+    tail = `<button class="nt-btn" data-action="notice-claim" data-id="${escapeHtml(notice.id)}">收下</button>`;
+  }
+
   return `
-    <div class="nt-item${pending ? ' pending' : ' done'}${unread ? ' unread' : ''}"${action}
+    <div class="nt-item${pending ? ' pending' : ' done'}${unread ? ' unread' : ''}${ask ? ' ask' : ''}"${action}
          data-id="${escapeHtml(notice.id)}" data-by="${escapeHtml(notice.by)}">
       <span class="nt-ico">${notice.emoji}</span>
       <div class="nt-main">
         <div class="nt-title">${escapeHtml(notice.title)}</div>
         <div class="nt-sub">${sub}</div>
       </div>
-      ${pending
-        ? `<button class="nt-btn" data-action="notice-claim" data-id="${escapeHtml(notice.id)}">收下</button>`
-        : '<span class="nt-done">已收下</span>'}
+      ${tail}
     </div>`;
 }
 
@@ -91,13 +103,21 @@ function listHTML() {
   return list.map(itemHTML).join('');
 }
 
-/** 底栏：还有几件没领 */
+/**
+ * 底栏：还有几件没领。
+ *
+ * 「全部收下」只认**有东西可领**的条目 —— 好友申请要玩家自己表态，
+ * 不能替他做主。只剩好友申请时按钮改成一句提示。
+ */
 function footHTML() {
-  const pending = noticeUnclaimed();
-  if (!pending) {
-    return '<button class="btn primary" data-action="notice-claim-all" disabled>都收下了</button>';
+  const claimable = noticeList().filter((entry) => !entry.claimed && !entry.action).length;
+  if (claimable) {
+    return `<button class="btn primary" data-action="notice-claim-all">全部收下（${claimable}）</button>`;
   }
-  return `<button class="btn primary" data-action="notice-claim-all">全部收下（${pending}）</button>`;
+  if (noticeUnclaimed()) {
+    return '<button class="btn primary" disabled>还有好友申请等你答复</button>';
+  }
+  return '<button class="btn primary" data-action="notice-claim-all" disabled>都收下了</button>';
 }
 
 /** 重绘列表与底栏（领取之后就地刷新，不重建整张弹窗） */
@@ -126,6 +146,14 @@ export function openNotices() {
     if (action === 'notice-claim') {
       claimNotice(el.dataset.id).then((ok) => {
         if (!ok) showToast('这件已经收过了');
+        paint();
+      });
+      return;
+    }
+    // 好友申请：同意 / 拒绝都走同一个入口，结果由 store 那边寄第二封信
+    if (action === 'notice-friend-yes' || action === 'notice-friend-no') {
+      answerFriendRequest(el.dataset.id, action === 'notice-friend-yes').then((ok) => {
+        if (!ok) showToast('这封申请已经处理过了');
         paint();
       });
       return;

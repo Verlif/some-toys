@@ -63,7 +63,6 @@ import {
   REL_CARE_PRIORITY,
   REL_PER_CARE,
   closeGiftChanceFor,
-  dogCaughtRelLoss,
   giftChanceFor,
   giftPersonalityFactor,
   giftRelGain,
@@ -399,7 +398,9 @@ function npcGuardChance(owner, at) {
  * 玩家收获时按 stolenCount 扣掉。守护犬也是同一套：
  * 不管偷谁，被狗抓住都要按想偷的果实价值 ×DOG_FINE_MULTIPLE 罚款，
  * 罚金归被偷的农场主；小偷钱不够就倾家荡产。
- * **顺走不掉好感，被当场逮住才掉**（按售价折算，见 dogCaughtRelLoss）。
+ *
+ * **只对好友下手**（第 57 轮）：非好友的地连看都不看 —— 与玩家那侧同一道门。
+ * **偷菜也不掉好感**了：顺走、被逮住都只动钱，不动交情。
  */
 function actSteal(npc, ctx, at) {
   const chance = interactChance(STEAL_CHANCE[npc.steal] || 0);
@@ -409,13 +410,15 @@ function actSteal(npc, ctx, at) {
   // 挑农场的权重里带上好感度：越是跟他不对付的，越容易被盯上
   const targets = [];
   for (const other of neighbours) {
-    if (other === npc) continue;
+    if (other === npc || !ctx.isFriend?.(npc.id, other.id)) continue;
     const plots = other.plots.filter((plot) => stealable(plot, at));
     if (plots.length) {
       targets.push({ owner: other, plots, weight: stealWeightFor(ctx.rel(npc.id, other.id)) });
     }
   }
-  const mine = (farm?.plots || []).filter((plot) => stealable(plot, at));
+  const mine = farm && ctx.isFriend?.(npc.id, farm.id)
+    ? (farm.plots || []).filter((plot) => stealable(plot, at))
+    : [];
   if (mine.length) {
     targets.push({
       owner: farm,
@@ -441,8 +444,7 @@ function actSteal(npc, ctx, at) {
     // 有多少罚多少：NPC 也可能穷到叮当响，不记负债
     const paid = Math.min(npc.coins, fine);
     npc.coins -= paid;
-    // 人赃并获：钱罚了，好感也按这个果实的售价破个角（至少 1）
-    ctx.relAdjust(npc.id, owner.id, -dogCaughtRelLoss(crop.sell));
+    // 人赃并获也只是钱的事：偷菜与好感是两套东西（第 57 轮）
 
     if (isPlayer) {
       farm.caught += 1;
@@ -468,7 +470,7 @@ function actSteal(npc, ctx, at) {
   plot.stolenAt = at;
 
   npc.coins += crop.sell;
-  // 顺走不进好感账：被偷的心里有数，但不至于撕破脸（被狗抓住才算，见上）
+  // 顺走同样不进好感账（第 57 轮：偷菜彻底不碰好感）
   // 经验按作物等级给，和玩家照料同一套口径
   gainExp(npc, Math.max(1, Math.round(crop.lv * 0.6)) + 4);
 
@@ -845,8 +847,9 @@ function actAdventure(npc, farm, ctx, at) {
  *          抽到却做不成等于白扔一次名额（2026-10-26 之前的 planVisit
  *          固定塞 14 个动作、一半返回 null，一小时几百趟下来很浪费）
  *   run    (npc, at, ctx) => {emoji, text, ...} | null。ctx 由 social 注入：
- *          { neighbours, farm, rel, relAdjust, receiveGift, daily, dailyMax,
- *            orders, removeOrder } —— 模拟层始终不认识 store
+ *          { neighbours, farm, rel, relAdjust, isFriend, friendTick,
+ *            receiveGift, daily, dailyMax, orders, removeOrder } ——
+ *          模拟层始终不认识 store
  *
  * ⚠️ `sweep` 的动作**不能写 can**：can 在规划那一刻算，而收获会在
  * 执行途中腾出空地，补种必须等那之后再看有没有地可种，所以交给 run 自己判断。
@@ -938,6 +941,31 @@ export const ACTIONS = {
     sweep: true,
     run: (npc, at, ctx) => actContribute(npc, ctx, at),
   },
+  /**
+   * 好友事务（第 57 轮）：答复玩家递来的申请，或者自己主动去加一个。
+   *
+   * 走 `sweep`：每次上线都要过一遍（答复可能在这次上线到点），
+   * 但**不占性格权重名额** —— 「交朋友」不是一件被规划出来的事。
+   * 20% 的概率门、0.8 倍门槛、寄信、冷却，全在 store/friend.js 里，
+   * 这里只负责「上线时叫一声」。
+   */
+  friend: {
+    label: '好友事务',
+    sweep: true,
+    run: (npc, at, ctx) => ctx.friendTick?.(npc, at) ?? null,
+  },
+  /**
+   * 公共用地（第 58 轮）：顺手去村里那片地上浇水 / 捉虫 / 抢收。
+   *
+   * 走 `sweep`：它不是「规划出来的经营动作」，而是路过就搭把手；
+   * 具体做什么（先抢收、再照料）与概率门都在 store/commons.js 里，
+   * 模拟层只负责「叫他一声」。
+   */
+  commons: {
+    label: '公共用地',
+    sweep: true,
+    run: (npc, at, ctx) => ctx.commonsTick?.(npc, at) ?? null,
+  },
 };
 
 /**
@@ -983,7 +1011,7 @@ export function planVisit(npc, at = Date.now(), ctx = null) {
  * 空闲时可能去做的「社交小事」。等概率抽一件，动作内部还有自己的概率门
  * （顺菜 33% / 帮忙 ~90% / 送礼 25~55%），所以不是抽中就一定发生。
  */
-const IDLE_SOCIAL = ['steal', 'care', 'gift', 'feed', 'adventure', 'order', 'fill', 'pray', 'contribute'];
+const IDLE_SOCIAL = ['steal', 'care', 'gift', 'feed', 'adventure', 'order', 'fill', 'pray', 'contribute', 'friend', 'commons'];
 
 /**
  * 在线期间「顺手做一件事」（第 48 轮）。

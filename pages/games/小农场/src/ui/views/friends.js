@@ -1,5 +1,9 @@
 /**
- * 邻居页：邻居列表（拜访、筛选、搜索）。
+ * 好友页：**只有好友**的列表（拜访、筛选、搜索）。
+ *
+ * 第 57 轮从「邻居页」改成「好友页」：非好友不能偷菜、不能催上线，
+ * 把他们铺在这里只会让玩家一路点空。全村名单搬去了村中心的村民总览
+ * （见 ui/views/center.js），那里才是「看所有人」的地方。
  *
  * 进入本页时会先跑一次离线结算（见 social.createSettler），
  * 把玩家不在这段时间里邻居们自己发生的事补算出来，
@@ -13,7 +17,7 @@ import { on, EVENTS } from '../../core/bus.js';
 import { PLAYER_ID, getFriend, state } from '../../store/state.js';
 import * as social from '../../store/social.js';
 import { formatCoins } from '../../core/utils.js';
-import { getRelation, relationBadge } from '../../store/relation.js';
+import { getRelation, isFriend, relationBadge } from '../../store/relation.js';
 import { isNpcOnline } from '../../data/friends.js';
 import { recordItemsHTML } from '../records.js';
 import { openFriendModal } from '../friend-modal.js';
@@ -58,6 +62,12 @@ let sortDir = -1;
 /** 搜索关键词（按邻居名字过滤，与排序叠加生效） */
 let searchQuery = '';
 
+/**
+ * 我的好友（只算 NPC —— 联机真人不在好友体系里，他们在「村镇」）。
+ * @returns {object[]}
+ */
+const myFriends = () => state.friends.filter((npc) => isFriend(PLAYER_ID, npc.id));
+
 /* ---------- 卡片 ---------- */
 
 /**
@@ -73,15 +83,23 @@ function logHTML(friend, now, limit = 3) {
 
 /**
  * 邻居卡片。村中心的名单也复用它（导出）。
+ *
  * @param {object} friend 邻居农场
  * @param {number} now
+ * @param {{friendTag?: boolean}} [opts]
+ *   `friendTag` = 多挂一枚「好友 / 还没加好友」的标记。
+ *   只有村中心的全量名单需要它（好友页里人人都是好友，挂上去只是噪音）。
  */
-export function friendCardHTML(friend, now) {
+export function friendCardHTML(friend, now, { friendTag = false } = {}) {
   const ripe = social.stealableCount(friend, now);
   const care = social.careCount(friend, now);
   const rel = relationBadge(getRelation(PLAYER_ID, friend.id));
   // 在线标识：按性格与身份 10~30 分钟的窗口（见 data/friends.js 的 onlineMs）
   const online = isNpcOnline(friend, now);
+  const buddy = isFriend(PLAYER_ID, friend.id);
+  const tag = friendTag
+    ? `<span class="friend-chip ${buddy ? 'buddy' : 'stranger'}">${buddy ? '🤝 好友' : '还没加好友'}</span>`
+    : '';
 
   return `
     <div class="friend-card ${online ? '' : 'offline'}" data-action="visit" data-id="${friend.id}" role="button" tabindex="0">
@@ -94,6 +112,7 @@ export function friendCardHTML(friend, now) {
           <span class="friend-chevron">›</span>
         </div>
         <div class="friend-stats">
+          ${tag}
           <span class="friend-chip job">${escapeHtml(friend.profession || '邻居')}</span>
           <span class="friend-chip">💰 ${formatCoins(friend.coins)}</span>
           <span class="friend-chip rel-${rel.key}">${rel.label} ${rel.text}</span>
@@ -106,16 +125,15 @@ export function friendCardHTML(friend, now) {
 }
 
 /**
- * 按当前档位挑出并排序邻居
+ * 按当前档位挑出并排序好友
  *
  * 搜索与排序叠加：先按名字过滤，再按档位筛 / 排。
  * @returns {object[]} 新数组，不改动 state.friends
  */
 function friendsShown(now) {
   const q = searchQuery.trim();
-  let list = q
-    ? state.friends.filter((f) => f.name.includes(q))
-    : [...state.friends];
+  const mine = myFriends();
+  let list = q ? mine.filter((f) => f.name.includes(q)) : mine;
 
   if (filterKey === 'steal') list = list.filter((f) => social.stealableCount(f, now) > 0);
   if (filterKey === 'care') list = list.filter((f) => social.needsHelp(f, now));
@@ -129,13 +147,14 @@ function friendsShown(now) {
 /**
  * 一条件：筛选芯片 + 一条分隔线 + 排序芯片。
  *
- * 「可偷摘 / 可帮忙」上的数字是**邻居人数**（按全部邻居统计，不受搜索影响）。
+ * 「可偷摘 / 可帮忙」上的数字是**好友人数**（按全部好友统计，不受搜索影响）。
  * 排序芯片选中时带箭头：↓ 降序 / ↑ 升序，取消时不带箭头。
  */
 function sortChips(now) {
+  const mine = myFriends();
   const counts = {
-    steal: state.friends.filter((f) => social.stealableCount(f, now) > 0).length,
-    care: state.friends.filter((f) => social.needsHelp(f, now)).length,
+    steal: mine.filter((f) => social.stealableCount(f, now) > 0).length,
+    care: mine.filter((f) => social.needsHelp(f, now)).length,
   };
 
   const filters = FILTERS.map((f) => `
@@ -155,13 +174,17 @@ function sortChips(now) {
   return `${filters}<span class="filter-sep"></span>${sorts}`;
 }
 
-/** 列表为空时的提示：区分「筛选没结果」和「搜索没结果」 */
+/** 列表为空时的提示：区分「一个好友都没有」「筛选没结果」和「搜索没结果」 */
 function emptyFriendsHTML() {
   const q = searchQuery.trim();
-  if (q) return `<div class="empty-tip">🔍<br>没有名字带「${escapeHtml(q)}」的邻居<br>换个关键词试试</div>`;
-  if (filterKey === 'steal') return '<div class="empty-tip">🥷<br>现在没有能顺的作物<br>等谁家的菜熟了再来</div>';
-  if (filterKey === 'care') return '<div class="empty-tip">💧<br>大家的地都打理得很好<br>没有需要帮忙的</div>';
-  return '<div class="empty-tip">🌾<br>这个档位下暂时没有邻居<br>换个筛选看看</div>';
+  if (q) return `<div class="empty-tip">🔍<br>没有名字带「${escapeHtml(q)}」的好友<br>换个关键词试试</div>`;
+  // 一个好友都没有：这是**状态**，不是筛选结果，得说清怎么才能有
+  if (!myFriends().length) {
+    return '<div class="empty-tip">🤝<br>还没有好友<br>去村中心找人递个申请，或等他们来加你</div>';
+  }
+  if (filterKey === 'steal') return '<div class="empty-tip">🥷<br>好友家的作物都还没熟<br>等他们熟透再来</div>';
+  if (filterKey === 'care') return '<div class="empty-tip">💧<br>好友的地都打理得很好<br>没有需要帮忙的</div>';
+  return '<div class="empty-tip">🌾<br>这个档位下暂时没有好友<br>换个筛选看看</div>';
 }
 
 /**
@@ -184,7 +207,7 @@ export function renderFriends() {
     setHTML(body, `
       <div class="filter-bar">
         ${sortChips(now)}
-        <span class="shop-filter-count">${list.length} / ${state.friends.length}</span>
+        <span class="shop-filter-count">${list.length} / ${myFriends().length}</span>
       </div>
       <div class="friend-list">${list.length
         ? list.map((friend) => friendCardHTML(friend, now)).join('')

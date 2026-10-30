@@ -55,6 +55,8 @@ export const EVENTS = {
   TICK: 'ui:tick',
   /** 村庄建设变化：投入 / 祈福 / 升级（村中心与建设日志都靠它刷） */
   VILLAGE: 'state:village',
+  /** 公共用地变化：玩家照料 / 拿走 / 村民顺手来一趟（公共地弹窗靠它刷） */
+  COMMONS: 'state:commons',
   /**
    * 邻居「刚刚上线」。
    *
