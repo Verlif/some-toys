@@ -51,6 +51,15 @@ export const EVENTS = {
   SPECIMEN: 'ui:specimen',
   /** 请求切换主页面，payload 为页面名（farm / friends / news / shop） */
   NAVIGATE: 'ui:navigate',
+  /**
+   * 弹窗叠层关掉一层，**下面那张卡原样还原了**。
+   *
+   * 还原出来的是「打开那一瞬间的 innerHTML 快照」，上面那层要是改过数据
+   * （在邻居农场浇了水、偷了菜），这里还原的就是过期内容。持卡的模块
+   * 收到这条事件后自己决定要不要重绘 —— 注意重绘时别动 `.modal-body`
+   * 的 scrollTop，玩家刚滑到第 20 位，回来不该被弹回顶端。
+   */
+  MODAL_RESTORE: 'ui:modal-restore',
   /** 每分钟一跳（挂在主轮询上）：在线标识、订单倒计时等时间驱动的刷新 */
   TICK: 'ui:tick',
   /** 村庄建设变化：投入 / 祈福 / 升级（村中心与建设日志都靠它刷） */

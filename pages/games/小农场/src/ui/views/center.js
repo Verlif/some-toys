@@ -65,6 +65,15 @@ let boardDesc = true;
  */
 let villagerFilter = 'online';
 
+/**
+ * 村民总览的搜索词（第 61 轮）：按名字过滤，纯前端不做模糊匹配。
+ *
+ * 存在模块变量而不是 DOM 上 —— 打一个字就重绘一次列表，状态挂在 input 里
+ * 会被 `innerHTML` 冲掉；而且从邻居农场关回来时快照里的 input 是空值，
+ * 得靠这个变量把搜索框的内容和列表的过滤条件重新对齐。
+ */
+let villagerQuery = '';
+
 /* ---------- 数字 ---------- */
 
 /** 进行中的订单总数：邻居张榜 + 我发布的 */
@@ -110,11 +119,17 @@ function facesHTML(now) {
 }
 
 /**
+ * 头像行排几排（第 61 轮）：总览卡跟排行榜卡等高，下面本来空着一截，
+ * 排成两排能多露一倍的在线邻居。
+ */
+const FACE_ROWS = 2;
+
+/**
  * 把头像行裁到「正好放得下」。
  *
- * 量一颗头像的宽度 + 间距，一次算出能放几个，然后一次性挂 `.off` ——
- * 不要「收一个量一次」：32 位邻居在线时会连续强制重排三十多次，
- * 切到村中心那一下能明显卡一下。
+ * 量一颗头像的宽度 + 间距，一次算出每排能放几个，乘排数得到总容量，
+ * 然后一次性挂 `.off` —— 不要「收一个量一次」：32 位邻居在线时会连续
+ * 强制重排三十多次，切到村中心那一下能明显卡一下。
  *
  * 放不下时**留一格给省略号**：末尾那颗同尺寸圆框，视觉上占的宽度和头像一样，
  * 所以能放 N 个就只显示 N−1 个头像。玩家永远在最前，不会被收掉。
@@ -131,12 +146,46 @@ function fitFaces(root = byId('center')) {
   const width = faces[0].offsetWidth || 22;
   const gap = Number.parseFloat(getComputedStyle(box).columnGap) || 0;
   const room = box.clientWidth;
-  // 每个元素占「宽 + 间距」，最后一个不用留间距
-  const fit = Math.floor((room + gap) / (width + gap));
-  const show = fit >= faces.length ? faces.length : Math.max(1, fit - 1);
+  // 每排占「宽 + 间距」，最后一个不用留间距；再乘排数
+  const perRow = Math.floor((room + gap) / (width + gap));
+  const capacity = Math.max(1, perRow * FACE_ROWS);
+  const show = faces.length <= capacity ? faces.length : Math.max(1, capacity - 1);
 
   faces.forEach((face, i) => face.classList.toggle('off', i >= show));
   more?.classList.toggle('show', show < faces.length);
+}
+
+/**
+ * 冠军名字放不下时，让它像通知横幅那样来回横滚（第 61 轮）。
+ *
+ * 为什么是「量一次 + CSS 动画」而不是 JS 逐帧：
+ *   - 位移量在渲染后算一次 `scrollWidth - clientWidth` 就定了，不用每帧读；
+ *   - 动画交给 `transform`（合成层，既不触发布局也不触发绘制），主线程零负担；
+ *   - 6 条同时跑也只是 6 个合成层。换成 requestAnimationFrame 里读
+ *     `scrollLeft`/`offsetWidth`，每帧都要强制同步重排，6 条就够掉帧了。
+ *
+ * ⚠️ 不写 `will-change`：`.yield-pile` 那次的教训 —— 静态定位的小元素
+ * 挂上它是白占显存，这里的位移本来就走合成层。
+ *
+ * ⚠️ 放得下就什么都不加（连类都不挂）：短名字来回滚反而像界面坏了。
+ * 每轮先 `remove('marquee')` 再判，所以窗口拉宽之后会自动停下来。
+ *
+ * @param {HTMLElement} [root] 村中心根节点
+ */
+function fitMarquees(root = byId('center')) {
+  for (const box of root?.querySelectorAll('.cr-name') || []) {
+    const track = box.firstElementChild;
+    if (!track) continue;
+    box.classList.remove('marquee');
+
+    const over = track.scrollWidth - box.clientWidth;
+    if (over <= 2) continue;
+    // 速度按「滚多远」给：每 12px 约 1 秒，夹在 5~12 秒之间（再快就晃眼）
+    const dur = Math.min(12, Math.max(5, Math.round(over / 12) + 4));
+    box.style.setProperty('--cr-shift', `-${over}px`);
+    box.style.setProperty('--cr-dur', `${dur}s`);
+    box.classList.add('marquee');
+  }
 }
 
 /* ---------- 村民总览弹窗 ---------- */
@@ -159,18 +208,31 @@ const meCardHTML = () => `
     </div>
   </div>`;
 
-/** 名单：你自己 + 按筛选取的邻居（卡片与邻居页同一套，离线自带灰度） */
-function villagerRowsHTML(filter = villagerFilter, now = Date.now()) {
+/**
+ * 名单：你自己 + 按筛选取的邻居（卡片与邻居页同一套，离线自带灰度）。
+ *
+ * @param {string} filter
+ * @param {number} now
+ * @param {string} query 名字搜索词（空串 = 不过滤）
+ */
+function villagerRowsHTML(filter = villagerFilter, now = Date.now(), query = villagerQuery) {
+  const q = query.trim().toLowerCase();
   const list = state.friends.filter((f) => {
+    if (q && !f.name.toLowerCase().includes(q)) return false;
     if (filter === 'online') return isNpcOnline(f, now);
     if (filter === 'friend') return isFriend(PLAYER_ID, f.id);
     return true;
   });
-  // 默认档是「在线」，而村里可能一个人都没上线 —— 得说句话，
-  // 否则弹窗里只剩「你自己」一张卡，看起来像加载失败
-  const empty = list.length || filter === 'all'
-    ? ''
-    : `<div class="empty-tip">🌙<br>${filter === 'friend' ? '这会儿没有好友在线' : '这会儿没有邻居在线'}<br>切「全部」看看谁在家</div>`;
+  // 空态要分两种：搜不到（换个字试试）和真的没人上线（切「全部」看看）。
+  // 混成一句的话，玩家搜错一个字会以为村里一个人都没有。
+  let empty = '';
+  if (!list.length) {
+    if (q) {
+      empty = `<div class="empty-tip">🔍<br>没有叫「${escapeHtml(query.trim())}」的村民<br>换个字试试</div>`;
+    } else if (filter !== 'all') {
+      empty = `<div class="empty-tip">🌙<br>${filter === 'friend' ? '这会儿没有好友在线' : '这会儿没有邻居在线'}<br>切「全部」看看谁在家</div>`;
+    }
+  }
   // friendTag：这里是**全量名单**，得标出谁已经是好友 ——
   // 非好友的地偷不了、人也催不动，玩家得先知道这件事
   return meCardHTML() + empty + list.map((f) => friendCardHTML(f, now, { friendTag: true })).join('');
@@ -186,19 +248,34 @@ function villagerBarHTML(now = Date.now()) {
   return chip('all', '全部', total) + chip('online', '在线', online) + chip('friend', '好友', buddies);
 }
 
-/** 打开村民总览：筛选只重刷芯片与名单，不重建弹窗 */
+/**
+ * 打开村民总览。
+ *
+ * 结构（第 61 轮）：搜索框放在标题栏右侧，筛选芯片挪到**底栏** ——
+ * 芯片原来在列表上方，手机上翻到第 20 位想换个档位得一路滑回顶端；
+ * 放到底栏后拇指随时够得着，也不跟着列表滚。
+ */
 function openVillagers() {
   const now = Date.now();
   const { online, total } = onlineStats(now);
+  // 每次新打开都从干净状态起：搜索词不跨次留存（筛选档位保留，见 villagerFilter）
+  villagerQuery = '';
 
   openModal(`
     <div class="modal-head">
       <h3>🏡 村民总览</h3>
-      <button class="close" data-close>✕</button>
+      <label class="v-search">
+        <i>🔍</i>
+        <input type="search" data-role="villager-search" placeholder="搜名字"
+               autocomplete="off" enterkeyhint="search" aria-label="按名字搜索村民">
+      </label>
+      <button class="close" data-close aria-label="关闭">✕</button>
     </div>
     <div class="modal-sub" data-role="villager-sub">${total} 位村民 · ${online} 位正在线</div>
-    <div class="board-bar villager-bar" data-role="villager-bar">${villagerBarHTML(now)}</div>
-    <div class="friend-list" data-role="villager-list">${villagerRowsHTML(villagerFilter, now)}</div>
+    <div class="friend-list" data-role="villager-list">${villagerRowsHTML()}</div>
+    <div class="modal-foot">
+      <div class="board-bar villager-bar" data-role="villager-bar">${villagerBarHTML(now)}</div>
+    </div>
   `, (action, el) => {
     if (action === 'villager-filter') {
       villagerFilter = el.dataset.id;
@@ -216,10 +293,26 @@ function openVillagers() {
   refreshOnline();
 }
 
-/** 重刷村民总览弹窗（栈顶那一张） */
+/**
+ * 重刷村民总览弹窗（只在当前弹窗里真有这份名单时才动手）。
+ *
+ * 三块一起刷：计数、底栏芯片、名单。
+ *
+ * ⚠️ 滚动位置必须手动接力。`.modal-body` 是这张弹窗唯一的滚动容器，
+ * 换掉 list 的 innerHTML 会让内容高度先塌一下，浏览器当场把 scrollTop
+ * 夹到 0 —— 玩家刚滑到第 20 位村民，回来就被弹回顶端。存一下、写完再放回去。
+ *
+ * ⚠️ 搜索框也要回填。从邻居农场关回来时还原的是**打开那一刻的 innerHTML**，
+ * 而 input 的 value 不进 innerHTML —— 回来会是个空框，列表却还是过滤过的。
+ */
 function paintVillagers() {
   const card = document.querySelector('#modal .modal-card');
-  if (!card) return;
+  const list = card?.querySelector('[data-role="villager-list"]');
+  if (!list) return;
+
+  const body = card.querySelector('.modal-body');
+  const keepTop = body?.scrollTop || 0;
+
   const now = Date.now();
   const { online, total } = onlineStats(now);
 
@@ -227,8 +320,12 @@ function paintVillagers() {
   if (sub) sub.textContent = `${total} 位村民 · ${online} 位正在线`;
   const bar = card.querySelector('[data-role="villager-bar"]');
   if (bar) bar.innerHTML = villagerBarHTML(now);
-  const list = card.querySelector('[data-role="villager-list"]');
-  if (list) list.innerHTML = villagerRowsHTML(villagerFilter, now);
+  list.innerHTML = villagerRowsHTML(villagerFilter, now, villagerQuery);
+
+  const search = card.querySelector('[data-role="villager-search"]');
+  if (search && search.value !== villagerQuery) search.value = villagerQuery;
+
+  if (body) body.scrollTop = keepTop;
   refreshOnline();
 }
 
@@ -315,14 +412,15 @@ function rankCardHTML() {
       <i class="cr-ico">${r.icon}</i>${r.label}
     </span>`).join('');
 
-  // 右列只留头像（第 60 轮）：卡片压到 2/3 宽之后，头像 + 名字 + 徽标
-  // 三个东西挤在 100px 里，名字必定被截成两个字。名字的完整信息在弹窗里，
-  // 这里只要「认得出是谁」——「是不是你」改用一圈绿边，不占宽度
+  // 右列：头像 + 名字（第 61 轮把名字加回来了 —— 卡片现在只占半宽，
+  // 六个头像孤零零挂着认不出是谁）。名字放不下时由 fitMarquees() 让它
+  // 来回横滚，而不是截成「西…」；「是不是你」仍然靠绿边，不占宽度
   const champs = rows.map((r) => {
     if (!r.champ) return '<span class="cr-item empty">—</span>';
     return `
-      <span class="cr-item champ" title="${escapeHtml(r.champ.name)}">
+      <span class="cr-item champ">
         <i class="cr-ava${r.champ.me ? ' me' : ''}">${r.champ.avatar}</i>
+        <span class="cr-name"><b>${escapeHtml(r.champ.name)}</b></span>
         ${r.champ.more > 0 ? `<i class="cr-more">+${r.champ.more}</i>` : ''}
       </span>`;
   }).join('');
@@ -553,15 +651,16 @@ export function renderCenter() {
       </button>
       <button class="center-act commons" data-action="center-commons">
         <span class="ca-ico">🏞</span>
-        <span class="ca-body"><b>公共用地</b><i class="ca-hint">先到先得 · 熟了摆 1 天换种</i></span>
+        <span class="ca-body"><b>公共用地</b><i class="ca-hint">先到先得 · 1 天换种</i></span>
         <i class="ca-total">共 ${commons.total} 块</i>
         ${commonsStatsHTML(commons)}
       </button>
     </div>
   `);
 
-  // 头像行要实测宽度才知道能放几个 —— 必须等节点进 DOM 之后再裁
+  // 头像行与冠军名字都要实测宽度才知道怎么排 —— 必须等节点进 DOM 之后再算
   fitFaces(root);
+  fitMarquees(root);
 }
 
 /**
@@ -698,14 +797,30 @@ export function mountCenter() {
   // 公共用地：玩家照料 / 拿走、村民顺手来一趟 → 方格右下角那三个数跟着变
   on(EVENTS.COMMONS, refreshMarks);
 
-  // 转屏 / 拉窗口：卡片宽度变了，头像行能放几个也跟着变。
+  // 转屏 / 拉窗口：卡片宽度变了，头像行能放几个、名字滚不滚也跟着变。
   // 用一帧合并，拖窗口时 resize 一秒能来几十次，每次都量一遍会抖
-  let faceRaf = 0;
+  let fitRaf = 0;
   window.addEventListener('resize', () => {
-    if (faceRaf) return;
-    faceRaf = requestAnimationFrame(() => {
-      faceRaf = 0;
+    if (fitRaf) return;
+    fitRaf = requestAnimationFrame(() => {
+      fitRaf = 0;
       fitFaces();
+      fitMarquees();
     });
+  });
+
+  // 从叠层（邻居农场 / 作物详情）关回来：还原的是**打开那一刻的快照**，
+  // 刚浇过的水、刚涨的好感都还是旧的 —— 玩家会以为这块地还没人打理。
+  // 只在当前弹窗里真有这份名单时才重画，别的弹窗关掉不受影响。
+  on(EVENTS.MODAL_RESTORE, () => {
+    if (document.querySelector('#modal [data-role="villager-list"]')) paintVillagers();
+  });
+
+  // 搜索框：委托挂在 #modal 上，不绑在 input 自己身上 —— 弹窗被压栈再还原时
+  // 节点是新生成的，绑在旧节点上的监听会跟着一起消失
+  byId('modal')?.addEventListener('input', (event) => {
+    if (!event.target.matches?.('[data-role="villager-search"]')) return;
+    villagerQuery = event.target.value;
+    paintVillagers();
   });
 }

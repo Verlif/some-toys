@@ -35,6 +35,7 @@ import {
   rollCommonsCrop,
 } from '../data/commons.js';
 import { villageYield } from './village.js';
+import { getRelation, setRelation } from './relation.js';
 import { randInt } from '../core/utils.js';
 import { notify } from './notify.js';
 
@@ -266,16 +267,42 @@ export function advanceCommons(now = Date.now()) {
  * 那点经验全丢，而地里的进度还在，玩家会觉得「白浇了」。
  *
  * @param {boolean} [leveledUp] 这次照料有没有升级（升级才有新时报要写）
+ * @param {boolean} [withRelations] 这次有没有动好感（照料全村 +1 那条线）
  */
-async function persist(leveledUp = false) {
+async function persist(leveledUp = false, withRelations = false) {
   await commit({
     farms: farmRows(state.farm),
     bag: state.bag,
     ...(leveledUp ? { news: state.news } : {}),
+    ...(withRelations ? { relations: state.relations } : {}),
   });
   emit(EVENTS.COMMONS);
   emit(EVENTS.INVENTORY);
   emit(EVENTS.PLAYER);
+  if (withRelations) emit(EVENTS.RELATION);
+}
+
+/**
+ * 在公共地干一次活 → 全村好感各 +1（第 61 轮）。
+ *
+ * 公共地是**村里的地**，不是谁家的：玩家在这儿浇水捉虫，全村人都看在眼里，
+ * 所以每位村民各涨 1 点。用户定死不设每日上限 —— 这块地本身有节流
+ * （一块地一轮只浇一次、捉一次，`needsWater` / `needsPest` 卡着），
+ * 想刷也刷不快。
+ *
+ * 只动 `state.relations`：好感本来就是「玩家 ↔ 某位村民」这一行，
+ * 不需要在 NPC 自己身上再记一份。
+ *
+ * @returns {number} 实际加到的村民数（0 表示村里还没人）
+ */
+function bumpVillageRelations() {
+  let n = 0;
+  for (const npc of state.friends) {
+    if (!npc?.id) continue;
+    setRelation(PLAYER_ID, npc.id, getRelation(PLAYER_ID, npc.id) + 1);
+    n += 1;
+  }
+  return n;
 }
 
 /**
@@ -317,9 +344,10 @@ export async function waterCommons(plotId) {
   serveCare(plot, 'water', now);
   const gain = player.addExpRaw(exp);
   logCommons('💧', `${state.farm.name} 给公共地的 ${crop.name} 浇了水`, PLAYER_ID, now);
+  const liked = bumpVillageRelations();
 
-  await persist(gain.leveledUp);
-  notify(`💧 给公共地浇了水，当前阶段缩短 ${Math.round(WATER_SPEEDUP * 100)}%　经验 +${exp}`);
+  await persist(gain.leveledUp, liked > 0);
+  notify(`💧 给公共地浇了水，当前阶段缩短 ${Math.round(WATER_SPEEDUP * 100)}%　经验 +${exp}　全村好感 +1`);
   return true;
 }
 
@@ -344,9 +372,10 @@ export async function pestCommons(plotId) {
   serveCare(plot, 'pest', now);
   const gain = player.addExpRaw(exp);
   logCommons('🐛', `${state.farm.name} 给公共地的 ${crop.name} 捉了虫`, PLAYER_ID, now);
+  const liked = bumpVillageRelations();
 
-  await persist(gain.leveledUp);
-  notify(`🐛 给公共地捉了虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%　经验 +${exp}`);
+  await persist(gain.leveledUp, liked > 0);
+  notify(`🐛 给公共地捉了虫，产量 +${Math.round(PEST_YIELD_BONUS * 100)}%　经验 +${exp}　全村好感 +1`);
   return true;
 }
 

@@ -29,6 +29,7 @@
 - 地块开局 6，第 N 块 `(已拥有-6)×1000+500`；三件省手道具各 200（永久采收机2万/另两5万）。
 - 制造间 Lv5+2000：`craft()` 只入队、`claimJobs()` 到点收；⚠️ **限定作物不能制种**（`crop.special` 挡）。
 - 好感 −200~200：打理+1/偷0/被逮`round(售价/10)`/送礼`round(等级/2)`/交易`round(等级×份/2)`/催−10；≥100 优先打理+送礼。
+- ⚠️ **公共地照料一次 → 全村各 +1**（第 61 轮，用户定死不封顶）：`waterCommons`/`pestCommons` 成功后 `bumpVillageRelations()` 遍历 `state.friends`；`persist()` 的 `relations` 按需带（`withRelations`），带了才 `emit(RELATION)`。节流靠 `needsWater`/`needsPest`，10 块地一轮最多 20 次。
 - ⚠️ 玩家偷被抓时**其他所有邻居各 −1**（`CAUGHT_RIPPLE_REL_LOSS`）：固定值不乘在线双倍、被偷那家不重复扣、不含 peers、NPC 互偷不触发；日志 + `.dc-ripple` 都要说。
 - ⚠️ `SOILS` 按 id 索引且条目**无 id 字段**，取出自补。
 - **开局礼包**（仅新档）：6 颗「≤玩家等级最高档里同档最快」种子+洒水器/杀虫剂/采收机各3+狗粮3，直接写 `state.bag`。
@@ -100,8 +101,13 @@
 
 ## UI 硬约束
 - 四 tab：农场/邻居/**村中心🏡**(≠村镇🏘联机)/商店。
-- 村中心：村庄卡 → **村民总览(1fr)+🏆排行榜(2fr) 同一行** → **第二块 `.center-main`**：左列上=📢公告栏/下=📋订单，右侧 🏞公共用地 `grid-column:2`+`grid-row:1/span 2` 跨两行。
+- 村中心：村庄卡 → **村民总览(1fr)+🏆排行榜(2fr) 同一行** → **第二块 `.center-main`：左 1fr 上=📢公告栏/下=📋订单，右 1fr = 🏞公共用地 `grid-column:2`+`grid-row:1/span 2` 跨两行**（⚠️ 是 1fr:1fr **不是** 1fr:2fr —— 给 2fr 时公告栏订单被压成省略号，用户实测反馈）。
 - ⚠️ `.center-main` 里 commons 有显式 grid 位置会**先于自动放置占位**，前两格不用写 `grid-area`。⚠️ 公共用地内部**全绝对定位** + `min-height:122px` + `overflow:hidden`，`ca-body` 要**同时钉 left 与 right**（shrink-to-fit 会顶出卡片），`b`/`i` 都要 `display:block` 才吃省略号。⚠️ 带徽标的按钮 `.ca-body` 要补 `padding-right`（徽标绝对定位不占布局）。
+- ⚠️ **叠层还原的是快照**：`closeModal()` 拿 `innerHTML` 快照还原上一层，上面那层改过数据就是过期内容（村民总览→邻居农场浇完水关回来，还以为没打理）。`modal.js` 还原后 `emit(EVENTS.MODAL_RESTORE)`，持卡模块自己判断重绘。⚠️ 重绘**必须手动接力 `.modal-body` 的 `scrollTop`**（换 innerHTML 会让高度先塌、浏览器夹到 0）；`input.value` 不进 innerHTML，搜索词要存**模块变量**再回填。
+- ⚠️ 弹窗里的输入框事件**委托挂 `#modal` 根**，别绑 `<input>` 自己：压栈还原后节点是新的，旧监听跟着节点一起没了。
+- ⚠️ 排行榜名字横滚（`.cr-name.marquee`）：渲染后量一次写 `--cr-shift`/`--cr-dur`，动画走 `transform` 关键帧；**别 JS 逐帧读 `scrollLeft`/`offsetWidth`**（每帧强制重排），**也别加 `will-change`**。放得下就连类都不挂（每轮先 `remove` 再判），`prefers-reduced-motion` 下关掉。
+- 总览头像行**两排**：`.co-faces` `wrap` + `min-height:47px`（22×2+3），`fitFaces()` 容量 = 每排个数 × `FACE_ROWS`。
+- 村民总览弹窗：搜索框在标题栏右侧（`.v-search`），筛选芯片挪到 `.modal-foot`（`.villager-bar` 不再留 margin-bottom）。
 - ⚠️ 总览只 1/3 宽：头像行 `nowrap`+`overflow:hidden` 一行，`fitFaces()` **量一次算完**（别「收一个量一次」，32 人在线会连续强制重排），末尾同尺寸「…」圆框。`mountCenter` 挂 `resize`（rAF 合并）。
 - ⚠️ 排行榜右列**只留头像**，「是不是你」用 `.cr-ava.me` 的 `box-shadow` 绿边，不占宽度。
 - 公共用地弹窗成熟卡：名字 / **剩余份数常驻**（`还剩 N 份 · 你拿过了|先到先得`，拿光才写「已经被拿光了」）/ **换种倒计时**（≥1h 静态，<1h `mm:ss`，到点「马上换种」）。1 秒心跳**只改文本**；整块重绘只留给「刚熟」与「该换种」；`lastExpiry` 挡 3 秒防每秒落盘；`#modal` 没 `show` 自 `clearInterval`。⚠️ `plotsSignature` **必须带 `commonsRemain` 与 `takers.length`**（村民随时抢收，不含数量会盯着早就拿光的地看）。

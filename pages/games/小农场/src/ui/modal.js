@@ -10,6 +10,7 @@
  * 能回到邻居农场，而不是把拜访弹窗顶掉。栈深一般就一两层，不做上限。
  */
 import { byId, delegate } from '../core/dom.js';
+import { emit, EVENTS } from '../core/bus.js';
 import { dragToClose } from './drag-close.js';
 import { mountHoldRepeat } from './hold.js';
 
@@ -106,6 +107,10 @@ export function closeModal() {
       if (card.querySelector(':scope > .modal-foot')) body.classList.add('has-foot');
     }
     bindAction();
+    // 上面那一层可能改过数据（在邻居农场浇了水、偷了菜），还原出来的快照
+    // 就是过期的。发一条事件让持卡的模块自己刷新 —— 谁持有这张卡谁清楚
+    // 该重画哪一块，modal 层不需要认识任何业务。
+    emit(EVENTS.MODAL_RESTORE);
     return;
   }
 
