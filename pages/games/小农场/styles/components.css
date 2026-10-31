@@ -3035,6 +3035,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 第四格「好友」（第 61 轮）：好友标记从农场控制台搬到这里。
+   用底色 + 内描边突出，**不动 padding、不改栅格、不加元素** ——
+   四格的高度与对齐因此一点没变（内描边用 inset box-shadow，
+   不占盒模型，换普通 border 会把这一格整体撑高 2px）。
+   好友用暖绿（与「🤝」一致），非好友压成中性灰：这不是警告，
+   只是「还没到那一步」，用红色会显得像出错了。 */
+.npc-stat.friend {
+  background: #f2f8ec;
+  box-shadow: inset 0 0 0 1px #e0ecd4;
+}
+.npc-stat.friend.on {
+  background: #eef8e6;
+  box-shadow: inset 0 0 0 1px #cfe6bd;
+}
+.npc-stat.friend.on > span { color: #4c7a3c; }
+.npc-stat.friend.off {
+  background: #f6f7f5;
+  box-shadow: inset 0 0 0 1px #e7ebe3;
+}
+.npc-stat.friend.off > span { color: #8b9787; }
+/* 窄屏这格里的标题偏长（「还没加好友」5 个字），允许值那侧让位 */
+.npc-stat.friend b { min-width: 0; }
 
 /* ============================================================
    藏宝图与冒险（弹窗部分）

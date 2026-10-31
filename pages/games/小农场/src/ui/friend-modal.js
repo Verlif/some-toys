@@ -386,7 +386,7 @@ function confirmFeedDog(friend, onDone) {
 }
 
 /**
- * 农场控制台：土地数量 + 日志 + 一键照料 ｜ 守护犬 + 互动。
+ * 农场控制台：日志 + 一键照料 ｜ 守护犬 + 互动。
  *
  * 这几样原来散在三个地方（一键按钮挤在标题行尾、守护犬占信息格一整行、
  * 记录区钉在页面最底部），玩家要判断「现在该不该动手」得上下扫一遍。
@@ -394,26 +394,25 @@ function confirmFeedDog(friend, onDone) {
  * 滚到哪儿它就退到哪儿，不会一直压在地块上。
  *
  * 第 47 轮按玩家要求重排：
- *   - 📜 日志紧挨着「农场 N 块」（同一件事：看这座农场的底细）；
  *   - 🚿🧴 一键照料跟在日志后面，仍然只有在道具在手时才出现；
  *   - **💬 互动**独占行尾，做成一颗大的实心按钮 —— 送礼 / 交易 / 催促上线
  *     全收进它打开的弹窗里，主弹窗不再铺两排按钮抢地块的视线。
+ *
+ * 第 61 轮再收一次（玩家反馈「这一行太挤」）：
+ *   - 删掉「🟫 农场 N 块」—— 上面的信息格里已经有一格「地块 N 块」，
+ *     同一个数写两遍，还占着这一行最值钱的位置；
+ *   - 删掉「🤝 好友 / 还没加好友」那枚胶囊 —— 它挪进信息格的「好友」格
+ *     （见 statsHTML），那里本来就空着一格。
+ *   于是这一行只剩「📜 + 一键照料 + 💬」，中间那片空隙反而让互动按钮
+ *   更容易被认出来是主操作。
  *
  * @param {object} friend
  * @param {number} now
  */
 function boardHTML(friend, now) {
-  // 好友标记（第 57 轮）：非好友偷不了菜、也催不动，得在弹窗最显眼处说清楚，
-  // 否则玩家会以为是「按钮坏了」
-  const buddy = friend.net === true || isFriend(PLAYER_ID, friend.id);
-  const tag = friend.net
-    ? ''
-    : `<span class="friend-chip ${buddy ? 'buddy' : 'stranger'}">${buddy ? '🤝 好友' : '还没加好友'}</span>`;
   return `
     <div class="npc-board" data-role="board">
       <div class="npc-board-top">
-        <span class="npc-board-title">🟫 农场 <b>${friend.plots.length}</b> 块</span>
-        ${tag}
         <button class="npc-chip icon" data-action="open-friend-log" data-id="${friend.id}"
           title="最近两天的农场日志">📜</button>
         <span class="npc-sec-tools">${secToolsHTML(friend, now)}</span>
@@ -1346,20 +1345,31 @@ export function openFriendModal(friendId) {
    * 守护犬与偷菜档位从这里搬走了 —— 狗的粮槽在农场控制台里（做成进度条，
    * 比一行文字直观），偷菜档位则由右上角「可偷 N」的角标表达，
    * 留在信息格里只是多占一行高度。
+   *
+   * 第 61 轮：第四格从「好感」改成「好友」—— 把原来挤在农场控制台那一行的
+   * 好友标记收编到这里。标题写的是关系（好友 / 还没加好友），值位仍然是
+   * 交情深浅（`友善 +38`），两块信息本来就是一回事：
+   * 「够不够格当好友」看的正是这个数。
+   * 靠 `.npc-stat.friend` 的底色与内描边突出，**不额外加元素、不改栅格**，
+   * 所以四格的高度与对齐一点没动。
    */
   function statsHTML(current) {
     const rel = relationBadge(getRelation(PLAYER_ID, current.id));
+    // 联机好友没有本地好友体系（走握手），第四格照旧显示来历
+    const buddy = !current.net && isFriend(PLAYER_ID, current.id);
     return [
       { k: '等级', v: `Lv.${current.level}` },
       { k: '身家', v: `${formatCoins(current.coins)} 💰` },
       { k: '地块', v: `${current.plots.length} 块` },
-      // 联机好友还没有好感度体系（P1 只读），别拿本地的 0 糊弄人
-      current.net ? { k: '来历', v: '🛰 联机' } : {
-        k: '好感',
-        v: `<span class="rel-tag rel-${rel.key}">${rel.label} ${rel.text}</span>`,
-      },
+      current.net
+        ? { k: '来历', v: '🛰 联机' }
+        : {
+          k: buddy ? '🤝 好友' : '还没加好友',
+          cls: `friend ${buddy ? 'on' : 'off'}`,
+          v: `<span class="rel-tag rel-${rel.key}">${rel.label} ${rel.text}</span>`,
+        },
     ]
-      .map((s) => `<div class="npc-stat"><span>${s.k}</span><b>${s.v}</b></div>`)
+      .map((s) => `<div class="npc-stat${s.cls ? ` ${s.cls}` : ''}"><span>${s.k}</span><b>${s.v}</b></div>`)
       .join('');
   }
 
