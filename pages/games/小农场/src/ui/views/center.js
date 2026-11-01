@@ -41,6 +41,13 @@ import { formatCoins, dayKey } from '../../core/utils.js';
 import { invest, pray, villageLogs, villageSnapshot } from '../../store/village.js';
 import { commonsSnapshot } from '../../store/commons.js';
 import { openCommonsModal } from '../commons-modal.js';
+import { contractSnapshot } from '../../store/contract.js';
+import {
+  contractCellsHTML,
+  contractHintText,
+  contractPlotText,
+  openContractModal,
+} from '../contract-modal.js';
 import {
   VILLAGE_NAME,
   VILLAGE_YIELD_PER_LEVEL,
@@ -186,6 +193,33 @@ function fitMarquees(root = byId('center')) {
     box.style.setProperty('--cr-dur', `${dur}s`);
     box.classList.add('marquee');
   }
+}
+
+/**
+ * 承包地比赛那一整行（第 62 轮）。
+ *
+ * 单独占一整行而不是挤进上面那块 2×2：比赛进行中这里有**两块地**的状态
+ * 要报（进度 / 可收获数量），塞进半格只能全部省掉，玩家就得点进去才知道
+ * 「熟了没有」。用户选的就是这个方案。
+ *
+ * 没开赛时报「能挑战几位」，开赛之后报两块地，结束之后报上一局比分。
+ *
+ * @param {object} snap contractSnapshot() 的结果
+ * @param {number} [now]
+ */
+function contractCardHTML(snap, now = Date.now()) {
+  // `match` 在 done 阶段还留着（结果存在里面），所以不能拿它当「进行中」——
+  // 出过结果的这一局是「上一局」，不该继续挂着那道绿色高亮
+  const live = Boolean(snap.match) && snap.phase !== 'done';
+  return `
+    <button class="center-act contract${live ? ' live' : ''}" data-action="center-contract">
+      <span class="ca-ico">⚔️</span>
+      <span class="ca-body">
+        <b>承包地比赛</b>
+        <i data-role="contract-hint">${contractHintText(snap)}</i>
+      </span>
+      <span class="ct-side-b" data-role="contract-cells">${contractCellsHTML(snap, now)}</span>
+    </button>`;
 }
 
 /* ---------- 村民总览弹窗 ---------- */
@@ -628,6 +662,7 @@ export function renderCenter() {
   const { online, total } = onlineStats(now);
   const orders = orderCount(now);
   const commons = commonsSnapshot(now);
+  const contract = contractSnapshot(now);
 
   setHTML(root, `
     ${villageCardHTML(now)}
@@ -655,6 +690,9 @@ export function renderCenter() {
         <i class="ca-total">共 ${commons.total} 块</i>
         ${commonsStatsHTML(commons)}
       </button>
+    </div>
+    <div class="center-line">
+      ${contractCardHTML(contract, now)}
     </div>
   `);
 
@@ -710,6 +748,15 @@ function refreshMarks() {
     el.classList.toggle('zero', !n);
   }
 
+  // 承包地那一整行：两块地的状态跟着时间走（阶段名 → 倒计时 → 可收获 N 个）
+  const contract = contractSnapshot(now);
+  const cells = root.querySelector('[data-role="contract-cells"]');
+  if (cells) cells.innerHTML = contractCellsHTML(contract, now);
+  const ctHint = root.querySelector('[data-role="contract-hint"]');
+  if (ctHint) ctHint.textContent = contractHintText(contract);
+  root.querySelector('.center-act.contract')
+    ?.classList.toggle('live', Boolean(contract.match) && contract.phase !== 'done');
+
   // 名单里的圆点 / 灰度（弹窗开着的时候才有节点）：与邻居页共用一套
   refreshOnline();
 
@@ -731,6 +778,10 @@ const CENTER_ACTIONS = {
   // 公共用地（第 58 轮）：弹窗里是一张「没有主人的农场」
   'center-commons'() {
     openCommonsModal();
+  },
+  // 承包地比赛（第 62 轮）：没开赛列对手，开赛了看两块地
+  'center-contract'() {
+    openContractModal();
   },
   // 榜单卡片：整张卡可点，开排行榜弹窗（与子页面版同源渲染）
   'center-rank'() {
@@ -770,9 +821,54 @@ function prayOnce() {
   });
 }
 
-/** 进入村中心：渲染（引导在公告栏弹窗里才结） */
+/** 承包地的 1 秒心跳（`enterCenterPage` 首次进入时挂上，全页只有一份） */
+let contractClock = 0;
+
+/** 进入村中心：渲染（引导在公告栏弹窗里才结），并把承包地的秒表挂上 */
 export function enterCenterPage() {
   renderCenter();
+  startContractClock();
+}
+
+/**
+ * 承包地那一行的秒表（第 62 轮，第 63 轮扩到两块卡）。
+ *
+ * 村中心整体的刷新靠 `EVENTS.TICK`，那是 **60 秒**一次 —— 但两块地上写的是
+ * 「30分21秒」这种带秒的数字，一分钟才跳一次会像是卡住了。所以单独给这一行
+ * 一个 1 秒的心跳。
+ *
+ * 三条自我约束：
+ *   - 只有**比赛进行中**才真跑（`grow` / `ripe` 两态），其余时候空转一下就走；
+ *   - **只改文本**，绝不重建 DOM：重建会把 `:active` 的按下反馈打断，
+ *     而且两块卡片的结构本来也不变（只有数字在走）；
+ *   - 离开村中心（`#page-center` 没 `.active`）或页面藏进后台时直接跳过，
+ *     不给别的页面白烧一秒一次的循环。
+ *
+ * ⚠️ 文案一律走 `contractPlotText()`，不在这里另算一遍 —— 两套口径的话，
+ * 边界那一秒会出现「倒计时归零了、状态还写着生长」。
+ */
+function startContractClock() {
+  if (contractClock) return;
+  contractClock = setInterval(() => {
+    if (document.hidden) return;
+    const root = byId('center');
+    if (!root?.closest('#page-center.active')) return;
+    if (!root.querySelector('[data-role="ct-card"]')) return;   // idle/pick/done 没有卡可走
+
+    const snap = contractSnapshot();
+    if (snap.phase !== 'grow' && snap.phase !== 'ripe') return;
+
+    const now = Date.now();
+    for (const card of root.querySelectorAll('[data-role="ct-card"]')) {
+      const plot = snap.plots[Number(card.dataset.slot)];
+      const text = contractPlotText(plot, now);
+      const left = card.querySelector('[data-role="ct-left"]');
+      const stage = card.querySelector('[data-role="ct-stage"]');
+      if (left && left.textContent !== text.left) left.textContent = text.left;
+      if (stage && stage.textContent !== text.stage) stage.textContent = text.stage;
+      card.classList.toggle('ripe', text.ripe);
+    }
+  }, 1000);
 }
 
 export function mountCenter() {
@@ -796,6 +892,8 @@ export function mountCenter() {
   on(EVENTS.VILLAGE, paintVillage);
   // 公共用地：玩家照料 / 拿走、村民顺手来一趟 → 方格右下角那三个数跟着变
   on(EVENTS.COMMONS, refreshMarks);
+  // 承包地：下战书 / 选种 / 照顾 / 结算 → 那一整行的状态跟着变
+  on(EVENTS.CONTRACT, refreshMarks);
 
   // 转屏 / 拉窗口：卡片宽度变了，头像行能放几个、名字滚不滚也跟着变。
   // 用一帧合并，拖窗口时 resize 一秒能来几十次，每次都量一遍会抖

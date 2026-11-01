@@ -30,6 +30,7 @@ import { friendTick } from './friend.js';
 import { bump, bumpMax, flushAwards } from './daily.js';
 import { addCrystal, contributeCore, prayNpc, villageYield } from './village.js';
 import { npcCommonsTick } from './commons.js';
+import { npcContractTick } from './contract.js';
 import { announceAuto } from './automation.js';
 import { catchChance, DOG_FOOD_SATIETY, DOG_SATIETY_MAX, dogBreed, dogSatietyAt } from '../data/dogs.js';
 import { guardChance } from './dogs.js';
@@ -190,6 +191,8 @@ function simCtx(farm = farmView()) {
     // 公共用地（第 58 轮）：村民顺手来浇水 / 抢收。同样是注入 ——
     // npc-sim 只认这个函数，不认识 store/commons.js
     commonsTick: (npc, at) => npcCommonsTick(npc, at),
+    // 承包地（第 62 轮）：路过那片比试的地，顺手浇一瓢 / 捉一只
+    contractTick: (npc, at) => npcContractTick(npc, at),
   };
 }
 

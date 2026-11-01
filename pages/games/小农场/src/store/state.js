@@ -54,6 +54,12 @@ import {
 } from '../data/dogs.js';
 import { WORKSHOP_MAX_LEVEL } from '../data/workshop.js';
 import { COMMONS_AVATAR, COMMONS_ID, COMMONS_NAME, commonsPlotCount } from '../data/commons.js';
+import {
+  CONTRACT_AVATAR,
+  CONTRACT_ID,
+  CONTRACT_NAME,
+  CONTRACT_PLOTS,
+} from '../data/contract.js';
 import { baseRelation, friendThreshold, readRelations, relKey } from '../data/relation.js';
 import { scheduleCare } from '../data/care.js';
 import { cleanNotices } from '../data/notice.js';
@@ -87,7 +93,8 @@ export function takeStarterGift() {
   return gift;
 }
 
-/** @type {{farm: object, friends: object[], peers: object[], commons: object, bag: Record<string, number>,
+/** @type {{farm: object, friends: object[], peers: object[], commons: object, contract: object,
+ *          bag: Record<string, number>,
  *          relations: Record<string, number>, news: object[],
  *          dailyRows: Record<string, object>}} */
 export const state = {
@@ -100,6 +107,12 @@ export const state = {
    * 也不会进 `state.friends`（那不是一位邻居）。
    */
   commons: null,
+  /**
+   * 承包地（第 62 轮）：另一座没有主人的农场，固定两块地 ——
+   * 玩家一块、对手一块，`match` 记录这一局的对手 / 作物 / 结果。
+   * 与 commons 同一套路：地块与日志走 plot / log 表，不新增表、不升 DB_VERSION。
+   */
+  contract: null,
   /**
    * 联机来的真人玩家：**只活在内存**，不落库、不参与邻居模拟。
    * 数据以对方浏览器为准，这里只放只读快照（见 store/peers.js）。
@@ -120,13 +133,13 @@ export const state = {
 /**
  * 一次提交里「要一起写下去的农场」。
  *
- * 为什么需要这个函数：世界时钟那条线上有**三类**数据在同时被推进 ——
- * 玩家农场、若干邻居农场、公共用地。早先每个落盘点都手写
+ * 为什么需要这个函数：世界时钟那条线上有**四类**数据在同时被推进 ——
+ * 玩家农场、若干邻居农场、公共用地、承包地。早先每个落盘点都手写
  * `[state.farm, ...state.friends]`，第 58 轮加了公共用地之后就漏了三处
  * （村民在公共地抢收的账本没落盘，重开能原地再拿一遍）。
  *
  * 所以凡是「时钟线 / 补算收尾」这类批量落盘，一律走这里：
- * 公共用地**自动跟上**，以后再加第四类数据也只改这一处。
+ * 公共用地与承包地**自动跟上**，以后再加第五类数据也只改这一处。
  *
  * ⚠️ 玩家主动操作邻居（浇水 / 偷菜 / 送礼）的单点提交**不要**用它 ——
  * 那些操作根本不碰公共地，带上只是白写一遍（「动了才带」原则）。
@@ -137,6 +150,7 @@ export const state = {
 export function farmRows(...base) {
   const rows = base.filter(Boolean);
   if (state.commons && !rows.includes(state.commons)) rows.push(state.commons);
+  if (state.contract && !rows.includes(state.contract)) rows.push(state.contract);
   return rows;
 }
 
@@ -322,6 +336,32 @@ function createCommonsFarm() {
     avatar: COMMONS_AVATAR,
     /** 跟着村庄等级走，读档时由 initState / 升级流程对齐 */
     level: 1,
+    plots: [],
+    log: [],
+  };
+}
+
+/**
+ * 新建承包地（第 62 轮）。
+ *
+ * 与公共用地同一套路：一座没有主人的农场，只有地块与日志，
+ * 固定两块地 —— 序号 0 是玩家的，1 是对手的（见 data/contract.js）。
+ *
+ * 额外三个字段：
+ *   `match` 当前这一局 `{ rivalId, cropId, at, result }`，null = 没在比
+ *   `cool`  `{ npcId: 时间戳 }`——被拒之后的冷却，不记就「拒绝概率」失效
+ *   `log`   承包地日志（保留 7 天，与农场日志共用 trimLog）
+ *
+ * @returns {object}
+ */
+function createContractFarm() {
+  return {
+    id: CONTRACT_ID,
+    kind: 'contract',
+    name: CONTRACT_NAME,
+    avatar: CONTRACT_AVATAR,
+    match: null,
+    cool: {},
     plots: [],
     log: [],
   };
@@ -617,6 +657,68 @@ function normalizeCommons(row, save, level = 1) {
   return farm;
 }
 
+/**
+ * 承包地：一座只有两块地的农场，清洗地块、日志、当前这一局。
+ *
+ * 地块永远补齐到两块且全部可用（这里没有「买地」），存档里的多余地块丢掉。
+ * `match` 里的 `rivalId` 只认当前还在名单里的村民 —— 邻居被清掉之后
+ * 那一局就作废（否则结算时会找不到人，两头都没产出）。
+ *
+ * @param {?object} row 存档里的那一行（没有就是新档）
+ * @param {object} save loadSave() 的结果
+ * @param {Set<string>} aliveIds 当前村里的村民 id（用来判对手还在不在）
+ * @returns {object}
+ */
+function normalizeContract(row, save, aliveIds) {
+  const base = createContractFarm();
+  const out = {
+    ...base,
+    plots: [],
+    log: save.logs[CONTRACT_ID] || [],
+  };
+
+  const saved = (save.plots[CONTRACT_ID] || []).map((plot, i) => normalizePlot(plot, i, true));
+  for (let id = 0; id < CONTRACT_PLOTS; id += 1) {
+    const hit = saved.find((plot) => plot.id === id);
+    out.plots.push(hit || createCommonsPlot(id));
+  }
+  out.plots.sort((a, b) => a.id - b.id);
+
+  // 冷却只留还没到期的那些：过期的留着只会长成一张人数表
+  const now = Date.now();
+  for (const [id, until] of Object.entries(row?.cool || {})) {
+    const at = safeNum(until, 0);
+    if (at > now) out.cool[id] = at;
+  }
+
+  const match = row?.match;
+  // 对手已经不在村里：进行中的那一局整局作废（地块一起清掉），
+  // 否则玩家会盯着一局永远结算不了的比赛 —— 结算时找不到人，两头都没产出
+  if (match && typeof match === 'object' && typeof match.rivalId === 'string'
+    && !aliveIds.has(match.rivalId)) {
+    return out;
+  }
+  if (match && typeof match === 'object' && typeof match.rivalId === 'string') {
+    const result = match.result && typeof match.result === 'object'
+      ? {
+        winner: match.result.winner === 'rival' ? 'rival' : 'player',
+        playerYield: Math.max(0, safeNum(match.result.playerYield, 0)),
+        rivalYield: Math.max(0, safeNum(match.result.rivalYield, 0)),
+        cropId: CROPS[match.result.cropId] ? match.result.cropId : '',
+        at: safeNum(match.result.at, now),
+        forfeit: match.result.forfeit === true,
+      }
+      : null;
+    out.match = {
+      rivalId: match.rivalId,
+      cropId: CROPS[match.cropId] ? match.cropId : null,
+      at: safeNum(match.at, now),
+      result,
+    };
+  }
+  return out;
+}
+
 function normalizePlayerFarm(row, save) {
   const base = createPlayerFarm();
   const progress = { ...base.progress, ...(row.progress || {}) };
@@ -828,19 +930,33 @@ export async function initState() {
     save,
     villageLevel,
   );
-
-  const rows = new Map(save.farms
-    .filter((row) => row.id !== PLAYER_ID && row.id !== COMMONS_ID)
-    .map((row) => [row.id, row]));
   /**
-   * 谁在村里，看村庄等级（第 53 轮）。
+   * 谁该在村里，看村庄等级（第 53 轮）。
    *
    * 开局只有 32 位原住民，另外 20 位是村子升到 Lv.2~5 时陆续搬来的
    * （`npcsArrivingAt` 在 store/village.js 的 checkUpgrade 里补进名单）。
    * 这里按等级过滤而不是照单全收：老档里可能存着「村子还没升级却已经写进库」
    * 的新住户，直接 map 全部 NPCS 会让他们提前入住。
+   *
+   * 第 62 轮起名单要**提前**算出来：承包地清洗时要用它判断「这一局的对手
+   * 还在不在村里」。
    */
-  state.friends = npcsAtVillageLevel(villageLevel).map((def) => {
+  const defs = npcsAtVillageLevel(villageLevel);
+  /**
+   * 承包地（第 62 轮）：同样要先认领掉 `contract` 那一行 ——
+   * 它也不是一位邻居，被 dropFarms 清掉的话进行中的那一局会凭空消失。
+   */
+  state.contract = normalizeContract(
+    save.farms.find((row) => row.id === CONTRACT_ID),
+    save,
+    new Set(defs.map((def) => def.id)),
+  );
+
+  const rows = new Map(save.farms
+    .filter((row) => row.id !== PLAYER_ID && row.id !== COMMONS_ID && row.id !== CONTRACT_ID)
+    .map((row) => [row.id, row]));
+
+  state.friends = defs.map((def) => {
     const row = rows.get(def.id);
     rows.delete(def.id);
     return row ? normalizeNpc(row, def, save) : createNpc(def, now);
@@ -857,7 +973,7 @@ export async function initState() {
   seedFriends();
 
   await commit({
-    farms: [state.farm, ...state.friends, state.commons],
+    farms: [state.farm, ...state.friends, state.commons, state.contract],
     bag: state.bag,
     news: state.news,
     relations: state.relations,

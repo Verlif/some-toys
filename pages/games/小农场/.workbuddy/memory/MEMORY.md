@@ -15,7 +15,7 @@
 备份 `core/zip.js`+`core/backup.js`：导出前 `flushDaily()`，导入五步校验→`suspendPersist()+freezeWrites()` 双闸→整页 reload。
 
 ## 世界时钟
-`advanceWorld` 逐段：⓪下线→①上线→①'空闲→②订单过期→③跨14:00结算→④收炉→⑤自动机器→⑥公共用地。
+`advanceWorld` 逐段：⓪下线→①上线→①'空闲→②订单过期→③跨14:00结算→④收炉→⑤自动机器→⑥公共用地→⑦承包地摇产量。
 `stepMsFor` ≤7天1分、翻倍×2封顶60分；`VISIT_BUDGET=30000` 超则 bulkAdvance。
 ⚠️ 补算期跨表动作 quiet，结束 `flushAwards()`；**循环里 commit 是性能陷阱**（365天18s→0.4s）。
 `from=min(worldCursor,lastSeen())`；`deferFrom=sessionStart` 才演出，>2分直接算完。下线通知在段开头发且 `until>=deferFrom`。
@@ -74,6 +74,21 @@
 ⚠️ `water`/`pest` 只统计**还在长**的地。公共地照料**不记任何榜**、不补算历史。
 村中心入口是**左半格大方格**：内部**全绝对定位**（`display:block`，flex 居中会把右下角统计顶上去）。右半格留白。
 
+## 承包地比赛
+`state.contract` = farm 表 `id:'contract'`/`kind:'contract'` 的**第二座无主农场**（同公共地，**不升 `DB_VERSION`**）。永远两块地：0=玩家 / 1=对手，序号不能换。五阶段 `idle→pick→grow→ripe→done` 只由 `contractPhase` 算。
+⚠️ **谁都不能手收 → 产量必须在成熟那一刻摇定**（`rollContractRipe`，`pendingYield` 非 0 即「已摇」，幂等；`world.js` 第⑦步 + `contractSnapshot` 两处调）。等结算再摇的话玩家会盯着一块熟透却没有数字的地。
+⚠️ **拒绝概率 2%~30% 必须有冷却**（`cool[id]` 15 分钟），否则连点即绕过上限；读档只留未到期的。
+⚠️ **结算/认输的 `persist` 必须带 `npcs`**：对手赢的是 `rival.bag`，不带他重开就白赢；其余入口不带（别 34 座全量重写）。
+⚠️ 入口行 `live` 高亮要 **`phase !== 'done'`**：`match` 在 done 阶段还留着结果，拿它当「进行中」会一直挂绿杠。
+⚠️ `normalizeContract(row, save, aliveIds)`：对手已不在村里 → **整局作废**（否则永远结算不了）；所以 `initState` 的 `defs` 必须**先于**它算。contract 行仍须在 `rows` 过滤前认领。
+平局判玩家赢（`>=`）：产量是掷的、玩家先付 5 点好感又亲手照料；判平则「赢家拿走全部产出」落不了地。
+种子**不花玩家的**；池子 `max(两级)`+`cropsNearLevel`+滤 `special`，等级降序。两地块同刻种下，浇水后才分开 → 结算取**最晚**那块。吃村庄产量倍率、永远普通土。
+照料给经验**不给好感**（公共地已全村 +1）。村民走 `ACTIONS.contract`(sweep)+`ctx.contractTick`，50% 门，两块地谁的都照料。
+入口行两块地（第 63 轮）用 `.ct-card`：**作物图标 / 头像+名字 / 阶段名 / 剩余时间** 四样，成熟转 `.ripe` 金底写「成熟 / 可收 N」；`idle`/`pick`/`done` 三态仍用 `.ct-cell`。
+⚠️ **`contractPlotText(plot, now)` 是渲染与秒表的唯一口径**（返回 `{stage,left,ripe}`）：两处各算一遍，边界那秒就会「倒计时归零但仍写生长」。
+⚠️ 副标题**只写 `vs 名字`**：卡已报全「谁+什么作物+到哪步」，430px 上写全会让左边只剩 89px（`contractHintText` 因此不再收 `now`）。
+⚠️ 秒表在 `views/center.js` 的 `startContractClock()`（`enterCenterPage` 挂一次，全页一份）：过「`document.hidden` / `#page-center.active` / phase 是 grow|ripe」三道门，**只改 textContent 与类、不重建 DOM**（重建打断 `:active`）。
+
 ## 子页面标签
 仓库 `bag.js`：🌾农产品 / 💠其他（水晶）。包裹 `package.js`：🌱种子 / 🧭藏宝图 / 🧪道具。
 ⚠️ **tab 态只能挂模块变量 `activeTab`**：每动作后整页重绘，状态进 DOM 会丢。芯片复用 `.filter-chip`+`.chip-num`；⚠️ `.sub-tabs` **不能 sticky**（子页面本身是滚动容器）。
@@ -101,10 +116,12 @@
 
 ## UI 硬约束
 - 四 tab：农场/邻居/**村中心🏡**(≠村镇🏘联机)/商店。
-- 村中心：村庄卡 → **村民总览(1fr)+🏆排行榜(2fr) 同一行** → **第二块 `.center-main`：左 1fr 上=📢公告栏/下=📋订单，右 1fr = 🏞公共用地 `grid-column:2`+`grid-row:1/span 2` 跨两行**（⚠️ 是 1fr:1fr **不是** 1fr:2fr —— 给 2fr 时公告栏订单被压成省略号，用户实测反馈）。
+- 村中心：村庄卡 → **村民总览(1fr)+🏆排行榜(2fr) 同一行** → **第二块 `.center-main`：左 1fr 上=📢公告栏/下=📋订单，右 1fr = 🏞公共用地 `grid-column:2`+`grid-row:1/span 2` 跨两行**（⚠️ 是 1fr:1fr **不是** 1fr:2fr —— 给 2fr 时公告栏订单被压成省略号，用户实测反馈） → **第三块 `.center-line` 单独一整行＝⚔️承包地比赛**。⚠️ `.center-act` 是 `<button>`，`width:auto` 对它是 **shrink-to-fit**，不像 grid 里那几格能靠 `stretch` 拉开 —— 放进 `.center-line` 必须补 `.center-line .center-act { width: 100% }`，漏了就只占内容宽（实测 430 屏上 256 vs 404）、右侧空一大片。判据：`卡片宽 == 行宽 − 左右 padding`（五档 320/360/430/768/1280 全部成立）。
 - ⚠️ `.center-main` 里 commons 有显式 grid 位置会**先于自动放置占位**，前两格不用写 `grid-area`。⚠️ 公共用地内部**全绝对定位** + `min-height:122px` + `overflow:hidden`，`ca-body` 要**同时钉 left 与 right**（shrink-to-fit 会顶出卡片），`b`/`i` 都要 `display:block` 才吃省略号。⚠️ 带徽标的按钮 `.ca-body` 要补 `padding-right`（徽标绝对定位不占布局）。
 - ⚠️ **叠层还原的是快照**：`closeModal()` 拿 `innerHTML` 快照还原上一层，上面那层改过数据就是过期内容（村民总览→邻居农场浇完水关回来，还以为没打理）。`modal.js` 还原后 `emit(EVENTS.MODAL_RESTORE)`，持卡模块自己判断重绘。⚠️ 重绘**必须手动接力 `.modal-body` 的 `scrollTop`**（换 innerHTML 会让高度先塌、浏览器夹到 0）；`input.value` 不进 innerHTML，搜索词要存**模块变量**再回填。
-- ⚠️ 弹窗里的输入框事件**委托挂 `#modal` 根**，别绑 `<input>` 自己：压栈还原后节点是新的，旧监听跟着节点一起没了。
+- ⚠️ **`fmtDuration` 对 ≥ 1 小时不含秒**（`3小时51分`）：验证「秒表在不在走」必须拿 < 1 小时的地采样，否则一分钟内两次读数一样，会误判成卡死。
+- ⚠️ 承包地那一行 `≤380px` **藏掉左侧 34px 的 `.ca-ico`**（纯 CSS 媒体查询，别用 JS 切类）：430 行高 75 / 卡高 53 / 卡宽 105；380 行高 73 / 标题 124 完整；360 标题 93~96 完整；**320 标题 56（需 65）已知截断** —— e2e 只断言「不溢出」，`≥360px` 才断言标题完整。
+- ⚠️ 弹窗里输入框事件**委托挂 `#modal` 根**，别绑 `<input>` 自己：压栈还原后节点是新的，旧监听跟着节点一起没了。
 - ⚠️ 排行榜名字横滚（`.cr-name.marquee`）：渲染后量一次写 `--cr-shift`/`--cr-dur`，动画走 `transform` 关键帧；**别 JS 逐帧读 `scrollLeft`/`offsetWidth`**（每帧强制重排），**也别加 `will-change`**。放得下就连类都不挂（每轮先 `remove` 再判），`prefers-reduced-motion` 下关掉。
 - 总览头像行**两排**：`.co-faces` `wrap` + `min-height:47px`（22×2+3），`fitFaces()` 容量 = 每排个数 × `FACE_ROWS`。
 - 村民总览弹窗：搜索框在标题栏右侧（`.v-search`），筛选芯片挪到 `.modal-foot`（`.villager-bar` 不再留 margin-bottom）。

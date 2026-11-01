@@ -957,6 +957,18 @@ export const ACTIONS = {
     sweep: true,
     run: (npc, at, ctx) => ctx.commonsTick?.(npc, at) ?? null,
   },
+  /**
+   * 承包地（第 62 轮）：路过村中心那片比试的地，顺手浇一瓢 / 捉一只。
+   *
+   * 同样走 `sweep`：「所有人都可以按照意愿给两块地进行打理」——
+   * 所以谁上线都可能出手，而且**不看他是哪一边的**（有人帮自己、
+   * 有人故意帮对手，都算真实）。概率门与挑哪一块都在 store/contract.js 里。
+   */
+  contract: {
+    label: '承包地',
+    sweep: true,
+    run: (npc, at, ctx) => ctx.contractTick?.(npc, at) ?? null,
+  },
 };
 
 /**
@@ -1002,7 +1014,7 @@ export function planVisit(npc, at = Date.now(), ctx = null) {
  * 空闲时可能去做的「社交小事」。等概率抽一件，动作内部还有自己的概率门
  * （顺菜 33% / 帮忙 ~90% / 送礼 25~55%），所以不是抽中就一定发生。
  */
-const IDLE_SOCIAL = ['steal', 'care', 'gift', 'feed', 'adventure', 'order', 'fill', 'pray', 'contribute', 'friend', 'commons'];
+const IDLE_SOCIAL = ['steal', 'care', 'gift', 'feed', 'adventure', 'order', 'fill', 'pray', 'contribute', 'friend', 'commons', 'contract'];
 
 /**
  * 在线期间「顺手做一件事」（第 48 轮）。

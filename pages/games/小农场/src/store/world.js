@@ -27,6 +27,7 @@ import { claimJobs } from './workshop.js';
 import { beginVisit, bulkAdvance, estimateVisits, planIdle, planVisit, runStep, runVisit } from './npc-sim.js';
 import { runAutoStep } from './automation.js';
 import { advanceCommons } from './commons.js';
+import { advanceContract } from './contract.js';
 import { IDLE_AFTER_VISIT_MS, IDLE_MS } from '../data/friends.js';
 import {
   FRAME_MS,
@@ -261,6 +262,11 @@ async function tick(prev, next, { ctx, deferFrom, onVisit, report }) {
   //    那件事跟「谁在线」有关，交给已经排好程的那条线更省。
   //    同样不落盘，由 report.dirty 统一提交
   if (advanceCommons(next)) report.dirty = true;
+
+  // ⑦ 承包地（第 62 轮）：两块地刚熟的那一刻摇定产量 ——
+  //    用户要求「不能手收、只显示可收获数量」，所以产量必须在成熟时就定下来。
+  //    村民顺路打理同样是空闲动作（npc-sim 的 contract），不在这里
+  if (advanceContract(next)) report.dirty = true;
 }
 
 /**

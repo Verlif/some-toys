@@ -59,8 +59,10 @@ export function describeSave(save) {
     createdAt: Number(player.createdAt) || 0,
     plots: plots.length,
     planted: plots.filter((plot) => plot.cropId).length,
-    // 公共用地也是一行农场，但它不是邻居 —— 算进去会让「32 位邻居」变成 33
-    friends: farms.filter((row) => row.id !== PLAYER_ID && row.kind !== 'commons').length,
+    // 公共用地与承包地也是一行农场，但它们不是邻居 —— 算进去会让
+    // 「32 位邻居」变成 33 / 34（第 62 轮补上 contract）
+    friends: farms.filter((row) => row.id !== PLAYER_ID
+      && row.kind !== 'commons' && row.kind !== 'contract').length,
     bagKinds: Object.keys(bag).length,
     lit: Object.keys(specimens).filter((id) => specimens[id]).length,
   };

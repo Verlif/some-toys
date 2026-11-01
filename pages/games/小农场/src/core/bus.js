@@ -66,6 +66,8 @@ export const EVENTS = {
   VILLAGE: 'state:village',
   /** 公共用地变化：玩家照料 / 拿走 / 村民顺手来一趟（公共地弹窗靠它刷） */
   COMMONS: 'state:commons',
+  /** 承包地变化：下战书 / 选种 / 照料 / 结算 / 认输（村中心入口与弹窗靠它刷） */
+  CONTRACT: 'state:contract',
   /**
    * 邻居「刚刚上线」。
    *

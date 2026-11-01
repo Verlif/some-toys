@@ -1340,6 +1340,260 @@
 }
 /* 为 0 的那行只压灰、不隐藏：三行位置固定，忽隐忽现反而看不出变化 */
 .center-act.commons .ca-stats i.zero { color: #b9c8b2; }
+/* ---------- 村中心：承包地比赛（单独一整行，第 62 轮） ----------
+   用户选定的位置：2×2 网格之下再追加一整行。
+   为什么不挤进上面那 2×2：比赛进行中这一格要报**两块地**各自的进度
+   （`45%` / `可收 23`），半格里放不下，只能全省掉 —— 玩家就得点进去
+   才知道熟没熟。单独一行才有右侧那一块 `.ct-side-b` 的位置。
+   ⚠️ 高度别写死：`.ca-body` 两行 + `.ct-cell` 两行，本来就是等高的；
+   写死了窄屏上一换行就被裁。
+   ⚠️ **必须写 `width:100%`**：`.center-act` 是 `<button>`，`width:auto` 对它是
+   shrink-to-fit（收缩到内容宽），不像上面那几格能靠 grid 的 `stretch` 拉开。
+   漏了这一句这一行只占 256px、右侧空一大片，根本不是「一整行」。 */
+.center-line { padding: 0 13px 13px; }
+.center-line .center-act { width: 100%; }
+
+.center-act.contract {
+  /* 只改颜色，**不动边框宽度** —— 这一行只有它一个，但上面对齐的
+     那几格共用 `.center-act` 的 1px，改宽度会让它单独高 2px */
+  border-color: #d9e2d2;
+  background: linear-gradient(160deg, #fbfdf9, #f2f7ee);
+}
+.center-act.contract .ca-ico { background: #e9f1e3; }
+.center-act.contract .ca-body b { color: #3c4a39; }
+/* 进行中：左边一条绿杠（inset 阴影，不占布局）+ 底色变暖。
+   这是整页唯一一个「长期有东西在跑」的入口，得在余光里看得出来 */
+.center-act.contract.live {
+  border-color: #c8dcba;
+  background: linear-gradient(160deg, #f7fcf2, #e9f5e0);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+.center-act.contract.live .ca-ico { background: #dff0d2; }
+.center-act.contract.live .ca-body b { color: #3f6b34; }
+/* 没开赛时这里只有一句话（`可挑战 N 位` / `现在没人应战`），
+   与公共地那张卡左下角的 `.ca-total` 同一个语感 */
+.center-act.contract .ca-total {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  color: #7f8f7a;
+  white-space: nowrap;
+}
+
+/* 右侧：两块地的状态。`margin-left:auto` 把它钉到行尾，
+   `flex-shrink:0` 保证窄屏时是左边的文字被省略、而不是这两格被压扁 */
+.ct-side-b {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ct-pair { display: flex; align-items: stretch; gap: 6px; }
+/* 一格 = 小标 + 数字，两行右对齐。窄屏 360px 上两格共约 100px，
+   刚好放得下「可收 23」；再长就是数字，不会再宽。
+   只在「选种期 / 已结算」这两屏用 —— 真在比的时候换成 .ct-card */
+.ct-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 44px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: #f3f7f0;
+  font-style: normal;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.ct-cell > span { font-size: 9px; color: #95a290; }
+.ct-cell > b {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f5d4b;
+  font-variant-numeric: tabular-nums;
+}
+/* 你的地：绿底。⚠️ 用 `inset box-shadow` 而不是 `border` —— 加一条 1px 边框
+   会让这一格比隔壁高 2px，两块地就不在同一水平线上了 */
+.ct-cell.me { background: #eef7e9; box-shadow: inset 0 0 0 1px #cfe3c6; }
+.ct-cell.me > span { color: #7f9a76; }
+.ct-cell.me > b { color: #3f6b34; }
+/* 可收获：金底盖掉绿底（熟的信号比「这是你的地」更值得一眼看到） */
+.ct-cell.ripe { background: #fdf3dc; box-shadow: inset 0 0 0 1px #f0d595; }
+.ct-cell.ripe > span { color: #b08a3c; }
+.ct-cell.ripe > b { color: #a07818; }
+
+/* 比赛进行中：一块地一张卡（作物图标 + 头像名字 / 阶段 / 剩余时间）。
+   ⚠️ 三行文字 + 53px 卡片高，行高因此从 56px 涨到 75px —— 这是拿高度换
+   「不点进去也知道种了什么、谁的地、还有多久」。⚠️ 底色/描边照旧用
+   `background` + `inset box-shadow`，不写 `border`，否则两张卡上下差 2px。 */
+.ct-card {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 7px;
+  border-radius: 12px;
+  background: #f3f7f0;
+  box-shadow: inset 0 0 0 1px #e2ebdc;
+  font-style: normal;
+}
+.ct-card.me { background: #eef7e9; box-shadow: inset 0 0 0 1px #cfe3c6; }
+.ct-card.ripe { background: #fdf3dc; box-shadow: inset 0 0 0 1px #f0d595; }
+.ct-card .ctp-crop { flex-shrink: 0; font-size: 25px; line-height: 1; }
+.ct-card .ctp-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* 第一行「谁的地」：头像 + 名字，名字长了省略（玩家能改到 10 个字） */
+.ct-card .ctp-who {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  font-size: 9.5px;
+  line-height: 1.2;
+}
+.ct-card .ctp-who > i { flex-shrink: 0; font-style: normal; font-size: 11px; line-height: 1; }
+.ct-card .ctp-who > b {
+  font-weight: 700;
+  color: #6b7a68;
+  max-width: 62px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ct-card .ctp-state {
+  font-size: 9.5px;
+  line-height: 1.2;
+  color: #9aa795;
+  white-space: nowrap;
+}
+.ct-card .ctp-left {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #3f6b34;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ct-card.ripe .ctp-who > b { color: #b08a3c; }
+.ct-card.ripe .ctp-state { color: #c0a05e; }
+.ct-card.ripe .ctp-left { color: #a07818; }
+/* 320~380px：右侧两张卡吃掉大半行宽，左侧标题会被压成「承包…」。
+   藏掉左边那块 34px 的 ⚔️ 图标（标题本身已经说清是什么），把宽度全让给标题。
+   ⚠️ 实测 360px 上：不藏图标标题只剩 61px（截断），藏了有 87px（完整） */
+@media (max-width: 380px) {
+  .center-act.contract .ca-ico { display: none; }
+  .center-act.contract { padding-left: 13px; }
+  .center-act.contract .ct-card { gap: 5px; padding: 5px 8px 5px 6px; }
+  .center-act.contract .ct-card .ctp-crop { font-size: 21px; }
+  .center-act.contract .ct-card .ctp-who > b { max-width: 46px; }
+}
+
+/* ---------- 承包地弹窗 ---------- */
+/* 规则说明条（idle / pick / done 都有）：左边一颗图标，右边一段话 */
+.ct-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 11px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: #f6faf3;
+  box-shadow: inset 0 0 0 1px #e6efe0;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: #6b7a68;
+}
+.ct-note > i { flex-shrink: 0; font-style: normal; font-size: 14px; line-height: 1.3; }
+.ct-note b { color: #40503c; font-weight: 700; }
+
+/* 「你 VS 他」：两块地上面那条对阵横幅 */
+.ct-versus {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 11px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e6ece0;
+}
+.ct-side {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #4f5d4b;
+  white-space: nowrap;
+}
+.ct-side > i { flex-shrink: 0; font-style: normal; font-size: 15px; line-height: 1; }
+.ct-side.me { color: #3f6b34; }
+/* 对手靠右：两边名字长度不一样，居中会显得 VS 偏了 */
+.ct-side:last-child { justify-content: flex-end; }
+.ct-vs {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  color: #b6c0b3;
+}
+/* 两块地永远并排两列：`.npc-plots` 在宽屏会涨到 3~4 列，
+   那样两块地只占左边一半、右边留空一大片。特异性要压过媒体查询 */
+.npc-plots.ct-plots { grid-template-columns: repeat(2, 1fr); }
+
+/* 两块地各自的状态胶囊 + 领先 / 落后 */
+.ct-status { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.ct-chip {
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: #f4f7f1;
+  color: #7f8f7a;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ct-chip.on { background: #fdf3dc; color: #a07818; box-shadow: inset 0 0 0 1px #f0d595; }
+.ct-chip.lead { background: #eef7e9; color: #3f6b34; font-weight: 700; }
+
+/* 底部按钮：认输与结算各占一半，结算在右手边（主操作） */
+.ct-actions { display: flex; gap: 9px; margin-top: 12px; }
+.ct-actions .btn { flex: 1; }
+
+/* 比分卡（done 屏最上面那一块） */
+.ct-result {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 12px;
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: linear-gradient(140deg, #f7f9f6, #eef1ec);
+  box-shadow: inset 0 0 0 1px #e2e8dd;
+}
+.ct-result.win { background: linear-gradient(140deg, #fffaf0, #fdf0d4); box-shadow: inset 0 0 0 1px #f2dda6; }
+.ctr-ico {
+  flex-shrink: 0;
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .1));
+}
+.ctr-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ctr-main b { font-size: 15px; font-weight: 800; color: #3c4a39; }
+.ct-result.win .ctr-main b { color: #a0730f; }
+.ctr-main span { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 比分四格 → 说明条 → 按钮，三块之间的间距 */
+.sd-grid + .ct-note { margin-top: 12px; }
+
 /* ---------- 村中心：排行榜卡（两列，2/3 宽） ---------- */
 /* 左列榜单、右列昨日冠军；整张卡是一个按钮，点哪儿都开排行榜弹窗。
    两列用同一个行高（19px）对齐 —— 左边六行名字、右边六个头像必须一条线。
