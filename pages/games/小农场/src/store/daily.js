@@ -16,7 +16,9 @@
  *      bulkAdvance 聚合不记账 —— 模糊数据不跟精确数据同榜。
  *
  * 发奖只给玩家：NPC 夺冠只上报一条时报（世界照常运转的感觉）。
- * 金币从严：主榜 100/50/30，冒险王各档多一张「免费藏宝图」—— 发的是道具不是钱。
+ * 金币从严：主榜 150/80/50（第 64 轮上调，仍旧只当彩头），
+ * 真正的大头是道具 —— **前三名都有道具**，名次越高越多；
+ * 冒险王五档另加一张该档「免费藏宝图」，但**只给第一名一张**，二三名换成别的道具。
  */
 import { commit } from '../core/storage.js';
 import { emit, EVENTS } from '../core/bus.js';
@@ -38,8 +40,10 @@ const KEEP_DAYS = 8;
 /**
  * 六个基础榜 + 冒险王按藏宝图等级拆五档，共 11 张榜。
  *
- * rewards 是前三名递减（并列都发，见 rankOf）；金币从严，
- * 真正的大头是道具与「免费藏宝图」—— 发道具不发钱，经济才守得住。
+ * rewards 是前三名递减（并列都发，见 rankOf）；金币从严（150/80/50），
+ * 真正的大头是**道具**：第 64 轮按用户要求把每档道具量提上来，
+ * 并让二三名也带道具 —— 以前三名只有金币，进榜只剩「多点钱」的体感。
+ * 每档都保持「1 名 ⊃ 2 名 ⊃ 3 名」，别让第三名反超第二名。
  */
 export const BOARDS = [
   {
@@ -47,9 +51,9 @@ export const BOARDS = [
     desc: '帮邻里农场打理（浇水 / 捉虫）的次数',
     format: (v) => `${v} 次`,
     rewards: [
-      { coins: 100, items: { [SPRINKLER_ID]: 5, [PESTICIDE_ID]: 5 } },
-      { coins: 50, items: { [SPRINKLER_ID]: 3 } },
-      { coins: 30 },
+      { coins: 150, items: { [SPRINKLER_ID]: 8, [PESTICIDE_ID]: 8 } },
+      { coins: 80, items: { [SPRINKLER_ID]: 5, [PESTICIDE_ID]: 3 } },
+      { coins: 50, items: { [SPRINKLER_ID]: 2, [PESTICIDE_ID]: 2 } },
     ],
   },
   {
@@ -57,9 +61,9 @@ export const BOARDS = [
     desc: '守护犬拦下偷菜贼的次数',
     format: (v) => `${v} 次`,
     rewards: [
-      { coins: 100, items: { dogFood: 10 } },
-      { coins: 50, items: { dogFood: 5 } },
-      { coins: 30 },
+      { coins: 150, items: { dogFood: 15, dogFoodPro: 4 } },
+      { coins: 80, items: { dogFood: 9, dogFoodPro: 2 } },
+      { coins: 50, items: { dogFood: 6 } },
     ],
   },
   {
@@ -67,9 +71,9 @@ export const BOARDS = [
     desc: '自己农场里最高的那一个「+加成」角标',
     format: (v) => `+${v}%`,
     rewards: [
-      { coins: 100, items: { boost10: 3, [HARVESTER_ID]: 3 } },
-      { coins: 50, items: { boost10: 2 } },
-      { coins: 30 },
+      { coins: 150, items: { boost10: 5, [HARVESTER_ID]: 4 } },
+      { coins: 80, items: { boost10: 3, [HARVESTER_ID]: 2 } },
+      { coins: 50, items: { boost10: 2, [HARVESTER_ID]: 1 } },
     ],
   },
   {
@@ -77,9 +81,9 @@ export const BOARDS = [
     desc: '送出礼物的总价值（产出按售价、道具按商店价）',
     format: (v) => formatCoins(v),
     rewards: [
-      { coins: 100, items: { boost10: 2 } },
-      { coins: 50 },
-      { coins: 30 },
+      { coins: 150, items: { boost10: 5, boost20: 1 } },
+      { coins: 80, items: { boost10: 3, boost20: 1 } },
+      { coins: 50, items: { boost10: 2 } },
     ],
   },
   {
@@ -87,14 +91,16 @@ export const BOARDS = [
     desc: '播种 / 浇水 / 捉虫 / 施肥 / 收获 / 铲除的次数',
     format: (v) => `${v} 次`,
     rewards: [
-      { coins: 100, items: { [HARVESTER_ID]: 3 } },
-      { coins: 50 },
-      { coins: 30 },
+      { coins: 150, items: { [HARVESTER_ID]: 6, [SPRINKLER_ID]: 3 } },
+      { coins: 80, items: { [HARVESTER_ID]: 3, [SPRINKLER_ID]: 2 } },
+      { coins: 50, items: { [HARVESTER_ID]: 1, [SPRINKLER_ID]: 1 } },
     ],
   },
 ];
 
-// 冒险王：五档藏宝图各一榜，奖励多一张该档的免费图
+// 冒险王：五档藏宝图各一榜。
+// 藏宝图只给**第一名一张**（它是能白嫖产出的东西，二三名的量发出来会泛滥），
+// 二三名改发寻宝用得上的加速道具 —— 有机化肥 + 增产剂，与「冒险」这条线对得上。
 for (const map of MAP_TIERS) {
   BOARDS.push({
     metric: `adv${map.tier}`,
@@ -104,9 +110,9 @@ for (const map of MAP_TIERS) {
     format: (v) => `${formatCoins(v)} 💰`,
     tier: map.tier,
     rewards: [
-      { coins: 100, maps: [map.tier] },
-      { coins: 50 },
-      { coins: 30 },
+      { coins: 150, maps: [map.tier] },
+      { coins: 80, items: { organic: 1, boost20: 1 } },
+      { coins: 50, items: { organic: 1 } },
     ],
   });
 }

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>效果图 B · 素雅现代</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1f2430;--muted:#78808f;--line:#e3e6ec;--accent:#4a6cf7;--jin:#c9a227;--mu:#3f9e6a;--shui:#3d86c8;--huo:#dc5b45;--tu:#a48055}
+*{box-sizing:border-box}
+body{margin:0;background:#e9ecf1;color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;padding:24px}
+.spec{max-width:1120px;margin:0 auto 16px;color:var(--muted);font-size:13px}
+.screen{max-width:1120px;margin:0 auto 28px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:24px}
+h2{font-size:18px;margin:0 0 18px;font-weight:600}
+h2 small{color:var(--muted);font-size:12px;margin-left:10px;font-weight:400}
+.row{display:grid;grid-template-columns:300px 1fr;gap:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.panel h3{margin:0 0 16px;font-size:14px}
+.el{display:flex;align-items:center;gap:9px;font-size:12px;margin-bottom:8px}
+.el .dot{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:#fff;font-size:12px}
+.step{margin-left:auto;display:flex;align-items:center;gap:8px}
+.step button{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);background:#f8f9fb;color:var(--ink);cursor:pointer}
+.step b{min-width:12px;text-align:center}
+.bar{height:5px;background:#eef0f4;border-radius:3px;margin:0 0 12px 31px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px}
+.total{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.deck-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.card{background:#fbfcfe;border:1px solid var(--line);border-radius:10px;padding:10px;min-height:130px;position:relative}
+.card.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(74,108,247,.12)}
+.card .cost{position:absolute;right:8px;top:8px;width:20px;height:20px;border-radius:50%;background:#eef1ff;color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:600}
+.card .cn{font-size:13px;font-weight:600;margin-bottom:6px}
+.card .de{font-size:11px;color:var(--muted);line-height:1.5}
+.card .tag{font-size:10px;color:#54606f;line-height:1.6;margin-top:8px}
+.card .tag em{font-style:normal;color:var(--accent)}
+.card.on:after{content:"✓";position:absolute;left:8px;bottom:8px;color:var(--accent);font-weight:700;font-size:12px}
+.go{display:block;margin:18px auto 0;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 40px;font-family:inherit;cursor:pointer}
+.battle{display:grid;grid-template-columns:1fr 230px;gap:16px}
+.enemy{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
+.enemy .hp{height:7px;background:#eef0f4;border-radius:4px;margin:10px auto 0;width:60%;overflow:hidden}
+.enemy .hp i{display:block;height:100%;width:70%;background:var(--huo);border-radius:4px}
+.log{height:92px;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12px;color:var(--muted);line-height:1.8;margin-top:12px}
+.pools{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.pool{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12px}
+.pool .chip{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:#fff;font-size:12px}
+.pool .n{margin-left:auto;font-weight:600}
+.pool.picked{background:#f0f3ff;border-radius:8px;padding:3px 6px;margin-left:-6px;margin-right:-6px}
+.pool .track{flex:1;height:5px;background:#eef0f4;border-radius:3px;overflow:hidden}
+.pool .track i{display:block;height:100%}
+.hand{grid-column:1/-1;display:flex;gap:9px;align-items:stretch}
+.hand .card{flex:1;min-height:138px;background:#fff}
+.hand .card.playable{border-color:var(--accent)}
+.end{margin-left:auto;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:0 20px;font-family:inherit;cursor:pointer;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="spec">效果图 B · 素雅现代：浅色卡片 + 圆角 + 五行色徽标，信息密度更清晰，与当前浅色 IDE 主题一致。仅用于风格选择，非最终交互。</div>
+
+<section class="screen">
+<h2>① 选择页 <small>五行分配 + 卡组选择</small></h2>
+<div class="row">
+  <div class="panel">
+    <h3>五行分配 · 共 10 点</h3>
+    <div class="el"><span class="dot" style="background:var(--jin)">金</span>金 · 锋锐<span class="step"><button>−</button><b>3</b><button>＋</button></span></div><div class="bar"><i style="width:60%;background:var(--jin)"></i></div>
+    <div class="el"><span class="dot" style="background:var(--mu)">木</span>木 · 生发<span class="step"><button>−</button><b>2</b><button>＋</button></span></div><div class="bar"><i style="width:40%;background:var(--mu)"></i></div>
+    <div class="el"><span class="dot" style="background:var(--shui)">水</span>水 · 润下<span class="step"><button>−</button><b>2</b><button>＋</button></span></div><div class="bar"><i style="width:40%;background:var(--shui)"></i></div>
+    <div class="el"><span class="dot" style="background:var(--huo)">火</span>火 · 炎上<span class="step"><button>−</button><b>2</b><button>＋</button></span></div><div class="bar"><i style="width:40%;background:var(--huo)"></i></div>
+    <div class="el"><span class="dot" style="background:var(--tu)">土</span>土 · 承载<span class="step"><button>−</button><b>1</b><button>＋</button></span></div><div class="bar"><i style="width:20%;background:var(--tu)"></i></div>
+    <div class="total">已分配 10 / 10　剩余 0 点</div>
+  </div>
+  <div class="panel">
+    <h3>卡组选择 · 必须且只能携带 10 张</h3>
+    <div class="deck-head"><span>卡池 24 张</span><span>已选 10 / 10</span></div>
+    <div class="cards">
+      <div class="card on"><span class="cost">3</span><div class="cn">金锋斩</div><div class="de">造成 6 点伤害</div><div class="tag"><em>含金</em> 伤害+3<br><em>相生</em> 抽1牌</div></div>
+      <div class="card on"><span class="cost">2</span><div class="cn">木灵庇</div><div class="de">获得 5 点护盾</div><div class="tag"><em>含水木</em> 护盾+4</div></div>
+      <div class="card on"><span class="cost">2</span><div class="cn">水镜术</div><div class="de">回复 4 点气血</div><div class="tag"><em>含金水</em> 回复+3</div></div>
+      <div class="card on"><span class="cost">4</span><div class="cn">焚天诀</div><div class="de">造成 10 点伤害</div><div class="tag"><em>纯火</em> 伤害+4</div></div>
+      <div class="card on"><span class="cost">2</span><div class="cn">厚土盾</div><div class="de">获得 6 点护盾</div><div class="tag"><em>含土</em> 护盾+2</div></div>
+      <div class="card on"><span class="cost">3</span><div class="cn">相生引</div><div class="de">造成 4 点伤害</div><div class="tag"><em>相生</em> 伤害+5</div></div>
+      <div class="card on"><span class="cost">3</span><div class="cn">克伐刺</div><div class="de">造成 5 点伤害</div><div class="tag"><em>相克</em> 伤害+5</div></div>
+      <div class="card on"><span class="cost">4</span><div class="cn">五行轮转</div><div class="de">造成 3 点伤害</div><div class="tag"><em>三种属性</em> 各+2伤害</div></div>
+      <div class="card on"><span class="cost">1</span><div class="cn">清心诀</div><div class="de">抽 1 张牌</div><div class="tag"><em>含水</em> 再抽1张</div></div>
+      <div class="card on"><span class="cost">2</span><div class="cn">截脉手</div><div class="de">造成 4 点伤害</div><div class="tag"><em>含金</em> 伤害+2</div></div>
+      <div class="card"><span class="cost">3</span><div class="cn">枯木逢春</div><div class="de">回复 6 点气血</div><div class="tag"><em>木生火</em> 护盾+3</div></div>
+      <div class="card"><span class="cost">3</span><div class="cn">烈焰焚身</div><div class="de">造成 8 点伤害</div><div class="tag"><em>火克金</em> 自伤2</div></div>
+      <div class="card"><span class="cost">2</span><div class="cn">沧海潮</div><div class="de">造成 5 点伤害</div><div class="tag"><em>纯水</em> 回复2</div></div>
+      <div class="card"><span class="cost">2</span><div class="cn">磐石固</div><div class="de">获得 4 点护盾</div><div class="tag"><em>土生金</em> 伤害+2</div></div>
+      <div class="card"><span class="cost">1</span><div class="cn">锐金针</div><div class="de">造成 3 点伤害</div><div class="tag"><em>含金</em> 抽1牌</div></div>
+    </div>
+    <button class="go">开始战斗</button>
+  </div>
+</div>
+</section>
+
+<section class="screen">
+<h2>② 战斗页 <small>选择五行点数 → 打出卡牌 → 词条判定</small></h2>
+<div class="battle">
+  <div>
+    <div class="enemy"><div style="font-size:15px;font-weight:600">凶骸 · 炼气后期</div><div style="font-size:12px;color:var(--muted)">气血 42 / 60</div><div class="hp"><i></i></div></div>
+    <div class="log">回合 1 · 敌方：凶骸挥爪，造成 6 点伤害<br>回合 1 · 玩家：打出「金锋斩」，消耗 金3<br>词条触发：含金 → 伤害+3；相生(金→水) → 抽1牌<br>回合 2 · 玩家：五行点数已恢复，抽 5 张手牌</div>
+  </div>
+  <div class="pools">
+    <div style="font-size:12px;margin-bottom:12px;color:var(--muted)">本回合五行点数（已选 3 / 需 3）</div>
+    <div class="pool picked"><span class="chip" style="background:var(--jin)">金</span><span class="track"><i style="width:100%;background:var(--jin)"></i></span><span class="n">3</span></div>
+    <div class="pool"><span class="chip" style="background:var(--mu)">木</span><span class="track"><i style="width:67%;background:var(--mu)"></i></span><span class="n">2</span></div>
+    <div class="pool"><span class="chip" style="background:var(--shui)">水</span><span class="track"><i style="width:67%;background:var(--shui)"></i></span><span class="n">2</span></div>
+    <div class="pool"><span class="chip" style="background:var(--huo)">火</span><span class="track"><i style="width:67%;background:var(--huo)"></i></span><span class="n">2</span></div>
+    <div class="pool"><span class="chip" style="background:var(--tu)">土</span><span class="track"><i style="width:33%;background:var(--tu)"></i></span><span class="n">1</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6">点击五行池选中点数，累计等于卡牌消耗即可打出；词条按本次所选属性组合判定。</div>
+  </div>
+  <div class="hand">
+    <div class="card playable"><span class="cost">3</span><div class="cn">金锋斩</div><div class="de">造成 6 点伤害</div><div class="tag"><em>含金</em> +3<br><em>相生</em> 抽1</div></div>
+    <div class="card"><span class="cost">2</span><div class="cn">木灵庇</div><div class="de">获得 5 点护盾</div><div class="tag"><em>含水木</em> +4</div></div>
+    <div class="card"><span class="cost">2</span><div class="cn">水镜术</div><div class="de">回复 4 点气血</div><div class="tag"><em>含金水</em> +3</div></div>
+    <div class="card"><span class="cost">4</span><div class="cn">焚天诀</div><div class="de">造成 10 点伤害</div><div class="tag"><em>纯火</em> +4</div></div>
+    <div class="card"><span class="cost">1</span><div class="cn">清心诀</div><div class="de">抽 1 张牌</div><div class="tag"><em>含水</em> 再抽1</div></div>
+    <button class="end">结束回合</button>
+  </div>
+</div>
+</section>
+</body>
+</html>
