@@ -12,6 +12,9 @@
   var HAND_SIZE_PLAYER = 5;
   var HAND_SIZE_ENEMY = 3;
   var ENEMY_PLAYS = 2;
+  var SPIRIT_MAX = 100;
+  var SPIRIT_GAIN = 15;  // 每回合恢复最大灵力的 15%
+  var REROLL_COST = 20;  // 重铸消耗最大灵力的 20%
 
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
@@ -34,6 +37,11 @@
       maxHp: maxHp,
       shield: 0,
       points: XE.emptyPoints(),
+      spirit: SPIRIT_MAX,
+      spiritMax: SPIRIT_MAX,
+      rerollUsed: false,
+      pointsSpent: false,
+      element: null,
       hand: [],
       deck: shuffle(deckIds.slice()),
       discard: []
@@ -106,11 +114,26 @@
     if (allocationTotal() !== 10 || state.selectedCards.length !== 10) return false;
     state.player = makeActor('你', PLAYER_MAX_HP, state.selectedCards);
     state.enemy = makeActor('凶骸', ENEMY_MAX_HP, XC.ENEMY_CARDS.map(function (c) { return c.id; }));
+    state.enemy.element = XE.ELEMENTS[Math.floor(Math.random() * XE.ELEMENTS.length)].key;
     state.stage = 'battle';
     state.round = 0;
     state.log = [];
+    log('凶骸五行属性：' + XE.nameOf(state.enemy.element) +
+      '（受' + XE.nameOf(XR.counteredBy(state.enemy.element)) + '克）');
     startPlayerTurn();
     return true;
+  }
+
+  /* 随机选满 10 张卡并直接入局；五行未满 10 点时恢复均分 */
+  function randomStart() {
+    if (state.stage !== 'setup') return false;
+    if (allocationTotal() !== 10) {
+      state.allocation = { jin: 2, mu: 2, shui: 2, huo: 2, tu: 2 };
+    }
+    var ids = XC.CARDS.map(function (c) { return c.id; });
+    shuffle(ids);
+    state.selectedCards = ids.slice(0, 10);
+    return startBattle();
   }
 
   function startPlayerTurn() {
@@ -118,11 +141,16 @@
     state.turn = 'player';
     state.player.shield = 0;
     state.player.points = copyPoints(state.allocation);
+    state.player.spirit = Math.min(state.player.spiritMax,
+      state.player.spirit + Math.round(state.player.spiritMax * SPIRIT_GAIN / 100));
+    state.player.rerollUsed = false;
+    state.player.pointsSpent = false;
     state.selectedCardId = null;
     state.chosen = XE.emptyPoints();
     discardHand(state.player);
     drawCards(state.player, HAND_SIZE_PLAYER);
-    log('第 ' + state.round + ' 回合 · 你的回合：五行点数已恢复，抽 ' + HAND_SIZE_PLAYER + ' 张牌');
+    log('第 ' + state.round + ' 回合 · 你的回合：五行点数已恢复，抽 ' + HAND_SIZE_PLAYER +
+      ' 张牌，灵力 ' + state.player.spirit + '/' + state.player.spiritMax);
   }
 
   function selectHandCard(id) {
@@ -148,17 +176,42 @@
     return true;
   }
 
-  function applyEffects(effects, actor, target, label) {
+  /* 花费 20% 灵力重铸本回合五行点数；每回合一次，且出牌后不可重铸 */
+  function rerollElements() {
+    if (state.stage !== 'battle' || state.turn !== 'player' || state.result) return false;
+    var player = state.player;
+    if (player.rerollUsed || player.pointsSpent || player.spirit < REROLL_COST) return false;
+
+    player.spirit -= REROLL_COST;
+    player.rerollUsed = true;
+    var next = XE.emptyPoints();
+    var count = allocationTotal();
+    for (var i = 0; i < count; i++) {
+      var pick = XE.ELEMENTS[Math.floor(Math.random() * XE.ELEMENTS.length)];
+      next[pick.key] += 1;
+    }
+    player.points = next;
+    state.chosen = XE.emptyPoints();
+    log('你花费 ' + REROLL_COST + ' 灵力重铸五行：' + XR.describePayment(next) +
+      '（灵力 ' + player.spirit + '/' + player.spiritMax + '）');
+    return true;
+  }
+
+  function applyEffects(effects, actor, target, label, modifier) {
     var actorSide = actor === state.enemy ? 'enemy' : 'player';
     var targetSide = target === state.enemy ? 'enemy' : 'player';
+    var multiplier = modifier ? modifier.multiplier : 1;
     effects.forEach(function (e) {
       if (e.type === 'damage') {
-        var absorbed = Math.min(target.shield, e.value);
+        var amount = Math.round(e.value * multiplier);
+        var absorbed = Math.min(target.shield, amount);
         target.shield -= absorbed;
-        var actual = e.value - absorbed;
+        var actual = amount - absorbed;
         target.hp = Math.max(0, target.hp - actual);
         log('　' + label + '造成 ' + actual + ' 点伤害' +
-          (absorbed ? '（护盾抵消 ' + absorbed + '）' : '') + '，' + target.name + '气血 ' + target.hp);
+          (absorbed ? '（护盾抵消 ' + absorbed + '）' : '') +
+          (multiplier !== 1 ? '（' + modifier.text + '）' : '') +
+          '，' + target.name + '气血 ' + target.hp);
         state.floats.push({ target: targetSide, kind: 'damage', text: '-' + actual });
       } else if (e.type === 'shield') {
         actor.shield += e.value;
@@ -180,19 +233,28 @@
 
   function playCard(card, chosen, actor, target, label) {
     XE.ELEMENTS.forEach(function (e) { actor.points[e.key] -= chosen[e.key]; });
-    var entries = XR.triggeredEntries(card, chosen);
-    log('　' + label + '打出「' + card.name + '」，消耗 ' + XR.describePayment(chosen));
+    if (actor === state.player) state.player.pointsSpent = true;
+    var resolved = XR.resolvePayment(chosen);
+    var entries = XR.triggeredEntries(card, chosen, resolved);
+    var attribute = resolved.dominant ? XE.nameOf(resolved.dominant) : '无';
+    log('　' + label + '打出「' + card.name + '」，支付 ' + XR.describePayment(chosen) +
+      ' → 生克后 ' + XR.describePayment(resolved.points) +
+      '，附' + attribute + '属性（' + XR.describeEvents(resolved) + '）');
     if (entries.length) {
       log('　词条触发：' + entries.map(function (en) { return en.text; }).join('；'));
     } else {
       log('　词条未触发');
     }
+    var modifier = target === state.enemy
+      ? XR.damageModifier(resolved.dominant, target.element)
+      : null;
+    if (modifier) log('　属性判定：' + modifier.text);
     var effects = (card.effects || []).slice();
     entries.forEach(function (en) { effects = effects.concat(en.bonus || []); });
     var index = actor.hand.indexOf(card.id);
     if (index >= 0) actor.hand.splice(index, 1);
     actor.discard.push(card.id);
-    applyEffects(effects, actor, target, label);
+    applyEffects(effects, actor, target, label, modifier);
   }
 
   function playSelected() {
@@ -306,13 +368,17 @@
     evenAllocation: evenAllocation,
     toggleCard: toggleCard,
     startBattle: startBattle,
+    randomStart: randomStart,
     selectHandCard: selectHandCard,
     choosePoint: choosePoint,
+    rerollElements: rerollElements,
     autoFill: autoFill,
     clearChosen: clearChosen,
     playSelected: playSelected,
     endPlayerTurn: endPlayerTurn,
     drainFloats: drainFloats,
-    restart: restart
+    restart: restart,
+    SPIRIT_GAIN: SPIRIT_GAIN,
+    REROLL_COST: REROLL_COST
   };
 })(window);

@@ -18,8 +18,9 @@
     if (opts.dimmed) classes.push('card-dimmed');
     if (opts.playable) classes.push('card-playable');
 
+    var resolved = opts.chosen ? (opts.resolved || XR.resolvePayment(opts.chosen)) : null;
     var entries = (card.entries || []).map(function (entry) {
-      var active = opts.chosen ? XR.evalCond(entry.cond, opts.chosen) : false;
+      var active = resolved ? XR.evalCond(entry.cond, opts.chosen, resolved) : false;
       return '<div class="entry' + (active ? ' entry-active' : '') + '">' +
         (active ? '◆ ' : '◇ ') + entry.text + '</div>';
     }).join('');
@@ -31,6 +32,8 @@
       '<div class="card-cost">' + card.cost + '</div>' +
       '<div class="card-name">' + card.name + '</div>' +
       '<div class="card-effects">' + effects + '</div>' +
+      (resolved ? '<div class="card-attr">附' +
+        (resolved.dominant ? XE.nameOf(resolved.dominant) : '无') + '</div>' : '') +
       '<div class="card-entries">' + entries + '</div>' +
       (opts.selected ? '<div class="card-mark">已选</div>' : '') +
       '</div>';

@@ -7,6 +7,7 @@
   var XR = global.XRules;
   var XCardView = global.XCardView;
   var XRing = global.XElementRing;
+  var XGame = global.XGame;
 
   function chips(points) {
     var list = XE.ELEMENTS.filter(function (e) { return (points[e.key] || 0) > 0; })
@@ -20,11 +21,17 @@
   function actorPanel(actor, enemy) {
     var hpPercent = Math.max(0, actor.hp / actor.maxHp * 100);
     var id = enemy ? 'enemy' : 'player';
+    var attrChip = '';
+    if (enemy && actor.element) {
+      var el = XE.byKey(actor.element);
+      attrChip = '<span class="mini-chip" style="border-color:' + el.color + ';color:' + el.color + '">' +
+        '属性 ' + el.name + ' · 受' + XE.nameOf(XR.counteredBy(actor.element)) + '克</span>　';
+    }
     return '<div class="actor ' + (enemy ? 'actor-enemy' : 'actor-player') + '" id="actor-' + id + '">' +
       '<div class="actor-head"><span class="actor-name">' + actor.name + '</span>' +
       '<span>气血 ' + actor.hp + ' / ' + actor.maxHp + '　护盾 ' + actor.shield + '</span></div>' +
       '<div class="hpbar"><i style="width:' + hpPercent + '%"></i></div>' +
-      '<div class="actor-meta">五行 ' + chips(actor.points) +
+      '<div class="actor-meta">' + attrChip + '五行 ' + chips(actor.points) +
       '　手牌 ' + actor.hand.length + '　弃牌 ' + actor.discard.length + '</div>' +
       '</div>';
   }
@@ -36,6 +43,7 @@
     var chosenTotal = XR.total(state.chosen);
     var affordable = selectedCard ? XR.canAfford(state.chosen, selectedCard.cost, player.points) : false;
     var playing = state.turn === 'player' && !state.result;
+    var resolved = selectedCard ? XR.resolvePayment(state.chosen) : null;
 
     var ring = XRing.render({
       mode: 'pay',
@@ -59,15 +67,37 @@
       return XCardView.render(card, {
         selected: id === state.selectedCardId,
         chosen: id === state.selectedCardId ? state.chosen : null,
+        resolved: id === state.selectedCardId ? resolved : null,
         playable: id === state.selectedCardId && affordable,
         action: 'select-hand'
       });
     }).join('');
 
+    var matchup = selectedCard ? XR.damageModifier(resolved.dominant, enemy.element) : null;
     var payStatus = selectedCard
       ? '<div class="pay-name">' + selectedCard.name + ' <span>消耗 ' + selectedCard.cost + '</span></div>' +
-        '<div class="pay-total' + (affordable ? ' pay-ok' : '') + '">已选 ' + chosenTotal + ' / ' + selectedCard.cost + '</div>'
+        '<div class="pay-total' + (affordable ? ' pay-ok' : '') + '">已选 ' + chosenTotal + ' / ' + selectedCard.cost + '</div>' +
+        '<div class="pay-resolved">生克后 ' + XR.describePayment(resolved.points) +
+        ' · 附' + (resolved.dominant ? XE.nameOf(resolved.dominant) : '无') + '属性</div>' +
+        '<div class="pay-events">' + XR.describeEvents(resolved) + '</div>' +
+        '<div class="pay-matchup ' + (matchup.counter ? 'matchup-good' : 'matchup-bad') +
+        '">对' + enemy.name + '：' + matchup.text + '</div>'
       : '<div class="pay-hint">先点一张手牌，再点外环五行加入点数</div>';
+
+    var spiritPercent = Math.max(0, player.spirit / player.spiritMax * 100);
+    var rerollReason = player.pointsSpent ? '已消耗五行' :
+      (player.rerollUsed ? '本回合已重铸' :
+        (player.spirit < XGame.REROLL_COST ? '灵力不足' : null));
+    var canReroll = playing && !rerollReason;
+    var spiritBox = '<div class="spirit-box">' +
+      '<div class="spirit-head"><span>灵力</span><span>' + player.spirit + ' / ' + player.spiritMax + '</span></div>' +
+      '<div class="spirit-bar"><i style="width:' + spiritPercent + '%"></i></div>' +
+      '<div class="spirit-hint">每回合 +' + XGame.SPIRIT_GAIN + '% · 重铸 -' + XGame.REROLL_COST +
+      '% · 出牌后不可重铸</div>' +
+      '<button class="btn-small reroll-btn" data-action="reroll-elements"' +
+      (canReroll ? '' : ' disabled') + '>' +
+      (rerollReason || '重铸五行（' + XGame.REROLL_COST + ' 灵力）') +
+      '</button></div>';
 
     var logLines = state.log.slice(-12).map(function (line) {
       return '<div>' + line + '</div>';
@@ -83,6 +113,7 @@
       '<div class="log">' + logLines + '</div>' +
       '</div>' +
       '<aside class="side">' +
+      spiritBox +
       '<div class="side-title">五行点数</div>' + ring +
       '<div class="ring-actions">' +
       '<button class="btn-small" data-action="auto-fill"' + (selectedCard && playing ? '' : ' disabled') + '>满额</button>' +

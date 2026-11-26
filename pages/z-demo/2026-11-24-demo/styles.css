@@ -139,13 +139,27 @@ h3 span {
   text-align: center;
 }
 .alloc-total b { color: var(--ink); }
+.setup-hint { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
 .deck-meta {
   display: flex; justify-content: space-between;
   font-size: 14px; color: var(--muted); margin-bottom: 12px;
 }
 .deck-meta b { color: var(--red); }
+.card-scroll {
+  max-height: calc(100vh - 280px);
+  min-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 8px 4px 2px;
+}
+.card-scroll::-webkit-scrollbar { width: 8px; }
+.card-scroll::-webkit-scrollbar-track { background: rgba(49, 43, 37, .06); }
+.card-scroll::-webkit-scrollbar-thumb { background: rgba(49, 43, 37, .25); }
+.card-scroll::-webkit-scrollbar-thumb:hover { background: rgba(157, 43, 36, .5); }
 .card-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 11px; }
-.start-btn { display: block; margin: 18px auto 0; padding: 11px 48px; letter-spacing: .3em; }
+.setup-actions { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.start-btn { display: block; margin: 0; padding: 11px 48px; letter-spacing: .3em; }
+.random-btn { padding: 11px 24px; font-size: 15px; letter-spacing: .16em; }
 
 /* ---------- 卡牌 ---------- */
 .card {
@@ -178,6 +192,12 @@ h3 span {
   50% { opacity: .55; text-shadow: 0 0 8px rgba(157, 43, 36, .5); }
 }
 .entry-active { color: var(--red); font-weight: 600; animation: entryPulse 1.5s ease-in-out infinite; }
+.card-attr {
+  position: absolute; right: 9px; bottom: 0;
+  font-size: 12px; color: var(--red);
+  background: rgba(157, 43, 36, .08);
+  padding: 1px 6px;
+}
 .card-mark {
   position: absolute; left: 0; bottom: 0;
   background: var(--red); color: #fff;
@@ -234,7 +254,21 @@ h3 span {
 .pay-total { font-size: 14px; color: var(--muted); margin-top: 8px; }
 .pay-ok { color: var(--red); font-weight: 600; }
 .pay-hint { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.pay-resolved { font-size: 13px; color: var(--red); margin-top: 5px; }
+.pay-events { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.pay-matchup { font-size: 13px; margin-top: 6px; line-height: 1.4; }
+.matchup-good { color: var(--mu); font-weight: 600; }
+.matchup-bad { color: var(--red); }
 .play-btn { width: 100%; margin-top: 12px; letter-spacing: .1em; }
+
+/* ---------- 灵力 ---------- */
+.spirit-box { border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 12px; }
+.spirit-head { display: flex; justify-content: space-between; font-size: 14px; }
+.spirit-head span:last-child { color: var(--red); }
+.spirit-bar { height: 6px; background: rgba(49, 43, 37, .12); margin: 7px 0 5px; }
+.spirit-bar i { display: block; height: 100%; background: var(--shui); transition: width .25s ease; }
+.spirit-hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.reroll-btn { width: 100%; margin-top: 8px; }
 
 .hand-row { grid-column: 1 / -1; display: flex; gap: 11px; align-items: stretch; }
 .hand-row .card {
@@ -293,6 +327,7 @@ h3 span {
 @media (max-width: 960px) {
   .setup-grid { grid-template-columns: 1fr; }
   .battle-grid { grid-template-columns: 1fr; }
+  .card-scroll { max-height: 460px; }
   .card-grid { grid-template-columns: repeat(3, 1fr); }
   .hand-row { flex-wrap: wrap; }
   .hand-row .card { flex: 1 1 28%; }

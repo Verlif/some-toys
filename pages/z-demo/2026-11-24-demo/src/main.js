@@ -13,12 +13,16 @@
 
   function render() {
     var state = XGame.getState();
+    var oldScroll = app.querySelector('.card-scroll');
+    var scrollTop = oldScroll ? oldScroll.scrollTop : 0;
     var body = state.stage === 'setup'
       ? XDeckPicker.render(state)
       : XBattleView.render(state);
     app.innerHTML = '<div class="app-shell"><div class="app-head">' +
       '<span>五行 · 卡牌</span><span>五行相生克 · 词条触发</span></div>' +
       '<div class="screen">' + body + '</div></div>';
+    var newScroll = app.querySelector('.card-scroll');
+    if (newScroll) newScroll.scrollTop = scrollTop;
     renderOverlay(state);
     XAnim.showFloats(XGame.drainFloats());
   }
@@ -75,10 +79,12 @@
         ringFly(el, false);
         XGame.choosePoint(el, -1);
         break;
+      case 'reroll-elements': XGame.rerollElements(); break;
       case 'auto-fill': XGame.autoFill(); break;
       case 'clear-chosen': XGame.clearChosen(); break;
       case 'toggle-card': XGame.toggleCard(target.getAttribute('data-card-id')); break;
       case 'start': XGame.startBattle(); break;
+      case 'random-start': XGame.randomStart(); break;
       case 'select-hand': XGame.selectHandCard(target.getAttribute('data-card-id')); break;
       case 'play':
         XAnim.cardPlay(document.querySelector('.card-selected'));
