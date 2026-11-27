@@ -9,7 +9,7 @@
     folderOpen: '<path d="M3 7h6l2 2h9l-2 9H3z"/>',
     file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h4"/>',
     image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="M21 16l-5-5-8 8"/>',
-    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M4.2 4.2l2.1 2.1m11.4 11.4l2.1 2.1M2 12h3m14 0h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+    settings: '<path d="M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.77 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.5 7.5 0 0 0 0 1.88L2.89 14.5a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .61.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96a.5.5 0 0 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.56z"/><circle cx="12" cy="12" r="3.5"/>',
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     sync: '<path d="M20 11a8 8 0 0 0-14-5L4 8"/><path d="M4 4v4h4M4 13a8 8 0 0 0 14 5l2-2"/><path d="M20 20v-4h-4"/>',
@@ -52,7 +52,11 @@
     folderPlus: '<path d="M3 6h6l2 2h10v10H3z"/><path d="M12 11v5M9.5 13.5h5"/>',
     filePlus: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h4M12 12v6M9 15h6"/>',
     external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5"/>',
-    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    minus: '<path d="M4 12h16"/>',
+    listOrdered: '<path d="M9 6h12M9 12h12M9 18h12"/><path d="M3 5h2v4M3 9h3"/><path d="M3 11h3l-3 4h3"/><path d="M3 17h3M3 20h3M3 17l3 3M3 20l3-3"/>',
+    task: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 12l3 3 6-6"/>',
+    codeBlock: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 9l-2 3 2 3M14 9l2 3-2 3"/>'
   };
 
   function icon(name) {
@@ -159,6 +163,7 @@
       if (item.i18n) labelNode.setAttribute('data-i18n', item.i18n);
       var b = el('button', {
         type: 'button', class: 'seg' + (item.value === value ? ' active' : ''),
+        dataset: { value: item.value },
         title: item.title || null,
         onClick: function () {
           root.querySelectorAll('.seg').forEach(function (x) { x.classList.remove('active'); });

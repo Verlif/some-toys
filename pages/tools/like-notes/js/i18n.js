@@ -19,6 +19,12 @@
       'common.create': '创建',
       'common.close': '关闭',
       'common.confirm': '确定',
+      'tab.closeOthers': '关闭其他标签',
+      'tab.closeLeft': '关闭左侧标签',
+      'tab.closeRight': '关闭右侧标签',
+      'tab.closeAll': '关闭全部标签',
+      'tab.pin': '固定标签',
+      'tab.unpin': '取消固定',
       'common.search': '搜索',
       'common.settings': '设置',
       'common.loading': '加载中…',
@@ -28,11 +34,14 @@
       'nav.search': '搜索',
       'nav.history': '历史',
       'nav.settings': '设置',
+      'header.online': '在线',
       'header.offline': '离线',
       'header.sync': '同步',
+      'header.syncing': '同步中',
       'header.settings': '设置',
       'header.localMode': '本地模式',
       'settings.title': '设置',
+      'settings.footer.saved': '更改即时生效并保存在本地',
       'settings.tab.general': '通用',
       'settings.tab.github': 'GitHub',
       'settings.tab.editor': '编辑器',
@@ -43,6 +52,9 @@
       'settings.general.theme.light': '浅色',
       'settings.general.theme.dark': '深色',
       'settings.general.autoSave': '自动保存（停止输入 800ms 后写入本地）',
+      'settings.general.autoSync': '自动同步（本地改动后延迟上传）',
+      'settings.general.autoSyncDelay': '同步延时（秒）',
+      'settings.general.autoSyncHelp': '每次本地内容变化都会重新倒计时；需在 GitHub 设置中绑定仓库后生效。',
       'settings.general.fontSize': '编辑器字号',
       'settings.editor.defaultMode': '默认视图',
       'settings.editor.source': '源码',
@@ -50,6 +62,21 @@
       'settings.editor.preview': '预览',
       'settings.editor.tabSize': 'Tab 宽度',
       'settings.editor.toolbar': '显示编辑工具栏',
+      'settings.editor.section.behavior': '编辑行为',
+      'settings.editor.section.view': '视图',
+      'settings.editor.section.appearance': '外观',
+      'settings.editor.lineNumbers': '显示行号',
+      'settings.editor.wordWrap': '自动换行',
+      'settings.editor.spellCheck': '拼写检查',
+      'settings.editor.previewSyncScroll': '预览同步滚动',
+      'settings.editor.autoCloseBrackets': '自动补全括号与引号',
+      'settings.editor.fontFamily': '编辑器字体',
+      'settings.editor.font.mono': '等宽字体',
+      'settings.editor.font.system': '系统字体',
+      'settings.editor.font.serif': '衬线字体',
+      'settings.github.section.auth': '认证',
+      'settings.github.section.repo': '仓库与分支',
+      'settings.github.section.sync': '同步行为',
       'settings.github.token': '访问令牌（PAT）',
       'settings.github.tokenHelp': '权限说明',
       'settings.github.refresh': '刷新',
@@ -62,7 +89,33 @@
       'settings.github.bound': '已绑定',
       'settings.github.remember': '记住令牌',
       'settings.github.helpTitle': '生成 Fine-grained personal access token',
-      'settings.github.helpBody': '1. 打开 GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens。\n2. 选择目标仓库，勾选 Contents: Read and write 权限。\n3. 生成后复制 token 填入上方输入框。令牌只保存在本机浏览器，不会上传。',
+      'settings.github.helpLinkCreate': '打开 GitHub 令牌创建页',
+      'settings.github.helpLinkDocs': '阅读 GitHub 官方文档',
+      'settings.github.helpDocsUrl': 'https://docs.github.com/zh/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens',
+      'settings.github.helpBody': '## 为什么需要访问令牌\n' +
+        '本知识库把 Markdown 文档存放在你的 GitHub 仓库中。浏览器需要一个个人访问令牌（PAT）才能读取仓库文件，并把本地修改提交回去。令牌只在本机浏览器使用，不会随文档写入仓库，也不会发送到其他服务器。\n' +
+        '## 创建 Fine-grained 令牌\n' +
+        '- 打开 GitHub → 右上角头像 → Settings → Developer settings → Personal access tokens → Fine-grained tokens。\n' +
+        '- 点击 Generate new token，填写名称（例如 knowledge-base），选择过期时间（建议 90 天，到期后需重新生成并粘贴到此处）。\n' +
+        '- Resource owner 选你的账号；Repository access 选 Only select repositories，并勾选这个知识库使用的仓库。\n' +
+        '- 在 Permissions → Repository permissions 中，把 Contents 设为 Read and write：读取用于拉取文档与目录，写入用于提交新建、编辑、重命名、删除和移动。\n' +
+        '- 其余权限保持默认 No access；本应用不需要 Metadata 之外的任何权限。\n' +
+        '- 点击 Generate token，复制生成的字符串（页面只显示一次），粘贴到上方的访问令牌输入框。\n' +
+        '## 最小权限原则\n' +
+        '- Contents: Read and write 是唯一必须开放的写权限；不要授予 Actions、Workflow、Administration、Secrets、Packages 等权限。\n' +
+        '- 如果只打算阅读、不提交修改，可以先只给 Contents: Read；但此时上传会失败，建议仍使用 Read and write。\n' +
+        '- 仓库选择务必限制为 Only select repositories，不要选 All repositories。\n' +
+        '## 令牌存放在哪里\n' +
+        '- 令牌保存在当前浏览器的本地存储（localStorage），仅用于调用 GitHub API；清除浏览器数据、更换浏览器或设备后需要重新粘贴。\n' +
+        '- 令牌不会写入知识库文档，也不会出现在提交记录、日志面板或导出的内容中。\n' +
+        '## 安全建议\n' +
+        '- 不要把令牌分享给他人，不要粘贴到 Issue、文档或聊天中。\n' +
+        '- 如果怀疑令牌泄露，立即在 GitHub 的 Fine-grained tokens 页面 Revoke（撤销），再生成新令牌并回到这里更新。\n' +
+        '- 定期检查过期时间，到期前更新，避免同步中断。\n' +
+        '## 常见问题\n' +
+        '- 403 / 404：通常是仓库未勾选、Contents 权限不足或令牌已过期，请回到 GitHub 检查后重新绑定。\n' +
+        '- 429 / 速率限制：本应用会自动排队并退避，等待片刻再重试即可。\n' +
+        '- 找不到仓库：确认 Resource owner 与仓库选择正确、令牌未过期；也可点击刷新重新拉取仓库列表。',
       'settings.sync.maxFetch': '单次同步最多拉取文档数',
       'settings.sync.info': '同步优先使用本地缓存；只有 blob sha 变化的文件才会下载，条件请求返回 304 时不消耗配额。',
       'settings.about.title': '关于本工具',
@@ -87,8 +140,11 @@
       'explorer.untagged': '未分类',
       'editor.untitled': '未命名文档',
       'editor.titlePlaceholder': '文档标题',
-      'editor.tagsPlaceholder': '标签，逗号分隔',
+      'editor.tagsPlaceholder': '输入标签，按 Enter 添加',
       'editor.saveLocal': '保存本地',
+      'doc.status.dirty': '本地修改未保存',
+      'doc.status.pending': '已保存到本地，等待同步',
+      'doc.status.synced': '已同步，无本地改动',
       'editor.preview': '预览',
       'editor.edit': '编辑',
       'editor.rename': '重命名 / 移动',
@@ -186,6 +242,7 @@
       'log.pushStart': '开始上传 {count} 项改动（串行发送，自动节流）',
       'log.pushed': '已上传：{path}',
       'log.syncDone': '同步结束',
+      'log.emptyRepoInit': '空仓库正在初始化，自动重试本轮同步',
       'log.syncFail': '同步失败：{msg}',
       'log.noPending': '没有待同步的改动',
       'log.notBound': '未绑定 GitHub，无法同步',
@@ -209,6 +266,12 @@
       'common.create': 'Create',
       'common.close': 'Close',
       'common.confirm': 'OK',
+      'tab.closeOthers': 'Close Other Tabs',
+      'tab.closeLeft': 'Close Tabs to the Left',
+      'tab.closeRight': 'Close Tabs to the Right',
+      'tab.closeAll': 'Close All Tabs',
+      'tab.pin': 'Pin Tab',
+      'tab.unpin': 'Unpin Tab',
       'common.search': 'Search',
       'common.settings': 'Settings',
       'common.loading': 'Loading…',
@@ -218,11 +281,14 @@
       'nav.search': 'Search',
       'nav.history': 'History',
       'nav.settings': 'Settings',
+      'header.online': 'Online',
       'header.offline': 'Offline',
       'header.sync': 'Sync',
+      'header.syncing': 'Syncing',
       'header.settings': 'Settings',
       'header.localMode': 'Local mode',
       'settings.title': 'Settings',
+      'settings.footer.saved': 'Changes are saved locally as you go',
       'settings.tab.general': 'General',
       'settings.tab.github': 'GitHub',
       'settings.tab.editor': 'Editor',
@@ -233,6 +299,9 @@
       'settings.general.theme.light': 'Light',
       'settings.general.theme.dark': 'Dark',
       'settings.general.autoSave': 'Auto save (write locally 800ms after typing stops)',
+      'settings.general.autoSync': 'Auto sync (upload local changes after a delay)',
+      'settings.general.autoSyncDelay': 'Sync delay (seconds)',
+      'settings.general.autoSyncHelp': 'Every local change restarts the countdown; bind a repository in GitHub settings first.',
       'settings.general.fontSize': 'Editor font size',
       'settings.editor.defaultMode': 'Default view',
       'settings.editor.source': 'Source',
@@ -240,6 +309,21 @@
       'settings.editor.preview': 'Preview',
       'settings.editor.tabSize': 'Tab width',
       'settings.editor.toolbar': 'Show editor toolbar',
+      'settings.editor.section.behavior': 'Editing behavior',
+      'settings.editor.section.view': 'View',
+      'settings.editor.section.appearance': 'Appearance',
+      'settings.editor.lineNumbers': 'Show line numbers',
+      'settings.editor.wordWrap': 'Word wrap',
+      'settings.editor.spellCheck': 'Spell check',
+      'settings.editor.previewSyncScroll': 'Sync preview scrolling',
+      'settings.editor.autoCloseBrackets': 'Auto-close brackets and quotes',
+      'settings.editor.fontFamily': 'Editor font',
+      'settings.editor.font.mono': 'Monospace',
+      'settings.editor.font.system': 'System UI',
+      'settings.editor.font.serif': 'Serif',
+      'settings.github.section.auth': 'Authentication',
+      'settings.github.section.repo': 'Repository and branch',
+      'settings.github.section.sync': 'Sync behavior',
       'settings.github.token': 'Personal access token',
       'settings.github.tokenHelp': 'Permissions',
       'settings.github.refresh': 'Refresh',
@@ -252,7 +336,33 @@
       'settings.github.bound': 'Bound',
       'settings.github.remember': 'Remember token',
       'settings.github.helpTitle': 'Create a Fine-grained personal access token',
-      'settings.github.helpBody': '1. Go to GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens.\n2. Select the target repository and enable Contents: Read and write.\n3. Generate the token and paste it above. It stays in your browser only.',
+      'settings.github.helpLinkCreate': 'Open GitHub token creation page',
+      'settings.github.helpLinkDocs': 'Read the GitHub official guide',
+      'settings.github.helpDocsUrl': 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token',
+      'settings.github.helpBody': '## Why a token is required\n' +
+        'This knowledge base stores Markdown documents in your GitHub repository. The browser needs a personal access token (PAT) to read repository files and push your local edits back. The token is used only in this browser: it is never written into repository content and never sent to other servers.\n' +
+        '## Create a fine-grained token\n' +
+        '- In GitHub, open your avatar → Settings → Developer settings → Personal access tokens → Fine-grained tokens.\n' +
+        '- Click Generate new token, give it a name (for example knowledge-base), and pick an expiration (90 days is recommended; renew and paste the new token here when it expires).\n' +
+        '- Set Resource owner to your account. Under Repository access choose Only select repositories and tick the repository used by this knowledge base.\n' +
+        '- Under Permissions → Repository permissions set Contents to Read and write: read is used to fetch documents and the directory tree, write is used to commit create, edit, rename, delete and move operations.\n' +
+        '- Leave every other permission at No access. This app needs nothing beyond Metadata.\n' +
+        '- Click Generate token and copy the value (it is shown only once), then paste it into the token field above.\n' +
+        '## Least privilege\n' +
+        '- Contents: Read and write is the only write scope that is required. Do not grant Actions, Workflow, Administration, Secrets or Packages permissions.\n' +
+        '- Read-only use is possible with Contents: Read, but uploads will fail; Read and write is recommended.\n' +
+        '- Always choose Only select repositories rather than All repositories.\n' +
+        '## Where the token is stored\n' +
+        '- The token is kept in this browser local storage (localStorage) and is used only for GitHub API calls. Clearing browser data or switching browser or device requires pasting it again.\n' +
+        '- The token is never written into documents, commit messages, the log panel or exported content.\n' +
+        '## Security tips\n' +
+        '- Never share the token or paste it into issues, documents or chat messages.\n' +
+        '- If you suspect it leaked, revoke it immediately on the GitHub Fine-grained tokens page, generate a new one and update it here.\n' +
+        '- Check the expiration date and renew before it lapses to avoid interrupted sync.\n' +
+        '## Troubleshooting\n' +
+        '- 403 / 404: usually the repository was not selected, Contents permission is insufficient, or the token expired. Fix it on GitHub and bind again.\n' +
+        '- 429 / rate limit: this app queues requests and backs off automatically; wait a moment and retry.\n' +
+        '- Repository not found: verify Resource owner and repository selection and that the token is valid; click refresh to reload the repository list.',
       'settings.sync.maxFetch': 'Max documents fetched per sync',
       'settings.sync.info': 'Sync reads the local cache first. Only files whose blob sha changed are downloaded; a 304 conditional response costs no quota.',
       'settings.about.title': 'About',
@@ -277,8 +387,11 @@
       'explorer.untagged': 'Untagged',
       'editor.untitled': 'Untitled',
       'editor.titlePlaceholder': 'Document title',
-      'editor.tagsPlaceholder': 'Tags, comma separated',
+      'editor.tagsPlaceholder': 'Type a tag, press Enter to add',
       'editor.saveLocal': 'Save locally',
+      'doc.status.dirty': 'Unsaved local changes',
+      'doc.status.pending': 'Saved locally, awaiting sync',
+      'doc.status.synced': 'Synced, no local changes',
       'editor.preview': 'Preview',
       'editor.edit': 'Edit',
       'editor.rename': 'Rename / Move',
@@ -376,6 +489,7 @@
       'log.pushStart': 'Uploading {count} changes (serialized and throttled)',
       'log.pushed': 'Uploaded: {path}',
       'log.syncDone': 'Sync finished',
+      'log.emptyRepoInit': 'Empty repository detected, initializing and retrying sync',
       'log.syncFail': 'Sync failed: {msg}',
       'log.noPending': 'No pending changes',
       'log.notBound': 'Bind a GitHub repository first',
@@ -399,6 +513,12 @@
       'common.create': '作成',
       'common.close': '閉じる',
       'common.confirm': 'OK',
+      'tab.closeOthers': '他のタブを閉じる',
+      'tab.closeLeft': '左側のタブを閉じる',
+      'tab.closeRight': '右側のタブを閉じる',
+      'tab.closeAll': 'すべてのタブを閉じる',
+      'tab.pin': 'タブを固定',
+      'tab.unpin': '固定を解除',
       'common.search': '検索',
       'common.settings': '設定',
       'common.loading': '読み込み中…',
@@ -408,11 +528,14 @@
       'nav.search': '検索',
       'nav.history': '履歴',
       'nav.settings': '設定',
+      'header.online': 'オンライン',
       'header.offline': 'オフライン',
       'header.sync': '同期',
+      'header.syncing': '同期中',
       'header.settings': '設定',
       'header.localMode': 'ローカルモード',
       'settings.title': '設定',
+      'settings.footer.saved': '変更はその場でローカルに保存されます',
       'settings.tab.general': '一般',
       'settings.tab.github': 'GitHub',
       'settings.tab.editor': 'エディター',
@@ -423,6 +546,9 @@
       'settings.general.theme.light': 'ライト',
       'settings.general.theme.dark': 'ダーク',
       'settings.general.autoSave': '自動保存（入力停止から 800ms 後にローカルへ保存）',
+      'settings.general.autoSync': '自動同期（ローカル変更後に遅延してアップロード）',
+      'settings.general.autoSyncDelay': '同期遅延（秒）',
+      'settings.general.autoSyncHelp': 'ローカルの変更があるたびにカウントダウンが最初からやり直します。GitHub 設定でリポジトリを先にバインドしてください。',
       'settings.general.fontSize': 'エディターの文字サイズ',
       'settings.editor.defaultMode': '既定の表示',
       'settings.editor.source': 'ソース',
@@ -430,6 +556,21 @@
       'settings.editor.preview': 'プレビュー',
       'settings.editor.tabSize': 'タブ幅',
       'settings.editor.toolbar': 'ツールバーを表示',
+      'settings.editor.section.behavior': '編集の動作',
+      'settings.editor.section.view': '表示',
+      'settings.editor.section.appearance': '外観',
+      'settings.editor.lineNumbers': '行番号を表示',
+      'settings.editor.wordWrap': '折り返し',
+      'settings.editor.spellCheck': 'スペルチェック',
+      'settings.editor.previewSyncScroll': 'プレビューのスクロールを同期',
+      'settings.editor.autoCloseBrackets': '括弧と引用符を自動補完',
+      'settings.editor.fontFamily': 'エディターのフォント',
+      'settings.editor.font.mono': '等幅フォント',
+      'settings.editor.font.system': 'システムフォント',
+      'settings.editor.font.serif': 'セリフ体',
+      'settings.github.section.auth': '認証',
+      'settings.github.section.repo': 'リポジトリとブランチ',
+      'settings.github.section.sync': '同期の動作',
       'settings.github.token': 'アクセストークン（PAT）',
       'settings.github.tokenHelp': '権限の説明',
       'settings.github.refresh': '更新',
@@ -442,7 +583,33 @@
       'settings.github.bound': '接続済み',
       'settings.github.remember': 'トークンを記憶',
       'settings.github.helpTitle': 'Fine-grained personal access token を作成',
-      'settings.github.helpBody': '1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens を開く。\n2. 対象リポジトリを選び、Contents: Read and write を許可する。\n3. 生成したトークンを upper に入力。トークンはブラウザ内だけに保存されます。',
+      'settings.github.helpLinkCreate': 'GitHub のトークン作成ページを開く',
+      'settings.github.helpLinkDocs': 'GitHub の公式ガイドを読む',
+      'settings.github.helpDocsUrl': 'https://docs.github.com/ja/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens',
+      'settings.github.helpBody': '## アクセストークンが必要な理由\n' +
+        'このナレッジベースは Markdown ドキュメントを GitHub リポジトリに保存します。ブラウザーはリポジトリのファイルを読み取り、ローカルの変更を書き戻すために個人アクセストークン（PAT）が必要です。トークンはこのブラウザー内だけで使用され、ドキュメントに書き込まれたり、他のサーバーへ送信されたりすることはありません。\n' +
+        '## Fine-grained トークンの作成\n' +
+        '- GitHub でアバター → Settings → Developer settings → Personal access tokens → Fine-grained tokens を開きます。\n' +
+        '- Generate new token をクリックし、名前（例: knowledge-base）と有効期限を設定します（90 日を推奨。期限切れ後は再生成してここに貼り付けください）。\n' +
+        '- Resource owner は自分のアカウントに設定し、Repository access で Only select repositories を選び、このナレッジベースで使うリポジトリにチェックを入れます。\n' +
+        '- Permissions → Repository permissions で Contents を Read and write に設定します。読み取りはドキュメントとディレクトリ一覧の取得、書き込みは作成・編集・名前変更・削除・移動のコミットに使用します。\n' +
+        '- 他の権限はすべて No access のままにしてください。Metadata 以外は不要です。\n' +
+        '- Generate token をクリックし、表示された文字列（一度だけ表示されます）をコピーして上のトークン欄に貼り付けます。\n' +
+        '## 最小権限の原則\n' +
+        '- 必要な書き込み権限は Contents: Read and write のみです。Actions、Workflow、Administration、Secrets、Packages は付与しないでください。\n' +
+        '- 閲覧のみなら Contents: Read でも動作しますが、アップロードは失敗します。Read and write を推奨します。\n' +
+        '- リポジトリ選択は All repositories ではなく Only select repositories にしてください。\n' +
+        '## トークンの保存場所\n' +
+        '- トークンはこのブラウザーのローカルストレージ（localStorage）に保存され、GitHub API の呼び出しにのみ使用されます。ブラウザーデータの削除や端末の変更後は再入力が必要です。\n' +
+        '- トークンはドキュメント、コミット履歴、ログパネル、書き出し内容には含まれません。\n' +
+        '## セキュリティ上の注意\n' +
+        '- トークンを他人と共有したり、Issue・ドキュメント・チャットに貼り付けたりしないでください。\n' +
+        '- 漏えいが疑われる場合は GitHub の Fine-grained tokens ページで直ちに Revoke（取り消し）し、新しいトークンを生成してここで更新してください。\n' +
+        '- 有効期限を定期的に確認し、到期前に更新して同期の中断を防いでください。\n' +
+        '## よくある問題\n' +
+        '- 403 / 404: リポジトリ未選択、Contents 権限不足、トークンの期限切れが原因です。GitHub で確認して再度バインドしてください。\n' +
+        '- 429 / レート制限: 本アプリは自動的にキューとバックオフを行います。少し待ってから再試行してください。\n' +
+        '- リポジトリが見つからない: Resource owner とリポジトリ選択、トークンの有効性を確認し、更新ボタンで一覧を再取得してください。',
       'settings.sync.maxFetch': '1 回の同期で取得する最大件数',
       'settings.sync.info': '同期はローカルキャッシュを優先します。blob sha が変わったファイルだけをダウンロードし、304 レスポンスはクォータを消費しません。',
       'settings.about.title': 'このツールについて',
@@ -467,8 +634,11 @@
       'explorer.untagged': 'タグなし',
       'editor.untitled': '無題',
       'editor.titlePlaceholder': 'ドキュメントのタイトル',
-      'editor.tagsPlaceholder': 'タグ（カンマ区切り）',
+      'editor.tagsPlaceholder': 'タグを入力して Enter で追加',
       'editor.saveLocal': 'ローカル保存',
+      'doc.status.dirty': 'ローカルの未保存変更',
+      'doc.status.pending': 'ローカル保存済み、同期待ち',
+      'doc.status.synced': '同期済み、ローカル変更なし',
       'editor.preview': 'プレビュー',
       'editor.edit': '編集',
       'editor.rename': '名前変更 / 移動',
@@ -566,6 +736,7 @@
       'log.pushStart': '{count} 件をアップロード（順次・スロットル付き）',
       'log.pushed': 'アップロード済み：{path}',
       'log.syncDone': '同期完了',
+      'log.emptyRepoInit': '空リポジトリを初期化し、同期を自動再試行します',
       'log.syncFail': '同期失敗：{msg}',
       'log.noPending': '同期待ちの変更はありません',
       'log.notBound': 'GitHub に接続してください',

@@ -11,11 +11,16 @@
   var KEY_BINDING = 'docs-kb:binding';
   var KEY_FOLDERS = 'docs-kb:folders';
   var KEY_LAST_SYNC = 'docs-kb:lastSync';
+  var KEY_PINNED = 'docs-kb:pinnedTabs';
   var TREE_TTL = 60 * 1000;
+  var mobileQuery = window.matchMedia ? window.matchMedia('(max-width: 820px)') : null;
 
   var defaultSettings = {
     theme: 'light', locale: 'zh-CN', fontSize: 14, tabSize: 2,
-    autoSave: true, defaultMode: 'split', showToolbar: true, showOutline: true,
+    autoSave: true, autoSync: false, autoSyncDelay: 10,
+    defaultMode: 'split', showToolbar: true, showOutline: true,
+    lineNumbers: true, wordWrap: true, spellCheck: false,
+    previewSyncScroll: true, autoCloseBrackets: false, fontFamily: 'mono',
     maxFetch: 40, maxRetries: 2
   };
 
@@ -28,9 +33,11 @@
     syncing: false,
     activePath: null,
     tabs: [],
+    pinned: readJSON(KEY_PINNED, []) || [],
     dirty: {},
     logs: [],
-    timer: null
+    timer: null,
+    autoSyncTimer: null
   };
 
   var dom = {};
@@ -77,22 +84,77 @@
 
   function toast(message, type) { UI.toast(message, type); }
 
+  function hasLocalChanges() {
+    return !!(store && store.pending && Object.keys(store.pending).length > 0);
+  }
+
+  function clearAutoSyncTimer() {
+    if (state.autoSyncTimer) clearTimeout(state.autoSyncTimer);
+    state.autoSyncTimer = null;
+  }
+
+  // 本地每次改动都重新计时；到点后只同步一次，手动同步进行中则顺延
+  function autoSyncReady() {
+    return state.settings.autoSync && !state.offline && !!state.binding.owner && !!state.binding.repo && hasLocalChanges();
+  }
+
+  function scheduleAutoSync() {
+    clearAutoSyncTimer();
+    if (!autoSyncReady()) return;
+    var delay = Math.max(1, Number(state.settings.autoSyncDelay) || 10);
+    function run() {
+      state.autoSyncTimer = null;
+      if (!autoSyncReady()) return;
+      if (state.syncing) {
+        state.autoSyncTimer = setTimeout(run, 1000);
+        return;
+      }
+      syncNow(false);
+    }
+    state.autoSyncTimer = setTimeout(run, delay * 1000);
+  }
+
   function setSetting(key, value) {
     state.settings[key] = value;
     writeJSON(KEY_SETTINGS, state.settings);
     applySettings();
+    // editor.setMode 内部会在窄屏把 split 归为 source；设置值本身保持不变
+    if (key === 'defaultMode' && editor) editor.setMode(value);
+    if (key === 'theme') updateHeader();
     if (key === 'maxRetries') refreshClient();
+    if (key === 'autoSync') {
+      if (value) scheduleAutoSync();
+      else clearAutoSyncTimer();
+    }
+    if (key === 'autoSyncDelay') scheduleAutoSync();
   }
 
   function applySettings() {
     document.documentElement.setAttribute('data-theme', state.settings.theme === 'dark' ? 'dark' : 'light');
     document.documentElement.style.setProperty('--editor-font-size', (state.settings.fontSize || 14) + 'px');
+    var fonts = {
+      mono: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+      system: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif",
+      serif: "Georgia, 'Times New Roman', 'Songti SC', serif"
+    };
+    document.documentElement.style.setProperty('--editor-font-family', fonts[state.settings.fontFamily] || fonts.mono);
     if (dom.workspace) {
       dom.workspace.classList.toggle('no-outline', state.settings.showOutline === false);
+      dom.workspace.classList.toggle('no-sidebar', state.settings.showSidebar === false);
+    }
+    // 活动栏图标跟随设置同步高亮，保证从设置里切换折叠也与图标状态一致
+    if (dom.activityBar) {
+      var activityButtons = dom.activityBar.querySelectorAll('.activity-btn');
+      if (activityButtons[0]) activityButtons[0].classList.toggle('active', state.settings.showSidebar !== false);
+      if (activityButtons[1]) activityButtons[1].classList.toggle('active', state.settings.showOutline !== false);
     }
     if (editor) {
       editor.textarea.style.fontSize = (state.settings.fontSize || 14) + 'px';
       editor.textarea.style.tabSize = state.settings.tabSize || 2;
+      editor.textarea.spellcheck = state.settings.spellCheck === true;
+      editor.textarea.wrap = state.settings.wordWrap === false ? 'off' : 'soft';
+      editor.root.classList.toggle('no-line-numbers', state.settings.lineNumbers === false);
+      editor.root.classList.toggle('no-word-wrap', state.settings.wordWrap === false);
       var toolbar = editor.root.querySelector('.editor-toolbar');
       if (toolbar) toolbar.style.display = state.settings.showToolbar === false ? 'none' : '';
     }
@@ -131,6 +193,7 @@
     client = createClient();
     updateHeader();
     refreshExplorer();
+    scheduleAutoSync();
   }
 
   function refreshClient() { client = createClient(); updateHeader(); }
@@ -186,6 +249,11 @@
     refreshExplorer();
   }
 
+  function writePinned(paths) {
+    state.pinned = paths;
+    writeJSON(KEY_PINNED, state.pinned);
+  }
+
   function closeTab(path) {
     var index = state.tabs.indexOf(path);
     if (index < 0) return;
@@ -194,6 +262,7 @@
       if (doc && state.activePath === path) saveActive(true);
     }
     state.tabs.splice(index, 1);
+    if (state.pinned.indexOf(path) >= 0) writePinned(state.pinned.filter(function (p) { return p !== path; }));
     if (state.activePath === path) {
       state.activePath = state.tabs[Math.max(0, index - 1)] || null;
       if (state.activePath) editor.open(store.get(state.activePath));
@@ -203,15 +272,90 @@
     refreshExplorer();
   }
 
+  /** 批量关闭标签：逐个走 closeTab，保留脏文档保存与活动标签切换的既有逻辑 */
+  function closeTabs(paths) {
+    paths.slice().forEach(function (path) { closeTab(path); });
+  }
+
+  function togglePin(path) {
+    var index = state.pinned.indexOf(path);
+    if (index >= 0) writePinned(state.pinned.filter(function (p) { return p !== path; }));
+    else writePinned(state.pinned.concat([path]));
+    renderTabs();
+  }
+
   function activeDoc() { return state.activePath ? store.get(state.activePath) : null; }
   function activePath() { return state.activePath; }
   function isDirty(path) { return !!state.dirty[path]; }
 
+  /** 红点=本地未保存，黄点=已保存本地待同步，绿点=已同步无改动 */
+  function docStatus(path) {
+    if (state.dirty[path]) return 'dirty';
+    var doc = store.get(path);
+    if (!doc) return 'synced';
+    if (store.pending[path] || !doc.sha) return 'pending';
+    return 'synced';
+  }
+
+  function statusDot(path) {
+    var status = docStatus(path);
+    return el('span', {
+      class: 'doc-status-dot doc-status-' + status,
+      title: t('doc.status.' + status), dataset: { docStatus: status }
+    });
+  }
+
+  /** 输入时不重绘整棵树，只就地更新对应文档的状态点 */
+  function updateDocStatusDots(path) {
+    var status = docStatus(path);
+    var title = t('doc.status.' + status);
+    document.querySelectorAll('.tree-item[data-path], .doc-tab[data-path]').forEach(function (node) {
+      if (node.dataset.path !== path) return;
+      var dot = node.querySelector('.doc-status-dot');
+      if (dot) {
+        dot.className = 'doc-status-dot doc-status-' + status;
+        dot.dataset.docStatus = status;
+        dot.title = title;
+      }
+      var label = node.querySelector('.tree-label');
+      if (label) {
+        label.classList.toggle('doc-name-dirty', status === 'dirty');
+        label.classList.toggle('doc-name-pending', status === 'pending' && state.settings.autoSync !== false && !state.offline);
+      }
+    });
+  }
+
+  function syncDraftTitle() {
+    if (!state.activePath) return;
+    var doc = store.get(state.activePath);
+    if (!doc) return;
+    var title = editor.titleInput.value.trim();
+    if (title && doc.title !== title) doc.title = title; // 仅更新内存标题用于即时展示，保存由 store.upsert 负责
+  }
+
+  /** 标题变化时就地更新标签页；文件树始终显示真实文件名（含 .md） */
+  function updateDocTitleLabels(path) {
+    var doc = store.get(path);
+    var fileName = path.split('/').pop();
+    var tabNameText = (doc && doc.title) || fileName.replace(/\.md$/i, '');
+    document.querySelectorAll('.doc-tab[data-path], .tree-item[data-type="doc"][data-path]').forEach(function (node) {
+      if (node.dataset.path !== path) return;
+      var tabName = node.querySelector('.doc-tab-name');
+      if (tabName) tabName.textContent = tabNameText;
+      var treeLabel = node.querySelector('.tree-label');
+      // 文件树标签内还包含状态点，只改第一个文本节点，避免把状态点删掉
+      if (treeLabel && treeLabel.firstChild && treeLabel.firstChild.nodeType === 3) treeLabel.firstChild.nodeValue = fileName;
+    });
+  }
+
   function onEditorInput() {
     if (!state.activePath) return;
     state.dirty[state.activePath] = true;
+    syncDraftTitle();
     editor.updateDirty();
     renderTabs();
+    updateDocTitleLabels(state.activePath);
+    updateDocStatusDots(state.activePath);
     if (state.settings.autoSave !== false) {
       clearTimeout(state.timer);
       state.timer = setTimeout(function () { saveActive(true); }, 800);
@@ -222,6 +366,7 @@
     if (!state.activePath) return;
     var draft = editor.getDraft();
     store.upsert(state.activePath, draft);
+    scheduleAutoSync();
     delete state.dirty[state.activePath];
     editor.updateDirty();
     renderTabs();
@@ -235,6 +380,7 @@
       if (!name || !name.trim()) return;
       var path = uniquePath(folder || '', name);
       store.upsert(path, { title: path.split('/').pop().replace(/\.md$/, ''), tags: [], body: '# ' + name.trim() + '\n\n' });
+      scheduleAutoSync();
       openDoc(path);
       toast(t('toast.created', { name: name.trim() }), 'ok');
       log(t('toast.created', { name: path }));
@@ -249,8 +395,10 @@
       var target = uniquePath(dirname(path), name);
       if (target === path) return;
       if (state.dirty[path]) saveActive(true);
-      store.rename(path, target);
+      store.rename(path, target, name.trim());
+      scheduleAutoSync();
       state.tabs = state.tabs.map(function (p) { return p === path ? target : p; });
+      if (state.pinned.indexOf(path) >= 0) writePinned(state.pinned.map(function (p) { return p === path ? target : p; }));
       if (state.activePath === path) state.activePath = target;
       openDoc(target);
       toast(t('toast.renamed', { name: target }), 'ok');
@@ -263,7 +411,9 @@
     var dir = dirname(newPath);
     if (dir && state.folders.indexOf(dir) < 0) addFolder(dir, true);
     store.rename(oldPath, newPath);
+    scheduleAutoSync();
     state.tabs = state.tabs.map(function (p) { return p === oldPath ? newPath : p; });
+    if (state.pinned.indexOf(oldPath) >= 0) writePinned(state.pinned.map(function (p) { return p === oldPath ? newPath : p; }));
     if (state.activePath === oldPath) state.activePath = newPath;
     openDoc(newPath);
     toast(t('toast.moved', { name: newPath }), 'ok');
@@ -282,8 +432,10 @@
     UI.confirm(t('explorer.confirmDeleteDoc', { name: path.split('/').pop() }), { danger: true }).then(function (yes) {
       if (!yes) return;
       store.remove(path);
+      scheduleAutoSync();
       delete state.dirty[path];
       state.tabs = state.tabs.filter(function (p) { return p !== path; });
+      if (state.pinned.indexOf(path) >= 0) writePinned(state.pinned.filter(function (p) { return p !== path; }));
       if (state.activePath === path) {
         state.activePath = state.tabs[state.tabs.length - 1] || null;
         if (state.activePath) editor.open(store.get(state.activePath)); else editor.clear();
@@ -360,6 +512,7 @@
     if (!doc) return;
     if (choice === 'remote') store.adoptRemote(doc.path);
     else store.keepLocal(doc.path);
+    scheduleAutoSync();
     openDoc(doc.path);
     toast(t('toast.saved', { name: doc.title }), 'ok');
   }
@@ -460,7 +613,8 @@
    */
   function pullFromRemote(options) {
     options = options || {};
-    if (state.syncing) return Promise.resolve({ aborted: true, reason: 'busy' });
+    // 空仓库自动初始化后的重试需要复用同一次同步会话，不能被 busy guard 拦住
+    if (state.syncing && !options._emptyRepoRetried) return Promise.resolve({ aborted: true, reason: 'busy' });
     if (state.offline) {
       log(t('log.offlineSkip'));
       return Promise.resolve({ aborted: true, reason: 'offline' });
@@ -569,9 +723,22 @@
         }
       }
       refreshExplorer();
+      renderTabs();
       updateStatus();
       return result;
     }).catch(function (err) {
+      // 空仓库信号可能来自 tree 读取或首次写入；无论哪一步，都自动建初始提交并重试本轮同步
+      if (err.code === 'EMPTY_REPO' && !options._emptyRepoRetried && client && client._bootstrapEmptyRepo) {
+        log(t('log.emptyRepoInit'));
+        return client._bootstrapEmptyRepo().then(function () {
+          var retry = Object.assign({}, options, { _emptyRepoRetried: true, force: true });
+          return pullFromRemote(retry);
+        }).catch(function (bootErr) {
+          log(t('log.syncFail', { msg: bootErr.message }));
+          toast(t('log.syncFail', { msg: bootErr.message }), 'error');
+          return { aborted: true, error: bootErr };
+        });
+      }
       log(t('log.syncFail', { msg: err.message }));
       toast(t('log.syncFail', { msg: err.message }), 'error');
       return { aborted: true, error: err };
@@ -665,6 +832,7 @@
                 label: t('history.restore'), variant: 'primary',
                 onClick: function () {
                   store.upsert(path, { title: parsed.title || path, tags: parsed.tags, body: parsed.body });
+                  scheduleAutoSync();
                   openDoc(path);
                   toast(t('toast.saved', { name: path }), 'ok');
                   dialog.close();
@@ -719,28 +887,63 @@
   }
 
   // ---------- 界面装配 ----------
+  function showTabMenu(e, path) {
+    e.preventDefault();
+    openDoc(path);
+    var index = state.tabs.indexOf(path);
+    var isPinned = state.pinned.indexOf(path) >= 0;
+    UI.menu([
+      { label: t('tab.closeOthers'), i18n: 'tab.closeOthers', onSelect: function () { closeTabs(state.tabs.filter(function (p) { return p !== path; })); } },
+      { label: t('tab.closeLeft'), i18n: 'tab.closeLeft', disabled: index <= 0, onSelect: function () { closeTabs(state.tabs.slice(0, index)); } },
+      { label: t('tab.closeRight'), i18n: 'tab.closeRight', disabled: index >= state.tabs.length - 1, onSelect: function () { closeTabs(state.tabs.slice(index + 1)); } },
+      { label: t('tab.closeAll'), i18n: 'tab.closeAll', onSelect: function () { closeTabs(state.tabs.slice()); } },
+      '-',
+      { label: t(isPinned ? 'tab.unpin' : 'tab.pin'), i18n: isPinned ? 'tab.unpin' : 'tab.pin', onSelect: function () { togglePin(path); } }
+    ], e.clientX, e.clientY);
+  }
+
   function renderTabs() {
     var bar = dom.tabbar;
-    if (!bar) return;
+    var pinnedBar = dom.pinnedTabbar;
+    if (!bar || !pinnedBar) return;
+    // 文档删除或同步移除后，固定列表里不能留失效路径
+    state.pinned = state.pinned.filter(function (p) { return state.tabs.indexOf(p) >= 0; });
     bar.innerHTML = '';
-    state.tabs.forEach(function (path) {
+    pinnedBar.innerHTML = '';
+    function makeTab(path, pinned) {
       var doc = store.get(path);
-      if (!doc) return;
-      var tab = el('div', {
-        class: 'doc-tab' + (state.activePath === path ? ' active' : ''),
-        onClick: function () { openDoc(path); },
-        onDblclick: function () { if (state.dirty[path]) saveActive(true); }
-      }, [
-        UI.icon('file'),
+      if (!doc) return null;
+      var children = [UI.icon('file')];
+      if (pinned) children.push(el('span', { class: 'doc-tab-pinned', text: t('tab.pin') }));
+      children.push(
         el('span', { class: 'doc-tab-name', text: doc.title || path.split('/').pop() }),
-        (state.dirty[path] ? el('span', { class: 'doc-tab-dirty', title: t('editor.saveLocal') }) : null),
+        statusDot(path),
         el('button', {
           type: 'button', class: 'doc-tab-close', text: '×',
           onClick: function (e) { e.stopPropagation(); closeTab(path); }
         })
-      ]);
-      bar.appendChild(tab);
+      );
+      return el('div', {
+        class: 'doc-tab' + (pinned ? ' pinned' : '') + (state.activePath === path ? ' active' : ''),
+        dataset: { path: path },
+        onClick: function () { openDoc(path); },
+        onDblclick: function () { if (state.dirty[path]) saveActive(true); },
+        onContextmenu: function (e) { showTabMenu(e, path); }
+      }, children);
+    }
+    state.tabs.forEach(function (path) {
+      var tab = makeTab(path, state.pinned.indexOf(path) >= 0);
+      if (!tab) return;
+      (state.pinned.indexOf(path) >= 0 ? pinnedBar : bar).appendChild(tab);
     });
+    pinnedBar.hidden = state.pinned.length === 0;
+  }
+
+  function replaceButtonIcon(button, name) {
+    if (!button) return;
+    var old = button.querySelector('.icon');
+    if (!old) return;
+    old.parentNode.replaceChild(UI.icon(name), old);
   }
 
   function updateHeader() {
@@ -752,10 +955,18 @@
     dom.repoBadge.classList.toggle('badge-ok', !!bound);
     var offlineButton = dom.offlineBtn;
     if (offlineButton) offlineButton.classList.toggle('btn-danger', state.offline);
-    if (offlineButton) offlineButton.querySelector('span:last-child').textContent = state.offline ? t('header.offline') : 'ONLINE';
+    if (offlineButton) {
+      replaceButtonIcon(offlineButton, state.offline ? 'cloudOff' : 'cloud');
+      offlineButton.querySelector('span:last-child').textContent = state.offline ? t('header.offline') : t('header.online');
+    }
+    replaceButtonIcon(dom.themeBtn, state.settings.theme === 'dark' ? 'sun' : 'moon');
     var syncBtn = dom.syncBtn;
-    if (syncBtn) syncBtn.disabled = state.syncing || state.offline || !bound;
-    if (dom.syncLabel) dom.syncLabel.textContent = t('header.sync');
+    if (syncBtn) {
+      syncBtn.disabled = state.syncing || state.offline || !bound;
+      syncBtn.classList.toggle('is-syncing', state.syncing);
+      syncBtn.setAttribute('aria-busy', state.syncing ? 'true' : 'false');
+    }
+    if (dom.syncLabel) dom.syncLabel.textContent = t(state.syncing ? 'header.syncing' : 'header.sync');
   }
 
   function updateStatus() {
@@ -805,11 +1016,20 @@
   function buildActivityBar() {
     var bar = dom.activityBar;
     bar.innerHTML = '';
+    var filesButton = null;
+    var outlineButton = null;
     var buttons = [
       { iconName: 'files', title: 'nav.files', onClick: function () {
-        state.settings.showSidebar = state.settings.showSidebar === false;
-        dom.workspace.classList.toggle('no-sidebar', state.settings.showSidebar === false);
-        writeJSON(KEY_SETTINGS, state.settings);
+        // 统一走 setSetting：class、持久化与页面初始化使用同一份状态
+        var show = state.settings.showSidebar === false;
+        setSetting('showSidebar', show);
+        if (filesButton) filesButton.classList.toggle('active', show);
+      } },
+      { iconName: 'panelRight', title: 'outline.title', onClick: function () {
+        // 像 IDEA 一样用左侧活动栏图标折叠/展开右侧大纲
+        var show = state.settings.showOutline === false;
+        setSetting('showOutline', show);
+        if (outlineButton) outlineButton.classList.toggle('active', show);
       } },
       { iconName: 'search', title: 'nav.search', onClick: function () { explorer.focusSearch(); } },
       { iconName: 'history', title: 'nav.history', onClick: function () { if (state.activePath) showHistory(state.activePath); } },
@@ -818,7 +1038,14 @@
     buttons.forEach(function (item, index) {
       var node = UI.iconButton(item.iconName, { title: t(item.title), onClick: item.onClick });
       node.classList.add('activity-btn');
-      if (index === 0) node.classList.add('active');
+      if (index === 0) {
+        filesButton = node;
+        if (state.settings.showSidebar !== false) node.classList.add('active');
+      }
+      if (index === 1) {
+        outlineButton = node;
+        if (state.settings.showOutline !== false) node.classList.add('active');
+      }
       node.setAttribute('data-i18n-title', item.title);
       bar.appendChild(node);
     });
@@ -832,26 +1059,111 @@
   function wireHeader() {
     dom.offlineBtn = el('button', { class: 'btn btn-sm', onClick: function () {
       state.offline = !state.offline;
+      if (state.offline) clearAutoSyncTimer();
+      else scheduleAutoSync();
       updateHeader();
       toast(state.offline ? t('toast.offline') : t('toast.online'), state.offline ? 'warn' : 'ok');
-    } }, [UI.icon(state.offline ? 'cloudOff' : 'cloud'), el('span', { text: state.offline ? t('header.offline') : 'ONLINE' })]);
+    } }, [UI.icon(state.offline ? 'cloudOff' : 'cloud'), el('span', { text: state.offline ? t('header.offline') : t('header.online') })]);
     dom.syncBtn = el('button', { class: 'btn btn-primary btn-sm', onClick: function () { syncNow(false); } }, [
       UI.icon('sync'), el('span', { id: 'syncLabel', text: t('header.sync') })
     ]);
     dom.syncLabel = dom.syncBtn.querySelector('span:last-child');
-    var themeBtn = UI.iconButton('moon', { title: t('settings.general.theme'), onClick: function () {
+    // 右上角只保留一个主题切换按钮；设置入口统一放在左下角活动栏
+    var themeBtn = UI.iconButton('moon', { title: t('settings.general.theme'), class: 'topbar-icon', onClick: function () {
       setSetting('theme', state.settings.theme === 'dark' ? 'light' : 'dark');
     } });
-    var settingsBtn = UI.iconButton('settings', { title: t('common.settings'), onClick: function () { settingsPanel.open(); } });
+    themeBtn.setAttribute('data-i18n-title', 'settings.general.theme');
+    dom.themeBtn = themeBtn;
     dom.topbarActions.appendChild(dom.offlineBtn);
     dom.topbarActions.appendChild(dom.syncBtn);
     dom.topbarActions.appendChild(themeBtn);
-    dom.topbarActions.appendChild(settingsBtn);
+  }
+
+  function isMobileLayout() { return !!(mobileQuery && mobileQuery.matches); }
+
+  function setMobilePage(page) {
+    if (!dom.app || !dom.mobileSegment) return;
+    var target = ['files', 'editor', 'outline'].indexOf(page) >= 0 ? page : 'editor';
+    dom.app.setAttribute('data-mobile-page', target);
+    Array.prototype.forEach.call(dom.mobileSegment.querySelectorAll('button[data-mobile-page]'), function (button) {
+      button.classList.toggle('active', button.getAttribute('data-mobile-page') === target);
+    });
+    if (target === 'files') refreshExplorer();
+    if (target === 'outline' && editor) editor.renderPreview();
+  }
+
+  function wireMobileSegment() {
+    if (!dom.mobileSegment) return;
+    dom.mobileSegment.addEventListener('click', function (e) {
+      var button = e.target;
+      while (button && button !== dom.mobileSegment && !button.hasAttribute('data-mobile-page')) button = button.parentNode;
+      if (button && button !== dom.mobileSegment) setMobilePage(button.getAttribute('data-mobile-page'));
+    });
+    setMobilePage(dom.app.getAttribute('data-mobile-page') || 'editor');
+  }
+
+  function onViewportChange() {
+    if (!editor) return;
+    if (isMobileLayout()) {
+      // 进入窄屏：分栏降级为源码，只显示一个面板
+      if (editor.mode() === 'split') editor.setMode('source');
+    } else {
+      // 回到宽屏：恢复设置里保存的模式（可能是 split）
+      editor.setMode(state.settings.defaultMode || 'split');
+    }
   }
 
   function refreshExplorer() {
+    // renameFolder/deleteFolder 会重建 state.folders 数组，同步引用避免树读取旧数据
+    if (ctx) ctx.folders = state.folders;
     if (explorer) explorer.refresh();
     updateStatus();
+  }
+
+  /** 所有带 title 的控件统一用自定义悬浮提示，0.5 秒延迟显示 */
+  function wireTooltips() {
+    var tip = null;
+    var timer = null;
+    var current = null;
+    function hide() {
+      clearTimeout(timer);
+      if (tip && tip.parentNode) tip.parentNode.removeChild(tip);
+      tip = null;
+      current = null;
+    }
+    document.addEventListener('mouseover', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var node = e.target.closest('[title], [data-tooltip]');
+      if (!node || node === current) return;
+      hide();
+      current = node;
+      var text = node.getAttribute('data-tooltip') || node.getAttribute('title');
+      if (!text) return;
+      if (!node.hasAttribute('data-tooltip')) {
+        // 去掉原生 title，避免浏览器自己的延迟与自定义提示重叠
+        node.setAttribute('aria-label', text);
+        node.setAttribute('data-tooltip', text);
+        node.removeAttribute('title');
+      }
+      timer = setTimeout(function () {
+        if (current !== node) return;
+        tip = el('div', { class: 'ui-tooltip', text: text });
+        document.body.appendChild(tip);
+        var r = node.getBoundingClientRect();
+        var tr = tip.getBoundingClientRect();
+        var left = Math.max(8, Math.min(window.innerWidth - tr.width - 8, r.left + r.width / 2 - tr.width / 2));
+        var top = r.bottom + 8;
+        if (top + tr.height > window.innerHeight - 8) top = r.top - tr.height - 8;
+        tip.style.left = left + 'px';
+        tip.style.top = top + 'px';
+      }, 500);
+    });
+    document.addEventListener('mouseout', function (e) {
+      if (!current) return;
+      if (e.relatedTarget && current.contains(e.relatedTarget)) return;
+      hide();
+    });
+    window.addEventListener('scroll', hide, true);
   }
 
   function init() {
@@ -864,6 +1176,7 @@
     dom.repoBadge = document.getElementById('repoBadge');
     dom.syncStatus = document.getElementById('syncStatus');
     dom.topbarActions = document.getElementById('topbarActions');
+    dom.mobileSegment = document.getElementById('mobileSegment');
     dom.statusDocs = document.getElementById('statusDocs');
     dom.statusPending = document.getElementById('statusPending');
     dom.statusUpdated = document.getElementById('statusUpdated');
@@ -884,6 +1197,7 @@
       offline: function () { return state.offline; },
       store: null, client: null, folders: state.folders,
       activeDoc: activeDoc, activePath: activePath, isDirty: isDirty,
+      docStatus: docStatus, statusDot: statusDot,
       openDoc: openDoc, createDoc: createDoc, renameDoc: renameDoc, deleteDoc: deleteDoc,
       createFolder: createFolder, renameFolder: renameFolder, deleteFolder: deleteFolder,
       moveDoc: moveDoc, moveDocPrompt: moveDocPrompt,
@@ -896,10 +1210,13 @@
     ctx.store = store;
     Object.defineProperty(ctx, 'client', { get: function () { return client; }, configurable: true });
 
+    var pinnedTabbar = el('div', { class: 'tabbar tabbar-pinned', hidden: true });
     var tabbar = el('div', { class: 'tabbar' });
+    dom.editorRegion.appendChild(pinnedTabbar);
     dom.editorRegion.appendChild(tabbar);
     var editorMount = el('div', { style: { display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0' } });
     dom.editorRegion.appendChild(editorMount);
+    dom.pinnedTabbar = pinnedTabbar;
     dom.tabbar = tabbar;
 
     settingsPanel = Features.Settings.create(ctx);
@@ -913,6 +1230,13 @@
 
     buildActivityBar();
     wireHeader();
+    wireMobileSegment();
+    wireTooltips();
+    if (mobileQuery) {
+      if (mobileQuery.addEventListener) mobileQuery.addEventListener('change', onViewportChange);
+      else if (mobileQuery.addListener) mobileQuery.addListener(onViewportChange);
+    }
+    onViewportChange();
     applySettings();
     updateHeader();
 

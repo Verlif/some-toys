@@ -7,17 +7,35 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="app" class="app">
+  <div id="app" class="app" data-mobile-page="editor">
     <header class="topbar">
       <div class="brand">
         <span class="brand-logo">📚</span>
-        <span data-i18n="app.tagline">基于 GitHub 的文档知识库</span>
+        <span class="brand-copy">
+          <span class="brand-title" data-i18n="app.name">知识库</span>
+          <span class="brand-tagline" data-i18n="app.tagline">基于 GitHub 的文档知识库</span>
+        </span>
       </div>
       <span id="repoBadge" class="badge repo-badge" data-i18n="header.localMode">本地模式</span>
       <span id="syncStatus" class="sync-status neutral"></span>
       <div class="topbar-spacer"></div>
       <div id="topbarActions" class="topbar-actions"></div>
     </header>
+
+    <nav id="mobileSegment" class="mobile-segment" aria-label="mobile pages">
+      <button type="button" data-mobile-page="files">
+        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6l2 2h10v10H3z"/></svg></span>
+        <span data-i18n="nav.files">文件</span>
+      </button>
+      <button type="button" data-mobile-page="editor" class="active">
+        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 6l4 4"/></svg></span>
+        <span data-i18n="editor.edit">编辑</span>
+      </button>
+      <button type="button" data-mobile-page="outline">
+        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13"/></svg></span>
+        <span data-i18n="outline.title">大纲</span>
+      </button>
+    </nav>
 
     <div id="workspace" class="workspace">
       <nav id="activityBar" class="activity-bar" aria-label="activity"></nav>

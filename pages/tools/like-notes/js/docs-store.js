@@ -169,12 +169,12 @@
     this._save();
   };
 
-  DocsStore.prototype.rename = function (oldPath, newPath) {
+  DocsStore.prototype.rename = function (oldPath, newPath, title) {
     if (oldPath === newPath) return null;
     var oldDoc = this.docs[oldPath];
     if (!oldDoc) return null;
     var fresh = this.upsert(newPath, {
-      title: oldDoc.title, tags: oldDoc.tags.slice(), body: oldDoc.body
+      title: title || oldDoc.title, tags: oldDoc.tags.slice(), body: oldDoc.body
     });
     this.remove(oldPath);
     return fresh;

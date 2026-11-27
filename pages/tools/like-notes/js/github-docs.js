@@ -265,7 +265,15 @@
           err.retryAfter = 1000;
         }
         return res.json().then(function (body) {
-          if (body && body.message) err.message += '：' + body.message;
+          if (body && body.message) {
+            // 空仓库首次写入时 GitHub 也返回 409，但这是「无初始提交」而非文件冲突
+            if (/git repository is empty/i.test(body.message)) {
+              err.code = 'EMPTY_REPO';
+              err.message = '仓库为空，正在自动创建初始提交';
+            } else {
+              err.message += '：' + body.message;
+            }
+          }
           throw err;
         }, function () { throw err; });
       }
@@ -325,6 +333,49 @@
     var full = (this.rootDir ? this.rootDir + '/' : '') + String(relPath).replace(/^\/+/, '');
     return '/repos/' + enc(this.owner) + '/' + enc(this.repo) + '/contents/' +
       full.split('/').map(enc).join('/');
+  };
+
+  /** 判断 404 是否来自「仓库还没有任何提交」，避免把错误分支误判为空仓库 */
+  GitHubDocs.prototype._repoIsEmpty = function () {
+    var path = '/repos/' + enc(this.owner) + '/' + enc(this.repo);
+    return this._get(path, { ttl: REPO_TTL }).then(function (res) {
+      return !!(res.data && res.data.size === 0);
+    });
+  };
+
+  /**
+   * 空仓库没有分支，Git Data API 会返回 409 Git Repository is empty。
+   * GitHub 官方推荐用 contents API 写第一个文件来完成初始化；初始化后即可正常读写 Git Tree。
+   */
+  GitHubDocs.prototype._bootstrapEmptyRepo = function () {
+    if (this._bootstrapPromise) return this._bootstrapPromise;
+    var self = this;
+    var base = '/repos/' + enc(this.owner) + '/' + enc(this.repo);
+    var keepPath = this.rootDir ? this.rootDir + '/.gitkeep' : '.gitkeep';
+    var path = base + '/contents/' + keepPath.split('/').map(enc).join('/');
+    var json = { 'Content-Type': 'application/json' };
+    var message = 'docs: initialize empty repository';
+    var content = b64encode('\n');
+
+    function put(withBranch) {
+      var body = { message: message, content: content };
+      if (withBranch && self.branch) body.branch = self.branch;
+      return self._enqueue({ method: 'PUT', path: path, headers: json, body: body });
+    }
+
+    this._bootstrapPromise = put(true).catch(function (err) {
+      // 个别空仓库不接受 branch 参数（422/409），改用默认分支再试一次
+      if (err.status !== 422 && err.status !== 409 && err.code !== 'EMPTY_REPO') throw err;
+      return put(false);
+    }).then(function () {
+      self.invalidateTree();
+      self._cacheDrop('GET ' + base); // 仓库已不再为空，避免后续误判
+      return true;
+    }).catch(function (err) {
+      self._bootstrapPromise = null;
+      throw err;
+    });
+    return this._bootstrapPromise;
   };
 
   GitHubDocs.prototype._treeKey = function () {
@@ -400,6 +451,20 @@
         sha: data.sha || null,
         fromCache: !!res.fromCache
       };
+    }).catch(function (err) {
+      // 空仓库没有分支：tree 接口可能返回 404，也可能返回 409 Git Repository is empty.
+      // 两种情况都自动建立初始提交，再当作空清单继续本轮同步，避免同步在读取阶段就中断。
+      function emptyResult() {
+        return self._bootstrapEmptyRepo().then(function () {
+          return { files: [], folders: [], truncated: false, sha: null, fromCache: false };
+        });
+      }
+      if (err.code === 'EMPTY_REPO') return emptyResult(); // 409 已经确定是空仓库，无需再查仓库信息
+      if (err.status !== 404) throw err;
+      return self._repoIsEmpty().then(function (empty) {
+        if (!empty) throw err;
+        return emptyResult();
+      });
     });
   };
 
@@ -435,12 +500,15 @@
       branch: this.branch
     };
     if (sha) body.sha = sha;
-    return this._enqueue({
-      method: 'PUT',
-      path: this._apiPath(relPath),
-      headers: { 'Content-Type': 'application/json' },
-      body: body
-    }).then(function (res) {
+    function send() {
+      return self._enqueue({
+        method: 'PUT',
+        path: self._apiPath(relPath),
+        headers: { 'Content-Type': 'application/json' },
+        body: body
+      });
+    }
+    function done(res) {
       self.invalidateDoc(relPath);
       self.invalidateTree();
       var payload = res.data || {};
@@ -448,6 +516,11 @@
         sha: payload.content && payload.content.sha || null,
         commit: payload.commit || null
       };
+    }
+    return send().then(done).catch(function (err) {
+      if (err.code !== 'EMPTY_REPO') throw err;
+      // 空仓库首次写入：先建初始提交，再按正常 contents API 写入本文件
+      return self._bootstrapEmptyRepo().then(function () { return send().then(done); });
     });
   };
 
@@ -465,7 +538,8 @@
       self.invalidateTree();
       return { sha: null, commit: (res.data || {}).commit || null };
     }).catch(function (err) {
-      if (err.status === 404) return { sha: null, commit: null };
+      // 空仓库里没有可删除的文件，直接视为已完成
+      if (err.status === 404 || err.code === 'EMPTY_REPO') return { sha: null, commit: null };
       throw err;
     });
   };
@@ -536,12 +610,15 @@
       branch: this.branch
     };
     if (sha) body.sha = sha;
-    return this._enqueue({
-      method: 'PUT',
-      path: this._apiPath(relPath),
-      headers: { 'Content-Type': 'application/json' },
-      body: body
-    }).then(function (res) {
+    function send() {
+      return self._enqueue({
+        method: 'PUT',
+        path: self._apiPath(relPath),
+        headers: { 'Content-Type': 'application/json' },
+        body: body
+      });
+    }
+    function done(res) {
       self.invalidateDoc(relPath);
       self.invalidateTree();
       var payload = res.data || {};
@@ -550,6 +627,10 @@
         commit: payload.commit || null,
         dataUrl: bytesToDataUrl(bytes, mime || guessMime(relPath))
       };
+    }
+    return send().then(done).catch(function (err) {
+      if (err.code !== 'EMPTY_REPO') throw err;
+      return self._bootstrapEmptyRepo().then(function () { return send().then(done); });
     });
   };
 

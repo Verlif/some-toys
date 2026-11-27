@@ -7,13 +7,12 @@
   var el = UI.el;
 
   function create(ctx, mount) {
-    var state = { query: '', tag: '' };
+    var state = { query: '' };
     var searchInput = UI.input({
       placeholder: ctx.t('explorer.searchPlaceholder'),
       onInput: function (e) { state.query = e.target.value.trim().toLowerCase(); renderTree(); }
     });
     searchInput.setAttribute('data-i18n-placeholder', 'explorer.searchPlaceholder');
-    var tagRow = el('div', { class: 'tag-filter' });
     var treeHost = el('div', { class: 'tree' });
     var heading = el('h2', { text: ctx.t('explorer.title') });
     heading.setAttribute('data-i18n', 'explorer.title');
@@ -30,7 +29,6 @@
     ]);
     var root = el('div', { style: { display: 'flex', flexDirection: 'column', height: '100%', minHeight: '0' } }, [
       header,
-      tagRow,
       el('div', { class: 'sidebar-scroll' }, [treeHost])
     ]);
     mount.innerHTML = '';
@@ -52,34 +50,11 @@
     }
 
     function basename(path) {
-      return String(path).split('/').pop().replace(/\.md$/i, '');
-    }
-
-    function renderTags() {
-      var tags = {};
-      ctx.store.list().forEach(function (doc) {
-        (doc.tags || []).forEach(function (tag) { tags[tag] = (tags[tag] || 0) + 1; });
-      });
-      tagRow.innerHTML = '';
-      var all = el('span', {
-        class: 'chip' + (!state.tag ? ' active' : ''),
-        text: ctx.t('explorer.allDocs'),
-        onClick: function () { state.tag = ''; renderTree(); renderTags(); }
-      });
-      all.setAttribute('data-i18n', 'explorer.allDocs');
-      tagRow.appendChild(all);
-      Object.keys(tags).sort().forEach(function (tag) {
-        var chip = el('span', {
-          class: 'chip' + (state.tag === tag ? ' active' : ''),
-          text: tag + ' (' + tags[tag] + ')',
-          onClick: function () { state.tag = state.tag === tag ? '' : tag; renderTree(); renderTags(); }
-        });
-        tagRow.appendChild(chip);
-      });
+      // 文件树以真实文件名为准（含 .md），编辑器标题只用于标签页与正文展示
+      return String(path).split('/').pop();
     }
 
     function matches(doc) {
-      if (state.tag && (doc.tags || []).indexOf(state.tag) < 0) return false;
       if (!state.query) return true;
       var hay = [doc.title, doc.path, (doc.tags || []).join(' '), doc.body || ''].join(' ').toLowerCase();
       return hay.indexOf(state.query) >= 0;
@@ -119,11 +94,12 @@
     function renderTree() {
       treeHost.innerHTML = '';
       var docs = ctx.store.list().filter(matches);
-      if (!docs.length) {
-        treeHost.appendChild(UI.empty('search', state.query || state.tag ? ctx.t('explorer.noMatch') : ctx.t('explorer.empty')));
+      var hasFolders = (ctx.folders || []).length > 0;
+      if (!docs.length && (state.query || !hasFolders)) {
+        treeHost.appendChild(UI.empty('search', state.query ? ctx.t('explorer.noMatch') : ctx.t('explorer.empty')));
         return;
       }
-      if (state.query || state.tag) {
+      if (state.query) {
         docs.sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
         docs.forEach(function (doc) { treeHost.appendChild(docNode(doc)); });
         return;
@@ -174,10 +150,16 @@
       return n ? String(n) : '';
     }
 
+    function nameStatusClass(doc) {
+      var status = ctx.docStatus ? ctx.docStatus(doc.path) : 'synced';
+      if (status === 'dirty') return ' doc-name-dirty';
+      // 关闭自动同步（或离线）时，已保存待同步不需要特殊颜色
+      if (status === 'pending' && ctx.settings.autoSync !== false && !(ctx.offline && ctx.offline())) return ' doc-name-pending';
+      return '';
+    }
+
     function docNode(doc) {
-      var dirty = !!ctx.store.pending[doc.path] || !!(ctx.isDirty && ctx.isDirty(doc.path));
-      var label = el('span', { class: 'tree-label', text: doc.title || basename(doc.path) });
-      if (dirty) label.appendChild(el('span', { class: 'doc-tab-dirty', style: { marginLeft: '6px', display: 'inline-block' } }));
+      var label = el('span', { class: 'tree-label' + nameStatusClass(doc), text: basename(doc.path) });
       if (doc.conflict) label.appendChild(UI.badge(ctx.t('editor.conflict'), 'warn'));
       var item = el('div', {
         class: 'tree-item' + (ctx.activePath && ctx.activePath() === doc.path ? ' active' : ''),
@@ -214,7 +196,7 @@
       ], e.clientX, e.clientY);
     }
 
-    function refresh() { renderTags(); renderTree(); }
+    function refresh() { renderTree(); }
     refresh();
 
     return {

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>移动端方案 B · 分段式单栏</title>
+<style>
+  :root{--bg:#f4f6fa;--panel:#fff;--panel-2:#f7f8fc;--panel-3:#eef1f7;--border:#e4e8f0;--text:#1c2333;--text-2:#505a70;--muted:#8a94a8;--accent:#5b6ef6;--accent-soft:#edf0ff;--ok:#16a34a;--radius:12px;--font-mono:ui-monospace,SFMono-Regular,Consolas,monospace}
+  *{box-sizing:border-box}
+  body{margin:0;background:#e8ebf2;color:var(--text);font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;padding:64px 16px 32px;display:flex;flex-direction:column;align-items:center}
+  .demo-note{position:fixed;top:0;left:0;right:0;z-index:99;background:#1c2333;color:#e8ecf7;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+  .demo-note strong{font-size:13px}.demo-note span{font-size:12px;color:#aab3c7}
+  .demo-note button{border:none;background:var(--accent);color:#fff;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer}
+  .phone-wrap{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+  .phone{width:390px;height:844px;background:var(--bg);border:8px solid #111827;border-radius:32px;overflow:hidden;box-shadow:0 20px 60px rgba(28,35,51,.18);position:relative;display:flex;flex-direction:column}
+  .notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:88px;height:22px;background:#111827;border-radius:0 0 14px 14px;z-index:30}
+  .app{height:100%;padding-top:22px;display:flex;flex-direction:column}
+  .icon{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .topbar{height:50px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+  .logo{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#7d8bff);color:#fff;font-weight:700}
+  .repo{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--panel-2);border-radius:999px;padding:5px 10px;font-size:11px;color:var(--text-2)}
+  .sync{border:none;background:var(--accent);color:#fff;border-radius:10px;height:34px;padding:0 11px;font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer}
+  .icon-btn{width:34px;height:34px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text-2);display:grid;place-items:center;cursor:pointer}
+  .segment{flex:none;display:flex;gap:4px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+  .segment button{flex:1;border:none;border-radius:9px;background:var(--panel-2);color:var(--text-2);padding:9px 0;font-size:12px;cursor:pointer}
+  .segment button.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(91,110,246,.28)}
+  .page{flex:1;min-height:0;display:none;flex-direction:column}.page.active{display:flex}
+  .search-wrap{padding:12px;background:var(--panel);border-bottom:1px solid var(--border)}
+  .search{width:100%;border:1px solid var(--border);border-radius:9px;padding:10px 12px;background:var(--panel-2);outline:none;font-size:12px}
+  .tree{flex:1;overflow:auto;padding:10px}
+  .folder,.file{display:flex;align-items:center;gap:8px;padding:11px 10px;border-radius:9px;color:var(--text-2);font-size:12px}
+  .folder{font-weight:700;color:var(--text)}.folder::before{content:'▾';color:var(--muted)}
+  .file::before{content:'·';color:var(--accent);font-weight:700}.file.active{background:var(--accent-soft);color:var(--accent)}
+  .fab{position:absolute;right:18px;bottom:78px;width:50px;height:50px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:24px;box-shadow:0 8px 20px rgba(91,110,246,.35);cursor:pointer;z-index:5}
+  .editor-page{background:var(--panel)}
+  .doc-head{flex:none;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .title-line{display:flex;align-items:center;gap:8px}
+  .doc-title{flex:1;min-width:0;border:none;outline:none;font-size:20px;font-weight:700;color:var(--text)}
+  .view-switch{display:flex;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:2px}
+  .view-switch button{border:none;background:transparent;color:var(--text-2);font-size:10px;padding:5px 7px;border-radius:7px;cursor:pointer}
+  .view-switch button.active{background:var(--panel);color:var(--accent)}
+  .meta{display:flex;gap:7px;margin-top:8px;align-items:center}
+  .chip{font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 9px}.path{font:10px var(--font-mono);color:var(--muted)}
+  .toolbar{flex:none;display:flex;gap:10px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border);overflow-x:auto}
+  .tg{display:flex;gap:2px;flex:none}.tg+.tg{border-left:1px solid var(--border);padding-left:8px}
+  .tb{width:30px;height:30px;border:none;border-radius:7px;background:transparent;color:var(--text-2);display:grid;place-items:center;cursor:pointer}
+  .panes{flex:1;min-height:0;display:flex;flex-direction:column}
+  .pane{flex:1;min-height:0;display:flex;flex-direction:column}
+  .pane+.pane{border-top:1px solid var(--border)}
+  .pane-head{flex:none;padding:6px 12px;background:var(--panel-2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-2)}
+  .source-body{flex:1;min-height:0;display:flex}
+  .lines{flex:none;width:34px;padding:12px 8px;text-align:right;white-space:pre;overflow:hidden;background:var(--panel-2);border-right:1px solid var(--border);color:var(--muted);font:12px/1.7 var(--font-mono)}
+  textarea{flex:1;width:100%;border:none;outline:none;resize:none;padding:12px 14px;background:var(--panel);color:var(--text);font:12px/1.7 var(--font-mono)}
+  .preview{flex:1;overflow:auto;padding:14px 18px 30px}
+  .preview h1{margin:0 0 10px;font-size:20px;padding-bottom:8px;border-bottom:2px solid var(--accent)}
+  .preview h2{font-size:15px;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+  .preview p{margin:0 0 9px;color:var(--text-2)}.preview code{background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 5px;font:11px var(--font-mono)}
+  .outline-page{background:var(--panel)}
+  .outline-head{padding:16px 16px 10px;border-bottom:1px solid var(--border);font-weight:700}.outline-list{padding:10px;overflow:auto}
+  .outline-item{display:block;width:100%;text-align:left;border:none;background:transparent;padding:11px 12px;border-radius:9px;color:var(--text-2);font-size:12px;cursor:pointer}
+  .outline-item.lv2{padding-left:24px}.outline-item.lv3{padding-left:38px}.outline-item.active{background:var(--accent-soft);color:var(--accent)}
+  .statusbar{flex:none;height:30px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--panel-2);border-top:1px solid var(--border);font-size:10px;color:var(--text-2)}
+  .statusbar .spacer{flex:1}
+  .spec{width:300px;background:#fff;border-radius:16px;padding:20px;box-shadow:0 20px 60px rgba(28,35,51,.18)}
+  .spec h2{margin:0 0 6px;font-size:16px}.spec .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 10px;font-size:11px;margin-bottom:14px}
+  .spec dt{font-weight:700;font-size:12px;margin-top:12px;color:var(--accent)}.spec dd{margin:3px 0 0;font-size:12px;color:var(--text-2)}
+  .mask{position:fixed;inset:0;z-index:100;background:rgba(28,35,51,.46);display:grid;place-items:center;padding:24px}.mask[hidden]{display:none}
+  .modal{width:100%;max-width:360px;height:min(700px,92vh);background:var(--panel);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+  .modal-head{flex:none;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);font-weight:700}
+  .modal-tabs{flex:none;display:flex;gap:5px;overflow-x:auto;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .modal-tabs button{flex:none;border:none;border-radius:8px;padding:6px 10px;background:var(--panel-2);color:var(--text-2);font-size:11px;cursor:pointer}.modal-tabs button.active{background:var(--accent-soft);color:var(--accent)}
+  .modal-body{flex:1;min-height:0;overflow:auto;padding:16px}
+  .field{margin-bottom:14px}.field label{display:block;font-size:11px;color:var(--text-2);margin-bottom:5px}.field input{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;background:var(--panel-2);font-size:12px;outline:none}
+  .modal-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-top:1px solid var(--border)}
+  .foot-state{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px}.foot-state::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .btn{border-radius:9px;padding:8px 14px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text-2)}.btn.primary{border:none;background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="demo-note"><strong>方案 B · 分段式单栏</strong><span>用顶部分段切换文件 / 编辑 / 大纲，一次只呈现一栏</span><button onclick="openSettings()">打开设置弹窗</button></div>
+<div class="phone-wrap">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="app">
+      <header class="topbar">
+        <div class="logo">K</div><div class="repo">octo/knowledge-base</div>
+        <button class="sync"><svg class="icon" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-5L4 8M4 4v4h4M4 13a8 8 0 0 0 14 5l2-2M20 20v-4h-4"/></svg>同步</button>
+        <button class="icon-btn" aria-label="设置" onclick="openSettings()"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-4l-.3 2a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 2h4l.3-2a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6a7 7 0 0 0 .1-1z"/></svg></button>
+      </header>
+
+      <div class="segment">
+        <button data-page="files" class="active">文件</button>
+        <button data-page="editor">编辑</button>
+        <button data-page="outline">大纲</button>
+      </div>
+
+      <section class="page active" id="page-files">
+        <div class="search-wrap"><input class="search" placeholder="搜索标题、标签、正文"></div>
+        <div class="tree">
+          <div class="folder">docs</div>
+          <div class="file" style="padding-left:24px">移动端布局规划</div>
+          <div class="file active" style="padding-left:24px">同步机制说明</div>
+          <div class="folder">archive</div>
+          <div class="file" style="padding-left:24px">旧版设计稿</div>
+        </div>
+      </section>
+
+      <section class="page editor-page" id="page-editor">
+        <div class="doc-head">
+          <div class="title-line">
+            <input class="doc-title" value="同步机制说明">
+            <div class="view-switch"><button>源码</button><button class="active">分栏</button><button>预览</button></div>
+          </div>
+          <div class="meta"><span class="chip">架构</span><span class="chip">同步</span><span class="path">docs/sync.md</span></div>
+        </div>
+        <div class="toolbar">
+          <div class="tg"><button class="tb">H</button><button class="tb"><b>B</b></button><button class="tb"><i>I</i></button><button class="tb">S</button></div>
+          <div class="tg"><button class="tb">↗</button><button class="tb">▤</button><button class="tb">&lt;/&gt;</button><button class="tb">☑</button></div>
+          <div class="tg" style="margin-left:auto"><button class="tb">✓</button><button class="tb">⌛</button><button class="tb">✎</button><button class="tb">🗑</button></div>
+        </div>
+        <div class="panes">
+          <div class="pane">
+            <div class="pane-head">源码</div>
+            <div class="source-body"><div class="lines">1\n2\n3\n4\n5</div><textarea spellcheck="false"># 同步机制说明\n\n启动阶段只拉取远端，不上传本地改动。\n\n冲突发生时保留双方副本，绝不自动覆盖。\n\n所有写操作进入串行队列，间隔 180ms。</textarea></div>
+          </div>
+          <div class="pane">
+            <div class="pane-head">预览</div>
+            <div class="preview"><h1>同步机制说明</h1><p>启动阶段只拉取远端，不上传本地改动。</p><p>冲突发生时保留双方副本，绝不自动覆盖。</p><p>所有写操作进入串行队列，间隔 <code>180ms</code>。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page outline-page" id="page-outline">
+        <div class="outline-head">文档大纲</div>
+        <div class="outline-list">
+          <button class="outline-item lv2">启动阶段</button>
+          <button class="outline-item lv2">写入队列</button>
+          <button class="outline-item lv3 active">并发与间隔</button>
+          <button class="outline-item lv2">冲突处理</button>
+          <button class="outline-item lv2">缓存策略</button>
+        </div>
+      </section>
+
+      <button class="fab" title="新建">+</button>
+      <footer class="statusbar"><span id="docs">0 篇</span><span>待同步 0</span><span class="spacer"></span><span>日志</span></footer>
+    </div>
+  </div>
+
+  <aside class="spec">
+    <h2>方案 B · 分段式单栏</h2><span class="tag">实现成本最低</span>
+    <dl>
+      <dt>布局</dt><dd>顶栏下放三档分段控件，文件树、编辑器、大纲各自独占整屏；分栏模式在手机上变成上下堆叠。</dd>
+      <dt>信息层级</dt><dd>同一时刻只保留一个任务焦点，段落标题与当前文档标题最突出，减少窄屏上的信息竞争。</dd>
+      <dt>交互</dt><dd>点击分段即可切换；新建用右下角悬浮按钮；设置仍为全屏弹窗、底部固定操作栏。</dd>
+      <dt>取舍</dt><dd>JS 改动最小（主要靠 CSS 控制显示），但文件与编辑不能同屏，来回切换成本略高。</dd>
+    </dl>
+  </aside>
+</div>
+
+<div class="mask" id="settingsMask" hidden>
+  <div class="modal">
+    <div class="modal-head"><span>设置</span><button onclick="closeSettings()">×</button></div>
+    <div class="modal-tabs"><button>通用</button><button class="active">GitHub</button><button>编辑器</button><button>同步</button><button>关于</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Personal access token</label><input type="password" placeholder="ghp_..."></div>
+      <div class="field"><label>仓库</label><input value="octo/knowledge-base"></div>
+      <div class="field"><label>分支</label><input value="main"></div>
+      <div style="font-size:11px;color:var(--text-2);line-height:1.7">更改即时生效并保存在本地。令牌仅保存在此浏览器，不会上传到第三方服务器。</div>
+    </div>
+    <div class="modal-foot"><div class="foot-state">更改即时生效并保存在本地</div><div class="btn-group"><button class="btn" onclick="closeSettings()">取消</button><button class="btn primary" onclick="closeSettings()">完成</button></div></div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.segment button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.segment button').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      document.querySelectorAll('.page').forEach(function(p){ p.classList.toggle('active', p.id === 'page-' + btn.getAttribute('data-page')); });
+    });
+  });
+  function openSettings(){ document.getElementById('settingsMask').hidden = false; }
+  function closeSettings(){ document.getElementById('settingsMask').hidden = true; }
+  document.getElementById('settingsMask').addEventListener('click', function(e){ if (e.target === this) closeSettings(); });
+</script>
+</body>
+</html>
