@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="app.name">知识库</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-logo">📚</span>
+        <span data-i18n="app.tagline">基于 GitHub 的文档知识库</span>
+      </div>
+      <span id="repoBadge" class="badge repo-badge" data-i18n="header.localMode">本地模式</span>
+      <span id="syncStatus" class="sync-status neutral"></span>
+      <div class="topbar-spacer"></div>
+      <div id="topbarActions" class="topbar-actions"></div>
+    </header>
+
+    <div id="workspace" class="workspace">
+      <nav id="activityBar" class="activity-bar" aria-label="activity"></nav>
+      <aside id="sidebar" class="sidebar"></aside>
+      <main id="editorRegion" class="main"></main>
+      <aside id="outlineRegion" class="outline"></aside>
+    </div>
+
+    <footer class="statusbar">
+      <span id="statusDocs"></span>
+      <span id="statusPending"></span>
+      <span id="statusUpdated"></span>
+      <span class="spacer"></span>
+      <span id="rateStatus"></span>
+      <button id="logToggle" type="button" class="log-toggle" data-i18n="status.log">日志</button>
+    </footer>
+  </div>
+
+  <pre id="logPanel" class="log-panel" hidden></pre>
+  <div class="toast-stack"></div>
+
+  <noscript>本工具需要启用 JavaScript。</noscript>
+
+  <script src="js/config-sync.js"></script>
+  <script src="js/github-docs.js"></script>
+  <script src="js/docs-store.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/features/settings.js"></script>
+  <script src="js/features/explorer.js"></script>
+  <script src="js/features/editor.js"></script>
+  <script src="js/features/images.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+/* 聚合入口：设计令牌 → 通用组件 → 应用骨架 → Markdown 排版 */
+@import url('tokens.css');
+@import url('components.css');
+@import url('layout.css');
+@import url('markdown.css');
