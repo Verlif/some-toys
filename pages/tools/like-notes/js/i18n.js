@@ -138,6 +138,29 @@
       'explorer.confirmDeleteDoc': '确定删除《{name}》？',
       'explorer.confirmDeleteFolder': '确定删除文件夹《{name}》？其中的文档会保留并移动到上级目录。',
       'explorer.untagged': '未分类',
+      'explorer.exportFolder': '导出文件夹为 ZIP',
+      'explorer.importFolder': '从 ZIP 导入到此处',
+      'explorer.exportAll': '导出全部为 ZIP',
+      'explorer.importAll': '从 ZIP 导入到根目录',
+      'transfer.title': '导入 ZIP',
+      'transfer.preview': '压缩包内容：{docs} 篇文档、{assets} 个图片资源、{folders} 个文件夹',
+      'transfer.conflictIntro': '以下文档与本地同名，请选择处理方式（未列出的文档将直接导入）：',
+      'transfer.incomingVersion': '压缩包版本',
+      'transfer.overwrite': '覆盖',
+      'transfer.skip': '跳过',
+      'transfer.overwriteAll': '全部覆盖',
+      'transfer.skipAll': '全部跳过',
+      'transfer.importing': '正在导入 ZIP…',
+      'transfer.exporting': '正在生成 ZIP…',
+      'transfer.empty': '该文件夹下没有文档，无法导出',
+      'transfer.invalidZip': '无法解析 ZIP：{msg}',
+      'transfer.noDeflate': '当前浏览器不支持解压此 ZIP，请重新导出未压缩版本',
+      'toast.exported': '已导出：{name}',
+      'toast.imported': '导入完成：{docs} 篇文档、{assets} 个资源，跳过 {skipped} 项',
+      'toast.importCancelled': '已取消导入',
+      'settings.about.storage': '本地数据存储：{backend}',
+      'settings.about.storage.indexeddb': 'IndexedDB（docs-kb）',
+      'settings.about.storage.localstorage': 'localStorage（IndexedDB 不可用时的兼容模式）',
       'editor.untitled': '未命名文档',
       'editor.titlePlaceholder': '文档标题',
       'editor.tagsPlaceholder': '输入标签，按 Enter 添加',
@@ -385,6 +408,29 @@
       'explorer.confirmDeleteDoc': 'Delete "{name}"?',
       'explorer.confirmDeleteFolder': 'Delete folder "{name}"? Its documents will be kept and moved to the parent folder.',
       'explorer.untagged': 'Untagged',
+      'explorer.exportFolder': 'Export folder as ZIP',
+      'explorer.importFolder': 'Import ZIP here',
+      'explorer.exportAll': 'Export all as ZIP',
+      'explorer.importAll': 'Import ZIP to root',
+      'transfer.title': 'Import ZIP',
+      'transfer.preview': 'Archive contents: {docs} documents, {assets} image assets, {folders} folders',
+      'transfer.conflictIntro': 'These documents already exist locally. Choose an action for each (other documents are imported automatically):',
+      'transfer.incomingVersion': 'Archive version',
+      'transfer.overwrite': 'Overwrite',
+      'transfer.skip': 'Skip',
+      'transfer.overwriteAll': 'Overwrite all',
+      'transfer.skipAll': 'Skip all',
+      'transfer.importing': 'Importing ZIP…',
+      'transfer.exporting': 'Building ZIP…',
+      'transfer.empty': 'No documents in this folder to export',
+      'transfer.invalidZip': 'Cannot read ZIP: {msg}',
+      'transfer.noDeflate': 'This browser cannot decompress this ZIP. Please export an uncompressed archive instead.',
+      'toast.exported': 'Exported: {name}',
+      'toast.imported': 'Imported {docs} documents and {assets} assets, skipped {skipped}',
+      'toast.importCancelled': 'Import cancelled',
+      'settings.about.storage': 'Local storage: {backend}',
+      'settings.about.storage.indexeddb': 'IndexedDB (docs-kb)',
+      'settings.about.storage.localstorage': 'localStorage (fallback when IndexedDB is unavailable)',
       'editor.untitled': 'Untitled',
       'editor.titlePlaceholder': 'Document title',
       'editor.tagsPlaceholder': 'Type a tag, press Enter to add',
@@ -632,6 +678,29 @@
       'explorer.confirmDeleteDoc': '《{name}》を削除しますか？',
       'explorer.confirmDeleteFolder': 'フォルダ《{name}》を削除しますか？中のドキュメントは親フォルダに残ります。',
       'explorer.untagged': 'タグなし',
+      'explorer.exportFolder': 'フォルダを ZIP に書き出し',
+      'explorer.importFolder': 'ZIP をここに読み込む',
+      'explorer.exportAll': 'すべてを ZIP に書き出し',
+      'explorer.importAll': 'ZIP をルートに読み込む',
+      'transfer.title': 'ZIP を読み込む',
+      'transfer.preview': 'アーカイブ内容：ドキュメント {docs} 件、画像 {assets} 件、フォルダ {folders} 個',
+      'transfer.conflictIntro': '以下のドキュメントはローカルと同名です。処理を選択してください（他のドキュメントは自動的に読み込まれます）：',
+      'transfer.incomingVersion': 'アーカイブ版',
+      'transfer.overwrite': '上書き',
+      'transfer.skip': 'スキップ',
+      'transfer.overwriteAll': 'すべて上書き',
+      'transfer.skipAll': 'すべてスキップ',
+      'transfer.importing': 'ZIP を読み込み中…',
+      'transfer.exporting': 'ZIP を作成中…',
+      'transfer.empty': '書き出すドキュメントがこのフォルダにはありません',
+      'transfer.invalidZip': 'ZIP を解析できません：{msg}',
+      'transfer.noDeflate': 'このブラウザは ZIP の展開に対応していません。非圧縮 ZIP で再書き出ししてください',
+      'toast.exported': '書き出しました：{name}',
+      'toast.imported': '読み込み完了：ドキュメント {docs} 件、画像 {assets} 件、スキップ {skipped} 件',
+      'toast.importCancelled': '読み込みをキャンセルしました',
+      'settings.about.storage': 'ローカル保存先：{backend}',
+      'settings.about.storage.indexeddb': 'IndexedDB（docs-kb）',
+      'settings.about.storage.localstorage': 'localStorage（IndexedDB が使えない場合の互換モード）',
       'editor.untitled': '無題',
       'editor.titlePlaceholder': 'ドキュメントのタイトル',
       'editor.tagsPlaceholder': 'タグを入力して Enter で追加',
@@ -752,11 +821,14 @@
     }
   };
 
+  var storage = global.App && global.App.Storage;
   var current = 'zh-CN';
-  try {
-    var saved = localStorage.getItem(KEY_LOCALE);
-    if (saved && dictionaries[saved]) current = saved;
-  } catch (e) { /* 存储不可用时用默认语言 */ }
+  // 语言异步读取：app.js 启动时会等待 ready，避免首屏闪烁成默认语言
+  var ready = (storage ? storage.init().then(function () { return storage.kvGet('locale'); }) : Promise.resolve(null))
+    .then(function (saved) {
+      if (saved && dictionaries[saved]) current = saved;
+      return current;
+    }).catch(function () { return current; });
 
   var listeners = [];
 
@@ -793,7 +865,7 @@
   function setLocale(locale) {
     if (!dictionaries[locale]) return false;
     current = locale;
-    try { localStorage.setItem(KEY_LOCALE, locale); } catch (e) { /* 忽略 */ }
+    if (storage) storage.kvPut('locale', locale).catch(function () { /* 忽略 */ });
     listeners.forEach(function (fn) { fn(locale); });
     if (typeof document !== 'undefined') apply(document);
     return true;
@@ -802,6 +874,7 @@
   global.App = global.App || {};
   global.App.I18n = {
     t: t,
+    ready: ready,
     apply: apply,
     setLocale: setLocale,
     locale: function () { return current; },

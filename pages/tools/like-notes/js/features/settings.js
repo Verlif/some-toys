@@ -15,6 +15,9 @@
     var refs = {};
     var repoListNode = null;
     var branchListNode = null;
+    // 设置面板当前选中的仓库；未点“绑定”前 ctx.binding 仍是旧值，分支列表与绑定按钮状态都以这里的为准
+    var selectedOwner = '';
+    var selectedRepo = '';
 
     function open() {
       currentTab = 'general';
@@ -147,6 +150,9 @@
       var tokenTimer = null;
       var repoTimer = null;
       var branchTimer = null;
+      // 每次打开面板都从已绑定配置初始化当前选中项
+      selectedOwner = ctx.binding.owner || '';
+      selectedRepo = ctx.binding.repo || '';
       refs.token = UI.input({
         type: 'password', value: ctx.binding.token || '', placeholder: 'ghp_…',
         onInput: function (e) {
@@ -162,7 +168,7 @@
             // 只有 token 变化才主动拉取仓库/分支列表；打开设置或切换标签页都不请求
             tokenTimer = setTimeout(function () {
               loadRepos();
-              if (ctx.binding.owner && ctx.binding.repo) loadBranches();
+              if (selectedOwner && selectedRepo) loadBranches();
             }, 350);
           }
         }
@@ -242,7 +248,7 @@
         }
       });
       var actions = el('div', { class: 'field-row github-actions' }, [
-        refs.bindBtn, UI.button({ label: t('settings.github.tokenHelp'), onClick: showTokenHelp })
+        UI.button({ label: t('settings.github.tokenHelp'), onClick: showTokenHelp })
       ]);
 
       // 自动同步与原「同步」页的所有设置都收拢到 GitHub 标签下
@@ -303,7 +309,8 @@
           repoField,
           branchField,
           selection,
-          UI.field(t('settings.github.dir'), refs.rootDir, 'settings.github.dir')
+          UI.field(t('settings.github.dir'), refs.rootDir, 'settings.github.dir'),
+          el('div', { class: 'field-row github-actions' }, [refs.bindBtn])
         ]),
         section('settings.github.section.sync', [
           ghAutoSyncWrap,
@@ -317,9 +324,13 @@
     function updateGithubEnabled() {
       if (!refs.token) return;
       var enabled = !!refs.token.value.trim();
-      [refs.repoSearch, refs.branchSearch, refs.rootDir, refs.bindBtn].forEach(function (node) {
+      [refs.repoSearch, refs.branchSearch, refs.rootDir].forEach(function (node) {
         if (node) node.disabled = !enabled;
       });
+      // 绑定按钮需 token + 仓库 + 分支都就绪，避免“填了 token 就能绑定”的误导
+      if (refs.bindBtn) {
+        refs.bindBtn.disabled = !enabled || !selectedOwner || !selectedRepo || !String(refs.branchValue.textContent || '').trim();
+      }
       if (!enabled) {
         // 无 token：两个选择器收起、禁用并清空候选项；有 token 时保持当前开合，避免刷新列表时把选项收掉
         closeLists();
@@ -350,11 +361,15 @@
               markSelected(refs.repoSearch, r.fullName);
               refs.repoValue.textContent = r.fullName;
               var parts = r.fullName.split('/');
+              selectedOwner = parts[0] || '';
+              selectedRepo = parts.slice(1).join('/');
               markSelected(refs.branchSearch, '');
               refs.branchValue.textContent = 'main';
+              branchListNode.innerHTML = '';
               closeRepoList();
-              closeBranchList();
-              loadBranches(parts[0], parts[1]);
+              // 选完仓库直接展开分支列表：分支加载以面板内选中的仓库为准，不再读尚未更新的 ctx.binding
+              if (selectedOwner && selectedRepo) { openBranchList(); loadBranches(); }
+              else closeBranchList();
             }
           }));
         });
@@ -365,8 +380,8 @@
 
     function loadBranches(owner, repo) {
       updateGithubEnabled();
-      owner = owner || ctx.binding.owner;
-      repo = repo || ctx.binding.repo;
+      owner = owner || selectedOwner || ctx.binding.owner;
+      repo = repo || selectedRepo || ctx.binding.repo;
       if (!owner || !repo) {
         branchListNode.innerHTML = '';
         branchListNode.classList.add('is-empty');
@@ -394,6 +409,7 @@
               markSelected(refs.branchSearch, name);
               refs.branchValue.textContent = name;
               closeBranchList();
+              updateGithubEnabled();
             }
           }));
         });
@@ -407,6 +423,7 @@
               markSelected(refs.branchSearch, custom);
               refs.branchValue.textContent = custom;
               closeBranchList();
+              updateGithubEnabled();
             }
           }), branchListNode.firstChild);
         }
@@ -511,9 +528,12 @@
     }
 
     function aboutPanel() {
+      var backend = ctx.storage && ctx.storage.backend() === 'indexeddb'
+        ? t('settings.about.storage.indexeddb') : t('settings.about.storage.localstorage');
       return el('div', { class: 'settings-panel' }, [
         el('h3', { text: t('settings.about.title') }),
-        el('p', { class: 'muted', text: t('settings.about.body') })
+        el('p', { class: 'muted', text: t('settings.about.body') }),
+        el('p', { class: 'muted', text: t('settings.about.storage', { backend: backend }) })
       ]);
     }
 

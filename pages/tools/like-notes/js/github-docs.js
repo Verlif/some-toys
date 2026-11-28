@@ -2,7 +2,7 @@
  * GitHubDocs - GitHub REST 客户端（限流友好）
  *
  * 设计目标：
- * - 缓存优先：所有 GET 结果按 URL 缓存在 localStorage，命中 TTL 直接返回，不发请求
+ * - 缓存优先：所有 GET 结果按 URL 缓存在 IndexedDB，命中 TTL 直接返回，不发请求
  * - 条件请求：带 If-None-Match，服务端 304 时不返回正文（GitHub 对 304 不计配额）
  * - 增量同步：Git Tree 一次请求拿全文件清单及各文件的 blob sha，只下载 sha 变化的文件
  * - 节流队列：并发上限、最小请求间隔、同 URL 去重、按 X-RateLimit / Retry-After 自动退避
@@ -19,6 +19,35 @@
   var MIN_INTERVAL = 180;
   var MAX_INFLIGHT = 3;
   var MAX_RETRIES = 2;
+
+  // 响应缓存为所有客户端实例共享，落 IndexedDB 的 apiCache 仓库。
+  var appStorage = global.App && global.App.Storage;
+  var apiCache = {};
+  var cacheReady = null;
+  var cacheWrites = Promise.resolve();
+
+  function loadApiCache() {
+    if (!cacheReady) {
+      cacheReady = (appStorage ? appStorage.init() : Promise.resolve()).then(function () {
+        return appStorage ? appStorage.getAll('apiCache') : Promise.resolve([]);
+      }).then(function (records) {
+        (records || []).forEach(function (record) {
+          if (record && record.key) {
+            apiCache[record.key] = {
+              data: record.data, etag: record.etag || null, fetchedAt: record.fetchedAt || 0
+            };
+          }
+        });
+        return apiCache;
+      }).catch(function () { return apiCache; });
+    }
+    return cacheReady;
+  }
+
+  function queueCacheWrite(task) {
+    if (!appStorage) return;
+    cacheWrites = cacheWrites.then(task).catch(function () { /* 缓存写入失败不影响请求 */ });
+  }
 
   function now() {
     return Date.now();
@@ -79,7 +108,6 @@
     this.repo = options.repo || '';
     this.branch = options.branch || 'main';
     this.rootDir = String(options.rootDir || 'docs').replace(/^\/+|\/+$/g, '');
-    this.storage = options.storage || localStorage;
     this.onLog = options.onLog || function () {};
     var configuredRetries = Number(options.maxRetries);
     this.maxRetries = isFinite(configuredRetries)
@@ -93,27 +121,19 @@
     this._timer = null;
     this._dedupe = {};
     this._limits = { remaining: null, resetAt: 0 };
-    this._cache = this._loadCache();
+    this._cache = apiCache;
   }
 
-  // ---------- 本地响应缓存 ----------
+  // ---------- 本地响应缓存（IndexedDB） ----------
 
-  GitHubDocs.prototype._loadCache = function () {
-    try {
-      var raw = this.storage.getItem(CACHE_KEY);
-      var parsed = raw ? JSON.parse(raw) : null;
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (e) {
-      return {};
-    }
-  };
+  GitHubDocs.prototype._loadCache = function () { return apiCache; };
 
   GitHubDocs.prototype._saveCache = function () {
-    try {
-      this.storage.setItem(CACHE_KEY, JSON.stringify(this._cache));
-    } catch (e) {
-      // 缓存写满时忽略，不影响主流程
-    }
+    queueCacheWrite(function () {
+      return Promise.all(Object.keys(apiCache).map(function (key) {
+        return appStorage.put('apiCache', key, apiCache[key]);
+      }));
+    });
   };
 
   GitHubDocs.prototype._cacheGet = function (key, ttl) {
@@ -124,26 +144,26 @@
   };
 
   GitHubDocs.prototype._cachePut = function (key, data, etag) {
-    this._cache[key] = { data: data, etag: etag || null, fetchedAt: now() };
-    this._saveCache();
+    var record = { data: data, etag: etag || null, fetchedAt: now() };
+    apiCache[key] = record;
+    queueCacheWrite(function () { return appStorage.put('apiCache', key, record); });
   };
 
   GitHubDocs.prototype._cacheDrop = function (key) {
-    if (this._cache[key]) {
-      delete this._cache[key];
-      this._saveCache();
+    if (apiCache[key]) {
+      delete apiCache[key];
+      queueCacheWrite(function () { return appStorage.del('apiCache', key); });
     }
   };
 
   GitHubDocs.prototype._cacheDropPrefix = function (prefix) {
-    var changed = false;
-    Object.keys(this._cache).forEach(function (key) {
-      if (key.indexOf(prefix) === 0) {
-        delete this._cache[key];
-        changed = true;
-      }
-    });
-    if (changed) this._saveCache();
+    var keys = Object.keys(apiCache).filter(function (key) { return key.indexOf(prefix) === 0; });
+    keys.forEach(function (key) { delete apiCache[key]; });
+    if (keys.length) {
+      queueCacheWrite(function () {
+        return Promise.all(keys.map(function (key) { return appStorage.del('apiCache', key); }));
+      });
+    }
   };
 
   // ---------- 限流队列 ----------
@@ -310,8 +330,7 @@
     if (stale && stale.etag) headers['If-None-Match'] = stale.etag;
     var promise = this._enqueue({ path: path, method: 'GET', headers: headers }).then(function (res) {
       if (res.status === 304 && stale) {
-        stale.fetchedAt = now();
-        self._saveCache();
+        self._cachePut(cacheKey, stale.data, stale.etag);
         return { status: 304, data: stale.data, etag: stale.etag, fromCache: true };
       }
       if (res.status === 200 && options.cache !== false) {
@@ -649,4 +668,5 @@
   global.GitHubDocs.decode = b64decode;
   global.GitHubDocs.bytesToBase64 = bytesToBase64;
   global.GitHubDocs.base64ToBytes = base64ToBytes;
+  global.GitHubDocs.ready = loadApiCache();
 })(window);

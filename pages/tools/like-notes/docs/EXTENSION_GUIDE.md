@@ -7,8 +7,9 @@
 1. 明确改动属于哪一层：数据层（`docs-store.js`）、网络层（`github-docs.js`）、UI 层（`ui.js` / `features/*`）、控制器（`app.js`）还是样式（`css/*`）。
 2. 确认是否涉及全局状态。优先通过 `ctx` 暴露能力，不要让模块直接读 `app.js` 的 `state` 或 `client`。
 3. 确认是否涉及用户可见文案。凡是界面上的文字都必须走 i18n key，不要硬编码中文。
-4. 确认是否新增 localStorage 键。新增键要在 [DEVELOPMENT.md](DEVELOPMENT.md) 的表格中登记。
-5. 确认是否改变同步语义。任何涉及冲突、上传、删除的改动都必须保持 [ARCHITECTURE.md](ARCHITECTURE.md) 中的 8 条不变量。
+4. 确认是否新增持久化数据。新键应写入 IndexedDB（`App.Storage` 的 `kv` / 对应仓库），并在 [DEVELOPMENT.md](DEVELOPMENT.md) 表格中登记；除降级兜底外不要直接读写 `localStorage`。
+5. 确认是否改变同步语义。任何涉及冲突、上传、删除的改动都必须保持 [ARCHITECTURE.md](ARCHITECTURE.md) 中的不变量（含 ZIP 导入冲突必须让用户选择）。
+6. 确认脚本是否依赖 `App.Storage` / `App.Zip`：它们必须在 `github-docs.js` / `i18n.js` / `app.js` 之前加载（见 [DEVELOPMENT.md](DEVELOPMENT.md) 第 4 节）。
 
 ## 2. 新增一个功能面板（类似设置中心）
 
@@ -34,7 +35,7 @@
    ```
 
 2. 在 `index.html` 中于 `app.js` 之前插入 `<script src="js/features/foo.js"></script>`。顺序错误会导致 `App.Features` 未就绪。
-3. 在 `app.js:init()` 中实例化：
+3. 在 `app.js:startUI()`（由 `init()` 异步加载持久化数据后调用）中实例化：
 
    ```js
    foo = Features.Foo.create(ctx);
@@ -117,7 +118,7 @@
 4. `keepLocal` 的 sha 规则不能破坏：远端存在保留 sha，远端删除清空 sha。
 5. `tree.truncated` 时跳过远端删除判定。
 6. 上传 409 时先 `invalidateDoc` 再强制拉取，避免拿到 304 旧内容。
-7. 每次成功同步后写 `docs-kb:lastSync` 并刷新状态徽标。
+7. 每次成功同步后写 IndexedDB `kv:lastSync` 并刷新状态徽标。
 8. 改动后用 DOM 桩注入假 `GitHubDocs` 验证冲突路径，且断言没有 `putFile` 调用。
 
 ## 10. 验证清单（每次改动都建议跑）
@@ -126,7 +127,13 @@
 node --check js/*.js js/features/*.js
 ```
 
-然后按 [DEVELOPMENT.md](DEVELOPMENT.md) 第 7 节做手动验收。若改动涉及同步/冲突/设置/i18n，建议重建 DOM 桩冒烟脚本覆盖对应场景。
+然后按 [DEVELOPMENT.md](DEVELOPMENT.md) 第 7 节做手动验收。若改动涉及同步/冲突/设置/i18n，建议重建 DOM 桩冒烟脚本覆盖对应场景。ZIP 改动可先在 Node 中做无 DOM 往返测试：
+
+```bash
+node -e "global.window=global; require('./js/zip.js'); var z=App.Zip; z.create([{name:'a.md',data:'hi'}]).then(function(b){return z.read(b)}).then(function(f){console.log(z.decodeText(f[0].data))})"
+```
+
+若改动涉及 IDB 键或迁移，还需验证首次启动时旧 `docs-kb:*` 键被清除且数据完整迁入 IndexedDB。
 
 ## 11. 常见坑
 

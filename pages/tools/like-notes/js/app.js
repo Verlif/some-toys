@@ -25,15 +25,15 @@
   };
 
   var state = {
-    settings: Object.assign({}, defaultSettings, readJSON(KEY_SETTINGS, {})),
-    binding: loadBinding(),
-    folders: readJSON(KEY_FOLDERS, []) || [],
-    lastSync: Number(readJSON(KEY_LAST_SYNC, 0)) || 0,
+    settings: Object.assign({}, defaultSettings),
+    binding: { token: '', owner: '', repo: '', branch: 'main', rootDir: 'docs', remember: true },
+    folders: [],
+    lastSync: 0,
     offline: false,
     syncing: false,
     activePath: null,
     tabs: [],
-    pinned: readJSON(KEY_PINNED, []) || [],
+    pinned: [],
     dirty: {},
     logs: [],
     timer: null,
@@ -43,31 +43,44 @@
   var dom = {};
   var ctx = {};
   var store, client, explorer, editor, images, settingsPanel;
-
-  function readJSON(key, fallback) {
-    try {
-      var raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (e) { return fallback; }
-  }
+  var storage = App.Storage;
 
   function writeJSON(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* 忽略 */ }
+    if (storage) storage.kvPut(key, value).catch(function () { /* 忽略写入失败 */ });
   }
 
-  function loadBinding() {
-    var saved = readJSON(KEY_BINDING, null);
-    if (saved && typeof saved === 'object') return saved;
-    // 兼容旧版配置同步 demo 的绑定
-    var legacy = readJSON('config-sync:github-binding', null);
-    if (legacy && legacy.repo) {
-      var parts = String(legacy.repo).split('/');
-      return {
-        token: legacy.token || '', owner: parts[0] || '', repo: parts[1] || '',
-        branch: legacy.branch || 'main', rootDir: legacy.path || 'docs', remember: true
-      };
-    }
-    return { token: '', owner: '', repo: '', branch: 'main', rootDir: 'docs', remember: true };
+  // 应用元数据（设置 / 绑定 / 文件夹 / 时间 / 固定标签）统一从 IndexedDB 读取
+  function loadState() {
+    if (!storage) return Promise.resolve();
+    return storage.init().then(function () {
+      return Promise.all([
+        storage.kvGet(KEY_SETTINGS), storage.kvGet(KEY_BINDING), storage.kvGet(KEY_FOLDERS),
+        storage.kvGet(KEY_LAST_SYNC), storage.kvGet(KEY_PINNED)
+      ]);
+    }).then(function (values) {
+      var settings = values[0], binding = values[1];
+      state.settings = Object.assign({}, defaultSettings, settings && typeof settings === 'object' ? settings : {});
+      state.binding = binding && typeof binding === 'object' ? Object.assign({
+        token: '', owner: '', repo: '', branch: 'main', rootDir: 'docs', remember: true
+      }, binding) : state.binding;
+      // 兼容旧版本 addFolder 漏拼路径段产生的 "A/" 等畸形条目，避免树里出现空名文件夹、
+      // 也避免导入时 cleanPath 把目标 "A/" 折叠回源文件夹 "A"
+      var folders = Array.isArray(values[2]) ? values[2] : [];
+      state.folders = [];
+      folders.forEach(function (folder) {
+        var path = cleanPath(folder);
+        if (path && state.folders.indexOf(path) < 0) state.folders.push(path);
+      });
+      state.folders.slice().forEach(function (path) {
+        var parent = dirname(path);
+        while (parent) {
+          if (state.folders.indexOf(parent) < 0) state.folders.push(parent);
+          parent = dirname(parent);
+        }
+      });
+      state.lastSync = Number(values[3]) || 0;
+      state.pinned = Array.isArray(values[4]) ? values[4] : [];
+    }).catch(function () { /* 存储不可用时保留默认值 */ });
   }
 
   // ---------- 通用能力（供模块调用） ----------
@@ -215,10 +228,413 @@
     return c.listBranches(owner, repo);
   }
 
-  function getAssetDataUrl(path) {
+  function dataUrlToBytes(dataUrl) {
+    var comma = String(dataUrl).indexOf(',');
+    if (comma < 0) return new Uint8Array(0);
+    var meta = dataUrl.slice(0, comma);
+    var body = dataUrl.slice(comma + 1);
+    var binary;
+    try { binary = global.atob ? global.atob(body) : ''; } catch (e) { return new Uint8Array(0); }
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i) & 0xff;
+    if (meta.indexOf(';base64') < 0) {
+      try { bytes = new TextEncoder().encode(decodeURIComponent(binary)); } catch (e) { /* 保留原字节 */ }
+    }
+    return bytes;
+  }
+
+  function saveAsset(path, dataUrl, mime) {
+    if (!storage) return Promise.resolve();
+    var record = {
+      path: String(path), dataUrl: String(dataUrl),
+      mime: mime || (String(dataUrl).match(/^data:([^;,]+)/) || [])[1] || 'application/octet-stream',
+      bytes: dataUrlToBytes(dataUrl)
+    };
+    return storage.init().then(function () { return storage.put('assets', record.path, record); });
+  }
+
+  function fetchAsset(path) {
     if (!client || state.offline) return Promise.resolve(null);
-    return client.getBinary(path).then(function (file) { return file ? file.dataUrl : null; })
-      .catch(function () { return null; });
+    return client.getBinary(path).then(function (file) {
+      if (!file) return null;
+      if (storage) saveAsset(path, file.dataUrl, file && file.mime).catch(function () {});
+      return file.dataUrl;
+    }).catch(function () { return null; });
+  }
+
+  // 先查 IndexedDB 缓存，未命中再回源 GitHub 并缓存，离线也能查看已缓存图片
+  function getAssetDataUrl(path) {
+    if (!storage) return fetchAsset(path);
+    return storage.init().then(function () { return storage.get('assets', String(path)); })
+      .then(function (record) {
+        if (record && record.dataUrl) return record.dataUrl;
+        if (record && record.bytes) return bytesToDataUrl(record.bytes, record.mime);
+        return fetchAsset(path);
+      }, function () { return fetchAsset(path); });
+  }
+
+  // ---------- 文件夹导出 / 导入（ZIP） ----------
+
+  function cleanPath(path) {
+    var parts = String(path == null ? '' : path).replace(/\\/g, '/').split('/');
+    var out = [];
+    parts.forEach(function (part) {
+      if (!part || part === '.') return;
+      if (part === '..') { out.pop(); return; }
+      out.push(part.replace(/[<>:"|?*]/g, '-'));
+    });
+    return out.join('/');
+  }
+
+  function decodeLink(link) {
+    try { return decodeURIComponent(link); } catch (e) { return link; }
+  }
+
+  function resolveRel(base, rel) {
+    if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(rel)) return null;
+    return cleanPath((rel.charAt(0) === '/' ? '' : (base || '')) + '/' + rel);
+  }
+
+  function relativeBetween(dir, target) {
+    var from = dir ? dir.split('/') : [];
+    var to = target.split('/');
+    var i = 0;
+    while (i < from.length && i < to.length && from[i] === to[i]) i++;
+    var parts = from.slice(i).map(function () { return '..'; }).concat(to.slice(i));
+    return parts.join('/') || target;
+  }
+
+  function rewriteLinks(text, oldDir, newDir, mapPath) {
+    return String(text || '').replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function (full, label, raw) {
+      var match = /^(\S+)([\s\S]*)$/.exec(raw.trim());
+      if (!match) return full;
+      var link = decodeLink(match[1]);
+      if (/^(?:data:|https?:|#|\/\/)/i.test(link)) return full;
+      var oldAsset = resolveRel(oldDir, link);
+      if (!oldAsset) return full;
+      var newAsset = mapPath(oldAsset);
+      if (!newAsset) return full;
+      return '![' + label + '](' + relativeBetween(newDir, newAsset) + match[2] + ')';
+    });
+  }
+
+  function referencedAssets(docs) {
+    var found = {};
+    docs.forEach(function (doc) {
+      var dir = dirname(doc.path);
+      var body = String(doc.body || '');
+      var re = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      var match;
+      while ((match = re.exec(body))) {
+        var token = /^(\S+)/.exec(match[2].trim());
+        if (!token) continue;
+        var link = decodeLink(token[1]);
+        if (/^(?:data:|https?:|#|\/\/)/i.test(link)) continue;
+        var path = resolveRel(dir, link);
+        if (path) found[path] = true;
+      }
+    });
+    return Object.keys(found);
+  }
+
+  function mimeForPath(path) {
+    var ext = String(path).split('.').pop().toLowerCase();
+    var map = {
+      png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+      svg: 'image/svg+xml', webp: 'image/webp', ico: 'image/x-icon', bmp: 'image/bmp'
+    };
+    return map[ext] || 'application/octet-stream';
+  }
+
+  function bytesToDataUrl(bytes, mime) {
+    var chunk = 0x8000;
+    var binary = '';
+    var view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+    for (var i = 0; i < view.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, view.subarray(i, i + chunk));
+    }
+    var base64 = global.btoa ? global.btoa(binary) : '';
+    return 'data:' + (mime || 'application/octet-stream') + ';base64,' + base64;
+  }
+
+  function downloadBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+  }
+
+  function exportArchive(folder) {
+    folder = cleanPath(folder || '');
+    var docs = store.list().filter(function (doc) {
+      return !folder || doc.path.indexOf(folder + '/') === 0 || doc.path === folder;
+    });
+    if (!docs.length) { toast(t('transfer.empty'), 'warn'); return Promise.resolve(null); }
+    var waiting = UI.busy(t('transfer.exporting'));
+    var assetPaths = referencedAssets(docs);
+    var entries = docs.map(function (doc) {
+      return {
+        name: doc.path,
+        data: DocsStore.serialize({
+          title: doc.title, tags: doc.tags, body: doc.body,
+          updatedAt: doc.updatedAt, deviceId: doc.deviceId
+        })
+      };
+    });
+    var folderPaths = state.folders.filter(function (path) {
+      return !folder || path.indexOf(folder + '/') === 0 || path === folder;
+    });
+    var assetRecords = {};
+    var packedAssets = [];
+
+    return (storage ? storage.init().then(function () { return storage.getAll('assets'); }) : Promise.resolve([]))
+      .then(function (records) {
+        (records || []).forEach(function (record) { if (record && record.path) assetRecords[record.path] = record; });
+        assetPaths.forEach(function (path) {
+          var record = assetRecords[path];
+          if (!record) return;
+          var data = record.bytes || (record.dataUrl ? dataUrlToBytes(record.dataUrl) : null);
+          if (!data) return;
+          entries.push({ name: path, data: data });
+          packedAssets.push(path);
+        });
+        var manifest = {
+          version: 1, type: 'docs-kb', root: folder,
+          exportedAt: Date.now(),
+          docs: docs.map(function (doc) { return doc.path; }),
+          folders: folderPaths,
+          assets: packedAssets
+        };
+        entries.push({ name: 'manifest.json', data: JSON.stringify(manifest, null, 2) });
+        return App.Zip.create(entries);
+      }).then(function (bytes) {
+        var name = (folder ? folder.split('/').pop() : 'docs-kb') + '.zip';
+        downloadBlob(new Blob([bytes], { type: 'application/zip' }), name);
+        toast(t('toast.exported', { name: name }), 'ok');
+        return name;
+      }).catch(function (err) {
+        toast(t('transfer.invalidZip', { msg: err && err.message || String(err) }), 'error');
+        return null;
+      }).then(function (name) { waiting.close(); return name; });
+  }
+
+  function mapImportPath(path, sourceRoot, targetPrefix) {
+    var relative = path;
+    if (sourceRoot && relative.indexOf(sourceRoot + '/') === 0) {
+      relative = relative.slice(sourceRoot.length + 1);
+    }
+    return cleanPath(targetPrefix ? targetPrefix + '/' + relative : relative);
+  }
+
+  function parseArchive(bytes) {
+    return App.Zip.read(bytes).then(function (files) {
+      var byName = {};
+      files.forEach(function (file) { byName[file.name] = file; });
+      var manifest = byName['manifest.json'] ? JSON.parse(App.Zip.decodeText(byName['manifest.json'].data)) : null;
+      var sourceRoot = manifest && manifest.root ? cleanPath(manifest.root) : '';
+      var docNames = (manifest && Array.isArray(manifest.docs) ? manifest.docs : files
+        .filter(function (file) { return /\.md$/i.test(file.name); })
+        .map(function (file) { return file.name; })).filter(function (name) {
+        return byName[name] && /\.md$/i.test(name);
+      });
+      var assetNames = (manifest && Array.isArray(manifest.assets) ? manifest.assets : files
+        .filter(function (file) { return !/\.md$/i.test(file.name) && file.name !== 'manifest.json'; })
+        .map(function (file) { return file.name; })).filter(function (name) {
+        return !!byName[name] && !/\.md$/i.test(name);
+      });
+      return { files: byName, manifest: manifest, sourceRoot: sourceRoot, docNames: docNames, assetNames: assetNames };
+    });
+  }
+
+  function buildImportPlan(parsed, target) {
+    var plan = { docs: [], assets: [], folders: [], sourceRoot: parsed.sourceRoot, target: target };
+    var sourceRoot = parsed.sourceRoot;
+    parsed.docNames.forEach(function (name) {
+      var to = mapImportPath(name, sourceRoot, target);
+      if (!to) return;
+      var text = App.Zip.decodeText(parsed.files[name].data);
+      plan.docs.push({
+        from: name, to: to, text: text,
+        local: store.get(to),
+        conflict: !!store.get(to)
+      });
+    });
+    parsed.assetNames.forEach(function (name) {
+      var to = mapImportPath(name, sourceRoot, target);
+      if (to) plan.assets.push({ from: name, to: to, bytes: parsed.files[name].data });
+    });
+    var manifestFolders = parsed.manifest && Array.isArray(parsed.manifest.folders) ? parsed.manifest.folders : [];
+    manifestFolders.forEach(function (folder) {
+      var to = mapImportPath(folder, sourceRoot, target);
+      if (to && plan.folders.indexOf(to) < 0) plan.folders.push(to);
+    });
+    plan.docs.forEach(function (item) {
+      var dir = dirname(item.to);
+      while (dir) {
+        if (plan.folders.indexOf(dir) < 0) plan.folders.push(dir);
+        dir = dirname(dir);
+      }
+    });
+    return plan;
+  }
+
+  function importDialog(plan, onConfirm) {
+    var decisions = {};
+    var content = [
+      el('p', { class: 'muted', text: t('transfer.preview', {
+        docs: plan.docs.length, assets: plan.assets.length, folders: plan.folders.length
+      }) })
+    ];
+    if (plan.docs.some(function (item) { return item.conflict; })) {
+      content.push(el('p', { class: 'muted', text: t('transfer.conflictIntro') }));
+      var list = el('div', { class: 'conflict-list' });
+      plan.docs.filter(function (item) { return item.conflict; }).forEach(function (item) {
+        var overwriteBtn, skipBtn;
+        function choose(value) {
+          decisions[item.to] = value;
+          overwriteBtn.classList.toggle('btn-primary', value === 'overwrite');
+          skipBtn.classList.toggle('btn-primary', value === 'skip');
+        }
+        skipBtn = UI.button({ label: t('transfer.skip'), onClick: function () { choose('skip'); } });
+        overwriteBtn = UI.button({ label: t('transfer.overwrite'), onClick: function () { choose('overwrite'); } });
+        var local = item.local;
+        var localText = DocsStore.serialize({
+          title: local.title, tags: local.tags, body: local.body,
+          updatedAt: local.updatedAt, deviceId: local.deviceId
+        });
+        list.appendChild(el('div', { class: 'conflict-item' }, [
+          el('div', { class: 'conflict-item-head', text: item.to }),
+          el('div', { class: 'conflict-columns' }, [
+            el('div', { class: 'conflict-col' }, [
+              el('div', { class: 'conflict-col-title', text: t('conflict.localVersion') }),
+              el('pre', { class: 'conflict-code', text: localText.slice(0, 1200) })
+            ]),
+            el('div', { class: 'conflict-col' }, [
+              el('div', { class: 'conflict-col-title', text: t('transfer.incomingVersion') }),
+              el('pre', { class: 'conflict-code', text: item.text.slice(0, 1200) })
+            ])
+          ]),
+          el('div', { class: 'conflict-actions' }, [skipBtn, overwriteBtn])
+        ]));
+      });
+      content.push(list);
+      content.push(el('div', { class: 'conflict-actions' }, [
+        UI.button({ label: t('transfer.skipAll'), onClick: function () {
+          plan.docs.forEach(function (item) { if (item.conflict) decisions[item.to] = 'skip'; });
+          Array.prototype.forEach.call(list.querySelectorAll('.conflict-item .btn'), function (btn, i) {
+            btn.classList.toggle('btn-primary', i % 2 === 0);
+          });
+        } }),
+        UI.button({ label: t('transfer.overwriteAll'), onClick: function () {
+          plan.docs.forEach(function (item) { if (item.conflict) decisions[item.to] = 'overwrite'; });
+          Array.prototype.forEach.call(list.querySelectorAll('.conflict-item .btn'), function (btn, i) {
+            btn.classList.toggle('btn-primary', i % 2 === 1);
+          });
+        } })
+      ]));
+    }
+    var dialog = UI.modal({
+      title: t('transfer.title'),
+      wide: true,
+      content: content,
+      actions: [
+        UI.button({ label: t('common.cancel'), onClick: function () { dialog.close(); } }),
+        UI.button({ label: t('common.confirm'), variant: 'primary', onClick: function () {
+          dialog.close();
+          onConfirm(decisions);
+        } })
+      ]
+    });
+  }
+
+  function applyImport(plan, decisions) {
+    var waiting = UI.busy(t('transfer.importing'));
+    var writes = Promise.resolve();
+    plan.assets.forEach(function (asset) {
+      writes = writes.then(function () {
+        if (!storage) return;
+        return storage.init().then(function () {
+          return storage.put('assets', asset.to, {
+            path: asset.to, bytes: asset.bytes,
+            dataUrl: '', mime: mimeForPath(asset.to)
+          });
+        });
+      });
+    });
+    return writes.then(function () {
+      var skipped = 0;
+      plan.docs.forEach(function (item) {
+        if (item.conflict && decisions[item.to] !== 'overwrite') { skipped++; return; }
+        var meta = DocsStore.parse(item.text);
+        var oldDir = dirname(item.from);
+        var newDir = dirname(item.to);
+        var body = rewriteLinks(meta.body, oldDir, newDir, function (path) {
+          return mapImportPath(path, plan.sourceRoot, plan.target);
+        });
+        var doc = store.upsert(item.to, {
+          title: meta.title, tags: meta.tags, body: body
+        });
+        if (meta.updatedAt) doc.updatedAt = meta.updatedAt;
+      });
+      var folders = state.folders.slice();
+      plan.folders.forEach(function (folder) {
+        if (folders.indexOf(folder) < 0) folders.push(folder);
+      });
+      state.folders = folders;
+      writeJSON(KEY_FOLDERS, folders);
+      ctx.folders = folders;
+      refreshExplorer();
+      renderTabs();
+      updateStatus();
+      scheduleAutoSync();
+      toast(t('toast.imported', {
+        docs: plan.docs.length - skipped, assets: plan.assets.length, skipped: skipped
+      }), 'ok');
+    }).catch(function (err) {
+      toast(t('transfer.invalidZip', { msg: err && err.message || String(err) }), 'error');
+    }).then(function () { waiting.close(); });
+  }
+
+  function pickZip(callback) {
+    var picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = '.zip,application/zip';
+    picker.style.display = 'none';
+    document.body.appendChild(picker);
+    picker.addEventListener('change', function () {
+      var file = picker.files && picker.files[0];
+      picker.remove();
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () { callback(new Uint8Array(reader.result)); };
+      reader.onerror = function () { toast(t('transfer.invalidZip', { msg: 'FileReader' }), 'error'); };
+      reader.readAsArrayBuffer(file);
+    });
+    picker.click();
+  }
+
+  function importArchive(folder) {
+    folder = cleanPath(folder || '');
+    pickZip(function (bytes) {
+      parseArchive(bytes).then(function (parsed) {
+        if (parsed.manifest) parsed.sourceRoot = cleanPath(parsed.manifest.root || '');
+        else parsed.sourceRoot = '';
+        var plan = buildImportPlan(parsed, folder);
+        if (!plan.docs.length && !plan.assets.length) {
+          toast(t('transfer.empty'), 'warn');
+          return;
+        }
+        importDialog(plan, function (decisions) { return applyImport(plan, decisions); });
+      }).catch(function (err) {
+        var msg = err && err.message || String(err);
+        var key = /DEFLATE unsupported|Unsupported ZIP compression/i.test(msg) ? 'transfer.noDeflate' : 'transfer.invalidZip';
+        toast(t(key, { msg: msg }), 'error');
+      });
+    });
   }
 
   // ---------- 文档操作 ----------
@@ -450,7 +866,7 @@
     var parts = String(path).split('/');
     var prefix = '';
     parts.forEach(function (part) {
-      prefix = prefix ? prefix + '/' : part;
+      prefix = prefix ? prefix + '/' + part : part;
       if (prefix && state.folders.indexOf(prefix) < 0) state.folders.push(prefix);
     });
     writeJSON(KEY_FOLDERS, state.folders);
@@ -868,6 +1284,8 @@
       var commands = [
         { iconName: 'filePlus', label: t('command.newDoc'), run: function () { createDoc(''); } },
         { iconName: 'sync', label: t('command.sync'), run: function () { syncNow(); } },
+        { iconName: 'download', label: t('explorer.exportAll'), run: function () { exportArchive(''); } },
+        { iconName: 'upload', label: t('explorer.importAll'), run: function () { importArchive(''); } },
         { iconName: 'settings', label: t('command.settings'), run: function () { settingsPanel.open(); } },
         { iconName: 'moon', label: t('command.toggleTheme'), run: function () { setSetting('theme', state.settings.theme === 'dark' ? 'light' : 'dark'); } }
       ];
@@ -1183,6 +1601,18 @@
     dom.rateStatus = document.getElementById('rateStatus');
     dom.logPanel = document.getElementById('logPanel');
 
+    // 应用元数据、语言与 API 缓存都改为 IndexedDB 异步读取，加载完再装配界面
+    loadState().then(function () {
+      return Promise.all([I18n.ready, global.GitHubDocs.ready]);
+    }).then(function () {
+      startUI();
+    }).catch(function (err) {
+      if (global.console) console.error('[docs-kb] init failed:', err);
+      startUI();
+    });
+  }
+
+  function startUI() {
     I18n.setLocale(state.settings.locale || 'zh-CN');
     applySettings();
 
@@ -1193,7 +1623,10 @@
       setLocale: setLocale,
       binding: state.binding, setBinding: setBinding, refreshClient: refreshClient,
       listRepos: listRepos, listBranches: listBranches,
-      getAssetDataUrl: getAssetDataUrl,
+      getAssetDataUrl: getAssetDataUrl, saveAsset: saveAsset, storage: storage,
+      exportFolder: exportArchive, importFolder: importArchive,
+      exportAll: function () { exportArchive(''); },
+      importAll: function () { importArchive(''); },
       offline: function () { return state.offline; },
       store: null, client: null, folders: state.folders,
       activeDoc: activeDoc, activePath: activePath, isDirty: isDirty,
@@ -1240,15 +1673,18 @@
     applySettings();
     updateHeader();
 
-    var docs = store.list();
-    if (docs.length) openDoc(docs[0].path); else editor.clear();
-    refreshExplorer();
-    renderTabs();
-    updateStatus();
-    log(t('log.init', { count: docs.length }));
-
-    // 打开页面先拉取一次：只拉取不上传；发现冲突立即停止并交用户决定
-    setTimeout(function () { pullFromRemote({ push: false, silent: true }); }, 0);
+    store.ready.then(function () {
+      var docs = store.list();
+      if (docs.length) openDoc(docs[0].path); else editor.clear();
+      refreshExplorer();
+      renderTabs();
+      updateStatus();
+      log(t('log.init', { count: docs.length }));
+      // 打开页面先拉取一次：只拉取不上传；发现冲突立即停止并交用户决定
+      setTimeout(function () { pullFromRemote({ push: false, silent: true }); }, 0);
+    }).catch(function (err) {
+      if (global.console) console.error('[docs-kb] store ready failed:', err);
+    });
 
     I18n.onChange(function () {
       refreshExplorer();

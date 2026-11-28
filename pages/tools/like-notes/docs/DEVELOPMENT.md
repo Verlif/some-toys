@@ -8,7 +8,8 @@
 
 - 经典 `<script>` 脚本（非 ES Module），挂载全局对象，保证 `file://` 直接打开可用。
 - 原生 DOM API + CSS 变量，无第三方 UI 框架。
-- 数据主要落在 `localStorage`，GitHub 作为远端存储与版本历史。
+- 数据落在 `IndexedDB`（`docs-kb`，六个仓库），首次启动自动迁移旧 `localStorage` 数据；GitHub 作为远端存储与版本历史。
+- ZIP 导出/导入使用原生 `CompressionStream` / `DecompressionStream`，不支持时回退 STORE，保持零依赖。
 
 > 全局协作规则（来自 `~/.dsh/AGENTS.md`）：**改动文件/配置、执行命令、创建或删除内容前，先给出简短计划并停止等待用户明确批准；每完成一项用自然语言汇报；提问引用编号前先在正文列全清单。** 后续维护同样适用。
 
@@ -34,7 +35,7 @@ python -m http.server 8000
 3. 输入 token 后会自动加载仓库列表；选择仓库后加载分支列表。
 4. 设置根目录（默认 `docs`），点击绑定。
 
-PAT 只在勾选“记住令牌”时持久化到 `docs-kb:binding`；否则只保留在当前会话内存中。
+PAT 只在勾选“记住令牌”时持久化到 IndexedDB `kv` 的 `binding`；否则只保留在当前会话内存中。
 
 需要的 PAT 权限：
 
@@ -55,6 +56,8 @@ PAT 只在勾选“记住令牌”时持久化到 `docs-kb:binding`；否则只�
 │   └── markdown.css        # .markdown-body 排版
 └── js/
     ├── config-sync.js      # 旧版配置同步 demo，仅保留 binding 迁移兼容
+    ├── idb.js              # IndexedDB 持久化层 + 旧 localStorage 迁移 + 降级
+    ├── zip.js              # ZIP 打包/解包（原生压缩流 + STORE 兜底）
     ├── github-docs.js      # GitHub REST 客户端：缓存/限流/文件 CRUD/二进制
     ├── docs-store.js       # 本地文档缓存、frontmatter、pending、冲突状态
     ├── markdown.js         # 安全 Markdown 子集渲染 + 大纲
@@ -74,6 +77,8 @@ PAT 只在勾选“记住令牌”时持久化到 `docs-kb:binding`；否则只�
 
 ```text
 config-sync.js
+idb.js                  # 最先：暴露 App.Storage，github-docs/i18n/app 都依赖它
+zip.js                  # 暴露 App.Zip
 github-docs.js
 docs-store.js
 markdown.js
@@ -93,7 +98,9 @@ CSS 入口为 `css/style.css`，按 `tokens → components → layout → markdo
 | 全局名 | 来源 | 说明 |
 | --- | --- | --- |
 | `App.UI` | `js/ui.js` | `el/icon/button/input/select/field/badge/empty/segmented/menu/modal/confirm/prompt/toast/dropdown/busy` |
-| `App.I18n` | `js/i18n.js` | `t/apply/setLocale/locale/locales/onChange` |
+| `App.Storage` | `js/idb.js` | `init/backend/kvGet/kvPut/get/getAll/put/putMany/del/clear/migrateLegacy` |
+| `App.Zip` | `js/zip.js` | `create/read/decodeText/deflateSupported/inflateSupported` |
+| `App.I18n` | `js/i18n.js` | `t/apply/setLocale/locale/locales/onChange/ready` |
 | `App.Features.Settings` | `js/features/settings.js` | `{ create(ctx) }` |
 | `App.Features.Explorer` | `js/features/explorer.js` | `{ create(ctx, mount) }` |
 | `App.Features.Editor` | `js/features/editor.js` | `{ create(ctx, mounts) }` |
@@ -103,23 +110,29 @@ CSS 入口为 `css/style.css`，按 `tokens → components → layout → markdo
 | `Markdown` | `js/markdown.js` | `{ render, escapeHtml, safeUrl, inline }` |
 | `ConfigSync` | `js/config-sync.js` | 旧版单文件同步核心，当前仅用于兼容读取旧 binding |
 
-## 6. localStorage 键
+## 6. IndexedDB 仓库与旧数据迁移
 
-| 键 | 写入方 | 内容 |
+数据库 `docs-kb` v1（`js/idb.js`）：
+
+| 仓库 / kv 键 | 写入方 | 内容 |
 | --- | --- | --- |
-| `docs-kb:settings` | `app.js` | 主题、语言、字号、tabSize、自动保存、工具栏/大纲显隐、`maxFetch`、`maxRetries` |
-| `docs-kb:binding` | `app.js` | `{ token, owner, repo, branch, rootDir, remember }`；`remember=false` 时落盘 token 为空 |
-| `docs-kb:folders` | `app.js` | 本地文件夹路径数组，用于空目录占位 |
-| `docs-kb:lastSync` | `app.js` | 上次成功同步的时间戳（毫秒） |
-| `docs-kb:docs` | `DocsStore` | `{ [path]: DocumentRecord }` 全量本地文档 |
-| `docs-kb:pending` | `DocsStore` | `{ [path]: { op, updatedAt, deviceId } }` 待同步队列 |
-| `docs-kb:tree` | `DocsStore` | `{ map, fetchedAt }` 最近一次 Git Tree 快照 |
-| `docs-kb:device` | `DocsStore` | 当前浏览器设备 ID，冲突决胜用 |
-| `docs-kb:api-cache` | `GitHubDocs` | GitHub GET 响应缓存（data / etag / fetchedAt） |
-| `docs-kb:locale` | `I18n` | 当前语言代码：`zh-CN` / `en` / `ja` |
-| `config-sync:github-binding` | 旧版 demo | `app.js` 只读取一次做迁移，不再写入 |
+| `kv:settings` | `app.js` | 主题、语言、字号、tabSize、自动保存、工具栏/大纲显隐、`maxFetch`、`maxRetries` |
+| `kv:binding` | `app.js` | `{ token, owner, repo, branch, rootDir, remember }`；`remember=false` 时落盘 token 为空 |
+| `folders` | `app.js` | 文件夹占位记录 `{ path }` |
+| `kv:lastSync` | `app.js` | 上次成功同步的时间戳（毫秒） |
+| `kv:pinnedTabs` | `app.js` | 置顶标签路径数组 |
+| `docs` | `DocsStore` | 每条 `{ path, ...DocumentRecord }`，全量本地文档 |
+| `pending` | `DocsStore` | 每条 `{ path, op, updatedAt, deviceId }` 待同步队列 |
+| `kv:tree` | `DocsStore` | `{ map, fetchedAt }` 最近一次 Git Tree 快照 |
+| `kv:device` | `DocsStore` | 当前浏览器设备 ID，冲突决胜用 |
+| `apiCache` | `GitHubDocs` | GitHub GET 响应缓存（key / data / etag / fetchedAt） |
+| `kv:locale` | `I18n` | 当前语言代码：`zh-CN` / `en` / `ja` |
+| `assets` | `Images` / `app.js` | 图片 `{ path, dataUrl }` 或 `{ path, bytes, mime }` |
+| `kv:migrationDone` | `App.Storage` | 一次性迁移标记 |
 
-调试时可在 DevTools → Application → Local Storage 中清空以上键恢复初始状态。
+首次打开会迁移旧键 `docs-kb:docs` / `:pending` / `:folders` / `:tree` / `:settings` / `:binding` / `:lastSync` / `:pinnedTabs` / `:device` / `:locale` / `:api-cache` 与旧 demo 的 `config-sync:github-binding`，成功后删除旧键。若 IDB 不可用，降级为 localStorage 前缀 `docs-kb:idb:`。
+
+调试时可在 DevTools → Application → IndexedDB → `docs-kb` 中清空数据库恢复初始状态；如仍看到旧键，说明迁移未完成。
 
 ## 7. 验证方式
 
@@ -154,7 +167,11 @@ node --check js/*.js js/features/*.js
 - 设置 → GitHub：无 token 时控件禁用、下拉框为规范空态；输入 token 后显示全屏蒙层加载。
 - 设置 → 同步：重试次数 0–5 可改，修改后立即影响新建的客户端。
 - 编辑器右上角三种视图切换正常；预览分栏标题显示。
-- 粘贴/拖放图片：离线插入 dataURL；已绑定上传至 `docs/assets/` 并插入相对链接。
+- 粘贴/拖放图片：离线插入 dataURL；已绑定上传至 `docs/assets/` 并插入相对链接；两种情况下图片都写入 IndexedDB `assets`，断网刷新后预览仍可显示。
+- 首次从旧版本升级：旧 `docs-kb:*` localStorage 键被迁入 IndexedDB 后删除，文档与设置不丢失。
+- 文件夹右键 → 导出文件夹：得到 ZIP，含 `.md`、引用的 `assets/*` 与 `manifest.json`；用系统解压工具可打开。
+- 文件夹右键 → 从 ZIP 导入到此处：文档落到目标文件夹，图片相对链接随目录深度重写；同名文档弹出覆盖/跳过选择，选择跳过不改动本地内容。
+- 侧栏下载/上传按钮或命令面板：`导出全部` / `导入到根目录` 正常，三语文案齐全。
 
 ## 8. 调试入口
 

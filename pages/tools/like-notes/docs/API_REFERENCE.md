@@ -15,13 +15,12 @@ new GitHubDocs({
   repo: '',           // 仓库名
   branch: 'main',
   rootDir: 'docs',    // 会去掉首尾斜杠
-  storage: localStorage,
   onLog: function (msg) {},
   maxRetries: 2       // 0–5，默认 2
 })
 ```
 
-没有 `token/owner/repo` 时，客户端仍可构造，但绝大多数方法会返回空结果，不会发起请求。
+没有 `token/owner/repo` 时，客户端仍可构造，但绝大多数方法会返回空结果，不会发起请求。API 缓存统一从 IndexedDB `apiCache` 加载，可通过 `GitHubDocs.ready`（Promise）等待缓存就绪。
 
 ### 1.2 公开方法
 
@@ -79,10 +78,12 @@ new GitHubDocs({
 
 ```js
 new DocsStore({
-  storage: localStorage,
-  onChange: function () {}   // 每次 _save() 后调用
+  onChange: function () {}   // 每次异步落盘后调用
 })
+// 构造后等待 store.ready（Promise<DocsStore>）再读内存快照
 ```
+
+文档与 pending 走 IndexedDB 对应仓库，写操作在内存中立即生效并由 `_enqueue` 串行落盘。
 
 ### 2.2 实例方法
 
@@ -102,7 +103,8 @@ new DocsStore({
 | `markConflict(path, message?)` | `void` | 仅打标记 |
 | `markConflictWithRemote(path, remote, message?)` | `void` | 保存远端快照 + 消息，保留 pending |
 | `markSynced(path, sha?, etag?)` | `void` | 清 pending；删除操作会删记录 |
-| `setTree(map, fetchedAt?)` | `void` | 写 `docs-kb:tree` |
+| `setTree(map, fetchedAt?)` | `void` | 写 IndexedDB `kv:tree` |
+| `ready` | `Promise<DocsStore>` | 构造后数据加载完成的 Promise，控制器会等待它再打开文档 |
 | `treeIsFresh(ttl)` | `boolean` | 判断 Tree 快照是否过期 |
 
 ### 2.3 静态方法
@@ -272,4 +274,32 @@ App.Features.Images.create(ctx)
 { version, updatedAt, deviceId, data: string }
 ```
 
-LWW 规则与 `DocsStore` 相同。当前知识库只用它兼容读取旧绑定，新功能不要依赖它；如果以后要移除，需要保留 `app.js:loadBinding()` 中的迁移逻辑或明确放弃兼容。
+LWW 规则与 `DocsStore` 相同。当前知识库只用它兼容读取旧绑定：迁移逻辑在 `App.Storage.migrateLegacy()`（`js/idb.js`），新功能不要依赖它；如果以后要移除，需要保留该迁移逻辑或明确放弃兼容。
+
+## 8. App.Storage（IndexedDB 持久化）
+
+文件：`js/idb.js`，全局 `App.Storage`。数据库 `docs-kb` v1，仓库：`docs` / `pending` / `folders` / `kv` / `apiCache` / `assets`。
+
+| 方法 | 返回 | 说明 |
+| --- | --- | --- |
+| `init()` | `Promise<boolean>` | 打开数据库、首次迁移旧 localStorage；可重复调用，返回同一 Promise |
+| `backend()` | `'indexeddb' \| 'localstorage'` | 当前后端（IDB 不可用时降级） |
+| `kvGet(key)` | `Promise<any>` | 读 `kv` 并自动拆包标量 |
+| `kvPut(key, value)` | `Promise<void>` | 写 `kv`，标量自动包装为 `{ key, value }` |
+| `get(store, key)` / `getAll(store)` | `Promise<record \| null>` / `Promise<record[]>` | 读单条 / 全表 |
+| `put(store, key, value)` / `putMany(store, entries)` | `Promise<void>` | 写入，自动补 keyPath 字段 |
+| `del(store, key)` / `clear(store)` | `Promise<void>` | 删除单条 / 清空仓库 |
+| `migrateLegacy()` | `Promise<number>` | 一次性迁移旧键，返回迁移条目数 |
+
+## 9. App.Zip（ZIP 编解码）
+
+文件：`js/zip.js`，全局 `App.Zip`。
+
+```js
+App.Zip.create([{ name: 'a.md', data: 'hello' }])  // -> Promise<Uint8Array>
+App.Zip.read(bytes)                                // -> Promise<[{ name, data: Uint8Array, method }]>
+App.Zip.decodeText(bytes)                          // -> string（UTF-8）
+App.Zip.deflateSupported() / inflateSupported()   // -> boolean
+```
+
+压缩优先 `deflate-raw`（method 8），不支持时写 STORE（method 0）；解压支持 method 0/8，其他方式抛 `Unsupported ZIP compression`。`data` 支持字符串、`Uint8Array` / `ArrayBuffer`、以及带 `bytes`/`dataUrl` 的对象。

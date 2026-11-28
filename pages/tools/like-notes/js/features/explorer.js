@@ -20,8 +20,10 @@
       el('div', { class: 'sidebar-heading' }, [
         heading,
         el('div', { class: 'sidebar-tools' }, [
-          withI18n(UI.iconButton('filePlus', { small: true, title: ctx.t('explorer.newDoc'), onClick: function () { ctx.createDoc(currentFolder()); } }), 'explorer.newDoc'),
-          withI18n(UI.iconButton('folderPlus', { small: true, title: ctx.t('explorer.newFolder'), onClick: function () { ctx.createFolder(currentFolder()); } }), 'explorer.newFolder'),
+          withI18n(UI.iconButton('filePlus', { small: true, title: ctx.t('explorer.newDoc'), onClick: function () { ctx.createDoc(''); } }), 'explorer.newDoc'),
+          withI18n(UI.iconButton('folderPlus', { small: true, title: ctx.t('explorer.newFolder'), onClick: function () { ctx.createFolder(''); } }), 'explorer.newFolder'),
+          withI18n(UI.iconButton('download', { small: true, title: ctx.t('explorer.exportAll'), onClick: function () { ctx.exportAll(); } }), 'explorer.exportAll'),
+          withI18n(UI.iconButton('upload', { small: true, title: ctx.t('explorer.importAll'), onClick: function () { ctx.importAll(); } }), 'explorer.importAll'),
           withI18n(UI.iconButton('refresh', { small: true, title: ctx.t('header.sync'), onClick: function () { ctx.syncNow(); } }), 'header.sync')
         ])
       ]),
@@ -37,16 +39,6 @@
     function withI18n(node, key) {
       node.setAttribute('data-i18n-title', key);
       return node;
-    }
-
-    function currentFolder() {
-      var doc = ctx.activeDoc && ctx.activeDoc();
-      return doc ? dirname(doc.path) : '';
-    }
-
-    function dirname(path) {
-      var i = String(path).lastIndexOf('/');
-      return i < 0 ? '' : path.slice(0, i);
     }
 
     function basename(path) {
@@ -181,6 +173,9 @@
         { label: ctx.t('explorer.newDoc'), iconName: 'filePlus', i18n: 'explorer.newDoc', onSelect: function () { ctx.createDoc(node.path); } },
         { label: ctx.t('explorer.newFolder'), iconName: 'folderPlus', i18n: 'explorer.newFolder', onSelect: function () { ctx.createFolder(node.path); } },
         { label: ctx.t('explorer.renameFolder'), iconName: 'edit', i18n: 'explorer.renameFolder', onSelect: function () { ctx.renameFolder(node.path); } },
+        { separator: true },
+        { label: ctx.t('explorer.exportFolder'), iconName: 'download', i18n: 'explorer.exportFolder', onSelect: function () { ctx.exportFolder(node.path); } },
+        { label: ctx.t('explorer.importFolder'), iconName: 'upload', i18n: 'explorer.importFolder', onSelect: function () { ctx.importFolder(node.path); } },
         { separator: true },
         { label: ctx.t('explorer.deleteFolder'), iconName: 'trash', danger: true, i18n: 'explorer.deleteFolder', onSelect: function () { ctx.deleteFolder(node.path); } }
       ], e.clientX, e.clientY);

@@ -21,6 +21,8 @@
     if (/^(https?:\/\/|mailto:|#|\.\/|\.\.\/|\/)/i.test(value)) return escapeHtml(value);
     // 离线插入的图片使用 data URL，仅放行常见图片类型，避免脚本注入
     if (/^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(value)) return escapeHtml(value);
+    // 仓库相对路径（如 assets/foo.png），禁止任何带协议的 URL
+    if (value && !/^[a-z][a-z0-9+.-]*:/i.test(value)) return escapeHtml(value);
     return '#';
   }
 

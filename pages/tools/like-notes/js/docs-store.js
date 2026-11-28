@@ -1,17 +1,14 @@
 /**
- * DocsStore - 文档知识库的本地数据层
+ * DocsStore - 文档知识库的本地数据层（IndexedDB）
  *
  * 每篇文档在仓库里是一个 Markdown 文件，头部 frontmatter 保存标题、标签、时间戳和设备号。
- * 本地保留全量缓存与待同步队列；冲突按 LWW（updatedAt，deviceId 决胜）处理。
- * 离线时的编辑先落到 localStorage，联网后由 app.js 的同步流程统一推送。
+ * 本地全量缓存、待同步队列与 Tree 快照落在 IndexedDB；冲突按 LWW
+ * （updatedAt，deviceId 决胜）处理。所有写操作在内存中立即生效，后台串行落盘。
  */
 (function (global) {
   'use strict';
 
-  var KEY_DOCS = 'docs-kb:docs';
-  var KEY_PENDING = 'docs-kb:pending';
-  var KEY_TREE = 'docs-kb:tree';
-  var KEY_DEVICE = 'docs-kb:device';
+  var Storage = global.App && global.App.Storage;
 
   function now() {
     return Date.now();
@@ -62,30 +59,78 @@
 
   function DocsStore(options) {
     options = options || {};
-    this.storage = options.storage || localStorage;
     this.onChange = options.onChange || function () {};
-    this.deviceId = this._read(KEY_DEVICE, '') || randomId();
-    this.storage.setItem(KEY_DEVICE, this.deviceId);
-    this.docs = this._read(KEY_DOCS, {}) || {};
-    this.pending = this._read(KEY_PENDING, {}) || {};
-    var tree = this._read(KEY_TREE, null);
-    this.tree = tree && typeof tree === 'object' && tree.map ? tree : { map: {}, fetchedAt: 0 };
+    this.docs = {};
+    this.pending = {};
+    this.tree = { map: {}, fetchedAt: 0 };
+    this.deviceId = randomId();
+    this._writes = Promise.resolve();
+
+    var self = this;
+    this.ready = (Storage ? Storage.init() : Promise.resolve()).then(function () {
+      return Promise.all([
+        Storage ? Storage.getAll('docs') : Promise.resolve([]),
+        Storage ? Storage.getAll('pending') : Promise.resolve([]),
+        Storage ? Storage.kvGet('tree') : Promise.resolve(null),
+        Storage ? Storage.kvGet('device') : Promise.resolve(null)
+      ]);
+    }).then(function (results) {
+      var docs = results[0] || [], pending = results[1] || [];
+      var tree = results[2], device = results[3];
+      docs.forEach(function (doc) {
+        if (doc && doc.path) self.docs[doc.path] = doc;
+      });
+      pending.forEach(function (item) {
+        if (item && item.path) self.pending[item.path] = item;
+      });
+      if (tree && typeof tree === 'object' && tree.map) self.tree = tree;
+      if (device) self.deviceId = device;
+      else if (Storage) self._enqueue(Storage.kvPut('device', self.deviceId));
+      return self;
+    });
   }
 
-  DocsStore.prototype._read = function (key, fallback) {
-    try {
-      var raw = this.storage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (e) {
-      return fallback;
-    }
+  /** 串行落盘，避免快速编辑时写操作乱序 */
+  DocsStore.prototype._enqueue = function (task) {
+    var self = this;
+    this._writes = this._writes.then(task).catch(function (err) {
+      if (global.console) console.warn('[DocsStore] 写入失败:', err && err.message);
+    });
+    return this._writes;
   };
 
-  DocsStore.prototype._save = function () {
-    this.storage.setItem(KEY_DOCS, JSON.stringify(this.docs));
-    this.storage.setItem(KEY_PENDING, JSON.stringify(this.pending));
-    this.storage.setItem(KEY_TREE, JSON.stringify(this.tree));
-    this.onChange();
+  DocsStore.prototype._putDocs = function (paths) {
+    if (!Storage || !paths.length) return;
+    var self = this;
+    this._enqueue(function () {
+      return Storage.putMany('docs', paths.filter(function (path) {
+        return !!self.docs[path];
+      }).map(function (path) { return { key: path, value: self.docs[path] }; }));
+    });
+  };
+
+  DocsStore.prototype._putPending = function (paths) {
+    if (!Storage || !paths.length) return;
+    var self = this;
+    this._enqueue(function () {
+      return Storage.putMany('pending', paths.filter(function (path) {
+        return !!self.pending[path];
+      }).map(function (path) { return { key: path, value: self.pending[path] }; }));
+    });
+  };
+
+  DocsStore.prototype._delDocs = function (paths) {
+    if (!Storage || !paths.length) return;
+    this._enqueue(function () {
+      return Promise.all(paths.map(function (path) { return Storage.del('docs', path); }));
+    });
+  };
+
+  DocsStore.prototype._delPending = function (paths) {
+    if (!Storage || !paths.length) return;
+    this._enqueue(function () {
+      return Promise.all(paths.map(function (path) { return Storage.del('pending', path); }));
+    });
   };
 
   /** 可见文档列表（排除已删除），按更新时间倒序 */
@@ -140,9 +185,11 @@
     doc.remote = null;
     this.docs[path] = doc;
     this.pending[path] = {
-      op: 'upsert', updatedAt: doc.updatedAt, deviceId: doc.deviceId
+      path: path, op: 'upsert', updatedAt: doc.updatedAt, deviceId: doc.deviceId
     };
-    this._save();
+    this._putDocs([path]);
+    this._putPending([path]);
+    this.onChange();
     return doc;
   };
 
@@ -156,6 +203,8 @@
     if (!doc.sha && this.pending[path] && this.pending[path].op === 'upsert') {
       delete this.docs[path];
       delete this.pending[path];
+      this._delDocs([path]);
+      this._delPending([path]);
     } else {
       doc.deleted = true;
       doc.updatedAt = now();
@@ -163,10 +212,12 @@
       doc.conflict = false;
       doc.remote = null;
       this.pending[path] = {
-        op: 'delete', updatedAt: doc.updatedAt, deviceId: doc.deviceId
+        path: path, op: 'delete', updatedAt: doc.updatedAt, deviceId: doc.deviceId
       };
+      this._putDocs([path]);
+      this._putPending([path]);
     }
-    this._save();
+    this.onChange();
   };
 
   DocsStore.prototype.rename = function (oldPath, newPath, title) {
@@ -200,7 +251,8 @@
         path: path, sha: null, etag: null, syncedAt: 0,
         conflict: false, remote: null, deleted: false
       }, remote);
-      this._save();
+      this._putDocs([path]);
+      this.onChange();
       return 'added';
     }
 
@@ -211,7 +263,8 @@
       local.remote = clone(remote);
       local.sha = remote.sha || local.sha;
       local.etag = remote.etag || local.etag;
-      this._save();
+      this._putDocs([path]);
+      this.onChange();
       return 'conflict';
     }
 
@@ -226,7 +279,8 @@
     local.deleted = false;
     local.conflict = false;
     local.remote = null;
-    this._save();
+    this._putDocs([path]);
+    this.onChange();
     return 'updated';
   };
 
@@ -238,14 +292,17 @@
     if (pending && pending.op === 'upsert') {
       doc.conflict = true;
       doc.remote = { deleted: true, updatedAt: 0, deviceId: '' };
-      this._save();
+      this._putDocs([path]);
+      this.onChange();
       return 'conflict';
     }
     doc.deleted = true;
     doc.conflict = false;
     doc.remote = null;
     delete this.pending[path];
-    this._save();
+    this._putDocs([path]);
+    this._delPending([path]);
+    this.onChange();
     return 'deleted';
   };
 
@@ -257,6 +314,8 @@
     if (remote.deleted) {
       delete this.docs[path];
       delete this.pending[path];
+      this._delDocs([path]);
+      this._delPending([path]);
     } else {
       doc.title = remote.title || doc.title;
       doc.tags = (remote.tags || []).slice();
@@ -269,8 +328,10 @@
       doc.conflict = false;
       doc.remote = null;
       delete this.pending[path];
+      this._putDocs([path]);
+      this._delPending([path]);
     }
-    this._save();
+    this.onChange();
   };
 
   /** 冲突处理：保留本地版本，重新打时间戳以便下次同步覆盖远端 */
@@ -287,11 +348,14 @@
     // 远端文件仍在时用远端 sha 覆盖它；远端已删除则不带 sha，让 PUT 重建文件。
     if (remoteDeleted) doc.sha = null;
     this.pending[path] = {
+      path: path,
       op: wasDeleted ? 'delete' : 'upsert',
       updatedAt: doc.updatedAt,
       deviceId: doc.deviceId
     };
-    this._save();
+    this._putDocs([path]);
+    this._putPending([path]);
+    this.onChange();
   };
 
   /** 上传冲突时打标记，保留用户正在编辑的内容 */
@@ -300,7 +364,8 @@
     if (!doc) return;
     doc.conflict = true;
     if (!doc.remote) doc.remote = { message: message || '', updatedAt: 0, deviceId: '' };
-    this._save();
+    this._putDocs([path]);
+    this.onChange();
   };
 
   /** 上传冲突后拉回远端最新版本，让用户可以二选一 */
@@ -313,29 +378,34 @@
     doc.sha = remote.sha || doc.sha;
     doc.etag = remote.etag || doc.etag;
     // 保留本地排队状态，用户选择“保留本地”后即可用远端 sha 覆盖推送
-    this._save();
+    this._putDocs([path]);
+    this.onChange();
   };
 
   /** 推送成功后清除待同步标记 */
   DocsStore.prototype.markSynced = function (path, sha, etag) {
     var doc = this.docs[path];
     delete this.pending[path];
+    this._delPending([path]);
     if (!doc) return;
     if (doc.deleted) {
       delete this.docs[path];
+      this._delDocs([path]);
     } else {
       if (sha) doc.sha = sha;
       if (etag) doc.etag = etag;
       doc.syncedAt = now();
       doc.conflict = false;
       doc.remote = null;
+      this._putDocs([path]);
     }
-    this._save();
+    this.onChange();
   };
 
   DocsStore.prototype.setTree = function (map, fetchedAt) {
-    this.tree = { map: map || {}, fetchedAt: fetchedAt || now() };
-    this.storage.setItem(KEY_TREE, JSON.stringify(this.tree));
+    var tree = { map: map || {}, fetchedAt: fetchedAt || now() };
+    this.tree = tree;
+    if (Storage) this._enqueue(function () { return Storage.kvPut('tree', tree); });
   };
 
   DocsStore.prototype.treeIsFresh = function (ttl) {

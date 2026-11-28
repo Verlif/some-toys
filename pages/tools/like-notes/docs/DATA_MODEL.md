@@ -1,5 +1,20 @@
 # 数据模型
 
+## 0. 本地持久化总览（IndexedDB）
+
+数据库 `docs-kb`，版本 1，六个对象仓库：
+
+| 仓库 | keyPath | 内容 |
+| --- | --- | --- |
+| `docs` | `path` | 文档记录（见 §3），含正文与冲突快照 |
+| `pending` | `path` | 待同步队列（见 §4） |
+| `folders` | `path` | 文件夹占位记录 `{ path }` |
+| `kv` | `key` | `settings` / `binding` / `folders` / `lastSync` / `tree` / `device` / `locale` / `pinnedTabs` 及迁移标记 |
+| `apiCache` | `key` | GitHub GET 响应缓存（见 §10） |
+| `assets` | `path` | 图片二进制或 dataURL，`{ path, dataUrl?, bytes?, mime? }` |
+
+`App.Storage.init()` 负责打开数据库；首次启动会把旧版 `docs-kb:*` localStorage 键一次性迁入并清除。若浏览器禁用 IndexedDB，降级为 localStorage 的异步兼容层（前缀 `docs-kb:idb:`），业务代码无感知。
+
 ## 1. 仓库路径约定
 
 远端根目录由绑定中的 `rootDir` 决定，默认 `docs`。应用内所有路径都是**相对 rootDir** 的 POSIX 风格路径。
@@ -41,7 +56,7 @@ deviceId: dev-a1b2c3d4
 | `title` | string | 编辑器标题输入 | 换行会被替换为空格；缺省为“未命名文档” |
 | `tags` | string[] | 编辑器标签输入 | 序列化为 `[a, b]`；`[`、`]`、`,` 会被替换为空格 |
 | `updatedAt` | number | `Date.now()` | LWW 主比较键 |
-| `deviceId` | string | `docs-kb:device` | LWW 决胜键；格式 `dev-<随机>` |
+| `deviceId` | string | IndexedDB `kv` 的 `device` | LWW 决胜键；格式 `dev-<随机>` |
 
 解析与序列化入口：
 
@@ -54,7 +69,7 @@ DocsStore.serialize(meta)        // meta 需含 title/tags/updatedAt/deviceId/bo
 
 ## 3. 本地文档记录（DocumentRecord）
 
-`docs-kb:docs` 是一个以路径为 key 的对象：
+持久化在 IndexedDB `docs` 仓库（keyPath = `path`）；内存中 `DocsStore.docs` 是以路径为 key 的对象：
 
 ```js
 {
@@ -84,11 +99,12 @@ DocsStore.serialize(meta)        // meta 需含 title/tags/updatedAt/deviceId/bo
 
 ## 4. 待同步队列（pending）
 
-`docs-kb:pending`：
+持久化在 IndexedDB `pending` 仓库（keyPath = `path`）；内存中 `DocsStore.pending` 是：
 
 ```js
 {
   "docs/guide/readme.md": {
+    path: "docs/guide/readme.md",
     op: "upsert",            // 或 "delete"
     updatedAt: 1764230400000,
     deviceId: "dev-a1b2c3d4"
@@ -144,7 +160,7 @@ showConflictDialog（并排展示，整批中止同步）
 
 ## 7. 文件树快照（tree）
 
-`docs-kb:tree`：
+IndexedDB `kv` 仓库中的 `tree`：
 
 ```js
 {
@@ -209,7 +225,7 @@ contents API 返回的相关字段：
 
 ## 10. 缓存与限流数据
 
-`docs-kb:api-cache` 由 `GitHubDocs` 维护，按 `'GET <path>'` 缓存：
+IndexedDB `apiCache` 仓库由 `GitHubDocs` 维护，按 `'GET <path>'` 缓存（keyPath = `key`）：
 
 ```js
 {
@@ -234,7 +250,7 @@ TTL 常量：
 
 ## 11. 设置对象
 
-`docs-kb:settings` 的默认值（`js/app.js:16-20`）：
+IndexedDB `kv` 仓库中 `settings` 的默认值（`js/app.js:16-20`）：
 
 ```js
 {
@@ -254,3 +270,24 @@ TTL 常量：
 - `defaultMode`：`source` / `split` / `preview`，对应编辑器右上角三种视图。
 - `maxFetch`：单次拉取最多下载多少篇变化文档。
 - `maxRetries`：网络错误/限流重试次数，范围 0–5，会传入 `GitHubDocs`。
+
+## 12. ZIP 归档格式
+
+导出 ZIP 使用仓库相对路径，并附 `manifest.json`：
+
+```js
+{
+  version: 1,
+  type: 'docs-kb',
+  root: 'guide',                       // 导出时的根文件夹，空串表示整库
+  exportedAt: 1764230400000,
+  docs: ['guide/readme.md', ...],      // 相对 rootDir 的文档路径
+  folders: ['guide/sub', ...],
+  assets: ['assets/x.png', ...]        // 文档正文引用的图片
+}
+```
+
+- 文档内容就是 `DocsStore.serialize()` 的输出（含 frontmatter）。
+- 压缩方式优先 `deflate-raw`（method 8），不支持时用 STORE（method 0）；解压支持两者，遇到其他方式报错。
+- 导入到目标文件夹时，把 `manifest.root` 前缀替换为目标路径，并按新旧目录深度重写 Markdown 图片相对链接；无 manifest 的纯 `.md` ZIP 也会按相对路径导入。
+- 同名文档先在弹窗中让用户逐项选择“覆盖 / 跳过”，未列出的直接导入。
