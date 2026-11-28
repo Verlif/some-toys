@@ -13,6 +13,8 @@
     // 窄屏只能用源码或预览；分栏偏好保留在设置里，回到宽屏再恢复
     if (mobileQuery && mobileQuery.matches && mode === 'split') mode = 'source';
     var assetCache = {};
+    var activeOutlineId = null;
+    var activeOutlineIndex = -1;
 
     var titleInput = el('input', {
       class: 'doc-title-input', placeholder: ctx.t('editor.titlePlaceholder'),
@@ -147,10 +149,17 @@
       },
       onPaste: function (e) { if (ctx.images) ctx.images.handlePaste(e); },
       onDrop: function (e) { if (ctx.images) ctx.images.handleDrop(e); },
-      onScroll: function () { syncScroll(); lineNumbers.scrollTop = textarea.scrollTop; }
+      onScroll: function () {
+        syncScroll();
+        lineNumbers.scrollTop = textarea.scrollTop;
+        syncOutlineFromSource();
+      }
     });
     textarea.setAttribute('data-i18n-placeholder', 'editor.placeholder');
     var preview = el('div', { class: 'markdown-body' });
+    preview.addEventListener('scroll', syncOutlineFromPreview);
+    textarea.addEventListener('keyup', syncOutlineFromSource);
+    textarea.addEventListener('click', syncOutlineFromSource);
     var panes = el('div', { class: 'panes' }, [
       el('div', { class: 'pane pane-source' }, [
         el('div', { class: 'pane-header' }, [
@@ -272,7 +281,8 @@
       Array.prototype.forEach.call(modeSwitch.querySelectorAll('.seg'), function (node) {
         node.classList.toggle('active', node.dataset.value === value);
       });
-      if (value !== 'source') renderPreview();
+      // 大纲来自正文 Markdown，纯源码模式同样需要生成与刷新
+      renderPreview();
     }
 
     function open(doc) {
@@ -290,6 +300,8 @@
       lineNumbers.scrollTop = 0;
       setConflict(doc);
       updateDirty();
+      activeOutlineId = null;
+      activeOutlineIndex = -1;
       renderPreview();
     }
 
@@ -301,6 +313,8 @@
         toolbar.hidden = true;
       panes.hidden = true;
       conflictBar.hidden = true;
+      activeOutlineId = null;
+      activeOutlineIndex = -1;
       outlineList.innerHTML = '';
       outlineEmpty.hidden = false;
       if (!root.querySelector('.empty')) {
@@ -365,11 +379,16 @@
     }
 
     function renderPreview() {
-      if (!active || mode === 'source') { outlineList.innerHTML = ''; outlineEmpty.hidden = false; return; }
+      if (!active) { outlineList.innerHTML = ''; outlineEmpty.hidden = false; return; }
       var result = Markdown.render(textarea.value);
-      preview.innerHTML = result.html || '<p class="muted">' + ctx.t('editor.placeholder') + '</p>';
-      hydrateImages();
+      // 大纲始终由正文 Markdown 生成；源码模式只跳过预览区域渲染
+      if (mode !== 'source') {
+        preview.innerHTML = result.html || '<p class="muted">' + ctx.t('editor.placeholder') + '</p>';
+        hydrateImages();
+      }
       renderOutline(result.toc);
+      syncOutlineFromPreview();
+      syncOutlineFromSource();
     }
 
     function resolveAsset(src) {
@@ -399,16 +418,91 @@
     function renderOutline(toc) {
       outlineList.innerHTML = '';
       outlineEmpty.hidden = toc.length > 0;
-      toc.forEach(function (item) {
+      toc.forEach(function (item, index) {
         var node = el('button', {
           type: 'button', class: 'outline-item lv' + Math.min(item.level, 6), text: item.text,
-          onClick: function () {
-            var target = preview.querySelector('[id="' + item.id + '"]');
-            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
+          dataset: { id: item.id, index: index },
+          onClick: function () { jumpToHeading(item, index); }
         });
         outlineList.appendChild(node);
       });
+      applyActiveOutline();
+    }
+
+    function applyActiveOutline() {
+      Array.prototype.forEach.call(outlineList.querySelectorAll('.outline-item'), function (node) {
+        var isActive = activeOutlineId
+          ? node.dataset.id === activeOutlineId
+          : Number(node.dataset.index) === activeOutlineIndex;
+        node.classList.toggle('active', isActive);
+      });
+    }
+
+    function headingLineAt(index) {
+      var count = 0;
+      var lines = textarea.value.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        if (!/^(#{1,6})\s+/.test(lines[i])) continue;
+        if (count === index) return i;
+        count++;
+      }
+      return -1;
+    }
+
+    function jumpToHeading(item, index) {
+      activeOutlineId = item.id;
+      activeOutlineIndex = index;
+      applyActiveOutline();
+      var target = mode !== 'source' ? preview.querySelector('[id="' + item.id + '"]') : null;
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      var line = headingLineAt(index);
+      if (line < 0) return;
+      var lines = textarea.value.split('\n');
+      var pos = 0;
+      for (var i = 0; i < line; i++) pos += lines[i].length + 1;
+      textarea.focus();
+      textarea.setSelectionRange(pos, pos + lines[line].length);
+      var lineHeight = parseFloat((window.getComputedStyle && getComputedStyle(textarea).lineHeight) || '') || 24;
+      textarea.scrollTop = Math.max(0, line * lineHeight - textarea.clientHeight / 2);
+      lineNumbers.scrollTop = textarea.scrollTop;
+      syncOutlineFromSource();
+    }
+
+    function syncOutlineFromPreview() {
+      if (!active || mode === 'source') return;
+      var headings = preview.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]');
+      if (!headings.length) return;
+      var previewTop = preview.getBoundingClientRect().top;
+      var best = null;
+      Array.prototype.forEach.call(headings, function (node) {
+        var top = node.getBoundingClientRect().top - previewTop + preview.scrollTop;
+        if (top <= preview.scrollTop + 48) best = node;
+      });
+      if (!best) best = headings[0];
+      activeOutlineId = best.id;
+      activeOutlineIndex = -1;
+      applyActiveOutline();
+    }
+
+    function syncOutlineFromSource() {
+      if (!active || mode !== 'source') return;
+      var line = textarea.value.slice(0, textarea.selectionStart).split('\n').length - 1;
+      var lines = textarea.value.split('\n');
+      var count = -1;
+      var bestIndex = -1;
+      for (var i = 0; i <= line && i < lines.length; i++) {
+        if (!/^(#{1,6})\s+/.test(lines[i])) continue;
+        count++;
+        bestIndex = count;
+      }
+      if (bestIndex < 0) return;
+      var node = outlineList.querySelectorAll('.outline-item')[bestIndex];
+      activeOutlineIndex = bestIndex;
+      activeOutlineId = node ? node.dataset.id : null;
+      applyActiveOutline();
     }
 
     function clearAssetCache() { assetCache = {}; }

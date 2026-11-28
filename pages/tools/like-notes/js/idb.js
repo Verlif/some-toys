@@ -1,13 +1,14 @@
 /**
  * Storage - IndexedDB 存储层（零依赖）
  *
- * 数据库 docs-kb，版本 1，对象仓库：
- *   docs       keyPath=path   文档记录（含 body / conflict / remote）
- *   pending    keyPath=path   待同步队列
- *   folders    keyPath=path   文件夹占位
- *   kv         keyPath=key    设置、绑定、tree、deviceId 等单值
- *   apiCache   keyPath=key    GitHub GET 响应缓存
- *   assets     keyPath=path   图片二进制（Blob）
+ * 数据库 docs-kb，版本 3，对象仓库：
+ *   docs         keyPath=path   文档记录（含 body / conflict / remote）
+ *   pending      keyPath=path   待同步队列
+ *   folders      keyPath=path   文件夹占位
+ *   kv           keyPath=key    设置、绑定、tree、deviceId 等单值
+ *   apiCache     keyPath=key    GitHub GET 响应缓存
+ *   assets       keyPath=path   本地资源（图片 / 附件）
+ *   assetPending keyPath=path   待上传到 GitHub 的资源路径队列
  *
  * 首次启动会把旧版 localStorage 数据迁移到 IndexedDB 并清除旧键。
  * 若浏览器禁用 IndexedDB（例如某些 file:// 环境），自动降级为
@@ -18,14 +19,16 @@
   var App = global.App = global.App || {};
 
   var DB_NAME = 'docs-kb';
-  var DB_VERSION = 1;
+  var DB_VERSION = 3;
   var STORES = {
     docs: 'path',
     pending: 'path',
     folders: 'path',
     kv: 'key',
     apiCache: 'key',
-    assets: 'path'
+    assets: 'path',
+    assetPending: 'path',
+    assetDeletes: 'path'
   };
   var LEGACY = {
     docs: 'docs-kb:docs',

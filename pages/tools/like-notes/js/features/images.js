@@ -40,10 +40,18 @@
         var canUpload = ctx.client && ctx.binding.token && !ctx.offline();
         if (!canUpload) {
           // 离线时内嵌 data URL，保证文档仍可预览；同时缓存进 IndexedDB 供导出/离线查看
-          if (ctx.saveAsset) ctx.saveAsset(path, dataUrl, file.type).catch(function () {});
+          if (ctx.saveAsset) {
+            ctx.saveAsset(path, dataUrl, file.type)
+              .then(function () { if (ctx.refreshAssets) ctx.refreshAssets(); })
+              .catch(function () {});
+          }
           return { link: dataUrl, name: file.name, offline: true };
         }
-        if (ctx.saveAsset) ctx.saveAsset(path, dataUrl, file.type).catch(function () {});
+        if (ctx.saveAsset) {
+          ctx.saveAsset(path, dataUrl, file.type)
+            .then(function () { if (ctx.refreshAssets) ctx.refreshAssets(); })
+            .catch(function () {});
+        }
         return ctx.client.putBinary(path, dataUrl, 'docs: upload image ' + file.name).then(function () {
           return { link: relativeLink(path), name: file.name, offline: false };
         });

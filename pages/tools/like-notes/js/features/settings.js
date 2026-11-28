@@ -18,6 +18,8 @@
     // 设置面板当前选中的仓库；未点“绑定”前 ctx.binding 仍是旧值，分支列表与绑定按钮状态都以这里的为准
     var selectedOwner = '';
     var selectedRepo = '';
+    // 已绑定时字段锁定并显示“更换”；点“更换”后进入编辑态恢复“绑定”
+    var editingBinding = false;
 
     function open() {
       currentTab = 'general';
@@ -147,6 +149,8 @@
     }
 
     function githubPanel() {
+      // 未绑定时直接是编辑态；已绑定时先锁定展示，点“更换”才解锁
+      editingBinding = !(ctx.binding.owner && ctx.binding.repo);
       var tokenTimer = null;
       var repoTimer = null;
       var branchTimer = null;
@@ -242,11 +246,29 @@
             return;
           }
           ctx.setBinding(binding);
+          selectedOwner = binding.owner;
+          selectedRepo = binding.repo;
           ctx.log(t('log.bound', { repo: binding.owner + '/' + binding.repo, branch: binding.branch, dir: binding.rootDir }));
           ctx.refreshExplorer();
-          dialog.close();
+          editingBinding = false;
+          applyBindingLock();
         }
       });
+      refs.changeBtn = UI.button({
+        label: t('settings.github.change'), variant: 'primary',
+        onClick: function () {
+          editingBinding = true;
+          applyBindingLock();
+        }
+      });
+      refs.changeBtn.setAttribute('data-i18n', 'settings.github.change');
+      function applyBindingLock() {
+        refs.token.disabled = !editingBinding;
+        refs.remember.disabled = !editingBinding;
+        refs.bindBtn.hidden = !editingBinding;
+        refs.changeBtn.hidden = editingBinding;
+        updateGithubEnabled();
+      }
       var actions = el('div', { class: 'field-row github-actions' }, [
         UI.button({ label: t('settings.github.tokenHelp'), onClick: showTokenHelp })
       ]);
@@ -281,9 +303,26 @@
         }
       });
       ghMaxRetries.style.maxWidth = '100%';
+      function timeoutInput(setting, fallback) {
+        var input = UI.input({
+          type: 'number', value: ctx.settings[setting] === undefined ? fallback : ctx.settings[setting],
+          onChange: function (e) {
+            var value = Number(e.target.value);
+            ctx.setSetting(setting, isFinite(value) ? Math.max(0, Math.min(600, Math.round(value))) : fallback);
+          }
+        });
+        input.min = '0';
+        input.max = '600';
+        input.style.maxWidth = '100%';
+        return input;
+      }
+      var ghRequestTimeout = timeoutInput('requestTimeout', 30);
+      var ghSyncTimeout = timeoutInput('syncTimeout', 120);
       var syncFields = el('div', { class: 'settings-grid' }, [
         UI.field(t('settings.sync.maxFetch'), ghMaxFetch, 'settings.sync.maxFetch'),
-        UI.field(t('settings.sync.maxRetries'), ghMaxRetries, 'settings.sync.maxRetries')
+        UI.field(t('settings.sync.maxRetries'), ghMaxRetries, 'settings.sync.maxRetries'),
+        UI.field(t('settings.sync.requestTimeout'), ghRequestTimeout, 'settings.sync.requestTimeout'),
+        UI.field(t('settings.sync.syncTimeout'), ghSyncTimeout, 'settings.sync.syncTimeout')
       ]);
       var syncNotes = el('div', { class: 'settings-notes' });
       ['settings.sync.retryInfo', 'settings.sync.info'].forEach(function (key) {
@@ -297,7 +336,7 @@
         markSelected(refs.branchSearch, ctx.binding.branch || 'main');
       }
       closeLists(); // 打开设置时两个下拉默认收起；只有聚焦/输入才展开
-      updateGithubEnabled();
+      applyBindingLock();
       return el('div', { class: 'settings-panel settings-panel-github' }, [
         section('settings.github.section.auth', [
           UI.field(t('settings.github.token'), refs.token, 'settings.github.token'),
@@ -310,7 +349,7 @@
           branchField,
           selection,
           UI.field(t('settings.github.dir'), refs.rootDir, 'settings.github.dir'),
-          el('div', { class: 'field-row github-actions' }, [refs.bindBtn])
+          el('div', { class: 'field-row github-actions' }, [refs.bindBtn, refs.changeBtn])
         ]),
         section('settings.github.section.sync', [
           ghAutoSyncWrap,
@@ -325,11 +364,11 @@
       if (!refs.token) return;
       var enabled = !!refs.token.value.trim();
       [refs.repoSearch, refs.branchSearch, refs.rootDir].forEach(function (node) {
-        if (node) node.disabled = !enabled;
+        if (node) node.disabled = !editingBinding || !enabled;
       });
       // 绑定按钮需 token + 仓库 + 分支都就绪，避免“填了 token 就能绑定”的误导
       if (refs.bindBtn) {
-        refs.bindBtn.disabled = !enabled || !selectedOwner || !selectedRepo || !String(refs.branchValue.textContent || '').trim();
+        refs.bindBtn.disabled = !editingBinding || !enabled || !selectedOwner || !selectedRepo || !String(refs.branchValue.textContent || '').trim();
       }
       if (!enabled) {
         // 无 token：两个选择器收起、禁用并清空候选项；有 token 时保持当前开合，避免刷新列表时把选项收掉
@@ -337,7 +376,7 @@
         if (repoListNode) { repoListNode.innerHTML = ''; repoListNode.classList.remove('is-empty'); }
         if (branchListNode) { branchListNode.innerHTML = ''; branchListNode.classList.remove('is-empty'); }
       }
-      if (refs.githubHint) refs.githubHint.hidden = enabled;
+      if (refs.githubHint) refs.githubHint.hidden = !editingBinding || enabled;
     }
 
     function loadRepos() {

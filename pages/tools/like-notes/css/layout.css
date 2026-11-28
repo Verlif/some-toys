@@ -46,14 +46,27 @@
 
 /* ---------- 主体 ---------- */
 .workspace {
-  display: grid; grid-template-columns: var(--activity-w) var(--sidebar-w) minmax(0, 1fr) var(--outline-w);
+  display: grid;
+  grid-template-columns: var(--activity-w) var(--sidebar-w) var(--splitter-w) minmax(0, 1fr) var(--splitter-w) var(--outline-w);
   min-height: 0; overflow: hidden;
 }
-.workspace.no-outline { grid-template-columns: var(--activity-w) var(--sidebar-w) minmax(0, 1fr); }
-.workspace.no-sidebar { grid-template-columns: var(--activity-w) minmax(0, 1fr) var(--outline-w); }
+.workspace.no-outline { grid-template-columns: var(--activity-w) var(--sidebar-w) var(--splitter-w) minmax(0, 1fr); }
+.workspace.no-sidebar { grid-template-columns: var(--activity-w) minmax(0, 1fr) var(--splitter-w) var(--outline-w); }
 .workspace.no-sidebar.no-outline { grid-template-columns: var(--activity-w) minmax(0, 1fr); }
 /* 隐藏的栏目必须真正退出网格，否则剩余栏目会被挤到下一行 */
-.workspace.no-sidebar .sidebar, .workspace.no-outline .outline { display: none; }
+.workspace.no-sidebar .sidebar, .workspace.no-sidebar .splitter-sidebar { display: none; }
+.workspace.no-outline .outline, .workspace.no-outline .splitter-outline { display: none; }
+
+/* 拖拽分割线：默认一条细线，hover / 拖动时高亮加宽命中区域 */
+.splitter {
+  position: relative; z-index: 4; cursor: col-resize; background: var(--border);
+  touch-action: none;
+}
+.splitter::after {
+  content: ''; position: absolute; inset: 0 -3px;
+}
+.splitter:hover, body.resizing .splitter { background: var(--accent); }
+body.resizing { cursor: col-resize !important; user-select: none; }
 
 /* 活动栏 */
 .activity-bar {
@@ -203,6 +216,7 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .outline-item:hover { background: var(--panel-2); color: var(--text); }
+.outline-item.active { background: var(--accent-soft); color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
 .outline-item.lv1 { font-weight: 700; }
 .outline-item.lv2 { padding-left: 18px; }
 .outline-item.lv3 { padding-left: 29px; }
@@ -237,6 +251,7 @@
     display: block; position: relative; flex: 1; min-height: 0;
   }
   .activity-bar { display: none; }
+  .splitter { display: none; }
   .sidebar, .main, .outline { display: none; height: 100%; }
   #app[data-mobile-page="files"] .sidebar,
   #app[data-mobile-page="editor"] .main,

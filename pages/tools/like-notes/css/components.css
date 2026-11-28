@@ -194,7 +194,15 @@
 .tree-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-item .tree-label.doc-name-dirty { color: var(--danger); }
 .tree-item .tree-label.doc-name-pending { color: var(--warn); }
-.tree-meta { font-size: 11px; color: var(--muted); }
+.tree-meta { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.tree-meta-item { display: inline-flex; align-items: center; gap: 2px; }
+.tree-meta-item .icon { width: 12px; height: 12px; }
+.asset-item .tree-label { color: var(--text-2); }
+.asset-preview-text {
+  margin: 0; max-height: 60vh; overflow: auto; padding: 12px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+}
 .tree-children { margin-left: 14px; border-left: 1px solid var(--border); padding-left: 5px; }
 /* 操作按钮常驻占位，仅切换可见性：hover 不改变标签宽度与行高 */
 .tree-actions { display: flex; flex: none; gap: 2px; visibility: hidden; opacity: 0; transition: opacity .12s; }

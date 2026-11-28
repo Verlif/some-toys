@@ -21,13 +21,17 @@
     defaultMode: 'split', showToolbar: true, showOutline: true,
     lineNumbers: true, wordWrap: true, spellCheck: false,
     previewSyncScroll: true, autoCloseBrackets: false, fontFamily: 'mono',
-    maxFetch: 40, maxRetries: 2
+    sidebarWidth: 272, outlineWidth: 236,
+    maxFetch: 40, maxRetries: 2, requestTimeout: 30, syncTimeout: 120
   };
 
   var state = {
     settings: Object.assign({}, defaultSettings),
     binding: { token: '', owner: '', repo: '', branch: 'main', rootDir: 'docs', remember: true },
     folders: [],
+    assets: [],
+    pendingAssets: [],
+    pendingAssetDeletes: [],
     lastSync: 0,
     offline: false,
     syncing: false,
@@ -55,7 +59,8 @@
     return storage.init().then(function () {
       return Promise.all([
         storage.kvGet(KEY_SETTINGS), storage.kvGet(KEY_BINDING), storage.kvGet(KEY_FOLDERS),
-        storage.kvGet(KEY_LAST_SYNC), storage.kvGet(KEY_PINNED)
+        storage.kvGet(KEY_LAST_SYNC), storage.kvGet(KEY_PINNED),
+        storage.getAll('assets'), storage.getAll('assetPending'), storage.getAll('assetDeletes')
       ]);
     }).then(function (values) {
       var settings = values[0], binding = values[1];
@@ -80,6 +85,14 @@
       });
       state.lastSync = Number(values[3]) || 0;
       state.pinned = Array.isArray(values[4]) ? values[4] : [];
+      state.assets = Array.isArray(values[5]) ? values[5] : [];
+      function paths(value) {
+        return (Array.isArray(value) ? value : [])
+          .map(function (item) { return item && item.path ? String(item.path) : (typeof item === 'string' ? item : ''); })
+          .filter(Boolean);
+      }
+      state.pendingAssets = paths(values[6]);
+      state.pendingAssetDeletes = paths(values[7]);
     }).catch(function () { /* 存储不可用时保留默认值 */ });
   }
 
@@ -98,7 +111,8 @@
   function toast(message, type) { UI.toast(message, type); }
 
   function hasLocalChanges() {
-    return !!(store && store.pending && Object.keys(store.pending).length > 0);
+    return !!(store && store.pending && Object.keys(store.pending).length > 0) ||
+      state.pendingAssets.length > 0 || state.pendingAssetDeletes.length > 0;
   }
 
   function clearAutoSyncTimer() {
@@ -134,7 +148,7 @@
     // editor.setMode 内部会在窄屏把 split 归为 source；设置值本身保持不变
     if (key === 'defaultMode' && editor) editor.setMode(value);
     if (key === 'theme') updateHeader();
-    if (key === 'maxRetries') refreshClient();
+    if (key === 'maxRetries' || key === 'requestTimeout') refreshClient();
     if (key === 'autoSync') {
       if (value) scheduleAutoSync();
       else clearAutoSyncTimer();
@@ -152,6 +166,8 @@
     };
     document.documentElement.style.setProperty('--editor-font-family', fonts[state.settings.fontFamily] || fonts.mono);
     if (dom.workspace) {
+      dom.workspace.style.setProperty('--sidebar-w', Math.max(160, state.settings.sidebarWidth || 272) + 'px');
+      dom.workspace.style.setProperty('--outline-w', Math.max(160, state.settings.outlineWidth || 236) + 'px');
       dom.workspace.classList.toggle('no-outline', state.settings.showOutline === false);
       dom.workspace.classList.toggle('no-sidebar', state.settings.showSidebar === false);
     }
@@ -193,6 +209,7 @@
       token: b.token, owner: b.owner, repo: b.repo,
       branch: b.branch || 'main', rootDir: b.rootDir || 'docs',
       maxRetries: retries,
+      requestTimeout: state.settings.requestTimeout,
       onLog: function (msg) { log(msg); }
     });
   }
@@ -214,6 +231,7 @@
   function temporaryClient() {
     return new GitHubDocs({
       token: state.binding.token || '', maxRetries: state.settings.maxRetries || 0,
+      requestTimeout: state.settings.requestTimeout,
       onLog: function (msg) { log(msg); }
     });
   }
@@ -587,12 +605,15 @@
       state.folders = folders;
       writeJSON(KEY_FOLDERS, folders);
       ctx.folders = folders;
-      refreshExplorer();
+      return { skipped: skipped };
+    }).then(function (result) {
+      return refreshAssetsAndExplorer().then(function () { return result; });
+    }).then(function (result) {
       renderTabs();
       updateStatus();
       scheduleAutoSync();
       toast(t('toast.imported', {
-        docs: plan.docs.length - skipped, assets: plan.assets.length, skipped: skipped
+        docs: plan.docs.length - result.skipped, assets: plan.assets.length, skipped: result.skipped
       }), 'ok');
     }).catch(function (err) {
       toast(t('transfer.invalidZip', { msg: err && err.message || String(err) }), 'error');
@@ -652,6 +673,196 @@
       n++;
     }
     return path;
+  }
+
+  function uniqueAssetPath(folder, name) {
+    var clean = String(name || 'file').replace(/[\\/:*?"<>|]/g, '-').trim() || 'file';
+    var dot = clean.lastIndexOf('.');
+    var base = dot > 0 ? clean.slice(0, dot) : clean;
+    var ext = dot > 0 ? clean.slice(dot) : '';
+    var path = (folder ? folder + '/' : '') + clean;
+    var n = 2;
+    // storage.get 是异步的，必须逐级检查；直接放进 while 条件会因 Promise 恒为真而死循环
+    function next() {
+      if (!store.get(path) && !state.assets.some(function (a) { return a.path === path; })) return Promise.resolve(path);
+      path = (folder ? folder + '/' : '') + base + '-' + n + ext;
+      n++;
+      return next();
+    }
+    return next();
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result)); };
+      reader.onerror = function () { reject(reader.error || new Error('read failed')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function readFileAsText(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result)); };
+      reader.onerror = function () { reject(reader.error || new Error('read failed')); };
+      reader.readAsText(file);
+    });
+  }
+
+  function queueAsset(path) {
+    if (state.pendingAssets.indexOf(path) >= 0) return Promise.resolve();
+    state.pendingAssets.push(path);
+    if (!storage) return Promise.resolve();
+    return storage.put('assetPending', path, { path: path, updatedAt: Date.now() });
+  }
+
+  function queueAssetDelete(path) {
+    if (state.pendingAssetDeletes.indexOf(path) >= 0) return Promise.resolve();
+    state.pendingAssetDeletes.push(path);
+    if (!storage) return Promise.resolve();
+    return storage.put('assetDeletes', path, { path: path, updatedAt: Date.now() });
+  }
+
+  // 目录树拖入文件：.md 作为文档入库，其他文件只写本地 IndexedDB，等待同步时才上传
+  // preserveStructure=true 时按 file.__dropPath / webkitRelativePath 保留子目录结构
+  function uploadFiles(files, folder, preserveStructure) {
+    files = Array.prototype.slice.call(files || []).filter(Boolean);
+    if (!files.length) return Promise.resolve();
+    folder = cleanPath(folder || '');
+    var busy = UI.busy(t('explorer.uploadingFiles', { count: files.length }));
+    var chain = Promise.resolve();
+    function segment(value) {
+      return String(value || '').replace(/[\\/:*?"<>|]/g, '-').trim();
+    }
+    files.forEach(function (file) {
+      chain = chain.then(function () {
+        var relative = preserveStructure
+          ? (file.__dropPath || file.webkitRelativePath || file.name || 'file')
+          : (file.name || 'file');
+        var parts = String(relative).replace(/\\/g, '/').split('/').map(segment).filter(Boolean);
+        if (!parts.length) parts = [segment(file.name) || 'file'];
+        var name = parts.pop();
+        var dir = folder ? [folder].concat(parts).join('/') : parts.join('/');
+        if (parts.length) addFolder(dir, true);
+        if (/\.md$/i.test(name)) {
+          return readFileAsText(file).then(function (text) {
+            var parsed = DocsStore.parse(text);
+            var path = uniquePath(dir, name);
+            store.upsert(path, {
+              title: parsed.title || name.replace(/\.md$/i, ''),
+              tags: parsed.tags || [],
+              body: parsed.body || text
+            });
+          });
+        }
+        return readFileAsDataUrl(file).then(function (dataUrl) {
+          return uniqueAssetPath(dir, name).then(function (path) {
+            var mime = file.type || mimeForPath(path);
+            return saveAsset(path, dataUrl, mime).then(function () { return queueAsset(path); });
+          });
+        });
+      });
+    });
+    return chain.then(function () {
+      return refreshAssetsAndExplorer();
+    }).then(function () {
+      updateStatus();
+      scheduleAutoSync();
+      ctx.toast(t('toast.uploadedFiles', { count: files.length }), 'ok');
+    }).catch(function (err) {
+      ctx.toast(t('editor.uploadFailed', { msg: err.message }), 'error');
+    }).then(function () {
+      busy.close();
+    });
+  }
+
+  function downloadDoc(path) {
+    var doc = store.get(path);
+    if (!doc) return;
+    var name = String(path).split('/').pop() || t('editor.untitled');
+    downloadBlob(new Blob([DocsStore.serialize(doc)], { type: 'text/markdown;charset=utf-8' }), name);
+  }
+
+  function reloadAssets() {
+    if (!storage) return Promise.resolve();
+    return storage.getAll('assets').then(function (list) { state.assets = Array.isArray(list) ? list : []; });
+  }
+
+  // 资源写入 / 删除后统一走这里：先以 IndexedDB 为准重建内存列表，再刷新目录树
+  function refreshAssetsAndExplorer() {
+    return reloadAssets().then(function () { refreshExplorer(); });
+  }
+
+  function findAsset(path) {
+    return state.assets.filter(function (a) { return a && a.path === path; })[0] || null;
+  }
+
+  function downloadAsset(path) {
+    var record = findAsset(path);
+    if (!record) return;
+    var mime = record.mime || mimeForPath(path);
+    var bytes = record.dataUrl ? dataUrlToBytes(record.dataUrl).bytes : record.bytes;
+    downloadBlob(new Blob([bytes], { type: mime }), String(path).split('/').pop() || 'file');
+  }
+
+  function deleteAsset(path) {
+    if (!findAsset(path)) return;
+    UI.confirm(t('explorer.confirmDeleteAsset', { name: String(path).split('/').pop() }), {
+      title: t('explorer.deleteAsset'), okLabel: t('common.delete'), danger: true
+    }).then(function (yes) {
+      if (!yes) return;
+      var chain = Promise.resolve();
+      if (storage) {
+        chain = chain.then(function () {
+          return Promise.all([
+            storage.del('assets', path),
+            storage.del('assetPending', path)
+          ]);
+        });
+      }
+      return chain.then(function () {
+        state.assets = state.assets.filter(function (a) { return a && a.path !== path; });
+        var index = state.pendingAssets.indexOf(path);
+        if (index >= 0) state.pendingAssets.splice(index, 1);
+        return queueAssetDelete(path);
+      }).then(function () {
+        return refreshAssetsAndExplorer();
+      }).then(function () {
+        updateStatus();
+        scheduleAutoSync();
+        toast(t('toast.deleted', { name: String(path).split('/').pop() }), 'ok');
+      });
+    });
+  }
+
+  function previewAsset(path) {
+    var record = findAsset(path);
+    if (!record) return;
+    var name = String(path).split('/').pop() || 'file';
+    var ext = (name.split('.').pop() || '').toLowerCase();
+    var mime = record.mime || mimeForPath(path);
+    var dataUrl = record.dataUrl || bytesToDataUrl(record.bytes, mime);
+    var content = [];
+    if (/^(png|jpe?g|gif|webp|svg|bmp|ico)$/.test(ext)) {
+      content.push(el('img', { src: dataUrl, style: { maxWidth: '100%', maxHeight: '60vh', display: 'block', margin: '0 auto' } }));
+    } else if (/^(txt|md|json|csv|log|ya?ml|xml|css|js|ts|html?|ini|cfg|env|sh|py|java|go|rs|sql|toml)$/.test(ext)) {
+      var bytes = dataUrlToBytes(dataUrl).bytes;
+      var text = App.Zip && App.Zip.decodeText ? App.Zip.decodeText(bytes) : '';
+      if (text.length > 512 * 1024) text = text.slice(0, 512 * 1024) + '\n…';
+      content.push(el('pre', { class: 'asset-preview-text', text: text }));
+    } else if (ext === 'pdf') {
+      content.push(el('iframe', { src: dataUrl, style: { width: '100%', height: '60vh', border: 'none' } }));
+    } else {
+      content.push(el('div', { class: 'muted', text: t('explorer.unsupportedPreview') }));
+    }
+    UI.modal({
+      title: name, wide: true, content: content,
+      actions: [
+        UI.button({ label: t('explorer.downloadAsset'), onClick: function () { downloadAsset(path); } }),
+        UI.button({ label: t('common.close') })
+      ]
+    });
   }
 
   function openDoc(path) {
@@ -1048,6 +1259,23 @@
     updateHeader();
     log(options.push === false ? t('log.pullStart') : t('log.syncStart'));
 
+    // 整次同步兜底超时：中止在途请求与排队任务，保证转圈状态一定能结束
+    var timeoutSec = Number(state.settings.syncTimeout);
+    if (!isFinite(timeoutSec) || timeoutSec < 0) timeoutSec = 120;
+    timeoutSec = Math.min(600, Math.round(timeoutSec));
+    var timedOut = false;
+    var watchdog = null;
+    if (timeoutSec > 0) {
+      watchdog = setTimeout(function () {
+        if (!state.syncing) return;
+        timedOut = true;
+        if (client && client.abortAll) client.abortAll();
+        var message = t('log.syncTimeout', { seconds: timeoutSec });
+        log(message);
+        toast(message, 'warn');
+      }, timeoutSec * 1000);
+    }
+
     return client.listTree(!!options.force).then(function (treeResult) {
       var files = treeResult.files || [];
       var remoteMap = {};
@@ -1155,10 +1383,12 @@
           return { aborted: true, error: bootErr };
         });
       }
+      if (timedOut && err && err.timedOut) return { aborted: true, error: err, timedOut: true };
       log(t('log.syncFail', { msg: err.message }));
       toast(t('log.syncFail', { msg: err.message }), 'error');
       return { aborted: true, error: err };
     }).then(function (result) {
+      if (watchdog) clearTimeout(watchdog);
       state.syncing = false;
       updateHeader();
       return result;
@@ -1169,10 +1399,45 @@
     return pullFromRemote({ force: !!force, push: true });
   }
 
+  function pushPendingAssets() {
+    if (!state.pendingAssets.length && !state.pendingAssetDeletes.length) return Promise.resolve();
+    if (!client || !state.binding.owner || !state.binding.repo || !state.binding.token || state.offline) return Promise.resolve();
+    var chain = Promise.resolve();
+    state.pendingAssets.slice().forEach(function (path) {
+      chain = chain.then(function () {
+        if (!storage) return;
+        return storage.get('assets', path).then(function (record) {
+          if (!record) return storage.del('assetPending', path);
+          var mime = record.mime || mimeForPath(path);
+          var dataUrl = record.dataUrl || bytesToDataUrl(record.bytes, mime);
+          return client.putBinary(path, dataUrl, 'docs: upload ' + String(path).split('/').pop(), null, mime)
+            .then(function () { return storage.del('assetPending', path); });
+        });
+      }).then(function () {
+        var index = state.pendingAssets.indexOf(path);
+        if (index >= 0) state.pendingAssets.splice(index, 1);
+      });
+    });
+    state.pendingAssetDeletes.slice().forEach(function (path) {
+      chain = chain.then(function () {
+        return client.getFile(path, { force: true }).then(function (remote) {
+          if (!remote) return;
+          return client.deleteFile(path, 'docs: delete ' + path, remote.sha);
+        }).then(function () {
+          return storage ? storage.del('assetDeletes', path) : null;
+        });
+      }).then(function () {
+        var index = state.pendingAssetDeletes.indexOf(path);
+        if (index >= 0) state.pendingAssetDeletes.splice(index, 1);
+      });
+    });
+    return chain;
+  }
+
   function pushPending() {
     var items = store.pendingList();
-    if (!items.length) { log(t('log.noPending')); return Promise.resolve(); }
-    log(t('log.pushStart', { count: items.length }));
+    if (!items.length && !state.pendingAssets.length && !state.pendingAssetDeletes.length) { log(t('log.noPending')); return Promise.resolve(); }
+    if (items.length) log(t('log.pushStart', { count: items.length }));
     var chain = Promise.resolve();
     items.forEach(function (item) {
       chain = chain.then(function () {
@@ -1206,7 +1471,7 @@
         });
       });
     });
-    return chain;
+    return chain.then(function () { return pushPendingAssets(); });
   }
 
   // ---------- 历史版本 ----------
@@ -1390,7 +1655,7 @@
   function updateStatus() {
     var stats = store.stats();
     if (dom.statusDocs) dom.statusDocs.textContent = t('status.docs') + ': ' + stats.count;
-    if (dom.statusPending) dom.statusPending.textContent = t('status.pending') + ': ' + stats.pending;
+    if (dom.statusPending) dom.statusPending.textContent = t('status.pending') + ': ' + (stats.pending + state.pendingAssets.length + state.pendingAssetDeletes.length);
     if (dom.statusUpdated) {
       dom.statusUpdated.textContent = stats.updatedAt
         ? t('status.updated') + ': ' + new Date(stats.updatedAt).toLocaleString()
@@ -1405,7 +1670,7 @@
       var text;
       if (state.offline || !bound) {
         text = t('status.sync.never');
-      } else if (conflicts || stats.pending > 0) {
+      } else if (conflicts || stats.pending > 0 || state.pendingAssets.length > 0 || state.pendingAssetDeletes.length > 0) {
         cls = 'bad';
         text = t('status.sync.unsynced') +
           (conflicts ? ' · ' + t('status.sync.conflicts', { count: conflicts }) : '');
@@ -1421,6 +1686,7 @@
         ? t('status.sync.lastFull', { time: new Date(state.lastSync).toLocaleString() })
         : t('status.sync.never');
     }
+    if (dom.rateStatus) dom.rateStatus.title = t('status.quotaHelp');
     if (dom.rateStatus && client) {
       var limits = client.getLimits();
       dom.rateStatus.textContent = limits.remaining === null
@@ -1584,6 +1850,46 @@
     window.addEventListener('scroll', hide, true);
   }
 
+  /** 侧栏 / 大纲之间的拖拽分割线，宽度持久化到设置里 */
+  function wireSplitters() {
+    function bind(id, side) {
+      var node = document.getElementById(id);
+      if (!node) return;
+      node.addEventListener('pointerdown', function (e) {
+        if (mobileQuery && mobileQuery.matches) return;
+        e.preventDefault();
+        var workspaceRect = dom.workspace.getBoundingClientRect();
+        var startX = e.clientX;
+        var startWidth = side === 'sidebar'
+          ? (state.settings.sidebarWidth || 272)
+          : (state.settings.outlineWidth || 236);
+        var preview = startWidth;
+        if (node.setPointerCapture) {
+          try { node.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+        document.body.classList.add('resizing');
+        function move(ev) {
+          var value = side === 'sidebar'
+            ? startWidth + ev.clientX - startX
+            : startWidth - (ev.clientX - startX);
+          value = Math.max(160, Math.min(side === 'sidebar' ? 520 : 480, Math.round(value)));
+          preview = value;
+          dom.workspace.style.setProperty(side === 'sidebar' ? '--sidebar-w' : '--outline-w', value + 'px');
+        }
+        function up() {
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', up);
+          document.body.classList.remove('resizing');
+          if (preview !== startWidth) setSetting(side === 'sidebar' ? 'sidebarWidth' : 'outlineWidth', preview);
+        }
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+      });
+    }
+    bind('sidebarSplitter', 'sidebar');
+    bind('outlineSplitter', 'outline');
+  }
+
   function init() {
     dom.app = document.getElementById('app');
     dom.workspace = document.getElementById('workspace');
@@ -1624,6 +1930,10 @@
       binding: state.binding, setBinding: setBinding, refreshClient: refreshClient,
       listRepos: listRepos, listBranches: listBranches,
       getAssetDataUrl: getAssetDataUrl, saveAsset: saveAsset, storage: storage,
+      uploadFiles: uploadFiles, downloadDoc: downloadDoc,
+      assets: function () { return state.assets; },
+      previewAsset: previewAsset, downloadAsset: downloadAsset, deleteAsset: deleteAsset,
+      refreshAssets: refreshAssetsAndExplorer,
       exportFolder: exportArchive, importFolder: importArchive,
       exportAll: function () { exportArchive(''); },
       importAll: function () { importArchive(''); },
@@ -1665,6 +1975,7 @@
     wireHeader();
     wireMobileSegment();
     wireTooltips();
+    wireSplitters();
     if (mobileQuery) {
       if (mobileQuery.addEventListener) mobileQuery.addEventListener('change', onViewportChange);
       else if (mobileQuery.addListener) mobileQuery.addListener(onViewportChange);
@@ -1673,7 +1984,7 @@
     applySettings();
     updateHeader();
 
-    store.ready.then(function () {
+    store.ready.then(function () { return reloadAssets(); }).then(function () {
       var docs = store.list();
       if (docs.length) openDoc(docs[0].path); else editor.clear();
       refreshExplorer();

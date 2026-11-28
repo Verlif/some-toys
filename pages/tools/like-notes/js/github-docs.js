@@ -19,6 +19,7 @@
   var MIN_INTERVAL = 180;
   var MAX_INFLIGHT = 3;
   var MAX_RETRIES = 2;
+  var DEFAULT_TIMEOUT = 30 * 1000;
 
   // 响应缓存为所有客户端实例共享，落 IndexedDB 的 apiCache 仓库。
   var appStorage = global.App && global.App.Storage;
@@ -113,7 +114,12 @@
     this.maxRetries = isFinite(configuredRetries)
       ? Math.max(0, Math.min(5, Math.round(configuredRetries)))
       : MAX_RETRIES;
+    var configuredTimeout = Number(options.requestTimeout);
+    this.requestTimeout = isFinite(configuredTimeout)
+      ? Math.max(0, Math.min(600 * 1000, Math.round(configuredTimeout * 1000)))
+      : DEFAULT_TIMEOUT;
 
+    this._controllers = {};
     this._queue = [];
     this._inflight = 0;
     this._lastAt = 0;
@@ -252,7 +258,23 @@
       options.body = typeof task.body === 'string' ? task.body : JSON.stringify(task.body);
     }
 
-    return fetch(API_ROOT + task.path, options).then(function (res) {
+    var requestId = 'r' + (++this._requestSeq || (this._requestSeq = 1));
+    var controller = typeof global.AbortController !== 'undefined' ? new global.AbortController() : null;
+    var timer = null;
+    if (controller) {
+      options.signal = controller.signal;
+      this._controllers[requestId] = controller;
+    }
+    function cleanup() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      delete self._controllers[requestId];
+    }
+    function timeoutError() {
+      var err = new Error('请求超时（' + Math.round(self.requestTimeout / 1000) + ' 秒）');
+      err.timedOut = true;
+      return err;
+    }
+    var pending = fetch(API_ROOT + task.path, options).then(function (res) {
       self._readLimits(res);
       if (res.status === 304 || res.status === 204) {
         return { status: res.status, data: null, etag: res.headers.get('etag') || null };
@@ -302,10 +324,41 @@
       });
     }, function (err) {
       if (!err || typeof err !== 'object') err = new Error(String(err || '网络请求失败'));
-      err.retryable = true;
+      if (!err.timedOut && err.name !== 'AbortError') err.retryable = true;
+      if (err.name === 'AbortError' && !err.timedOut) err = timeoutError();
       err.message = err.message || '网络请求失败';
       throw err;
     });
+
+    if (!this.requestTimeout) {
+      return pending.then(function (value) { cleanup(); return value; }, function (err) { cleanup(); throw err; });
+    }
+    var timeout = new Promise(function (resolve, reject) {
+      timer = setTimeout(function () {
+        if (controller) { try { controller.abort(); } catch (e) {} }
+        reject(timeoutError());
+      }, self.requestTimeout);
+    });
+    return Promise.race([pending, timeout]).then(function (value) {
+      cleanup();
+      return value;
+    }, function (err) {
+      cleanup();
+      throw err;
+    });
+  };
+
+  /** 立刻中止所有在途请求并丢弃排队任务，用于同步总超时 */
+  GitHubDocs.prototype.abortAll = function () {
+    var self = this;
+    Object.keys(this._controllers).forEach(function (id) {
+      try { self._controllers[id].abort(); } catch (e) {}
+    });
+    var err = new Error('同步超时，已中止未完成的请求');
+    err.timedOut = true;
+    this._queue.splice(0).forEach(function (task) { task.reject(err); });
+    this._cooldownUntil = 0;
+    if (this._timer) { clearTimeout(this._timer); this._timer = null; }
   };
 
   /** GET 统一入口：缓存命中 / 条件请求 / 并发去重 */
